@@ -17,6 +17,8 @@
 #include <iostream>
 #include <type_traits>
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore::qt {
     using namespace fleece;
     using namespace std;
@@ -91,3 +93,5 @@ namespace litecore::qt {
         bool _parens;
     };
 }  // namespace litecore::qt
+
+C4_ASSUME_NONNULL_END

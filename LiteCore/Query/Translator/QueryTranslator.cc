@@ -54,7 +54,7 @@ namespace litecore {
                 fail("no such collection \"%s\"", name.c_str());
 
             if ( source->indexType() == IndexType::FTS ) {
-                tableName = _delegate.FTSTableName(tableName, string(source->indexedProperty()));
+                tableName = _delegate.FTSTableName(tableName, string(source->indexedExpressionJSON()));
                 _ftsTables.push_back(tableName);
             } else if ( source->indexType() == IndexType::vector ) {
 #ifdef COUCHBASE_ENTERPRISE

@@ -14,6 +14,8 @@
 #include "TranslatorTables.hh"
 #include "fleece/Fleece.hh"
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore::qt {
     using namespace fleece;
 
@@ -53,27 +55,29 @@ namespace litecore::qt {
     Value getCaseInsensitive(Dict dict, slice key);
 
     // These functions look up items in tables or convert strings to enums:
-    const Operation*    lookupOp(slice opName, unsigned nArgs);
-    const Operation&    lookupOp(OpType type);
-    FunctionSpec const& lookupFn(slice fnName, int nArgs);
-    MetaProperty        lookupMeta(slice key, slice const keyList[kNumMetaProperties]);
-    JoinType            lookupJoin(slice name);
+    const Operation* C4NULLABLE lookupOp(slice opName, unsigned nArgs);
+    const Operation&            lookupOp(OpType type);              // throws if not found
+    FunctionSpec const&         lookupFn(slice fnName, int nArgs);  // throws if not found
+    MetaProperty                lookupMeta(slice key, slice const keyList[_Nonnull kNumMetaProperties]);
+    JoinType                    lookupJoin(slice name);
 
     /// Common path parsing shared by multiple node types.
     /// `pathStr` may be empty or contain dot-delimited path components;
     /// `pComponents` if given is an array of path components (strings or ints).
-    KeyPath parsePath(slice pathStr, fleece::Array::iterator* pComponents = nullptr);
+    KeyPath parsePath(slice pathStr, fleece::Array::iterator* C4NULLABLE pComponents = nullptr);
 
     /// Matches a path's initial component(s) against an alias; if so, drops those component(s) and
     /// returns the source.
     /// If it doesn't match, leaves the path alone and returns `ctx.from`,
     /// which may be nullptr if only an expression is being parsed.
-    AliasedNode* resolvePropertyPath(KeyPath&, ParseContext&, bool ignoreJoins = false);
+    AliasedNode* C4NULLABLE resolvePropertyPath(KeyPath&, ParseContext&, bool ignoreJoins = false);
 
     /// Writes a SQLite function call, passing the given expression.
     /// - If `expr` is a PropertyNode, it writes the node but substitutes the given function name
     ///   for the default `fl_value`.
     /// - Otherwise it writes the function call, passing the value of `expr` as the first arg;
     ///   if `param` is non-null it also passes a NULL arg (for historical reasons) and then `param`
-    void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* param, SQLWriter&);
+    void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* C4NULLABLE param, SQLWriter&);
 }  // namespace litecore::qt
+
+C4_ASSUME_NONNULL_END

@@ -17,6 +17,8 @@
 #include <set>
 #include <vector>
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore {
     namespace qt {
         class Node;
@@ -37,9 +39,10 @@ namespace litecore {
             such details and make it easier to unit-test. */
         class Delegate {
           public:
-            using DeletionStatus                                                    = QueryTranslator::DeletionStatus;
-            virtual ~Delegate()                                                     = default;
-            [[nodiscard]] virtual bool   tableExists(const string& tableName) const = 0;
+            using DeletionStatus = QueryTranslator::DeletionStatus;
+            virtual ~Delegate()  = default;
+
+            [[nodiscard]] virtual bool   tableExists(const string& tableName) const                             = 0;
             [[nodiscard]] virtual string collectionTableName(const string& collection, DeletionStatus) const    = 0;
             [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const      = 0;
             [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
@@ -57,41 +60,49 @@ namespace litecore {
         void parse(FLValue);
 
         /// Parses a query in JSON format
-        void parseJSON(slice);
+        void parseJSON(slice json);
 
-        /// The translated SQLite-flavor SQL.
+        /// The translated SQLite-flavor SQL, after `parse` or `parseJSON` is called.
         string const& SQL() const { return _sql; }
 
+        /// The names of all the parameters; `$` signs not included.
         const std::set<string>& parameters() { return _parameters; }
 
+        /// The names of all the collection tables referenced by this query.
         const std::set<string>& collectionTablesUsed() const { return _kvTables; }
 
+        /// The names of all FTS index tables referenced by this query.
         const std::vector<string>& ftsTablesUsed() const { return _ftsTables; }
 
+        /// The index of the first SQLite result column that's an explicit column in the query.
         unsigned firstCustomResultColumn() const { return _1stCustomResultCol; }
 
+        /// The column titles.
         const std::vector<string>& columnTitles() const { return _columnTitles; }
 
+        /// True if this query uses aggregate functions, `GROUP BY` or `DISTINCT`.
         bool isAggregateQuery() const { return _isAggregateQuery; }
 
+        /// True if this query references the `meta().expiration` property.
         bool usesExpiration() const { return _usesExpiration; }
 
-        /// Translates an expression to SQL and returns it directly.
+        /// Translates an expression (parsed from JSON) to SQL and returns it directly.
         string expressionSQL(FLValue);
 
         //======== INDEX CREATION:
 
         /// Renames the `body` column; used by index creation code when defining triggers.
+        /// Must be called before `parse`.
         void setBodyColumnName(string name) { _bodyColumnName = name; }
 
         /// Writes a CREATE INDEX statement.
         void writeCreateIndex(const string& indexName, const string& onTableName, FLArrayIterator& whatExpressions,
-                              FLArray whereClause, bool isUnnestedTable);
+                              FLArray C4NULLABLE whereClause, bool isUnnestedTable);
 
         /// Returns a WHERE clause.
         /// @param  expr  The parsed JSON expression
         /// @param dbAlias  The table alias to use
-        string whereClauseSQL(FLValue expr, string_view dbAlias);
+        string whereClauseSQL(FLValue C4NULLABLE expr, string_view dbAlias);
 
         /// Translates the JSON-parsed Value to a SQL expression for use in a FTS index.
         string FTSExpressionSQL(FLValue);
@@ -111,7 +122,7 @@ namespace litecore {
         QueryTranslator(const QueryTranslator& qp)         = delete;
         QueryTranslator& operator=(const QueryTranslator&) = delete;
         string           writeSQL(function_ref<void(qt::SQLWriter&)>);
-        string           functionCallSQL(slice fnName, FLValue arg, FLValue param = nullptr);
+        string           functionCallSQL(slice fnName, FLValue arg, FLValue C4NULLABLE param = nullptr);
 
         const Delegate&     _delegate;                 // delegate object (SQLiteKeyStore)
         string              _defaultTableName;         // Name of the default table to use
@@ -124,8 +135,9 @@ namespace litecore {
         std::vector<string> _columnTitles;             // Pretty names of result columns
         bool                _isAggregateQuery{false};  // Is this an aggregate query?
         bool                _usesExpiration{false};    // Has query accessed _expiration meta-property?
-
-        string _bodyColumnName;
+        string              _bodyColumnName;           // Name of the `body` column
     };
 
 }  // namespace litecore
+
+C4_ASSUME_NONNULL_END

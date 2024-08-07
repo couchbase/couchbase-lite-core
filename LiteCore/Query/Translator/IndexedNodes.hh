@@ -13,6 +13,8 @@
 #pragma once
 #include "ExprNodes.hh"
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore::qt {
 
     /*  QueryTranslator syntax nodes for functions that use table-based indexes,
@@ -29,10 +31,10 @@ namespace litecore::qt {
         string_view indexExpressionJSON() const { return _indexExpressionJSON; }
 
         /// The collection being searched.
-        SourceNode* sourceCollection() const { return _sourceCollection; }
+        SourceNode* C4NULLABLE sourceCollection() const { return _sourceCollection; }
 
         /// SourceNode representing the SQLite index table.
-        SourceNode* indexSource() const { return _indexSource; }
+        SourceNode* C4NULLABLE indexSource() const { return _indexSource; }
 
         /// Sets which SQLite index table is being queried; called by `SelectNode::addIndexForNode`
         virtual void setIndexSource(SourceNode* source, SelectNode* select) {
@@ -50,12 +52,12 @@ namespace litecore::qt {
       protected:
         IndexedNode(IndexType type);
 
-        IndexType   _type;                        // Index type
-        string      _indexExpressionJSON;         // Expression/property that's indexed, as JSON
-        SourceNode* _sourceCollection = nullptr;  // The collection being queried
-        SourceNode* _indexSource      = nullptr;  // Source representing the index
-        SelectNode* _select           = nullptr;  // The containing SELECT statement
-        bool        _isAuxiliary = false;                // True if this is an auxiliary expression (e.g. `RANK()`)
+        IndexType              _type;                        // Index type
+        string                 _indexExpressionJSON;         // Expression/property that's indexed, as JSON
+        SourceNode* C4NULLABLE _sourceCollection = nullptr;  // The collection being queried
+        SourceNode* C4NULLABLE _indexSource      = nullptr;  // Source representing the index
+        SelectNode* C4NULLABLE _select           = nullptr;  // The containing SELECT statement
+        bool                   _isAuxiliary      = false;    // True if this is an auxiliary expression (e.g. `RANK()`)
     };
 
     /** Abstract base class of FTS nodes. */
@@ -64,7 +66,6 @@ namespace litecore::qt {
         FTSNode(Array::iterator& args, ParseContext&, const char* name);
 
         void writeIndex(SQLWriter&) const;
-
     };
 
     /** An FTS `match()` function call. */
@@ -83,8 +84,9 @@ namespace litecore::qt {
     class RankNode final : public FTSNode {
       public:
         RankNode(Array::iterator& args, ParseContext& ctx);
-        
+
         OpFlags opFlags() const override { return kOpNumberResult; }
+
         void writeSQL(SQLWriter&) const override;
     };
 
@@ -99,6 +101,7 @@ namespace litecore::qt {
         string_view metric() const { return _metric; }
 
         OpFlags opFlags() const override { return kOpNumberResult; }
+
         void visitChildren(ChildVisitor const&) override;
         void setIndexSource(SourceNode* source, SelectNode* select) override;
         void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
@@ -114,3 +117,5 @@ namespace litecore::qt {
 
 #endif
 }  // namespace litecore::qt
+
+C4_ASSUME_NONNULL_END

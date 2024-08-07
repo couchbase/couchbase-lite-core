@@ -25,17 +25,14 @@ namespace litecore::qt {
     // These are indexed by IndexType:
     constexpr const char* kOwnerFnName[3] = {nullptr, "MATCH", "APPROX_VECTOR_DISTANCE"};
 
-    IndexedNode::IndexedNode(IndexType type) : _type(type) {
-        DebugAssert(type != IndexType::none);
-    }
+    IndexedNode::IndexedNode(IndexType type) : _type(type) { DebugAssert(type != IndexType::none); }
 
     void IndexedNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const { ctx << sqlIdentifier(tableName); }
 
 #pragma mark - FTS:
 
     // Initializes using the index name as the first argument (for FTS)
-    FTSNode::FTSNode(Array::iterator& args, ParseContext& ctx, const char* name)
-        : IndexedNode(IndexType::FTS) {
+    FTSNode::FTSNode(Array::iterator& args, ParseContext& ctx, const char* name) : IndexedNode(IndexType::FTS) {
         slice pathStr = args[0].asString();
         require(!pathStr.empty(), "first arg of %s() must be an index name", name);
         KeyPath path = parsePath(pathStr);
@@ -63,7 +60,7 @@ namespace litecore::qt {
         ctx << " MATCH " << _searchString;
     }
 
-    RankNode::RankNode(Array::iterator& args, ParseContext& ctx) : FTSNode(args, ctx, "RANK") {_isAuxiliary = true;}
+    RankNode::RankNode(Array::iterator& args, ParseContext& ctx) : FTSNode(args, ctx, "RANK") { _isAuxiliary = true; }
 
     void RankNode::writeSQL(SQLWriter& ctx) const {
         ctx << "rank(matchinfo(";
@@ -90,8 +87,7 @@ namespace litecore::qt {
         ExprNode*   _vector;
     };
 
-    VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx)
-        : IndexedNode(IndexType::vector) {
+    VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx) : IndexedNode(IndexType::vector) {
         _indexedExpr = parse(args[0], ctx);
 
         // Determine which collection the vector is based on:
@@ -274,7 +270,7 @@ namespace litecore::qt {
         // Look for an existing index source:
         SourceNode* indexSrc = nullptr;
         for ( auto& s : _sources ) {
-            if ( s->indexType() == node.indexType() && s->indexedProperty() == node.indexExpressionJSON()
+            if ( s->indexType() == node.indexType() && s->indexedExpressionJSON() == node.indexExpressionJSON()
                  && s->collection() == node.sourceCollection()->collection()
                  && s->scope() == node.sourceCollection()->scope() ) {
                 indexSrc = s.get();

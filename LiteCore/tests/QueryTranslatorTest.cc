@@ -78,9 +78,9 @@ void QueryTranslatorTest::fillInTableName(SourceNode* source) {
     else
         table << KeyStore::kCollectionPrefix << collection;
 
-    if ( source.indexType() == IndexType::FTS ) table << "::" << source.indexedProperty();
+    if ( source.indexType() == IndexType::FTS ) table << "::" << source.indexedExpressionJSON();
     else if ( source.indexType() == IndexType::vector )
-        return vectorTableName(table.str(), string(source.indexedProperty()), "");  //FIXME: Get metric
+        return vectorTableName(table.str(), string(source.indexedExpressionJSON()), "");  //FIXME: Get metric
     return table.str();
 }
 

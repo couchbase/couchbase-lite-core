@@ -29,7 +29,6 @@ namespace litecore::qt {
         _parent = p;
     }
 
-
     void Node::visit(Visitor const& visitor, bool preorder, unsigned depth) {
         if ( preorder ) visitor(*this, depth);
         visitChildren([&](Node& child) { child.visit(visitor, preorder, depth + 1); });
@@ -223,6 +222,7 @@ namespace litecore::qt {
     }
 
     LiteralNode::LiteralNode(int64_t i) : LiteralNode(RetainedValue::newInt(i)) {}
+
     LiteralNode::LiteralNode(string_view str) : LiteralNode(RetainedValue::newString(str)) {}
 
     MetaNode::MetaNode(Array::iterator& args, ParseContext& ctx) {
@@ -254,39 +254,39 @@ namespace litecore::qt {
     }
 
     unique_ptr<ExprNode> PropertyNode::parse(slice pathStr, fleece::Array::iterator* components, ParseContext& ctx) {
-        KeyPath     _path   = parsePath(pathStr, components);
-        SourceNode* _source = nullptr;
-        WhatNode*   _result = nullptr;
-        string      _sqliteFn;
+        KeyPath     path   = parsePath(pathStr, components);
+        SourceNode* source = nullptr;
+        WhatNode*   result = nullptr;
+        string      sqliteFn;
 
-        if ( AliasedNode* a = resolvePropertyPath(_path, ctx) ) {
-            _source = dynamic_cast<SourceNode*>(a);
-            if ( !_source ) {
-                _result = dynamic_cast<WhatNode*>(a);
-                Assert(_result);
+        if ( AliasedNode* a = resolvePropertyPath(path, ctx) ) {
+            // 1st component of path names a source or result, and has been removed from `path`.
+            source = dynamic_cast<SourceNode*>(a);
+            if ( !source ) {
+                result = dynamic_cast<WhatNode*>(a);
+                Assert(result);
             }
         }
-        if ( _result ) {
+        if ( result ) {
             // This property is a result alias, or a child thereof:
-            if ( _path.count() > 0 ) { _sqliteFn = kNestedValueFnName; }
+            if ( path.count() > 0 ) { sqliteFn = kNestedValueFnName; }
+        } else if ( path.count() == 0 ) {
+            // Empty path: refers to the root of the source
+            sqliteFn = kRootFnName;
         } else {
-            if ( _path.count() == 0 ) {
-                _sqliteFn = kRootFnName;
-            } else {
-                slice first = _path.get(0).first;
-                require(first.size > 0, "property cannot start with an array index");
-                MetaProperty _meta = lookupMeta(first, kMetaShortcutNames);
-                if ( _meta != MetaProperty::none ) {
-                    _path.dropComponents(1);
-                    require(_path.count() == 0, "invalid properties after a meta property");
-                    return make_unique<MetaNode>(_meta, _source);
-                }
-                if ( _source && _source->isUnnest() ) _sqliteFn = kNestedValueFnName;
-                else
-                    _sqliteFn = kValueFnName;
+            slice first = path.get(0).first;
+            require(first.size > 0, "property cannot start with an array index");
+            MetaProperty meta = lookupMeta(first, kMetaShortcutNames);
+            if ( meta != MetaProperty::none ) {
+                path.dropComponents(1);
+                require(path.count() == 0, "invalid properties after a meta property");
+                return make_unique<MetaNode>(meta, source);
             }
+            if ( source && source->isUnnest() ) sqliteFn = kNestedValueFnName;
+            else
+                sqliteFn = kValueFnName;
         }
-        return unique_ptr<ExprNode>(new PropertyNode(_source, _result, std::move(_path), _sqliteFn));
+        return unique_ptr<ExprNode>(new PropertyNode(source, result, std::move(path), sqliteFn));
     }
 
     string PropertyNode::asColumnName() const {
@@ -362,7 +362,7 @@ namespace litecore::qt {
 
     CollateNode::CollateNode(unique_ptr<ExprNode> child, ParseContext& ctx)
         : _collation(ctx.collation), _child(std::move(child)) {
-            _child->setParent(this);
+        _child->setParent(this);
         ctx.collationApplied = true;
     }
 

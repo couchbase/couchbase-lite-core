@@ -19,6 +19,8 @@
 #include <iosfwd>
 #include <unordered_map>
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore::qt {
     using namespace fleece;
 
@@ -61,26 +63,29 @@ namespace litecore::qt {
 
     /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {
-        SelectNode*                              select = nullptr;         // The enclosing SELECT, if any
+        SelectNode* C4NULLABLE                   select = nullptr;         // The enclosing SELECT, if any
         std::unordered_map<string, AliasedNode*> aliases;                  // All of the sources & named results
         std::vector<SourceNode*>                 sources;                  // All sources
-        SourceNode*                              from = nullptr;           // The main source
+        SourceNode* C4NULLABLE                   from = nullptr;           // The main source
         Collation                                collation;                // Current collation in effect
         bool                                     collationApplied = true;  // False if no COLLATE node generated
     };
 
     /** Abstract syntax tree node for parsing N1QL queries from JSON/Fleece.
+        Nodes are heap-allocated via unique_ptr and are not copyable.
         The Node class hierarchy is described in docs/QueryTranslator.md */
     class Node {
       public:
         Node()          = default;
         virtual ~Node() = default;
 
+        /// The node's parent in the parse tree.
         Node const* parent() const { return _parent; }
 
-        void setParent(Node const*);
+        void setParent(Node const* C4NULLABLE);
 
-        virtual SourceNode* source() const { return nullptr; }
+        /// The SourceNode (`FROM` item) this references, if any. Overridden by MetaNode and PropertyNode.
+        virtual SourceNode* C4NULLABLE source() const { return nullptr; }
 
         using Visitor = function_ref<void(Node&, unsigned depth)>;
 
@@ -108,13 +113,13 @@ namespace litecore::qt {
       protected:
         using ChildVisitor = function_ref<void(Node&)>;
 
-        /// Calls a lambda with each direct child. Subclasses that add children must override.
+        /// Calls a lambda with each direct child. Subclasses that add children MUST override this.
         virtual void visitChildren(ChildVisitor const&) {}
 
-        Node(Node const&)            = delete;
+        Node(Node const&)            = delete;  // not copyable
         Node& operator=(Node const&) = delete;
 
-        Node const* _parent = nullptr;
+        Node const* C4NULLABLE _parent = nullptr;
     };
 
 #pragma mark - EXPRESSIONS:
@@ -128,6 +133,7 @@ namespace litecore::qt {
         /// The column name to use if this expression is the child of a WhatNode.
         virtual string asColumnName() const { return ""; }
 
+        /// The operation flags that apply to this expression.
         virtual OpFlags opFlags() const { return kOpNoFlags; }
 
       private:
@@ -155,26 +161,25 @@ namespace litecore::qt {
         RetainedValue _retained;
     };
 
-    /** The magic `meta()` or `meta('collection')` function. */
+    /** The magic `meta()` or `meta('collection')` function, or one of its properties. */
     class MetaNode final : public ExprNode {
       public:
         explicit MetaNode(Array::iterator& args, ParseContext&);
 
-        explicit MetaNode(MetaProperty p, SourceNode* src) : _property(p), _source(src) {}
+        explicit MetaNode(MetaProperty p, SourceNode* C4NULLABLE src) : _property(p), _source(src) {}
 
         MetaProperty property() const { return _property; }
 
         SourceNode* source() const override { return _source; }
 
-        string  asColumnName() const override;
-        OpFlags opFlags() const override;
-
+        string      asColumnName() const override;
+        OpFlags     opFlags() const override;
         void        writeSQL(SQLWriter&) const override;
         static void writeMetaSQL(string_view aliasDot, MetaProperty, SQLWriter&);
 
       private:
-        MetaProperty _property = MetaProperty::none;
-        SourceNode*  _source   = nullptr;
+        MetaProperty           _property = MetaProperty::none;
+        SourceNode* C4NULLABLE _source   = nullptr;
     };
 
     /** A query parameter (`$foo`) in an expression. */
@@ -195,28 +200,34 @@ namespace litecore::qt {
     /** A document property path in an expression. */
     class PropertyNode final : public ExprNode {
       public:
-        static unique_ptr<ExprNode> parse(slice pathStr, Array::iterator* operands, ParseContext&);
+        /// Parses a JSON property expression like `[".foo.bar"]` or `[".", "foo", "bar"]`.
+        /// @param pathStr  The initial path string; may be empty.
+        /// @param operands  Array of path components (strings or ints), or nullptr.
+        /// @param ctx  Parse context.
+        static unique_ptr<ExprNode> parse(slice pathStr, Array::iterator* C4NULLABLE operands, ParseContext& ctx);
+
+        /// The parsed path as a Fleece KeyPath.
+        KeyPath const& path() const { return _path; }
+
+        /// Sets the SQLite function used to dereference the property; default is `fl_value`
+        void setSQLiteFn(string_view fn) { _sqliteFn = string(fn); }
 
         SourceNode* source() const override { return _source; }
 
-        KeyPath const& path() const { return _path; }
-
         string asColumnName() const override;
-
-        void setSQLiteFn(string_view fn) { _sqliteFn = string(fn); }
 
         void writeSQL(SQLWriter& ctx) const override { writeSQL(ctx, nullslice, nullptr); }
 
-        void writeSQL(SQLWriter&, slice sqliteFnName, ExprNode* param) const;
+        void writeSQL(SQLWriter&, slice sqliteFnName, ExprNode* C4NULLABLE param) const;
 
       private:
-        PropertyNode(SourceNode* src, WhatNode* result, KeyPath path, string fn)
+        PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string fn)
             : _source(src), _result(result), _path(std::move(path)), _sqliteFn(std::move(fn)) {}
 
-        SourceNode* _source;    // Source I am relative to
-        WhatNode*   _result;    // Result I am relative to (only if _source is nullptr)
-        KeyPath     _path;      // The path (possibly empty)
-        string      _sqliteFn;  // SQLite function to emit; usually `fl_value`
+        SourceNode* C4NULLABLE _source;    // Source I am relative to
+        WhatNode* C4NULLABLE   _result;    // Result I am relative to (only if _source is nullptr)
+        KeyPath                _path;      // The path (possibly empty)
+        string                 _sqliteFn;  // SQLite function to emit; usually `fl_value`
     };
 
     /** A local variable (`?foo`) used in an ANY/EVERY expression. */
@@ -239,11 +250,11 @@ namespace litecore::qt {
 
         CollateNode(unique_ptr<ExprNode>, ParseContext&);
 
-        ExprNode* child() const { return _child.get(); }
+        ExprNode* child() const { return _child.get(); }  ///< The expression to which the collation is applied
 
-        Collation const& collation() const { return _collation; }
+        Collation const& collation() const { return _collation; }  ///< The collation used
 
-        bool isBinary() const;
+        bool isBinary() const;  ///< True if collation is binary (i.e. neither case-sensitive nor Unicode)
 
         OpFlags opFlags() const override { return _child->opFlags(); }
 
@@ -292,8 +303,8 @@ namespace litecore::qt {
 #endif
 
       protected:
-        Operation const&                  _op;
-        std::vector<unique_ptr<ExprNode>> _operands;
+        Operation const&                  _op;        // Spec of the operation
+        std::vector<unique_ptr<ExprNode>> _operands;  // Operand list
     };
 
     /** A N1QL function call in an expression. */
@@ -322,16 +333,14 @@ namespace litecore::qt {
 #endif
 
       private:
-        struct FunctionSpec const&        _fn;
-        std::vector<unique_ptr<ExprNode>> _args;
+        struct FunctionSpec const&        _fn;    // Spec of the function
+        std::vector<unique_ptr<ExprNode>> _args;  // Argument list
     };
 
     /** An OpNode representing an `ANY`, `EVERY`, or `ANY AND EVERY` operation */
     class AnyEveryNode final : public OpNode {
       public:
         explicit AnyEveryNode(Operation const&, Array::iterator& operands, ParseContext&);
-
-        void writeSQL(SQLWriter&) const override;
 
         string_view variableName() const { return _variableName; }
 
@@ -341,7 +350,12 @@ namespace litecore::qt {
 
         OpFlags opFlags() const override { return kOpBoolResult; }
 
+        void writeSQL(SQLWriter&) const override;
+
       private:
         slice _variableName;  // Name of the variable used in predicate
     };
+
 }  // namespace litecore::qt
+
+C4_ASSUME_NONNULL_END

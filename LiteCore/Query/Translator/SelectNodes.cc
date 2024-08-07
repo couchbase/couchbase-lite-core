@@ -225,7 +225,9 @@ namespace litecore::qt {
 
     IndexType SourceNode::indexType() const { return isIndex() ? _indexedNodes[0]->indexType() : IndexType::none; }
 
-    string_view SourceNode::indexedProperty() const { return isIndex() ? _indexedNodes[0]->indexExpressionJSON() : ""; }
+    string_view SourceNode::indexedExpressionJSON() const {
+        return isIndex() ? _indexedNodes[0]->indexExpressionJSON() : "";
+    }
 
     void SourceNode::visitChildren(ChildVisitor const& visitor) {
         if ( _joinOn ) visitor(*_joinOn);
@@ -402,8 +404,8 @@ namespace litecore::qt {
     void SelectNode::postprocess(ParseContext& ctx) {
         Node::postprocess(ctx);
 
+        // Check if this is an aggregate query, and whether it references a collections `deleted` property:
         _isAggregate = _distinct || !_groupBy.empty();
-
         visit([&](Node& node, unsigned depth) {
             if ( auto meta = dynamic_cast<MetaNode*>(&node) ) {
                 // `meta()` calls that don't access any property implicity return the `deleted` property:
@@ -415,6 +417,7 @@ namespace litecore::qt {
             }
         });
 
+        // Locate FTS and vector indexed expressions and add corresponding SourceNodes:
         addIndexes(ctx);
 
         for ( auto& source : _sources ) {
@@ -457,7 +460,6 @@ namespace litecore::qt {
         _root = root;  // retain it for safety
         ParseContext ctx;
         parse(root, ctx);
-        //dump(cout);  // <--in case of debugging emergency, break glass
         postprocess(ctx);
     }
 
