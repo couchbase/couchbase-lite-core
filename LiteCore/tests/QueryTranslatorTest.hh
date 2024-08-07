@@ -20,9 +20,14 @@ struct QueryTranslatorTest : public TestFixture {
     void                 mustFail(string_view json);
     void                 fillInTableName(litecore::qt::SourceNode* source);
     [[nodiscard]] string collectionTableName(litecore::qt::SourceNode const& source) const;
+    [[nodiscard]] string vectorTableName(const string& onTable, const std::string& property,
+                                         string_view metricName) const;
     [[nodiscard]] bool   tableExists(string tableName) const;
     void                 CHECK_equal(string_view result, string_view expected);
 
     std::set<string> tableNames{"kv_default", "kv_del_default"};
     std::set<string> usedTableNames;
+    std::map<std::pair<string, string>, string>
+                vectorIndexedProperties;  // maps {table name,expression JSON} -> vector-index table name
+    std::string vectorIndexMetric;
 };

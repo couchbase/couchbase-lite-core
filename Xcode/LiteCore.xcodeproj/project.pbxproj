@@ -1335,7 +1335,7 @@
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4CppUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4CppUtils.hh; sourceTree = "<group>"; };
-		27B895752B8FDF99001C448B /* QueryTranslator.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = QueryTranslator.md; sourceTree = "<group>"; };
+		27B895752B8FDF99001C448B /* QueryTranslator.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = QueryTranslator.md; path = overview/QueryTranslator.md; sourceTree = "<group>"; };
 		27BB9DFB236D05650039C896 /* aes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = aes.c; sourceTree = "<group>"; };
 		27BB9DFC236D05650039C896 /* psa_crypto_slot_management.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = psa_crypto_slot_management.c; sourceTree = "<group>"; };
 		27BB9DFD236D05650039C896 /* md4.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = md4.c; sourceTree = "<group>"; };
@@ -2224,6 +2224,7 @@
 			children = (
 				2745B7CB26825F970012A17A /* index.html */,
 				2745B7CC26825F970012A17A /* overview */,
+				27B895752B8FDF99001C448B /* QueryTranslator.md */,
 				277911B22C6188190044E660 /* Result.md */,
 			);
 			name = docs;
@@ -2235,7 +2236,6 @@
 			children = (
 				2745B7D226825F970012A17A /* index.md */,
 				2745B7CE26825F970012A17A /* Classes.md */,
-				27B895752B8FDF99001C448B /* QueryTranslator.md */,
 				2745B7D426825F970012A17A /* Replicator.md */,
 				2752C6AC27BC3A2E001C1B76 /* replication-protocol.adoc */,
 				27DF3BBC268672F700A57A1E /* Schema.md */,
@@ -4132,7 +4132,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EADC3D532C1346E400933269 /* c4IndexUpdaterTest.cc in Sources */,
 				270D5B972C12860900AA91E7 /* ResultTest.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
@@ -4159,9 +4158,10 @@
 				271E51B82B8819F500DCC203 /* ArrayQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
+				27BEEE792A783A17005AD4BF /* VectorQueryTest.cc in Sources */,
 				27F602FE2A968503006FA1D0 /* PredictiveVectorQueryTest.cc in Sources */,
 				27D62A3F2B72D92B004C0787 /* LazyVectorQueryTest.cc in Sources */,
-				27BEEE792A783A17005AD4BF /* VectorQueryTest.cc in Sources */,
+				EADC3D532C1346E400933269 /* c4IndexUpdaterTest.cc in Sources */,
 				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,

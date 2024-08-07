@@ -23,21 +23,10 @@ namespace litecore::qt {
 
 
     // These are indexed by IndexType:
-    constexpr const char* kOwnerFnName[3]    = {nullptr, "MATCH", "VECTOR_MATCH"};
-    constexpr const char* kNonOwnerFnName[3] = {nullptr, "MATCH", "VECTOR_MATCH"};
+    constexpr const char* kOwnerFnName[3] = {nullptr, "MATCH", "APPROX_VECTOR_DISTANCE"};
 
-    IndexedNode::IndexedNode(Array::iterator& args, ParseContext& ctx, IndexType type, const char* name, bool isOwner)
-        : _type(type), _isIndexOwner(isOwner) {
+    IndexedNode::IndexedNode(IndexType type, bool isOwner) : _type(type), _isIndexOwner(isOwner) {
         DebugAssert(type != IndexType::none);
-        slice pathStr = args[0].asString();
-        require(!pathStr.empty(), "first arg of %s() must be an index name", name);
-        KeyPath path = parsePath(pathStr);
-        // Find the source collection and property name/path:
-        _sourceCollection = dynamic_cast<SourceNode*>(resolvePropertyPath(path, ctx, true));
-        require(_sourceCollection, "unknown source collection for %s()", name);
-        require(_sourceCollection->isCollection(), "invalid source collection for %s()", name);
-        require(path.count() > 0, "missing property after collection alias in %s()", name);
-        _property = string(path.toString());
     }
 
     void IndexedNode::writeIndex(SQLWriter& ctx) const {
@@ -49,8 +38,22 @@ namespace litecore::qt {
 
 #pragma mark - FTS:
 
+    // Initializes using the index name as the first argument (for FTS)
+    FTSNode::FTSNode(Array::iterator& args, ParseContext& ctx, const char* name, bool isOwner)
+        : IndexedNode(IndexType::FTS, isOwner) {
+        slice pathStr = args[0].asString();
+        require(!pathStr.empty(), "first arg of %s() must be an index name", name);
+        KeyPath path = parsePath(pathStr);
+        // Find the source collection and property name/path:
+        _sourceCollection = dynamic_cast<SourceNode*>(resolvePropertyPath(path, ctx, true));
+        require(_sourceCollection, "unknown source collection for %s()", name);
+        require(_sourceCollection->isCollection(), "invalid source collection for %s()", name);
+        require(path.count() > 0, "missing property after collection alias in %s()", name);
+        _property = string(path.toString());
+    }
+
     MatchNode::MatchNode(Array::iterator& args, ParseContext& ctx)
-        : IndexedNode(args, ctx, IndexType::FTS, "match", true), _searchString(ExprNode::parse(args[1], ctx)) {}
+        : FTSNode(args, ctx, "MATCH", true), _searchString(ExprNode::parse(args[1], ctx)) {}
 
     void MatchNode::visitChildren(ChildVisitor const& visitor) { visitor(*_searchString); }
 
@@ -60,10 +63,7 @@ namespace litecore::qt {
         ctx << " MATCH " << _searchString;
     }
 
-    RankNode::RankNode(Array::iterator& args, ParseContext& ctx)
-        : IndexedNode(args, ctx, IndexType::FTS, "rank", false) {}
-
-    OpFlags RankNode::opFlags() const { return kOpNumberResult; }
+    RankNode::RankNode(Array::iterator& args, ParseContext& ctx) : FTSNode(args, ctx, "RANK", false) {}
 
     void RankNode::writeSQL(SQLWriter& ctx) const {
         ctx << "rank(matchinfo(";
@@ -76,38 +76,121 @@ namespace litecore::qt {
 
 #ifdef COUCHBASE_ENTERPRISE
 
-    VectorMatchNode::VectorMatchNode(Array::iterator& args, ParseContext& ctx)
-        : IndexedNode(args, ctx, IndexType::vector, "vector_match", true), _vector(ExprNode::parse(args[1], ctx)) {
-        if ( args.count() > 2 ) _maxResults = ExprNode::parse(args[2], ctx);
-    }
+    // A SQLite vector MATCH expression
+    class VectorMatchNode : public ExprNode {
+      public:
+        VectorMatchNode(SourceNode* index, ExprNode* vector) : _index(index), _vector(vector) {}
 
-    void VectorMatchNode::visitChildren(ChildVisitor const& visitor) {
-        visitor(*_vector);
-        if ( _maxResults ) visitor(*_maxResults);
-    }
+        void writeSQL(SQLWriter& sql) const override {
+            sql << sqlIdentifier(_index->alias()) << ".vector MATCH encode_vector(" << _vector << ")";
+        }
 
-    void VectorMatchNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const {
-        ctx << "(SELECT docid, distance FROM " << sqlIdentifier(tableName) << " WHERE vector LIKE encode_vector("
-            << _vector << ")";
-        if ( _maxResults ) ctx << " LIMIT " << _maxResults;
-        ctx << ")";
-    }
-
-    void VectorMatchNode::writeSQL(SQLWriter& ctx) const {
-        // I don't need to do anything myself; the logic is all in the index source.
-        ctx << "true";
-    }
+      private:
+        SourceNode* _index;
+        ExprNode*   _vector;
+    };
 
     VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx)
-        : IndexedNode(args, ctx, IndexType::vector, "vector_distance", false) {}
+        : IndexedNode(IndexType::vector, true) {
+        _indexedExpr = parse(args[0], ctx);
+        _property    = args[0].toJSON(false, true);
 
-    OpFlags VectorDistanceNode::opFlags() const { return kOpNumberResult; }
+        // Determine which collection the vector is based on:
+        _indexedExpr->visit([&](Node& n, unsigned depth) {
+            if ( SourceNode* src = n.source() ) {
+                require(_sourceCollection == nullptr || _sourceCollection == src,
+                        "1st argument (vector) to APPROX_VECTOR_DISTANCE may only refer to a single collection");
+                _sourceCollection = src;
+            }
+        });
+        if ( !_sourceCollection ) _sourceCollection = ctx.from;
 
-    void VectorDistanceNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const {
-        // Find the VectorMatchNode and delegate to it:
-        for ( IndexedNode* n : _indexSource->indexedNodes() )
-            if ( auto match = dynamic_cast<VectorMatchNode*>(n) ) return match->writeSourceTable(ctx, tableName);
-        fail("vector_distance() cannot be used without a corresponding vector_search()");
+        bool fixed = false;
+        if ( string const& alias = _sourceCollection->alias(); !alias.empty() ) {
+            fixed = replace(_property, "[\"." + alias + ".", "[\".");
+        }
+        if ( !fixed ) {
+            if ( string prefix = _sourceCollection->collection(); !prefix.empty() ) {
+                // A kludge to remove the collection name from the path:
+                if ( string const& scope = _sourceCollection->scope(); !scope.empty() ) prefix = scope + "." + prefix;
+                replace(_property, "[\"." + prefix + ".", "[\".");
+            }
+        }
+
+        _vector = ExprNode::parse(args[1], ctx);
+
+        if ( Value metricVal = args[2] ) {
+            _metric = requiredString(metricVal, "3rd argument (metric) to APPROX_VECTOR_DISTANCE");
+        }
+
+        if ( Value numProbesVal = args[3] ) {
+            require(numProbesVal.isInteger(), "4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be an integer");
+            auto numProbes = numProbesVal.asInt();
+            require(numProbes > 0 && numProbes < UINT_MAX,
+                    "4th argument (numProbes) to APPROX_VECTOR_DISTANCE out of range");
+            _numProbes = unsigned(numProbes);
+        }
+
+        if ( Value accurate = args[4] ) {
+            require(accurate.type() == kFLBoolean,
+                    "5th argument (accurate) to APPROX_VECTOR_DISTANCE must be `false`, if given");
+            require(accurate.asBool() == false, "APPROX_VECTOR_DISTANCE does not support 'accurate'=true");
+        }
+    }
+
+    void VectorDistanceNode::visitChildren(ChildVisitor const& visitor) {
+        visitor(*_indexedExpr);
+        visitor(*_vector);
+    }
+
+    void VectorDistanceNode::setIndexSource(SourceNode* source, SelectNode* select) {
+        IndexedNode::setIndexSource(source, select);
+        _simple = [&] {
+            // Returns true if the WHERE clause does _not_ require a hybrid query,
+            // i.e. if it's nonexistent or consists only of a test that APPROX_VECTOR_DISTANCE() is less than something.
+            auto where = _select->where();
+            if ( !where ) return true;
+            auto opNode = dynamic_cast<OpNode*>(where);
+            if ( !opNode ) return false;
+            ExprNode* expr;
+            slice     op = opNode->op().name;
+            if ( op == "<" || op == "<=" ) expr = opNode->operand(0);
+            else if ( op == ">" || op == ">=" )
+                expr = opNode->operand(1);
+            else
+                return false;
+            return expr && dynamic_cast<VectorDistanceNode*>(expr);
+        }();
+        if ( !_simple && source->indexedNodes().size() < 2 ) {
+            // Add a join condition "idx.vector MATCH _vector"
+            DebugAssert(source->indexedNodes().front() == this);
+            source->addJoinCondition(make_unique<VectorMatchNode>(source, _vector.get()));
+        }
+
+        // Disallow distance within an OR because it can lead to incorrect results:
+        bool withinOR = false;
+        for ( Node const* n = parent(); n; n = n->parent() ) {
+            if ( auto op = dynamic_cast<OpNode const*>(n); op && op->op().name == "OR" ) {
+                withinOR = true;
+            } else if ( auto sel = dynamic_cast<SelectNode const*>(n) ) {
+                require(!withinOR, "APPROX_VECTOR_DISTANCE can't be used within an OR in a WHERE clause");
+                break;
+            }
+        }
+    }
+
+    void VectorDistanceNode::writeSourceTable(SQLWriter& sql, string_view tableName) const {
+        if ( _simple ) {
+            // In a "simple" vector match, run the vector query as a nested SELECT:
+            sql << "(SELECT docid, distance FROM " << sqlIdentifier(tableName) << " WHERE vector MATCH encode_vector("
+                << _vector << ")";
+            if ( _numProbes > 0 ) { sql << " AND vectorsearch_probes(vector, " << _numProbes << ")"; }
+            Node const* limit = _select->limit();
+            require(limit, "a LIMIT must be given when using APPROX_VECTOR_DISTANCE()");
+            sql << " LIMIT " << limit << ")";
+        } else {
+            sql << sqlIdentifier(tableName);
+        }
     }
 
     void VectorDistanceNode::writeSQL(SQLWriter& ctx) const {
@@ -125,13 +208,13 @@ namespace litecore::qt {
         , _join(JoinType::inner) {}
 
     void SourceNode::checkIndexUsage() const {
-        if ( auto t = int(indexType()) ) {
-            // There must be exactly one "owner" IndexedNode, i.e. MATCH or VECTOR_MATCH:
+        if ( indexType() == IndexType::FTS ) {
+            // There must be exactly one MATCH node:
             size_t n = std::count_if(_indexedNodes.begin(), _indexedNodes.end(),
                                      [](IndexedNode* node) { return node->isIndexOwner(); });
-            if ( n == 0 ) fail("%s() cannot be used without %s()", kNonOwnerFnName[t], kOwnerFnName[t]);
+            if ( n == 0 ) fail("RANK() cannot be used without MATCH()");
             else if ( n > 1 )
-                fail("Sorry, multiple %ses of the same property are not allowed", kOwnerFnName[t]);
+                fail("Sorry, multiple MATCHes of the same property are not allowed");
         }
     }
 
@@ -150,6 +233,7 @@ namespace litecore::qt {
         // (Searching ctx.aliases would be easier, but it doesn't contain index sources)
     }
 
+    // As part of postprocessing, locates FTS and vector indexed expressions and adds corresponding JOINed tables.
     void SelectNode::addIndexes(ParseContext& ctx) {
         unsigned validToDepth = 0;
         if ( _where ) {
@@ -159,8 +243,10 @@ namespace litecore::qt {
                     if ( depth == validToDepth ) ++validToDepth;
                 } else if ( auto ind = dynamic_cast<IndexedNode*>(&node); ind && ind->isIndexOwner() ) {
                     // Add JOINs on FTS indexes for MATCH or RANK nodes:
-                    require(depth == validToDepth, "%s can only appear at top-level, or in a top-level AND",
-                            kOwnerFnName[int(ind->indexType())]);
+                    if ( ind->indexType() == IndexType::FTS ) {
+                        require(depth == validToDepth, "%s can only appear at top-level, or in a top-level AND",
+                                kOwnerFnName[int(ind->indexType())]);
+                    }
                     addIndexForNode(*ind, ctx);
                 }
             });
@@ -168,8 +254,8 @@ namespace litecore::qt {
 
         visit([&](Node& node, unsigned depth) {
             if ( auto ind = dynamic_cast<IndexedNode*>(&node); ind && !ind->indexSource() ) {
-                require(!ind->isIndexOwner(), "a %s is not allowed outside the WHERE clause",
-                        kOwnerFnName[int(ind->indexType())]);
+                require(ind->indexType() != IndexType::FTS || !ind->isIndexOwner(),
+                        "a %s is not allowed outside the WHERE clause", kOwnerFnName[int(ind->indexType())]);
                 addIndexForNode(*ind, ctx);
             }
         });
@@ -215,7 +301,7 @@ namespace litecore::qt {
         }
 
         indexSrc->_indexedNodes.push_back(&node);
-        node.setIndexSource(indexSrc);
+        node.setIndexSource(indexSrc, this);
     }
 
     // When FTS is used in a query, invisible columns are prepended that help the Query API

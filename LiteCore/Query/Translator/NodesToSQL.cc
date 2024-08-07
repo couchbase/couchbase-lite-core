@@ -365,10 +365,9 @@ namespace litecore::qt {
             }
         }
 
-        if ( _limit ) ctx << " LIMIT max(0, " << _limit << ')';
+        if ( _limit ) ctx << " LIMIT " << _limit;
         else if ( _offset )
             ctx << " LIMIT -1";  // SQLite does not allow OFFSET without a LIMIT first
-
-        if ( _offset ) ctx << " OFFSET max(0, " << _offset << ')';
+        if ( _offset ) ctx << " OFFSET " << _offset;
     }
 }  // namespace litecore::qt

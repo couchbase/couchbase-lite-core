@@ -29,6 +29,7 @@ namespace litecore::qt {
     class SourceNode;
     class WhatNode;
 
+    /** Properties of the N1QL `meta()` object. */
     enum class MetaProperty {
         none,
         id,
@@ -42,20 +43,23 @@ namespace litecore::qt {
     };
     static constexpr size_t kNumMetaProperties = 6;  // ignoring `none` and `_notDeleted`
 
+    /** Types of JOINs. */
     enum class JoinType { none = -1, inner = 0, left, leftOuter, cross };
 
+    /** Attributes of an operation. */
     enum OpFlags {
         kOpNoFlags        = 0x00,
         kOpBoolResult     = 0x02,  // Result is boolean
         kOpNumberResult   = 0x04,  // Result is a number
         kOpStringResult   = 0x08,  // Result is a string
-        kOpAggregate      = 0x10,  // Is this an aggregate function?
-        kOpWantsCollation = 0x20,  // Does this function support a collation argument?
+        kOpAggregate      = 0x10,  // This is an aggregate function
+        kOpWantsCollation = 0x20,  // This function supports a collation argument
     };
 
+    /** Types of indexes. */
     enum class IndexType { none, FTS, vector };
 
-    /** State used during parsing. */
+    /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {
         SelectNode*                              select = nullptr;         // The enclosing SELECT, if any
         std::unordered_map<string, AliasedNode*> aliases;                  // All of the sources & named results
@@ -65,11 +69,18 @@ namespace litecore::qt {
         bool                                     collationApplied = true;  // False if no COLLATE node generated
     };
 
-    /** Abstract syntax tree node for parsing N1QL queries from JSON/Fleece. */
+    /** Abstract syntax tree node for parsing N1QL queries from JSON/Fleece.
+        The Node class hierarchy is described in docs/QueryTranslator.md */
     class Node {
       public:
         Node()          = default;
         virtual ~Node() = default;
+
+        Node const* parent() const { return _parent; }
+
+        void setParent(Node const* p) { _parent = p; }
+
+        virtual SourceNode* source() const { return nullptr; }
 
         using Visitor = function_ref<void(Node&, unsigned depth)>;
 
@@ -102,6 +113,8 @@ namespace litecore::qt {
 
         Node(Node const&)            = delete;
         Node& operator=(Node const&) = delete;
+
+        Node const* _parent = nullptr;
     };
 
 #pragma mark - EXPRESSIONS:
@@ -150,7 +163,7 @@ namespace litecore::qt {
 
         MetaProperty property() const { return _property; }
 
-        SourceNode* source() const { return _source; }
+        SourceNode* source() const override { return _source; }
 
         string  asColumnName() const override;
         OpFlags opFlags() const override;
@@ -163,7 +176,7 @@ namespace litecore::qt {
         SourceNode*  _source   = nullptr;
     };
 
-    /** A query parameter ("$foo") in an expression. */
+    /** A query parameter (`$foo`) in an expression. */
     class ParameterNode final : public ExprNode {
       public:
         explicit ParameterNode(slice name);
@@ -178,12 +191,12 @@ namespace litecore::qt {
         string _name;  // Parameter name (without the '$')
     };
 
-    /** A document property in an expression. */
+    /** A document property path in an expression. */
     class PropertyNode final : public ExprNode {
       public:
         static unique_ptr<ExprNode> parse(slice pathStr, Array::iterator* operands, ParseContext&);
 
-        SourceNode* source() const { return _source; }
+        SourceNode* source() const override { return _source; }
 
         KeyPath const& path() const { return _path; }
 
@@ -205,7 +218,7 @@ namespace litecore::qt {
         string      _sqliteFn;  // SQLite function to emit; usually `fl_value`
     };
 
-    /** A local variable used in an ANY/EVERY expression. */
+    /** A local variable (`?foo`) used in an ANY/EVERY expression. */
     class VariableNode final : public ExprNode {
       public:
         static unique_ptr<ExprNode> parse(slice op, Array::iterator& args, ParseContext&);
@@ -254,7 +267,7 @@ namespace litecore::qt {
 
 #pragma mark - COMPOUND EXPRESSIONS:
 
-    /** An operation in an expression. */
+    /** An operation in an expression. (Not abstract, but has a subclass `AnyEveryNode`.) */
     class OpNode : public ExprNode {
       public:
         explicit OpNode(Operation const& op) : _op(op) {}
@@ -265,7 +278,10 @@ namespace litecore::qt {
 
         ExprNode* operand(size_t i) const { return _operands.at(i).get(); }
 
-        void addArg(unique_ptr<ExprNode> node) { _operands.emplace_back(std::move(node)); }
+        void addArg(unique_ptr<ExprNode> node) {
+            node->setParent(this);
+            _operands.emplace_back(std::move(node));
+        }
 
         OpFlags opFlags() const override;
         void    visitChildren(ChildVisitor const& visitor) override;
@@ -286,7 +302,10 @@ namespace litecore::qt {
 
         explicit FunctionNode(struct FunctionSpec const& fn) : _fn(fn) {}
 
-        void addArg(unique_ptr<ExprNode> n) { _args.emplace_back(std::move(n)); }
+        void addArg(unique_ptr<ExprNode> n) {
+            n->setParent(this);
+            _args.emplace_back(std::move(n));
+        }
 
         void addArgs(Array::iterator&, ParseContext&);
 

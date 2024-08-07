@@ -132,8 +132,6 @@ namespace litecore::qt {
 #ifdef COUCHBASE_ENTERPRISE
             case OpType::vectorDistance:
                 return make_unique<VectorDistanceNode>(operands, ctx);
-            case OpType::vectorMatch:
-                return make_unique<VectorMatchNode>(operands, ctx);
 #endif
             default:
                 // A normal OpNode

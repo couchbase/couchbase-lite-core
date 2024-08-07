@@ -27,29 +27,46 @@ namespace litecore::qt {
 
         string_view property() const { return _property; }
 
+        /// True if this expression defines the indexed lookup, false if it's just an accessory function;
+        /// i.e. true for `match()` but not for `rank()`.
         bool isIndexOwner() const { return _isIndexOwner; }
 
+        /// The collection being searched.
         SourceNode* sourceCollection() const { return _sourceCollection; }
 
-        void setIndexSource(SourceNode* s) { _indexSource = s; }
-
+        /// SourceNode representing the SQLite index table.
         SourceNode* indexSource() const { return _indexSource; }
 
+        /// Sets which SQLite index table is being queried; called by `SelectNode::addIndexForNode`
+        virtual void setIndexSource(SourceNode* source, SelectNode* select) {
+            _indexSource = source;
+            _select      = select;
+        }
+
+        /// Writes SQL for the index table name (or SELECT expression)
         virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const;
 
       protected:
-        IndexedNode(Array::iterator& args, ParseContext&, IndexType, const char* name, bool isOwner);
+        IndexedNode(IndexType type, bool isOwner);
         void writeIndex(SQLWriter&) const;
 
         IndexType   _type;                        // Index type
         string      _property;                    // Collection property that's indexed
-        SourceNode* _sourceCollection = nullptr;  // The collection containing the index
+        SourceNode* _sourceCollection = nullptr;  // The collection being queried
         SourceNode* _indexSource      = nullptr;  // Source representing the index
-        bool        _isIndexOwner;
+        SelectNode* _select           = nullptr;
+        bool        _isIndexOwner;  // False if this is an auxiliary expression (e.g. `RANK()`)
+    };
+
+    /** Abstract base class of FTS nodes. */
+    class FTSNode : public IndexedNode {
+      public:
+      protected:
+        FTSNode(Array::iterator& args, ParseContext&, const char* name, bool isOwner);
     };
 
     /** An FTS `match()` function call. */
-    class MatchNode final : public IndexedNode {
+    class MatchNode final : public FTSNode {
       public:
         MatchNode(Array::iterator& args, ParseContext&);
 
@@ -61,37 +78,37 @@ namespace litecore::qt {
     };
 
     /** An FTS `rank()` function call. */
-    class RankNode final : public IndexedNode {
+    class RankNode final : public FTSNode {
       public:
         RankNode(Array::iterator& args, ParseContext& ctx);
-        void    writeSQL(SQLWriter&) const override;
-        OpFlags opFlags() const override;
+        void writeSQL(SQLWriter&) const override;
+
+        OpFlags opFlags() const override { return kOpNumberResult; }
     };
 
 
 #ifdef COUCHBASE_ENTERPRISE
 
-
-    /** A `vector_match()` function call. */
-    class VectorMatchNode final : public IndexedNode {
-      public:
-        VectorMatchNode(Array::iterator& args, ParseContext&);
-
-        void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
-        void writeSQL(SQLWriter&) const override;
-        void visitChildren(ChildVisitor const&) override;
-
-      private:
-        unique_ptr<ExprNode> _vector, _maxResults;
-    };
-
-    /** A `vector_distance()` function call. */
+    /** A `vector_distance(property, vector, [metric], [numProbes], [accurate])` function call. */
     class VectorDistanceNode final : public IndexedNode {
       public:
         VectorDistanceNode(Array::iterator& args, ParseContext& ctx);
-        void    writeSQL(SQLWriter&) const override;
-        OpFlags opFlags() const override;
-        void    writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
+
+        string_view metric() const { return _metric; }
+
+        OpFlags opFlags() const override { return kOpNumberResult; }
+
+        void visitChildren(ChildVisitor const&) override;
+        void setIndexSource(SourceNode* source, SelectNode* select) override;
+        void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
+        void writeSQL(SQLWriter&) const override;
+
+      private:
+        unique_ptr<ExprNode> _indexedExpr;       // The indexed expression (usually a doc property)
+        unique_ptr<ExprNode> _vector;            // The vector being queried
+        string               _metric;            // Distance metric name, or empty for default
+        unsigned             _numProbes = 0;     // Number of probes, or 0 for default
+        bool                 _simple    = true;  // True if this is a simple (non-hybrid) query
     };
 
 #endif

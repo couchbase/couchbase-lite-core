@@ -53,6 +53,7 @@ namespace litecore::qt {
     }
 
     void WhatNode::parseChildExprs(ParseContext& ctx) {
+        DebugAssert(!_expr);
         if ( slice prop = _tempChild.asString(); prop && !_hasExplicitAlias ) {
             // Convenience shortcut: interpret a string in a WHAT as a property path
             _expr = PropertyNode::parse(prop, nullptr, ctx);
@@ -61,6 +62,7 @@ namespace litecore::qt {
             _expr        = ExprNode::parse(_tempChild, ctx);
             _parsingExpr = false;
         }
+        _expr->setParent(this);
         _tempChild = nullptr;
     }
 
@@ -172,9 +174,16 @@ namespace litecore::qt {
 
     void SourceNode::parseChildExprs(ParseContext& ctx) {
         // Now parse the ON or UNNEST expression:
-        if ( _tempOn ) _joinOn = ExprNode::parse(_tempOn, ctx);
-        if ( _tempUnnest ) _unnest = ExprNode::parse(_tempUnnest, ctx);
-        _tempOn = _tempUnnest = nullptr;
+        if ( _tempOn ) {
+            _joinOn = ExprNode::parse(_tempOn, ctx);
+            _joinOn->setParent(this);
+            _tempOn = nullptr;
+        }
+        if ( _tempUnnest ) {
+            _unnest = ExprNode::parse(_tempUnnest, ctx);
+            _unnest->setParent(this);
+            _tempUnnest = nullptr;
+        }
     }
 
     bool SourceNode::matchPath(KeyPath& path) const {
@@ -203,6 +212,17 @@ namespace litecore::qt {
         }
     }
 
+    void SourceNode::addJoinCondition(unique_ptr<ExprNode> expr) {
+        if ( !_joinOn ) {
+            _joinOn = std::move(expr);
+        } else {
+            auto conjunction = make_unique<OpNode>(*lookupOp("AND", 2));
+            conjunction->addArg(std::move(_joinOn));
+            conjunction->addArg(std::move(expr));
+            _joinOn = std::move(conjunction);
+        }
+    }
+
     IndexType SourceNode::indexType() const { return isIndex() ? _indexedNodes[0]->indexType() : IndexType::none; }
 
     string_view SourceNode::indexedProperty() const { return isIndex() ? _indexedNodes[0]->property() : ""; }
@@ -213,6 +233,22 @@ namespace litecore::qt {
     }
 
 #pragma mark - SELECT:
+
+    // Parses a LIMIT or OFFSET value. If it's a literal, it's checked for validity.
+    // Otherwise it's wrapped in `GREATEST(x, 0)` to ensure a negative value means 0 not infinity.
+    static unique_ptr<ExprNode> parseLimitOrOffset(Value val, ParseContext& ctx, const char* name) {
+        auto expr = ExprNode::parse(val, ctx);
+        if ( auto litNode = dynamic_cast<LiteralNode*>(expr.get()) ) {
+            require(litNode->literal().isInteger() && litNode->literal().asInt() >= 0,
+                    "%s must be a non-negative integer", name);
+        } else {
+            auto fixed = make_unique<FunctionNode>(lookupFn("GREATEST", 2));
+            fixed->addArg(std::move(expr));
+            fixed->addArg(make_unique<LiteralNode>(RetainedValue::newInt(0)));
+            expr = std::move(fixed);
+        }
+        return expr;
+    }
 
     void SelectNode::parse(Value v, ParseContext& ctx) {
         if ( ctx.select != nullptr ) {
@@ -249,6 +285,7 @@ namespace litecore::qt {
                 for ( Value w : requiredArray(what, "WHAT") ) {
                     auto whatNode = make_unique<WhatNode>(w, ctx);
                     if ( whatNode->hasExplicitAlias() ) registerAlias(whatNode.get(), ctx);
+                    whatNode->setParent(this);
                     _what.push_back(std::move(whatNode));
                 }
             }
@@ -257,7 +294,10 @@ namespace litecore::qt {
             for ( auto& source : _sources ) source->parseChildExprs(ctx);
             for ( auto& what : _what ) what->parseChildExprs(ctx);
 
-            if ( Value where = getCaseInsensitive(select, "WHERE") ) _where = ExprNode::parse(where, ctx);
+            if ( Value where = getCaseInsensitive(select, "WHERE") ) {
+                _where = ExprNode::parse(where, ctx);
+                _where->setParent(this);
+            }
 
             if ( Value order = getCaseInsensitive(select, "ORDER_BY") ) {
                 for ( Value orderItem : requiredArray(order, "ORDER BY") ) {
@@ -268,7 +308,9 @@ namespace litecore::qt {
                         ascending = false;
                         orderItem = a[1];
                     }
-                    _orderBy.emplace_back(ExprNode::parse(orderItem, ctx), ascending);
+                    auto orderNode = ExprNode::parse(orderItem, ctx);
+                    orderNode->setParent(this);
+                    _orderBy.emplace_back(std::move(orderNode), ascending);
                 }
             }
 
@@ -283,24 +325,37 @@ namespace litecore::qt {
                     } else {
                         group = ExprNode::parse(groupItem, ctx);
                     }
+                    group->setParent(this);
                     _groupBy.emplace_back(std::move(group));
                 }
             }
 
-            if ( Value having = getCaseInsensitive(select, "HAVING") ) _having = ExprNode::parse(having, ctx);
-            if ( Value limit = getCaseInsensitive(select, "LIMIT") ) _limit = ExprNode::parse(limit, ctx);
-            if ( Value offset = getCaseInsensitive(select, "OFFSET") ) _offset = ExprNode::parse(offset, ctx);
+            if ( Value having = getCaseInsensitive(select, "HAVING") ) {
+                _having = ExprNode::parse(having, ctx);
+                _having->setParent(this);
+            }
+            if ( Value limit = getCaseInsensitive(select, "LIMIT") ) {
+                _limit = parseLimitOrOffset(limit, ctx, "LIMIT");
+                _limit->setParent(this);
+            }
+            if ( Value offset = getCaseInsensitive(select, "OFFSET") ) {
+                _offset = parseLimitOrOffset(offset, ctx, "OFFSET");
+                _offset->setParent(this);
+            }
 
         } else {
             // If not given a Dict or ["SELECT",...], assume it's a WHERE clause:
             addSource(make_unique<SourceNode>("_doc"), ctx);
             _where = ExprNode::parse(v, ctx);
+            _where->setParent(this);
         }
 
         if ( _what.empty() ) {
             // Default WHAT is id and sequence:
             _what.emplace_back(make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::id, _from)));
             _what.emplace_back(make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::sequence, _from)));
+            _what[0]->setParent(this);
+            _what[1]->setParent(this);
         }
 
         Assert(_from);
@@ -326,6 +381,7 @@ namespace litecore::qt {
             }
             ctx.sources.push_back(source.get());
         }
+        source->setParent(this);
         _sources.emplace_back(std::move(source));
     }
 
@@ -359,6 +415,8 @@ namespace litecore::qt {
             }
         });
 
+        addIndexes(ctx);
+
         for ( auto& source : _sources ) {
             if ( !source->_usesDeleted && source->_collection.empty() && source->isCollection() ) {
                 // The default collection may contain deleted documents in its main table,
@@ -376,8 +434,6 @@ namespace litecore::qt {
                 }
             }
         }
-
-        addIndexes(ctx);
 
         // Ensure sources' column names are unique
         for ( auto& source : _sources ) source->disambiguateColumnName(ctx);

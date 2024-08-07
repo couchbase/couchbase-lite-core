@@ -14,6 +14,7 @@
 #include "Delimiter.hh"
 #include "Error.hh"
 #include "ExprNodes.hh"
+#include "IndexedNodes.hh"
 #include "Logging.hh"
 #include "SelectNodes.hh"
 #include "SQLWriter.hh"
@@ -57,7 +58,8 @@ namespace litecore {
                 _ftsTables.push_back(tableName);
             } else if ( source->indexType() == IndexType::vector ) {
 #ifdef COUCHBASE_ENTERPRISE
-                tableName = _delegate.vectorTableName(tableName, string(source->indexedProperty()));
+                auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(source->indexedNodes().front());
+                tableName = _delegate.vectorTableName(tableName, string(vecSource->property()), vecSource->metric());
 #endif
             } else if ( source->isCollection() ) {
                 if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table

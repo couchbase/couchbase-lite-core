@@ -25,7 +25,8 @@ namespace litecore {
     }  // namespace qt
 
     /** Translates queries from our JSON schema (actually Fleece) into SQL runnable by SQLite.
-        https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema */
+        https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
+        For some architectural info, see docs/QueryTranslator.md */
     class QueryTranslator {
       public:
         /** Which docs to include from a collection in a query; determines which table to use. */
@@ -43,8 +44,9 @@ namespace litecore {
             [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const      = 0;
             [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
 #ifdef COUCHBASE_ENTERPRISE
-            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const   = 0;
-            [[nodiscard]] virtual string vectorTableName(const string& onTable, const string& expressionJson) const = 0;
+            [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const = 0;
+            [[nodiscard]] virtual string vectorTableName(const string& collection, const std::string& property,
+                                                         string_view metricName) const                            = 0;
 #endif
         };
 

@@ -84,7 +84,6 @@ namespace litecore::qt {
         match,
         rank,
 #ifdef COUCHBASE_ENTERPRISE
-        vectorMatch,
         vectorDistance,
 #endif
     };
@@ -94,6 +93,7 @@ namespace litecore::qt {
     constexpr int kAndPrecedence     = 2;
     constexpr int kMatchPrecedence   = 3;
     constexpr int kCollatePrecedence = 10;
+    constexpr int kFnPrecedence      = 99;
 
     struct Operation {             // NOLINT(cppcoreguidelines-pro-type-member-init)
         slice   name;              // Name, as found in 1st item of array
@@ -151,16 +151,15 @@ namespace litecore::qt {
 
         {"CASE",            3, 9,   2, OpType::Case},
 
-        {"META()",          0, 1,  99, OpType::meta},
-        {"MATCH()",         2, 2,  99, OpType::match},
-        {"RANK()",          1, 1,  99, OpType::rank},
-        {"COLLATE",         2, 2,  kCollatePrecedence, OpType::collate},
+        {"META()",          0, 1,  kFnPrecedence,           OpType::meta},
+        {"MATCH()",         2, 2,  kFnPrecedence,           OpType::match},
+        {"RANK()",          1, 1,  kFnPrecedence,           OpType::rank},
+        {"COLLATE",         2, 2,  kCollatePrecedence,      OpType::collate},
 
-        {"SELECT",          1, 1,  kSelectPrecedence,  OpType::select},
+        {"SELECT",          1, 1,  kSelectPrecedence,       OpType::select},
 
 #ifdef COUCHBASE_ENTERPRISE
-        {"VECTOR_MATCH()",  2, 3,  99, OpType::vectorMatch},
-        {"VECTOR_DISTANCE()",1, 1, 99, OpType::vectorDistance},
+        {"APPROX_VECTOR_DISTANCE()", 2, 5, kFnPrecedence,   OpType::vectorDistance},
 #endif
     };
 
@@ -200,10 +199,9 @@ namespace litecore::qt {
     constexpr slice kConcatFnName         = "concat";
     constexpr slice kIsValuedFnName       = "is valued";
     constexpr slice kPredictionFnName     = "prediction";
-    constexpr slice kVectorMatchFnName    = "vector_match";
-    constexpr slice kVectorDistanceFnName = "vector_distance";
+    constexpr slice kVectorDistanceFnName = "approx_vector_distance";
 
-    // Table of functions. Used when the 1st item of the array ends with "()",
+    // Table of functions. Used when the 1st item of the JSON array ends with "()",
     // except for a few special functions declared above in kOperationList.
     // https://developer.couchbase.com/documentation/server/current/n1ql/n1ql-language-reference/functions.html
     // http://www.sqlite.org/lang_corefunc.html
@@ -341,8 +339,7 @@ namespace litecore::qt {
         {"cosine_distance",     2, 2, {},           kOpNumberResult},
 
         // Vector search:
-        {"vector_match",        2, 3},
-        {"vector_distance",     1, 1, {},           kOpNumberResult},
+        {"approx_vector_distance", 2, 5, {},        kOpNumberResult},
 #endif
     };
 

@@ -21,7 +21,7 @@ namespace fleece {
 namespace litecore::qt {
     class IndexedNode;
 
-    /** A named Node -- abstract base of WhatNode and SourceNode. */
+    /** A Node that can be named with `AS` -- abstract base of `WhatNode` and `SourceNode`. */
     class AliasedNode : public Node {
       public:
         string const& alias() const { return _alias; }
@@ -35,12 +35,12 @@ namespace litecore::qt {
         bool   _hasExplicitAlias = false;  // _alias was given by an AS property
     };
 
-    /** A projection returned by a query; an item in the WHAT clause. */
+    /** A projection returned by a query; an item in the `WHAT` clause. */
     class WhatNode final : public AliasedNode {
       public:
         WhatNode(Value, ParseContext&);
 
-        explicit WhatNode(unique_ptr<ExprNode> expr) : _expr(std::move(expr)) {}
+        explicit WhatNode(unique_ptr<ExprNode> expr) : _expr(std::move(expr)) { _expr->setParent(this); }
 
         string columnName() const;
 
@@ -61,7 +61,7 @@ namespace litecore::qt {
         bool                 _parsingExpr = false;  // kludgy temporary flag
     };
 
-    /** An item in the FROM clause: a collection, join, unnested expression, or table-based index.*/
+    /** An item in the `FROM` clause: a collection, join, unnested expression, or table-based index.*/
     class SourceNode final : public AliasedNode {
       public:
         explicit SourceNode(Dict, ParseContext&);
@@ -83,6 +83,8 @@ namespace litecore::qt {
         JoinType joinType() const { return _join; }
 
         bool isJoin() const { return _join != JoinType::none; }
+
+        void addJoinCondition(unique_ptr<ExprNode>);
 
         bool isCollection() const { return !isUnnest() && !isIndex(); }
 
@@ -122,7 +124,7 @@ namespace litecore::qt {
         bool                      _usesDeleted = false;    // True if exprs refer to deleted docs
     };
 
-    /** A SELECT statement, whether top-level or nested. */
+    /** A `SELECT` statement, whether top-level or nested. */
     class SelectNode : public ExprNode {
       public:
         explicit SelectNode(Value v, ParseContext& ctx) { parse(v, ctx); }
@@ -130,6 +132,10 @@ namespace litecore::qt {
         std::vector<unique_ptr<SourceNode>> const& sources() const { return _sources; }
 
         std::vector<unique_ptr<WhatNode>> const& what() const { return _what; }
+
+        ExprNode* where() const { return _where.get(); }
+
+        ExprNode* limit() const { return _limit.get(); }
 
         bool isAggregate() const { return _isAggregate; }
 
@@ -167,7 +173,7 @@ namespace litecore::qt {
         unsigned                                      _numPrependedColumns = 0;      // Columns added by FTS
     };
 
-    /** The root node of a query; a simple subclass of SelectNode. */
+    /** The root node of a query; a simple subclass of `SelectNode`. */
     class QueryNode final : public SelectNode {
       public:
         explicit QueryNode(string_view json);

@@ -26,16 +26,19 @@ namespace litecore::qt {
       public:
         explicit SQLWriter(std::ostream& out) : _out(out) {}
 
+        /// Writes a child `Node` by calling its `writeSQL` method.
         SQLWriter& operator<<(Node const* n) {
             n->writeSQL(*this);
             return *this;
         }
 
+        /// Writes a child `Node` by calling its `writeSQL` method.
         SQLWriter& operator<<(Node const& n) {
             n.writeSQL(*this);
             return *this;
         }
 
+        /// Convenience method to write a `unique_ptr<Node>`.
         template <typename T>
         SQLWriter& operator<<(unique_ptr<T> const& n) {
             n->writeSQL(*this);
@@ -43,9 +46,9 @@ namespace litecore::qt {
         }
 
         /// Any other types are written directly to the ostream:
-        template <typename T,
-                  typename std::enable_if<!std::is_base_of_v<Node, std::decay_t<std::remove_pointer_t<T>>>>::type* =
-                          nullptr>
+        template <typename T,  // (template gunk is to prevent T being a Node* or Node&)
+                  typename = typename std::enable_if<
+                          !std::is_base_of_v<Node, std::remove_pointer_t<std::decay_t<T>>>>::type>
         SQLWriter& operator<<(T&& t) {
             _out << std::forward<T>(t);
             return *this;

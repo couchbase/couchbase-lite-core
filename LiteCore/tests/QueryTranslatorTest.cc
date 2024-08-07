@@ -80,8 +80,19 @@ void QueryTranslatorTest::fillInTableName(SourceNode* source) {
 
     if ( source.indexType() == IndexType::FTS ) table << "::" << source.indexedProperty();
     else if ( source.indexType() == IndexType::vector )
-        table << ":vector:" << source.indexedProperty();
+        return vectorTableName(table.str(), string(source.indexedProperty()), "");  //FIXME: Get metric
     return table.str();
+}
+
+[[nodiscard]] string QueryTranslatorTest::vectorTableName(const string& onTable, const std::string& property,
+                                                          string_view metricName) const {
+    auto i = vectorIndexedProperties.find({onTable, property});
+    if ( i == vectorIndexedProperties.end() )
+        FAIL("there is no vector index of expression " + property + " on table " + onTable);
+    string tableName = i->second;
+    REQUIRE(tableExists(tableName));
+    if ( !metricName.empty() ) REQUIRE(metricName == vectorIndexMetric);
+    return tableName;
 }
 
 [[nodiscard]] bool QueryTranslatorTest::tableExists(string tableName) const {
@@ -707,3 +718,102 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT FTS", "[Query][Que
                 "WHERE \"<idx1>\".\"kv_.employees::bio\" MATCH 'mobile' "
                 "AND \"<idx2>\".\"kv_.departments::cate\" MATCH 'engineering'");
 }
+
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried FTS", "[Query][QueryTranslator][FTS]") {
+    tableNames.insert("kv_default::byStreet");
+    parse("['SELECT', {WHERE: ['AND', ['MATCH()', 'byStreet', 'Hwy'],\
+                                      ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+    ExpectException(error::LiteCore, error::InvalidQuery, "MATCH can only appear at top-level, or in a top-level AND",
+                    [this] {
+                        parse("['SELECT', {WHERE: ['OR', ['MATCH()', 'byStreet', 'Hwy'],\
+                                         ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+                    });
+}
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][QueryTranslator][VectorSearch]") {
+    tableNames.insert("kv_default:vector:vecIndex");
+    vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
+    vectorIndexMetric = "cosine";
+    // Pure vector search (no other WHERE criteria):
+    CHECK_equal(parse("['SELECT', {"
+                      "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ],"
+                      "LIMIT: 5}]"),
+                "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
+                "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS "
+                "\"<idx1>\" ON "
+                "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
+    // Pure vector search, specifying metric and numProbes:
+    CHECK_equal(
+            parse("['SELECT', {ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 'cosine', 50] ],"
+                  "LIMIT: 5}]"),
+            "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
+            "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) AND "
+            "vectorsearch_probes(vector, 50) LIMIT 5) AS \"<idx1>\" ON "
+            "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
+    // Pure vector search, testing distance in the WHERE:
+    CHECK_equal(parse("['SELECT', {"
+                      "WHERE: ['<', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]], 1234],"
+                      "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ],"
+                      "LIMIT: 5}]"),
+                "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
+                "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS "
+                "\"<idx1>\" ON "
+                "\"<idx1>\".docid = _doc.rowid WHERE \"<idx1>\".distance < 1234 AND (_doc.flags & 1 = 0) ORDER BY "
+                "\"<idx1>\".distance LIMIT 5");
+    // Hybrid search:
+    CHECK_equal(parse("['SELECT', {WHAT: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ],"
+                      "WHERE: ['>', ['._id'], 'x'],"
+                      "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ]}]"),
+                "SELECT \"<idx1>\".distance FROM kv_default AS _doc INNER JOIN \"kv_default:vector:vecIndex\" AS "
+                "\"<idx1>\" ON "
+                "\"<idx1>\".docid = _doc.rowid AND \"<idx1>\".vector MATCH encode_vector(array_of(12, 34)) WHERE "
+                "_doc.key > "
+                "'x' AND (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance");
+
+    // The optional 'accurate' parameter is ignored, but if given must be false:
+    CHECK_equal(parse("['SELECT', {"
+                      "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 'cosine', 50, false] ],"
+                      "LIMIT: 5}]"),
+                "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
+                "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) AND "
+                "vectorsearch_probes(vector, 50) LIMIT 5) AS \"<idx1>\" ON "
+                "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
+    ExpectException(
+            error::LiteCore, error::InvalidQuery, "APPROX_VECTOR_DISTANCE does not support 'accurate'=true", [this] {
+                parse("['SELECT', {"
+                      "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 'cosine', 50, true] ],"
+                      "LIMIT: 5}]");
+            });
+}
+
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search Non-Default Collection",
+                 "[Query][QueryTranslator][VectorSearch]") {
+    tableNames.insert("kv_.coll");
+    tableNames.insert("kv_.coll:vector:vecIndex");
+    vectorIndexedProperties.insert({{"kv_.coll", R"([".vector"])"}, "kv_.coll:vector:vecIndex"});
+    CHECK(parse("['SELECT', {"
+                "FROM: [{'COLLECTION':'coll'}],"
+                "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.coll.vector'], ['[]', 12, 34]] ],"
+                "LIMIT: 5}]")
+          == "SELECT coll.key, coll.sequence FROM \"kv_.coll\" AS coll INNER JOIN (SELECT docid, distance FROM "
+             "\"kv_.coll:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS \"<idx1>\" "
+             "ON "
+             "\"<idx1>\".docid = coll.rowid ORDER BY \"<idx1>\".distance LIMIT 5");
+}
+
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried Vector Search",
+                 "[Query][QueryTranslator][VectorSearch]") {
+    // Like FTS, vector_match can only be used at top level or within an AND.
+    tableNames.insert("kv_default:vector:vecIndex");
+    vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
+    parse("['SELECT', {WHERE: ['AND', ['<', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]], 1234],\
+                                      ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+    ExpectException(
+            error::LiteCore, error::InvalidQuery, "APPROX_VECTOR_DISTANCE can't be used within an OR in a WHERE clause",
+            [this] {
+                parse("['SELECT', {WHERE: ['OR', ['<', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]], 1234],\
+                                      ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
+            });
+}
+#endif

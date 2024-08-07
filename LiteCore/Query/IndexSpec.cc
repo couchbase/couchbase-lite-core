@@ -35,7 +35,12 @@ namespace litecore {
             error::_throw(error::LiteCoreError::InvalidParameter, "Invalid options type for index");
     }
 
-    IndexSpec::IndexSpec(IndexSpec&&) = default;
+    IndexSpec::IndexSpec(IndexSpec&& spec)
+        : IndexSpec(std::move(spec.name), spec.type, std::move(spec.expression), spec.queryLanguage,
+                    std::move(spec.options)) {
+        _doc      = spec._doc;
+        spec._doc = nullptr;
+    }
 
     IndexSpec::~IndexSpec() { FLDoc_Release(_doc); }
 
