@@ -58,9 +58,10 @@ namespace litecore {
                 _ftsTables.push_back(tableName);
             } else if ( source->indexType() == IndexType::vector ) {
 #ifdef COUCHBASE_ENTERPRISE
-                auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(source->indexedNodes().front());
-                tableName      = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
-                                                           vecSource->metric());
+                auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(source->indexedNodes().front().get());
+                Assert(vecSource);
+                tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
+                                                      vecSource->metric());
 #endif
             } else if ( source->isCollection() ) {
                 if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table
@@ -150,6 +151,7 @@ namespace litecore {
         auto         src = make_unique<SourceNode>(dbAlias);
         ctx.from         = src.get();
         auto expr        = ExprNode::parse(exprSource, ctx);
+        ctx.clear();
         return writeSQL([&](SQLWriter& writer) { writer << "WHERE " << *expr; });
     }
 
@@ -158,6 +160,7 @@ namespace litecore {
         auto                 argExpr = ExprNode::parse(arg, ctx);
         unique_ptr<ExprNode> paramExpr;
         if ( param ) paramExpr = ExprNode::parse(param, ctx);
+        ctx.clear();
         return writeSQL([&](SQLWriter& writer) { writeFnGetter(fnName, *argExpr, paramExpr.get(), writer); });
     }
 

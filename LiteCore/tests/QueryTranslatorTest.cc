@@ -30,6 +30,7 @@ string QueryTranslatorTest::parseWhere(string_view json) {
     auto         expr = ExprNode::parse(doc.root(), ctx);
     expr->postprocess(ctx);
     for ( auto source : ctx.sources ) fillInTableName(source);
+    ctx.clear();
     return expr->SQLString();
 }
 

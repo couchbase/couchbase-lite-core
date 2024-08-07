@@ -297,7 +297,7 @@ namespace litecore::qt {
             }
         }
 
-        indexSrc->_indexedNodes.push_back(&node);
+        indexSrc->_indexedNodes.emplace_back(&node);
         node.setIndexSource(indexSrc, this);
     }
 

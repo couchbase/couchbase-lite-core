@@ -52,12 +52,12 @@ namespace litecore::qt {
       protected:
         IndexedNode(IndexType type);
 
-        IndexType              _type;                        // Index type
-        string                 _indexExpressionJSON;         // Expression/property that's indexed, as JSON
-        SourceNode* C4NULLABLE _sourceCollection = nullptr;  // The collection being queried
-        SourceNode* C4NULLABLE _indexSource      = nullptr;  // Source representing the index
-        SelectNode* C4NULLABLE _select           = nullptr;  // The containing SELECT statement
-        bool                   _isAuxiliary      = false;    // True if this is an auxiliary expression (e.g. `RANK()`)
+        IndexType               _type;                 // Index type
+        string                  _indexExpressionJSON;  // Expression/property that's indexed, as JSON
+        checked_ptr<SourceNode> _sourceCollection;     // The collection being queried
+        checked_ptr<SourceNode> _indexSource;          // Source representing the index
+        checked_ptr<SelectNode> _select;               // The containing SELECT statement
+        bool                    _isAuxiliary = false;  // True if this is an auxiliary expression (e.g. `RANK()`)
     };
 
     /** Abstract base class of FTS nodes. */

@@ -103,7 +103,7 @@ namespace litecore::qt {
 
         bool isIndex() const { return !_indexedNodes.empty(); }  ///< True if this is a table-based index
 
-        std::vector<IndexedNode*> const& indexedNodes() const { return _indexedNodes; }
+        std::vector<checked_ptr<IndexedNode>> const& indexedNodes() const { return _indexedNodes; }
 
         IndexType   indexType() const;
         string_view indexedExpressionJSON() const;
@@ -121,23 +121,27 @@ namespace litecore::qt {
 
         void setUsesDeleted() { _usesDeleted = true; }
 
-        string                    _scope;                  // Scope name, or empty for default
-        string                    _collection;             // Collection name, or empty for default
-        string                    _columnName;             // Name to use if used as result column
-        string                    _tableName;              // SQLite table name (set by caller)
-        JoinType                  _join = JoinType::none;  // Type of JOIN, or none
-        unique_ptr<ExprNode>      _joinOn;                 // "ON ..." predicate
-        Value                     _tempOn;                 // Temporarily holds source of _joinOn
-        unique_ptr<ExprNode>      _unnest;                 // "UNNEST ..." source expression
-        Value                     _tempUnnest;             // Temporarily holds source of _unnest
-        std::vector<IndexedNode*> _indexedNodes;           // IndexedNodes using this index, if any
-        bool                      _usesDeleted = false;    // True if exprs refer to deleted docs
+        void clearWeakRefs();
+
+        string                                _scope;                  // Scope name, or empty for default
+        string                                _collection;             // Collection name, or empty for default
+        string                                _columnName;             // Name to use if used as result column
+        string                                _tableName;              // SQLite table name (set by caller)
+        JoinType                              _join = JoinType::none;  // Type of JOIN, or none
+        unique_ptr<ExprNode>                  _joinOn;                 // "ON ..." predicate
+        Value                                 _tempOn;                 // Temporarily holds source of _joinOn
+        unique_ptr<ExprNode>                  _unnest;                 // "UNNEST ..." source expression
+        Value                                 _tempUnnest;             // Temporarily holds source of _unnest
+        std::vector<checked_ptr<IndexedNode>> _indexedNodes;           // IndexedNodes using this index, if any
+        bool                                  _usesDeleted = false;    // True if exprs refer to deleted docs
     };
 
     /** A `SELECT` statement, whether top-level or nested. */
     class SelectNode : public ExprNode {
       public:
         explicit SelectNode(Value v, ParseContext& ctx) { parse(v, ctx); }
+
+        virtual ~SelectNode();
 
         /// All the sources: collections, joins, unnested expressions, table-based indexes.
         std::vector<unique_ptr<SourceNode>> const& sources() const { return _sources; }
@@ -176,16 +180,16 @@ namespace litecore::qt {
         string makeIndexAlias() const;
         void   writeFTSColumns(SQLWriter&, fleece::delimiter&) const;
 
-        unique_ptr<ExprNode>                          _where;                        // The WHERE expression
-        std::vector<unique_ptr<WhatNode>>             _what;                         // The WHAT expressions
         std::vector<unique_ptr<SourceNode>>           _sources;                      // The sources (FROM exprs)
-        SourceNode* C4NULLABLE                        _from = nullptr;               // Main source (also in _sources)
+        std::vector<unique_ptr<WhatNode>>             _what;                         // The WHAT expressions
+        unique_ptr<ExprNode>                          _where;                        // The WHERE expression
+        checked_ptr<SourceNode>                       _from;                         // Main source (also in _sources)
         std::vector<unique_ptr<ExprNode>>             _groupBy;                      // The GROUP BY expressions
         unique_ptr<ExprNode>                          _having;                       // The HAVING expression
         std::vector<pair<unique_ptr<ExprNode>, bool>> _orderBy;                      // The ORDER BY expressions
         unique_ptr<ExprNode>                          _limit;                        // The LIMIT expression
         unique_ptr<ExprNode>                          _offset;                       // The OFFSET expression
-        std::vector<SelectNode*>                      _nestedSelects;                // SELECTs nested in this one
+        std::vector<checked_ptr<SelectNode>>          _nestedSelects;                // SELECTs nested in this one
         bool                                          _distinct            = false;  // True if DISTINCT is given
         bool                                          _isAggregate         = false;  // Uses aggregate fns?
         unsigned                                      _numPrependedColumns = 0;      // Columns added by FTS

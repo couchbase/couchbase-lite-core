@@ -234,6 +234,8 @@ namespace litecore::qt {
         if ( _unnest ) visitor(*_unnest);
     }
 
+    void SourceNode::clearWeakRefs() { _indexedNodes.clear(); }
+
 #pragma mark - SELECT:
 
     // Parses a LIMIT or OFFSET value. If it's a literal, it's checked for validity.
@@ -252,12 +254,19 @@ namespace litecore::qt {
         return expr;
     }
 
+    SelectNode::~SelectNode() {
+        // Clear weak references to Nodes that will be deleted before their referents,
+        // because it's illegal to delete a Node that still has weak refs.
+        _nestedSelects.clear();
+        for ( auto& src : _sources ) src->clearWeakRefs();
+    }
+
     void SelectNode::parse(Value v, ParseContext& ctx) {
         if ( ctx.select != nullptr ) {
             // About to parse a nested SELECT, with its own namespace; use a new ParseContext:
             ParseContext nestedCtx;
             parse(v, nestedCtx);
-            ctx.select->_nestedSelects.push_back(this);
+            ctx.select->_nestedSelects.emplace_back(this);
             return;
         }
 
@@ -367,7 +376,7 @@ namespace litecore::qt {
 
     void SelectNode::registerAlias(AliasedNode* node, ParseContext& ctx) {
         slice alias    = node->alias();
-        bool  inserted = ctx.aliases.insert({lowercase(string(alias)), node}).second;
+        bool  inserted = ctx.aliases.insert({lowercase(string(alias)), checked_ptr{node}}).second;
         require(inserted, "duplicate alias '%.*s'", FMTSLICE(alias));
     }
 
@@ -381,7 +390,7 @@ namespace litecore::qt {
             } else {
                 require(_from, "first FROM item must be primary source");
             }
-            ctx.sources.push_back(source.get());
+            ctx.sources.emplace_back(source.get());
         }
         source->setParent(this);
         _sources.emplace_back(std::move(source));

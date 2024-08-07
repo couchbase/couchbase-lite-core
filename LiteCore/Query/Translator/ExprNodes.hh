@@ -12,7 +12,9 @@
 
 #pragma once
 #include "Base.hh"
+#include "Error.hh"
 #include "UnicodeCollator.hh"
+#include "checked_ptr.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
@@ -63,26 +65,28 @@ namespace litecore::qt {
 
     /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {
-        SelectNode* C4NULLABLE                   select = nullptr;         // The enclosing SELECT, if any
-        std::unordered_map<string, AliasedNode*> aliases;                  // All of the sources & named results
-        std::vector<SourceNode*>                 sources;                  // All sources
-        SourceNode* C4NULLABLE                   from = nullptr;           // The main source
-        Collation                                collation;                // Current collation in effect
-        bool                                     collationApplied = true;  // False if no COLLATE node generated
+        checked_ptr<SelectNode>                              select;     // The enclosing SELECT, if any
+        std::unordered_map<string, checked_ptr<AliasedNode>> aliases;    // All of the sources & named results
+        std::vector<checked_ptr<SourceNode>>                 sources;    // All sources
+        checked_ptr<SourceNode>                              from;       // The main source
+        Collation                                            collation;  // Current collation in effect
+        bool collationApplied = true;                                    // False if no COLLATE node generated
+
+        void clear();
     };
 
     /** Abstract syntax tree node for parsing N1QL queries from JSON/Fleece.
         Nodes are heap-allocated via unique_ptr and are not copyable.
         The Node class hierarchy is described in docs/QueryTranslator.md */
-    class Node {
+    class Node : public checked_target {
       public:
         Node()          = default;
         virtual ~Node() = default;
 
         /// The node's parent in the parse tree.
-        Node const* parent() const { return _parent; }
+        Node* parent() const { return _parent; }
 
-        void setParent(Node const* C4NULLABLE);
+        void setParent(Node* C4NULLABLE);
 
         /// The SourceNode (`FROM` item) this references, if any. Overridden by MetaNode and PropertyNode.
         virtual SourceNode* C4NULLABLE source() const { return nullptr; }
@@ -119,7 +123,7 @@ namespace litecore::qt {
         Node(Node const&)            = delete;  // not copyable
         Node& operator=(Node const&) = delete;
 
-        Node const* C4NULLABLE _parent = nullptr;
+        checked_ptr<Node> _parent;
     };
 
 #pragma mark - EXPRESSIONS:
@@ -166,20 +170,19 @@ namespace litecore::qt {
       public:
         explicit MetaNode(Array::iterator& args, ParseContext&);
 
-        explicit MetaNode(MetaProperty p, SourceNode* C4NULLABLE src) : _property(p), _source(src) {}
+        explicit MetaNode(MetaProperty p, SourceNode* C4NULLABLE src);
 
         MetaProperty property() const { return _property; }
 
-        SourceNode* source() const override { return _source; }
-
+        SourceNode* source() const override;
         string      asColumnName() const override;
         OpFlags     opFlags() const override;
         void        writeSQL(SQLWriter&) const override;
         static void writeMetaSQL(string_view aliasDot, MetaProperty, SQLWriter&);
 
       private:
-        MetaProperty           _property = MetaProperty::none;
-        SourceNode* C4NULLABLE _source   = nullptr;
+        MetaProperty            _property = MetaProperty::none;
+        checked_ptr<SourceNode> _source;
     };
 
     /** A query parameter (`$foo`) in an expression. */
@@ -212,7 +215,7 @@ namespace litecore::qt {
         /// Sets the SQLite function used to dereference the property; default is `fl_value`
         void setSQLiteFn(string_view fn) { _sqliteFn = string(fn); }
 
-        SourceNode* source() const override { return _source; }
+        SourceNode* source() const override;
 
         string asColumnName() const override;
 
@@ -221,13 +224,12 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&, slice sqliteFnName, ExprNode* C4NULLABLE param) const;
 
       private:
-        PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string fn)
-            : _source(src), _result(result), _path(std::move(path)), _sqliteFn(std::move(fn)) {}
+        PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string fn);
 
-        SourceNode* C4NULLABLE _source;    // Source I am relative to
-        WhatNode* C4NULLABLE   _result;    // Result I am relative to (only if _source is nullptr)
-        KeyPath                _path;      // The path (possibly empty)
-        string                 _sqliteFn;  // SQLite function to emit; usually `fl_value`
+        checked_ptr<SourceNode> _source;    // Source I am relative to
+        checked_ptr<WhatNode>   _result;    // Result I am relative to (only if _source is nullptr)
+        KeyPath                 _path;      // The path (possibly empty)
+        string                  _sqliteFn;  // SQLite function to emit; usually `fl_value`
     };
 
     /** A local variable (`?foo`) used in an ANY/EVERY expression. */

@@ -1257,6 +1257,7 @@
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		277911B12C6187CD0044E660 /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
 		277911B22C6188190044E660 /* Result.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Result.md; sourceTree = "<group>"; };
+		277911BB2C64373C0044E660 /* checked_ptr.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = checked_ptr.hh; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
@@ -2992,6 +2993,7 @@
 				27D62A692B7C3F1B004C0787 /* TranslatorTables.hh */,
 				27D62A662B7C36B5004C0787 /* TranslatorUtils.hh */,
 				27D62A672B7C36B5004C0787 /* TranslatorUtils.cc */,
+				277911BB2C64373C0044E660 /* checked_ptr.hh */,
 			);
 			path = Translator;
 			sourceTree = "<group>";

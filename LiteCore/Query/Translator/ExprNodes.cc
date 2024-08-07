@@ -24,7 +24,11 @@ namespace litecore::qt {
     using namespace fleece;
     using namespace std;
 
-    void Node::setParent(Node const* p) {
+    void ParseContext::clear() {
+        *this = ParseContext{};
+    }
+
+    void Node::setParent(Node* p) {
         DebugAssert(!_parent || !p);
         _parent = p;
     }
@@ -237,6 +241,10 @@ namespace litecore::qt {
         }
     }
 
+    MetaNode::MetaNode(MetaProperty p, SourceNode* C4NULLABLE src) : _property(p), _source(src) {}
+
+    SourceNode* MetaNode::source() const { return _source; }
+
     string MetaNode::asColumnName() const {
         if ( _property != MetaProperty::none ) {
             return string(kMetaPropertyNames[int(_property) - 1]);
@@ -289,6 +297,9 @@ namespace litecore::qt {
         return unique_ptr<ExprNode>(new PropertyNode(source, result, std::move(path), sqliteFn));
     }
 
+    PropertyNode::PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string fn)
+        : _source(src), _result(result), _path(std::move(path)), _sqliteFn(std::move(fn)) {}
+
     string PropertyNode::asColumnName() const {
         if ( _path.count() > 0 ) {
             return string(_path.get(_path.count() - 1).first);  // last path component
@@ -298,6 +309,8 @@ namespace litecore::qt {
             return "";
         }
     }
+
+    SourceNode* PropertyNode::source() const { return _source; }
 
     unique_ptr<ExprNode> VariableNode::parse(slice pathStr, Array::iterator& args, ParseContext& ctx) {
         if ( !pathStr ) {
