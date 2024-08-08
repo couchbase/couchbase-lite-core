@@ -353,7 +353,7 @@ namespace litecore::qt {
         OpFlags opFlags() const override;
         void    visitChildren(ChildVisitor const& visitor) override;
         void    writeSQL(SQLWriter&) const override;
-        void postprocess(ParseContext&) override;
+        void    postprocess(ParseContext&) override;
 
       private:
         struct FunctionSpec const&        _fn;         // Spec of the function

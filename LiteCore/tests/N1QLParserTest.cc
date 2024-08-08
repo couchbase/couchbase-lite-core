@@ -27,6 +27,7 @@ class N1QLParserTest : public QueryTranslatorTest {
     // On syntax error, returns "".
     string translate(const char* n1ql) {
         UNSCOPED_INFO("N1QL: " << n1ql);
+        Log("translating: %s", n1ql);
         int errorPos;
 
         FLValue dict = (FLValue)n1ql::parse(n1ql, &errorPos);
@@ -38,6 +39,7 @@ class N1QLParserTest : public QueryTranslatorTest {
         string jsonResult = string(alloc_slice(FLValue_ToJSONX((FLValue)dict, false, true)));
         replace(jsonResult, '"', '\'');
         UNSCOPED_INFO(jsonResult);
+        Log("    ...JSON is: %s", jsonResult.c_str());
 
         string sql = parse(dict);
         UNSCOPED_INFO("-->  " << sql);

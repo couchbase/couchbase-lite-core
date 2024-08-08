@@ -8,6 +8,7 @@
 #include "c4Compat.h"
 #include "Error.hh"  // for Assert()
 #include "Logging.hh"
+#include <iostream>  //TEMP
 
 #if DEBUG
 #    include "Backtrace.hh"
@@ -26,8 +27,9 @@ namespace litecore {
     class checked_target {
       public:
         virtual ~checked_target() {
-            if ( _usuallyFalse(_checked_refs > 0 && !std::current_exception()) ) {
+            if ( _usuallyFalse(_checked_refs > 0 && !std::uncaught_exceptions()) ) {
 #if DEBUG
+                Backtrace().writeTo(std::cerr);  // TEMP debugging Linux crash
                 string className = Unmangle(*_myType);
 #else
                 string className = "checked_target";

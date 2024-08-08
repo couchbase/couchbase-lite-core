@@ -228,7 +228,11 @@ namespace litecore::qt {
 
     void SourceNode::visitChildren(ChildVisitor const& visitor) { visitor(_joinOn)(_unnest); }
 
-    void SourceNode::clearWeakRefs() { _indexedNodes.clear(); }
+    void SourceNode::clearWeakRefs() {
+        _indexedNodes.clear();
+        _joinOn.reset();
+        _unnest.reset();
+    }
 
 #pragma mark - SELECT:
 
