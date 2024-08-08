@@ -56,13 +56,12 @@ namespace litecore::qt {
         DebugAssert(!_expr);
         if ( slice prop = _tempChild.asString(); prop && !_hasExplicitAlias ) {
             // Convenience shortcut: interpret a string in a WHAT as a property path
-            _expr = PropertyNode::parse(prop, nullptr, ctx);
+            setChild(_expr, PropertyNode::parse(prop, nullptr, ctx));
         } else {
             _parsingExpr = true;
-            _expr        = ExprNode::parse(_tempChild, ctx);
+            setChild(_expr, ExprNode::parse(_tempChild, ctx));
             _parsingExpr = false;
         }
-        _expr->setParent(this);
         _tempChild = nullptr;
     }
 
@@ -99,7 +98,7 @@ namespace litecore::qt {
             return _expr->asColumnName();
     }
 
-    void WhatNode::visitChildren(ChildVisitor const& visitor) { visitor(*_expr); }
+    void WhatNode::visitChildren(ChildVisitor const& visitor) { visitor(_expr); }
 
 #pragma mark - SOURCE:
 
@@ -175,13 +174,11 @@ namespace litecore::qt {
     void SourceNode::parseChildExprs(ParseContext& ctx) {
         // Now parse the ON or UNNEST expression:
         if ( _tempOn ) {
-            _joinOn = ExprNode::parse(_tempOn, ctx);
-            _joinOn->setParent(this);
+            setChild(_joinOn, ExprNode::parse(_tempOn, ctx));
             _tempOn = nullptr;
         }
         if ( _tempUnnest ) {
-            _unnest = ExprNode::parse(_tempUnnest, ctx);
-            _unnest->setParent(this);
+            setChild(_unnest, ExprNode::parse(_tempUnnest, ctx));
             _tempUnnest = nullptr;
         }
     }
@@ -229,10 +226,7 @@ namespace litecore::qt {
         return isIndex() ? _indexedNodes[0]->indexExpressionJSON() : "";
     }
 
-    void SourceNode::visitChildren(ChildVisitor const& visitor) {
-        if ( _joinOn ) visitor(*_joinOn);
-        if ( _unnest ) visitor(*_unnest);
-    }
+    void SourceNode::visitChildren(ChildVisitor const& visitor) { visitor(_joinOn)(_unnest); }
 
     void SourceNode::clearWeakRefs() { _indexedNodes.clear(); }
 
@@ -289,39 +283,40 @@ namespace litecore::qt {
                     addSource(make_unique<SourceNode>(item, ctx), ctx);
                 }
             }
-            if ( _sources.empty() ) addSource(make_unique<SourceNode>("_doc"), ctx);
+            if ( _sources.empty() ) {
+                // For historical reasons, if no primary source is given,
+                // we add one for the default collection aliased `_doc`.
+                addSource(make_unique<SourceNode>("_doc"), ctx);
+            }
             require(_from, "missing a primary non-JOIN source");
 
+            // Parse the WHAT clause (projections):
             if ( Value what = getCaseInsensitive(select, "WHAT") ) {
                 for ( Value w : requiredArray(what, "WHAT") ) {
                     auto whatNode = make_unique<WhatNode>(w, ctx);
                     if ( whatNode->hasExplicitAlias() ) registerAlias(whatNode.get(), ctx);
-                    whatNode->setParent(this);
-                    _what.push_back(std::move(whatNode));
+                    addChild(_what, std::move(whatNode));
                 }
             }
 
-            // After all alias are known, allow Source and What nodes to parse their expressions:
+            // After all aliases are known, allow Source and What Nodes to parse their expressions:
             for ( auto& source : _sources ) source->parseChildExprs(ctx);
             for ( auto& what : _what ) what->parseChildExprs(ctx);
 
-            if ( Value where = getCaseInsensitive(select, "WHERE") ) {
-                _where = ExprNode::parse(where, ctx);
-                _where->setParent(this);
-            }
+            // Parse the WHERE clause:
+            if ( Value where = getCaseInsensitive(select, "WHERE") ) { setChild(_where, ExprNode::parse(where, ctx)); }
 
             if ( Value order = getCaseInsensitive(select, "ORDER_BY") ) {
                 for ( Value orderItem : requiredArray(order, "ORDER BY") ) {
-                    bool ascending = true;
+                    bool descending = false;
                     if ( auto a = orderItem.asArray(); a[0].asString().caseEquivalent("ASC") ) {
                         orderItem = a[1];
                     } else if ( a[0].asString().caseEquivalent("DESC") ) {
-                        ascending = false;
-                        orderItem = a[1];
+                        descending = true;
+                        orderItem  = a[1];
                     }
-                    auto orderNode = ExprNode::parse(orderItem, ctx);
-                    orderNode->setParent(this);
-                    _orderBy.emplace_back(std::move(orderNode), ascending);
+                    addChild(_orderBy, ExprNode::parse(orderItem, ctx));
+                    _orderDesc.push_back(descending);
                 }
             }
 
@@ -336,37 +331,30 @@ namespace litecore::qt {
                     } else {
                         group = ExprNode::parse(groupItem, ctx);
                     }
-                    group->setParent(this);
-                    _groupBy.emplace_back(std::move(group));
+                    addChild(_groupBy, std::move(group));
                 }
             }
 
             if ( Value having = getCaseInsensitive(select, "HAVING") ) {
-                _having = ExprNode::parse(having, ctx);
-                _having->setParent(this);
+                setChild(_having, ExprNode::parse(having, ctx));
             }
             if ( Value limit = getCaseInsensitive(select, "LIMIT") ) {
-                _limit = parseLimitOrOffset(limit, ctx, "LIMIT");
-                _limit->setParent(this);
+                setChild(_limit, parseLimitOrOffset(limit, ctx, "LIMIT"));
             }
             if ( Value offset = getCaseInsensitive(select, "OFFSET") ) {
-                _offset = parseLimitOrOffset(offset, ctx, "OFFSET");
-                _offset->setParent(this);
+                setChild(_offset, parseLimitOrOffset(offset, ctx, "OFFSET"));
             }
 
         } else {
             // If not given a Dict or ["SELECT",...], assume it's a WHERE clause:
             addSource(make_unique<SourceNode>("_doc"), ctx);
-            _where = ExprNode::parse(v, ctx);
-            _where->setParent(this);
+            setChild(_where, ExprNode::parse(v, ctx));
         }
 
         if ( _what.empty() ) {
-            // Default WHAT is id and sequence:
-            _what.emplace_back(make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::id, _from)));
-            _what.emplace_back(make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::sequence, _from)));
-            _what[0]->setParent(this);
-            _what[1]->setParent(this);
+            // Default WHAT is id and sequence, for historical reasons:
+            addChild(_what, make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::id, _from)));
+            addChild(_what, make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::sequence, _from)));
         }
 
         Assert(_from);
@@ -392,8 +380,7 @@ namespace litecore::qt {
             }
             ctx.sources.emplace_back(source.get());
         }
-        source->setParent(this);
-        _sources.emplace_back(std::move(source));
+        addChild(_sources, std::move(source));
     }
 
     void SelectNode::addAllSourcesTo(std::vector<SourceNode*>& sources) const {
@@ -402,12 +389,7 @@ namespace litecore::qt {
     }
 
     void SelectNode::visitChildren(ChildVisitor const& visitor) {
-        for ( auto& child : _what ) visitor(*child);
-        for ( auto& child : _sources ) visitor(*child);
-        if ( _where ) visitor(*_where);
-        for ( auto& child : _orderBy ) visitor(*child.first);
-        for ( auto& child : _groupBy ) visitor(*child);
-        if ( _having ) visitor(*_having);
+        visitor(_sources)(_what)(_where)(_groupBy)(_having)(_orderBy)(_limit)(_offset);
     }
 
     void SelectNode::postprocess(ParseContext& ctx) {
@@ -415,7 +397,7 @@ namespace litecore::qt {
 
         // Check if this is an aggregate query, and whether it references a collections `deleted` property:
         _isAggregate = _distinct || !_groupBy.empty();
-        visit([&](Node& node, unsigned depth) {
+        visitTree([this](Node& node, unsigned /*depth*/) {
             if ( auto meta = dynamic_cast<MetaNode*>(&node) ) {
                 // `meta()` calls that don't access any property implicity return the `deleted` property:
                 auto prop = meta->property();

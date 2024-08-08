@@ -74,7 +74,7 @@ namespace litecore {
         for ( auto& what : query->what() ) _columnTitles.push_back(what->columnName());
 
         // Get the parameter names:
-        query->visit([this](Node& node, unsigned depth) {
+        query->visitTree([this](Node& node, unsigned /*depth*/) {
             if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
                 _parameters.emplace(p->name());
             } else if ( auto m = dynamic_cast<MetaNode*>(&node) ) {

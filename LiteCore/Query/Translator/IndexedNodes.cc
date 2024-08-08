@@ -52,7 +52,7 @@ namespace litecore::qt {
     MatchNode::MatchNode(Array::iterator& args, ParseContext& ctx)
         : FTSNode(args, ctx, "MATCH"), _searchString(ExprNode::parse(args[1], ctx)) {}
 
-    void MatchNode::visitChildren(ChildVisitor const& visitor) { visitor(*_searchString); }
+    void MatchNode::visitChildren(ChildVisitor const& visitor) { visitor(_searchString); }
 
     void MatchNode::writeSQL(SQLWriter& ctx) const {
         Parenthesize p(ctx, kMatchPrecedence);
@@ -91,7 +91,7 @@ namespace litecore::qt {
         _indexedExpr = parse(args[0], ctx);
 
         // Determine which collection the vector is based on:
-        _indexedExpr->visit([&](Node& n, unsigned depth) {
+        _indexedExpr->visitTree([&](Node& n, unsigned /*depth*/) {
             if ( SourceNode* src = n.source() ) {
                 require(_sourceCollection == nullptr || _sourceCollection == src,
                         "1st argument (vector) to APPROX_VECTOR_DISTANCE may only refer to a single collection");
@@ -99,6 +99,7 @@ namespace litecore::qt {
             }
         });
         if ( !_sourceCollection ) _sourceCollection = ctx.from;
+        require(_sourceCollection, "unknown source collection for APPROX_VECTOR_DISTANCE()");
 
         // Create the JSON expression used to locate the index:
         _indexExpressionJSON = args[0].toJSON(false, true);
@@ -116,9 +117,7 @@ namespace litecore::qt {
 
         _vector = ExprNode::parse(args[1], ctx);
 
-        if ( Value metricVal = args[2] ) {
-            _metric = requiredString(metricVal, "3rd argument (metric) to APPROX_VECTOR_DISTANCE");
-        }
+        _metric = optionalString(args[2], "3rd argument (metric) to APPROX_VECTOR_DISTANCE");
 
         if ( Value numProbesVal = args[3] ) {
             require(numProbesVal.isInteger(), "4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be an integer");
@@ -129,8 +128,7 @@ namespace litecore::qt {
         }
 
         if ( Value accurate = args[4] ) {
-            require(accurate.type() == kFLBoolean,
-                    "5th argument (accurate) to APPROX_VECTOR_DISTANCE must be `false`, if given");
+            require(accurate.type() == kFLBoolean, "5th argument (accurate) to APPROX_VECTOR_DISTANCE must be boolean");
             require(accurate.asBool() == false, "APPROX_VECTOR_DISTANCE does not support 'accurate'=true");
         }
     }
@@ -153,8 +151,9 @@ namespace litecore::qt {
                 return false;
             return expr && dynamic_cast<VectorDistanceNode*>(expr);
         }();
+
         if ( !_simple && source->indexedNodes().size() < 2 ) {
-            // Add a join condition "idx.vector MATCH _vector"
+            // Hybrid query: add a join condition "idx.vector MATCH _vector"
             DebugAssert(source->indexedNodes().front() == this);
             source->addJoinCondition(make_unique<VectorMatchNode>(source, _vector.get()));
         }
@@ -185,10 +184,7 @@ namespace litecore::qt {
         }
     }
 
-    void VectorDistanceNode::visitChildren(ChildVisitor const& visitor) {
-        visitor(*_indexedExpr);
-        visitor(*_vector);
-    }
+    void VectorDistanceNode::visitChildren(ChildVisitor const& visitor) { visitor(_indexedExpr)(_vector); }
 
     void VectorDistanceNode::writeSQL(SQLWriter& ctx) const {
         ctx << sqlIdentifier(_indexSource->alias()) << ".distance";
@@ -234,7 +230,7 @@ namespace litecore::qt {
     void SelectNode::addIndexes(ParseContext& ctx) {
         unsigned validToDepth = 0;
         if ( _where ) {
-            _where->visit([&](Node& node, unsigned depth) {
+            _where->visitTree([&](Node& node, unsigned depth) {
                 validToDepth = std::min(validToDepth, depth);
                 if ( auto op = dynamic_cast<OpNode*>(&node); op && op->op().name == "AND" ) {
                     if ( depth == validToDepth ) ++validToDepth;
@@ -249,7 +245,7 @@ namespace litecore::qt {
             });
         }
 
-        visit([&](Node& node, unsigned depth) {
+        visitTree([&](Node& node, unsigned /*depth*/) {
             if ( auto ind = dynamic_cast<IndexedNode*>(&node); ind && !ind->indexSource() ) {
                 require(ind->indexType() != IndexType::FTS || ind->isAuxiliary(),
                         "a %s is not allowed outside the WHERE clause", kOwnerFnName[int(ind->indexType())]);

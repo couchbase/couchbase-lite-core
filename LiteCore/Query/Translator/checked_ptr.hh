@@ -7,25 +7,55 @@
 #pragma once
 #include "c4Compat.h"
 #include "Error.hh"  // for Assert()
+#include "Logging.hh"
+
+#if DEBUG
+#    include "Backtrace.hh"
+#    include <typeinfo>
+#endif
 
 C4_ASSUME_NONNULL_BEGIN
 
-namespace litecore::qt {
+namespace litecore {
 
     /** A class that a `checked_ptr<T>` can point to. It tracks the number of them pointing to it.
-        Deleting a `checked_target` while there are still `checked_ptr`s pointing to it is illegal,
-        and will trigger an assertion failure. */
+        @warning  Deleting a `checked_target` while there are still `checked_ptr`s pointing to it is illegal
+                  -- that's kind of the whole point of this API --
+                  and will trigger an assertion failure.
+        @warning  This class is not thread-safe. */
     class checked_target {
       public:
-        ~checked_target() {
-            Assert(_refs == 0, "checked_target being deleted while it still has %d checked_ptrs pointing to it", _refs);
-            // (unfortunately we can't say what subclass it is,
-            // because that info's been lost by the time we're in the base class destructor.)
+        virtual ~checked_target() {
+            if ( _usuallyFalse(_checked_refs > 0 && !std::current_exception()) ) {
+#if DEBUG
+                string className = Unmangle(*_myType);
+#else
+                string className = "checked_target";
+#endif
+                Assert(false, "%s being deleted while it still has %d checked_ptrs pointing to it", className.c_str(),
+                       _checked_refs);
+            }
         }
 
       private:
         friend class checked_ptr_base;
-        int _refs = 0;
+
+        void pointer_added() const noexcept {
+            ++_checked_refs;
+#if DEBUG
+            if ( !_myType ) _myType = &typeid(*this);
+#endif
+        }
+
+        void pointer_removed() const noexcept {
+            --_checked_refs;
+            DebugAssert(_checked_refs >= 0);
+        }
+
+        mutable int _checked_refs = 0;
+#if DEBUG
+        mutable std::type_info const* C4NULLABLE _myType = nullptr;
+#endif
     };
 
     // base class of `checked_ptr`. Factors out the non-template stuff.
@@ -33,7 +63,7 @@ namespace litecore::qt {
       public:
         checked_ptr_base() = default;
 
-        explicit checked_ptr_base(checked_target* C4NULLABLE r) noexcept { attach(r); }
+        explicit checked_ptr_base(checked_target const* C4NULLABLE r) noexcept { attach(r); }
 
         checked_ptr_base(checked_ptr_base const& w) noexcept : checked_ptr_base(w._ref) {}
 
@@ -55,7 +85,7 @@ namespace litecore::qt {
             return *this;
         }
 
-        checked_ptr_base& operator=(checked_target* C4NULLABLE r) noexcept {
+        checked_ptr_base& operator=(checked_target const* C4NULLABLE r) noexcept {
             if ( _usuallyTrue(r != _ref) ) {
                 detach();
                 attach(r);
@@ -64,22 +94,19 @@ namespace litecore::qt {
         }
 
       protected:
-        inline void attach(checked_target* C4NULLABLE r) noexcept {
+        inline void attach(checked_target const* C4NULLABLE r) noexcept {
             _ref = r;
-            if ( r ) ++r->_refs;
+            if ( r ) r->pointer_added();
         }
 
         inline void detach() {
-            if ( auto r = _ref ) {
-                DebugAssert(r->_refs > 0);
-                --r->_refs;
-            }
+            if ( _ref ) _ref->pointer_removed();
         }
 
-        checked_target* C4NULLABLE _ref = nullptr;
+        checked_target const* C4NULLABLE _ref = nullptr;
     };
 
-    /** A (nullable) pointer to an instance of some subclass T of `checked_target`.
+    /** A (nullable) non-owning smart pointer to an instance of some subclass T of `checked_target`.
         Deleting the target while this points to it is an error and will be caught as an assertion failure. */
     template <class T>
     class checked_ptr : checked_ptr_base {
@@ -107,13 +134,13 @@ namespace litecore::qt {
             return *this;
         }
 
-        T* C4NULLABLE get() const noexcept { return static_cast<T*>(_ref); }
+        T* C4NULLABLE get() const noexcept { return static_cast<T*>(const_cast<checked_target*>(_ref)); }
 
         operator T* C4NULLABLE() const noexcept { return get(); }
 
         T* C4NULLABLE operator->() const noexcept { return get(); }
     };
 
-}  // namespace litecore::qt
+}  // namespace litecore
 
 C4_ASSUME_NONNULL_END

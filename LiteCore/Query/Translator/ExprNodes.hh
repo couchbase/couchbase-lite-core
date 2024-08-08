@@ -19,6 +19,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
 #include <iosfwd>
+#include <optional>
 #include <unordered_map>
 
 C4_ASSUME_NONNULL_BEGIN
@@ -84,25 +85,25 @@ namespace litecore::qt {
         virtual ~Node() = default;
 
         /// The node's parent in the parse tree.
-        Node* parent() const { return _parent; }
+        Node const* parent() const { return _parent; }
 
         void setParent(Node* C4NULLABLE);
 
         /// The SourceNode (`FROM` item) this references, if any. Overridden by MetaNode and PropertyNode.
         virtual SourceNode* C4NULLABLE source() const { return nullptr; }
 
-        using Visitor = function_ref<void(Node&, unsigned depth)>;
+        using VisitorFn = function_ref<void(Node&, unsigned depth)>;
 
         /// The Visitor callback will be called with this Node and each of its descendents.
         /// @param visitor  The callback
         /// @param preorder  If true, a Node is visited before its children; else after
         /// @param depth  The initial depth corresponding to this Node.
-        void visit(Visitor const& visitor, bool preorder = true, unsigned depth = 0);
+        void visitTree(VisitorFn const& visitor, bool preorder = true, unsigned depth = 0);
 
         /// Called after the Node tree is generated; allows each node to make changes.
         /// Overrides must call the inherited method, probably first.
         virtual void postprocess(ParseContext& ctx) {
-            visitChildren([&](Node& child) { child.postprocess(ctx); });
+            visitChildren(ChildVisitor{[&](Node& child) { child.postprocess(ctx); }});
         }
 
         /// Returns SQLite-flavor SQL representation.
@@ -115,15 +116,44 @@ namespace litecore::qt {
         virtual void writeSQL(SQLWriter&) const = 0;
 
       protected:
-        using ChildVisitor = function_ref<void(Node&)>;
+        /// Utility to set a child reference, ensuring its parent points to me.
+        template <class T>
+        void setChild(unique_ptr<T>& var, unique_ptr<T> c) {
+            if ( var ) var->setParent(nullptr);
+            if ( c ) c->setParent(this);
+            var = std::move(c);
+        }
 
-        /// Calls a lambda with each direct child. Subclasses that add children MUST override this.
-        virtual void visitChildren(ChildVisitor const&) {}
+        /// Utility to add a child reference, ensuring its parent points to me.
+        template <class T>
+        void addChild(std::vector<unique_ptr<T>>& var, unique_ptr<T> c) {
+            c->setParent(this);
+            var.emplace_back(std::move(c));
+        }
+
+        struct ChildVisitor {
+            function_ref<void(Node&)> fn;
+
+            template <class T>
+            ChildVisitor const& operator()(unique_ptr<T> const& child) const {
+                if ( child ) fn(*child);
+                return *this;
+            }
+
+            template <class T>
+            ChildVisitor const& operator()(std::vector<T> const& children) const {
+                for ( auto& child : children ) fn(*child);
+                return *this;
+            }
+        };
+
+        /// Subclasses that add children MUST override this and call `visitor(child)` on each direct child.
+        virtual void visitChildren(ChildVisitor const& visitor) {}
 
         Node(Node const&)            = delete;  // not copyable
         Node& operator=(Node const&) = delete;
 
-        checked_ptr<Node> _parent;
+        checked_ptr<const Node> _parent;
     };
 
 #pragma mark - EXPRESSIONS:
@@ -216,8 +246,7 @@ namespace litecore::qt {
         void setSQLiteFn(string_view fn) { _sqliteFn = string(fn); }
 
         SourceNode* source() const override;
-
-        string asColumnName() const override;
+        string      asColumnName() const override;
 
         void writeSQL(SQLWriter& ctx) const override { writeSQL(ctx, nullslice, nullptr); }
 
@@ -292,10 +321,7 @@ namespace litecore::qt {
 
         ExprNode* operand(size_t i) const { return _operands.at(i).get(); }
 
-        void addArg(unique_ptr<ExprNode> node) {
-            node->setParent(this);
-            _operands.emplace_back(std::move(node));
-        }
+        void addArg(unique_ptr<ExprNode> node) { addChild(_operands, std::move(node)); }
 
         OpFlags opFlags() const override;
         void    visitChildren(ChildVisitor const& visitor) override;
@@ -316,10 +342,7 @@ namespace litecore::qt {
 
         explicit FunctionNode(struct FunctionSpec const& fn) : _fn(fn) {}
 
-        void addArg(unique_ptr<ExprNode> n) {
-            n->setParent(this);
-            _args.emplace_back(std::move(n));
-        }
+        void addArg(unique_ptr<ExprNode> n) { addChild(_args, std::move(n)); }
 
         void addArgs(Array::iterator&, ParseContext&);
 
@@ -330,13 +353,12 @@ namespace litecore::qt {
         OpFlags opFlags() const override;
         void    visitChildren(ChildVisitor const& visitor) override;
         void    writeSQL(SQLWriter&) const override;
-#if DEBUG
         void postprocess(ParseContext&) override;
-#endif
 
       private:
-        struct FunctionSpec const&        _fn;    // Spec of the function
-        std::vector<unique_ptr<ExprNode>> _args;  // Argument list
+        struct FunctionSpec const&        _fn;         // Spec of the function
+        std::vector<unique_ptr<ExprNode>> _args;       // Argument list
+        std::optional<Collation>          _collation;  // Collation arg to add last
     };
 
     /** An OpNode representing an `ANY`, `EVERY`, or `ANY AND EVERY` operation */

@@ -359,9 +359,9 @@ namespace litecore::qt {
         if ( !_orderBy.empty() ) {
             ctx << " ORDER BY ";
             delimiter comma(", ");
-            for ( auto& o : _orderBy ) {
-                ctx << comma << o.first;
-                if ( !o.second ) ctx << " DESC";
+            for ( size_t i = 0; i < _orderBy.size(); ++i ) {
+                ctx << comma << _orderBy[i];
+                if ( _orderDesc[i] ) ctx << " DESC";
             }
         }
 

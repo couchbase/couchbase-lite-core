@@ -46,7 +46,7 @@ namespace litecore::qt {
       public:
         WhatNode(Value, ParseContext&);
 
-        explicit WhatNode(unique_ptr<ExprNode> expr) : _expr(std::move(expr)) { _expr->setParent(this); }
+        explicit WhatNode(unique_ptr<ExprNode> expr) { setChild(_expr, std::move(expr)); }
 
         /// The name of the result column. If not explicitly set, makes one up based on the expression.
         string columnName() const;
@@ -180,19 +180,20 @@ namespace litecore::qt {
         string makeIndexAlias() const;
         void   writeFTSColumns(SQLWriter&, fleece::delimiter&) const;
 
-        std::vector<unique_ptr<SourceNode>>           _sources;                      // The sources (FROM exprs)
-        std::vector<unique_ptr<WhatNode>>             _what;                         // The WHAT expressions
-        unique_ptr<ExprNode>                          _where;                        // The WHERE expression
-        checked_ptr<SourceNode>                       _from;                         // Main source (also in _sources)
-        std::vector<unique_ptr<ExprNode>>             _groupBy;                      // The GROUP BY expressions
-        unique_ptr<ExprNode>                          _having;                       // The HAVING expression
-        std::vector<pair<unique_ptr<ExprNode>, bool>> _orderBy;                      // The ORDER BY expressions
-        unique_ptr<ExprNode>                          _limit;                        // The LIMIT expression
-        unique_ptr<ExprNode>                          _offset;                       // The OFFSET expression
-        std::vector<checked_ptr<SelectNode>>          _nestedSelects;                // SELECTs nested in this one
-        bool                                          _distinct            = false;  // True if DISTINCT is given
-        bool                                          _isAggregate         = false;  // Uses aggregate fns?
-        unsigned                                      _numPrependedColumns = 0;      // Columns added by FTS
+        std::vector<unique_ptr<SourceNode>>  _sources;                      // The sources (FROM exprs)
+        std::vector<unique_ptr<WhatNode>>    _what;                         // The WHAT expressions
+        unique_ptr<ExprNode>                 _where;                        // The WHERE expression
+        std::vector<unique_ptr<ExprNode>>    _groupBy;                      // The GROUP BY expressions
+        unique_ptr<ExprNode>                 _having;                       // The HAVING expression
+        std::vector<unique_ptr<ExprNode>>    _orderBy;                      // The ORDER BY expressions
+        std::vector<bool>                    _orderDesc;                    // Which items in _orderBy are DESC
+        unique_ptr<ExprNode>                 _limit;                        // The LIMIT expression
+        unique_ptr<ExprNode>                 _offset;                       // The OFFSET expression
+        checked_ptr<SourceNode>              _from;                         // Main source (also in _sources)
+        std::vector<checked_ptr<SelectNode>> _nestedSelects;                // SELECTs nested in this one
+        unsigned                             _numPrependedColumns = 0;      // Columns added by FTS
+        bool                                 _distinct            = false;  // True if DISTINCT is given
+        bool                                 _isAggregate         = false;  // Uses aggregate fns?
     };
 
     /** The root node of a query; a simple subclass of `SelectNode`. */

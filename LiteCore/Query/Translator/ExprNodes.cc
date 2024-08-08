@@ -24,18 +24,16 @@ namespace litecore::qt {
     using namespace fleece;
     using namespace std;
 
-    void ParseContext::clear() {
-        *this = ParseContext{};
-    }
+    void ParseContext::clear() { *this = ParseContext{}; }
 
     void Node::setParent(Node* p) {
         DebugAssert(!_parent || !p);
         _parent = p;
     }
 
-    void Node::visit(Visitor const& visitor, bool preorder, unsigned depth) {
+    void Node::visitTree(VisitorFn const& visitor, bool preorder, unsigned depth) {
         if ( preorder ) visitor(*this, depth);
-        visitChildren([&](Node& child) { child.visit(visitor, preorder, depth + 1); });
+        visitChildren({[&](Node& child) { child.visitTree(visitor, preorder, depth + 1); }});
         if ( !preorder ) visitor(*this, depth);
     }
 
@@ -373,15 +371,14 @@ namespace litecore::qt {
         return node;
     }
 
-    CollateNode::CollateNode(unique_ptr<ExprNode> child, ParseContext& ctx)
-        : _collation(ctx.collation), _child(std::move(child)) {
-        _child->setParent(this);
+    CollateNode::CollateNode(unique_ptr<ExprNode> child, ParseContext& ctx) : _collation(ctx.collation) {
+        setChild(_child, std::move(child));
         ctx.collationApplied = true;
     }
 
     bool CollateNode::isBinary() const { return _collation.caseSensitive && !_collation.unicodeAware; }
 
-    void CollateNode::visitChildren(ChildVisitor const& visitor) { visitor(*_child); }
+    void CollateNode::visitChildren(ChildVisitor const& visitor) { visitor(_child); }
 
 #pragma mark - OP NODE:
 
@@ -389,17 +386,16 @@ namespace litecore::qt {
         for ( ; operands; ++operands ) addArg(ExprNode::parse(*operands, ctx));
 
         if ( !ctx.collationApplied && (op.type == OpType::infix || op.type == OpType::like) ) {
-            _operands[0]->setParent(nullptr);
-            _operands[0] = make_unique<CollateNode>(std::move(_operands[0]), ctx);
-            _operands[0]->setParent(this);
+            // Apply the current collation by wrapping the first operand in a CollateNode:
+            unique_ptr<ExprNode> op0 = std::move(_operands[0]);
+            op0->setParent(nullptr);
+            setChild<ExprNode>(_operands[0], make_unique<CollateNode>(std::move(op0), ctx));
         }
     }
 
     OpFlags OpNode::opFlags() const { return _op.flags; }
 
-    void OpNode::visitChildren(ChildVisitor const& visitor) {
-        for ( auto& operand : _operands ) visitor(*operand);
-    }
+    void OpNode::visitChildren(ChildVisitor const& visitor) { visitor(_operands); }
 
 #if DEBUG
     void OpNode::postprocess(ParseContext& ctx) {
@@ -425,17 +421,16 @@ namespace litecore::qt {
         fn->addArgs(args, ctx);
 
         if ( spec.name == kArrayCountFnName ) {
-            if ( auto prop = dynamic_cast<PropertyNode*>(fn->_args[0].get()) ) {
+            auto& arg0 = fn->_args[0];
+            if ( auto prop = dynamic_cast<PropertyNode*>(arg0.get()) ) {
                 // Special case: "array_count(propertyname)" turns into a call to fl_count:
                 prop->setSQLiteFn(kCountFnName);
-                prop->setParent(nullptr);
-                return std::move(fn->_args[0]);
+                arg0->setParent(nullptr);
+                return std::move(arg0);
             }
         }
 
-        if ( fn->spec().flags & kOpWantsCollation ) {
-            fn->addArg(make_unique<LiteralNode>(ctx.collation.sqliteName()));
-        }
+        if ( fn->spec().flags & kOpWantsCollation ) fn->_collation = ctx.collation;
 
         return fn;
     }
@@ -446,20 +441,21 @@ namespace litecore::qt {
 
     OpFlags FunctionNode::opFlags() const { return _fn.flags; }
 
-    void FunctionNode::visitChildren(ChildVisitor const& visitor) {
-        for ( auto& arg : _args ) visitor(*arg);
-    }
+    void FunctionNode::visitChildren(ChildVisitor const& visitor) { visitor(_args); }
 
-
-#if DEBUG
     void FunctionNode::postprocess(ParseContext& ctx) {
         ExprNode::postprocess(ctx);
+#if DEBUG
         // Verify that manual use of addArg() didn't produce the wrong number of args.
         // (The kOpWantsCollation flag indicates that an extra collation arg can be added.)
         size_t nArgs = std::min(_args.size(), size_t(9));
-        Assert(nArgs >= _fn.minArgs && nArgs <= _fn.maxArgs + ((_fn.flags & kOpWantsCollation) != 0),
-               "wrong number of args (%zu) for %.*s", nArgs, FMTSLICE(_fn.name));
-    }
+        Assert(nArgs >= _fn.minArgs && nArgs <= _fn.maxArgs, "wrong number of args (%zu) for %.*s", nArgs,
+               FMTSLICE(_fn.name));
 #endif
+        if ( _collation ) {
+            // Add implicit collation arg to functions that take one:
+            addArg(make_unique<LiteralNode>(_collation->sqliteName()));
+        }
+    }
 
 }  // namespace litecore::qt
