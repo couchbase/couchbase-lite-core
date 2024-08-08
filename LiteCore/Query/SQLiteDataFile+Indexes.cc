@@ -272,7 +272,7 @@ namespace litecore {
                                                                     const string& onTable) const {
         for ( SQLiteIndexSpec& spec : getIndexes(nullptr) ) {
             if ( spec.type == type && SQLiteKeyStore::tableName(spec.keyStoreName) == onTable ) {
-                auto what = spec.what();
+                auto what = (const Array*)spec.what();
                 // `what()` is defined as an array of 1+ exprs to index; for a vector index there can be only one.
                 // In some cases just that term is passed in, not wrapped in an array.
                 if ( what->count() > 1
@@ -304,7 +304,7 @@ namespace litecore {
         // Construct a list of column names:
         stringstream columns;
         int          n = 1;
-        for ( Array::iterator i(spec->what()); i; ++i, ++n ) {
+        for ( Array::iterator i((const Array*)spec->what()); i; ++i, ++n ) {
             auto col = i.value();
             if ( auto array = col->asArray(); array ) col = array->get(0);
             slice colStr = col->asString();
