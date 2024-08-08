@@ -58,7 +58,7 @@ namespace litecore::qt {
     const Operation* C4NULLABLE lookupOp(slice opName, unsigned nArgs);
     const Operation&            lookupOp(OpType type);              // throws if not found
     FunctionSpec const&         lookupFn(slice fnName, int nArgs);  // throws if not found
-    MetaProperty                lookupMeta(slice key, slice const keyList[_Nonnull kNumMetaProperties]);
+    MetaProperty                lookupMeta(slice key, slice const keyList[C4NULLABLE kNumMetaProperties]);
     JoinType                    lookupJoin(slice name);
 
     /// Common path parsing shared by multiple node types.

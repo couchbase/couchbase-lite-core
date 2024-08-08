@@ -260,7 +260,7 @@ namespace litecore::qt {
 
         if ( _op.type == OpType::any ) {
             if ( auto e = dynamic_cast<OpNode*>(&predicate); e && e->op().name == "=" ) {
-                if ( auto v = dynamic_cast<VariableNode*>(e->operand(0)) ) {
+                if ( dynamic_cast<VariableNode*>(e->operand(0)) ) {
                     // If predicate is `var = value`, generate `fl_contains(array, value)` instead
                     writeFnGetter(kContainsFnName, collection, e->operand(1), ctx);
                     return;

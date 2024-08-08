@@ -17,6 +17,7 @@
 #include "SelectNodes.hh"
 #include "StringUtil.hh"
 #include "SQLWriter.hh"
+#include <climits>
 
 namespace litecore::qt {
 
