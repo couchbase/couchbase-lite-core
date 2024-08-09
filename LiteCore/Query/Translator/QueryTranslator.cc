@@ -102,11 +102,11 @@ namespace litecore {
         string tableName(source->tableName());
         if ( !tableName.empty() ) return tableName;
 
-        if ( source->isUnnest() ) {
+        if ( auto unnest = dynamic_cast<UnnestSourceNode*>(source) ) {
             // Check whether there's an array index we can use for an UNNEST:
-            auto unnestSrc = source->unnestExpression()->source();
+            auto unnestSrc = unnest->unnestExpression()->source();
             if ( !unnestSrc ) return "";
-            tableName = _delegate.unnestedTableName(tableNameForSource(unnestSrc), source->unnestIdentifier());
+            tableName = _delegate.unnestedTableName(tableNameForSource(unnestSrc), unnest->unnestIdentifier());
             if ( _delegate.tableExists(tableName) ) source->setTableName(tableName);
         } else {
             string name = source->collection();
@@ -120,16 +120,18 @@ namespace litecore {
             if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
                 fail("no such collection \"%s\"", name.c_str());
 
-            if ( source->indexType() == IndexType::FTS ) {
-                tableName = _delegate.FTSTableName(tableName, string(source->indexedExpressionJSON()));
-                _ftsTables.push_back(tableName);
-            } else if ( source->indexType() == IndexType::vector ) {
+            if ( auto index = dynamic_cast<IndexSourceNode*>(source) ) {
+                if ( index->indexType() == IndexType::FTS ) {
+                    tableName = _delegate.FTSTableName(tableName, string(index->indexedExpressionJSON()));
+                    _ftsTables.push_back(tableName);
+                } else if ( index->indexType() == IndexType::vector ) {
 #ifdef COUCHBASE_ENTERPRISE
-                auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(source->indexedNodes().front().get());
-                Assert(vecSource);
-                tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
-                                                      vecSource->metric());
+                    auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(index->indexedNodes().front().get());
+                    Assert(vecSource);
+                    tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
+                                                          vecSource->metric());
 #endif
+                }
             } else if ( source->isCollection() ) {
                 if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table
                     _kvTables.insert(tableName);
@@ -148,7 +150,7 @@ namespace litecore {
 
             unique_ptr<SourceNode> source;
             if ( isUnnestedTable ) {
-                source   = SourceNode::makeFakeUnnest();
+                source   = make_unique<UnnestSourceNode>();
                 ctx.from = source.get();
             }
 

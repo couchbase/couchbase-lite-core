@@ -288,7 +288,7 @@ namespace litecore::qt {
                 require(path.count() == 0, "invalid properties after a meta property");
                 return make_unique<MetaNode>(meta, source);
             }
-            if ( source && source->isUnnest() ) sqliteFn = kNestedValueFnName;
+            if ( source && source->type() == SourceType::unnest ) sqliteFn = kNestedValueFnName;
             else
                 sqliteFn = kValueFnName;
         }

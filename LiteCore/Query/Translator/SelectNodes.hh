@@ -69,15 +69,17 @@ namespace litecore::qt {
         bool                 _parsingExpr = false;  // kludgy temporary flag
     };
 
-    /** An item in the `FROM` clause: a collection, join, unnested expression, or table-based index.
-        Table-based indexes don't appear in the N1QL query; their nodes are added during parsing in response to
-        functions such as `MATCH()` and `APPROX_VECTOR_DISTANCE()`. */
-    class SourceNode final : public AliasedNode {
+    enum class SourceType : uint8_t { collection, unnest, index };
+
+    /** An item in the `FROM` clause: a collection, join, unnested expression, or table-based index. */
+    class SourceNode : public AliasedNode {
       public:
-        explicit SourceNode(Dict, ParseContext&);
+        static unique_ptr<SourceNode> parse(Dict, ParseContext&);
         explicit SourceNode(string_view alias);
-        explicit SourceNode(IndexedNode&);
-        static unique_ptr<SourceNode> makeFakeUnnest();
+
+        SourceType type() const { return _type; }
+
+        bool isCollection() const { return _type == SourceType::collection; }
 
         string const& scope() const { return _scope; }  ///< Scope name, or empty if default
 
@@ -85,63 +87,87 @@ namespace litecore::qt {
 
         bool usesDeletedDocs() const { return _usesDeleted; }  ///< True if exprs refer to deleted docs
 
-        string_view tableName() const { return _tableName; }  ///< SQLite table name (set by QueryTranslator)
-
-        void setTableName(string_view name) { _tableName = name; }  ///< Sets SQLite table name
-
         string asColumnName() const { return _columnName; }  ///< Name to use, if used as result column
 
         bool isJoin() const { return _join != JoinType::none; }  ///< True if this is a JOIN
 
         void addJoinCondition(unique_ptr<ExprNode>);  ///< Sets/adds an `ON` condition to a JOIN
 
-        /// True if this is a regular collection, not an UNNEST or a table-based index.
-        bool isCollection() const { return !isUnnest() && !isIndex(); }
+        string_view tableName() const { return _tableName; }  ///< SQLite table name (set by QueryTranslator)
 
-        bool isUnnest() const {
-            return _unnest || _unnestFleeceExpression || _fakeUnnest;
-        }  ///< True if this is an UNNEST expression
-
-        ExprNode* unnestExpression() const { return _unnest.get(); }
-
-        /// Returns a string identifying the UNNEST expression; used for matching against an array index table.
-        string unnestIdentifier() const;
-
-        bool isIndex() const { return !_indexedNodes.empty(); }  ///< True if this is a table-based index
-
-        std::vector<checked_ptr<IndexedNode>> const& indexedNodes() const { return _indexedNodes; }
-
-        IndexType   indexType() const;
-        string_view indexedExpressionJSON() const;
-
-        void checkIndexUsage() const;
+        void setTableName(string_view name) { _tableName = name; }  ///< Sets SQLite table name
 
         bool matchPath(KeyPath& path) const override;
         void visitChildren(ChildVisitor const&) override;
         void writeSQL(SQLWriter&) const override;
 
-      private:
+      protected:
         friend class SelectNode;
-        SourceNode() = default;
-        void parseChildExprs(ParseContext&);
-        void disambiguateColumnName(ParseContext&);
+
+        SourceNode(SourceType type) : _type(type) {}
+
+        SourceNode(Dict, ParseContext&);
+        SourceNode(SourceType, string scope, string collection, JoinType join);
+        void         parseAS(Dict);
+        virtual void parseChildExprs(ParseContext&);
+        void         disambiguateColumnName(ParseContext&);
+        void         writeASandON(SQLWriter& ctx) const;
 
         void setUsesDeleted() { _usesDeleted = true; }
 
-        void clearWeakRefs();
+        virtual void clearWeakRefs();
 
-        string                                _scope;                   // Scope name, or empty for default
-        string                                _collection;              // Collection name, or empty for default
-        string                                _columnName;              // Name to use if used as result column
-        string                                _tableName;               // SQLite table name (set by caller)
-        JoinType                              _join = JoinType::none;   // Type of JOIN, or none
-        unique_ptr<ExprNode>                  _joinOn;                  // "ON ..." predicate
-        Value                                 _tempOn;                  // Temporarily holds source of _joinOn
-        unique_ptr<ExprNode>                  _unnest;                  // "UNNEST ..." source expression
-        Value                                 _unnestFleeceExpression;  // Parsed-JSON form of source expression
-        std::vector<checked_ptr<IndexedNode>> _indexedNodes;            // IndexedNodes using this index, if any
-        bool                                  _usesDeleted = false;     // True if exprs refer to deleted docs
-        bool                                  _fakeUnnest  = false;
+      private:
+        string               _scope;                  // Scope name, or empty for default
+        string               _collection;             // Collection name, or empty for default
+        string               _columnName;             // Name to use if used as result column
+        string               _tableName;              // SQLite table name (set by caller)
+        JoinType             _join = JoinType::none;  // Type of JOIN, or none
+        unique_ptr<ExprNode> _joinOn;                 // "ON ..." predicate
+        Value                _tempOn;                 // Temporarily holds source of _joinOn
+        bool                 _usesDeleted = false;    // True if exprs refer to deleted docs
+        SourceType const     _type;
+    };
+
+    /** An UNNEST, i.e. a joined table representing the contents of an array in a document. */
+    class UnnestSourceNode final : public SourceNode {
+      public:
+        UnnestSourceNode();
+        UnnestSourceNode(Dict, ParseContext&);
+
+        /// The expression referencing the document property that's the source of the data.
+        ExprNode* unnestExpression() const { return _unnest.get(); }
+
+        /// Returns a string identifying the UNNEST expression; used for matching against an array index table.
+        string unnestIdentifier() const;
+
+        void visitChildren(ChildVisitor const&) override;
+        void writeSQL(SQLWriter&) const override;
+
+      private:
+        void parseChildExprs(ParseContext&) override;
+        void clearWeakRefs() override;
+
+        unique_ptr<ExprNode> _unnest;                  // "UNNEST ..." source expression
+        Value                _unnestFleeceExpression;  // Parsed-JSON form of source expression
+    };
+
+    /** A table-based index, implicitly added to the tree by an `IndexedNode` (FTS or vector.) */
+    class IndexSourceNode final : public SourceNode {
+      public:
+        explicit IndexSourceNode(IndexedNode&);
+
+        IndexType   indexType() const;
+        string_view indexedExpressionJSON() const;
+
+        std::vector<checked_ptr<IndexedNode>> const& indexedNodes() const { return _indexedNodes; }
+
+      private:
+        friend class SelectNode;
+        void checkIndexUsage() const;
+        void clearWeakRefs() override;
+
+        std::vector<checked_ptr<IndexedNode>> _indexedNodes;  // IndexedNodes using this index, if any
     };
 
     /** A `SELECT` statement, whether top-level or nested. */

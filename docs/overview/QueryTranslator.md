@@ -6,13 +6,15 @@ It operates in three passes:
 1. Traverse the JSON/Fleece tree creating a tree of `Node` objects (q.v.)
 2. Do a bit of postprocessing on the `Node` tree.
 3. For each `SourceNode`, ask the delegate what its SQL table name is and store that in the node.
-3. Traverse the `Node`s, writing SQL to an output stream.
+4. Traverse the `Node`s, writing SQL to an output stream.
 
 ## Nodes
 
 - _`Node`_
   - _`AliasedNode`_ -- an item that can be named with "`AS` ..."
-    - `SourceNode` -- an item in the `FROM` clause, i.e. a collection, UNNEST, or table-based index
+    - `SourceNode` -- an item in the `FROM` clause; SourceNode itself is used for regular collections
+      - `IndexSourceNode` -- a table-based index implicitly added to the tree by a FTS or vector-search function
+      - `UnnestSourceNode` -- an UNNEST expression
     - `WhatNode` -- an item in the `WHAT` clause, i.e. a result
   - _`ExprNode`_ -- an expression
     - `CollateNode` -- a `COLLATE` expression

@@ -112,13 +112,14 @@ namespace litecore::qt {
         } else {
             string aliasDot = "";
             if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
-            if ( _source && _source->isUnnest() && _source->tableName().empty() && _path.count() == 0 ) {
+            if ( _source && _source->type() == SourceType::unnest && _source->tableName().empty()
+                 && _path.count() == 0 ) {
                 // Accessing the outer item of a `fl_each` table-valued function:
                 ctx << aliasDot << "value";
             } else {
                 // Regular property access, using the sqliteFnName as accessor:
                 bool extraCloseParen = false;
-                if ( _source && _source->isUnnest() && !_source->tableName().empty() ) {
+                if ( _source && _source->type() == SourceType::unnest && !_source->tableName().empty() ) {
                     if ( sqliteFnName == kRootFnName || sqliteFnName == kNestedValueFnName )
                         sqliteFnName = kUnnestedValueFnName;  // Use `fl_unnested_value` to access unnest index table
                     else if ( sqliteFnName == kResultFnName ) {
@@ -315,40 +316,45 @@ namespace litecore::qt {
     }
 
     void SourceNode::writeSQL(SQLWriter& ctx) const {
-        if ( _unnest ) {
-            ctx << "JOIN ";
-            if ( _tableName.empty() ) {
-                // Unindexed UNNEST, using `fl_each`:
-                if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
-                    prop->setSQLiteFn(kEachFnName);
-                    ctx << *prop;
-                } else {
-                    WithPrecedence listP(ctx, kArgListPrecedence);
-                    ctx << kEachFnName << '(' << _unnest << ')';
-                }
-            } else {
-                // Indexed UNNEST:
-                auto sourceTable = _unnest->source();
-                Assert(sourceTable);
-                ctx << sqlIdentifier(_tableName) << " AS " << sqlIdentifier(_alias);
-                ctx << " ON " << sqlIdentifier(_alias) << ".docid=" << sqlIdentifier(sourceTable->alias()) << ".rowid";
-                return;
-            }
+        if ( _join > JoinType::none ) {
+            ctx << kJoinTypeNames[int(_join)] << " JOIN ";
         } else {
-            if ( _join > JoinType::none ) {
-                ctx << kJoinTypeNames[int(_join)] << " JOIN ";
-            } else {
-                ctx << "FROM ";
-            }
-            if ( isIndex() ) {
-                _indexedNodes[0]->writeSourceTable(ctx, _tableName);
-            } else {
-                Assert(!_tableName.empty(), "QueryTranslator client didn't set Source's tableName");
-                ctx << sqlIdentifier(_tableName);
-            }
+            ctx << "FROM ";
         }
+        if ( auto index = dynamic_cast<IndexSourceNode const*>(this) ) {
+            index->indexedNodes().front()->writeSourceTable(ctx, _tableName);
+        } else {
+            Assert(!_tableName.empty(), "QueryTranslator client didn't set Source's tableName");
+            ctx << sqlIdentifier(_tableName);
+        }
+        writeASandON(ctx);
+    }
+
+    void SourceNode::writeASandON(SQLWriter& ctx) const {
         if ( !_alias.empty() ) { ctx << " AS " << sqlIdentifier(_alias); }
         if ( _joinOn ) { ctx << " ON " << _joinOn; }
+    }
+
+    void UnnestSourceNode::writeSQL(SQLWriter& ctx) const {
+        ctx << "JOIN ";
+        if ( tableName().empty() ) {
+            // Unindexed UNNEST, using `fl_each`:
+            if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
+                prop->setSQLiteFn(kEachFnName);
+                ctx << *prop;
+            } else {
+                WithPrecedence listP(ctx, kArgListPrecedence);
+                ctx << kEachFnName << '(' << _unnest << ')';
+            }
+        } else {
+            // Indexed UNNEST:
+            auto sourceTable = _unnest->source();
+            Assert(sourceTable);
+            ctx << sqlIdentifier(tableName()) << " AS " << sqlIdentifier(_alias);
+            ctx << " ON " << sqlIdentifier(_alias) << ".docid=" << sqlIdentifier(sourceTable->alias()) << ".rowid";
+            return;
+        }
+        writeASandON(ctx);
     }
 
     void SelectNode::writeSQL(SQLWriter& ctx) const {
@@ -367,7 +373,7 @@ namespace litecore::qt {
 
         ctx << ' ' << *_from;
         for ( auto& join : _sources )
-            if ( join->isJoin() || join->isUnnest() ) ctx << ' ' << join;
+            if ( join->isJoin() || join->type() == SourceType::unnest ) ctx << ' ' << join;
 
         if ( _where ) ctx << " WHERE " << _where;
 

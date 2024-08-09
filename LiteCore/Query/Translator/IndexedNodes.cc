@@ -79,15 +79,15 @@ namespace litecore::qt {
     // A SQLite vector MATCH expression; used by VectorDistanceNode to add a join condition.
     class VectorMatchNode final : public ExprNode {
       public:
-        VectorMatchNode(SourceNode* index, ExprNode* vector) : _index(index), _vector(vector) {}
+        VectorMatchNode(IndexSourceNode* index, ExprNode* vector) : _index(index), _vector(vector) {}
 
         void writeSQL(SQLWriter& sql) const override {
             sql << sqlIdentifier(_index->alias()) << ".vector MATCH encode_vector(" << _vector << ")";
         }
 
       private:
-        SourceNode* _index;
-        ExprNode*   _vector;
+        IndexSourceNode* _index;
+        ExprNode*        _vector;
     };
 
     VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx) : IndexedNode(IndexType::vector) {
@@ -136,7 +136,7 @@ namespace litecore::qt {
         }
     }
 
-    void VectorDistanceNode::setIndexSource(SourceNode* source, SelectNode* select) {
+    void VectorDistanceNode::setIndexSource(IndexSourceNode* source, SelectNode* select) {
         IndexedNode::setIndexSource(source, select);
         _simple = [&] {
             // Returns true if the WHERE clause does _not_ require a hybrid query,
@@ -199,12 +199,11 @@ namespace litecore::qt {
 
 #pragma mark - ADDITIONS TO SOURCE & SELECT NODES:
 
-    SourceNode::SourceNode(IndexedNode& node)
-        : _scope(node.sourceCollection()->_scope)
-        , _collection(node.sourceCollection()->_collection)
-        , _join(JoinType::inner) {}
+    IndexSourceNode::IndexSourceNode(IndexedNode& node)
+        : SourceNode(SourceType::index, node.sourceCollection()->scope(), node.sourceCollection()->collection(),
+                     JoinType::inner) {}
 
-    void SourceNode::checkIndexUsage() const {
+    void IndexSourceNode::checkIndexUsage() const {
         if ( indexType() == IndexType::FTS ) {
             // There must be exactly one MATCH node:
             size_t n = std::count_if(_indexedNodes.begin(), _indexedNodes.end(),
@@ -258,7 +257,9 @@ namespace litecore::qt {
         });
 
         // Then check that there's exactly one function call that 'owns' each index:
-        for ( auto& source : _sources ) source->checkIndexUsage();
+        for ( auto& source : _sources ) {
+            if ( auto index = dynamic_cast<IndexSourceNode*>(source.get()) ) index->checkIndexUsage();
+        }
     }
 
     /// Adds a SourceNode for an IndexedNode, or finds an existing one.
@@ -268,19 +269,21 @@ namespace litecore::qt {
         DebugAssert(!node.indexExpressionJSON().empty());
 
         // Look for an existing index source:
-        SourceNode* indexSrc = nullptr;
+        IndexSourceNode* indexSrc = nullptr;
         for ( auto& s : _sources ) {
-            if ( s->indexType() == node.indexType() && s->indexedExpressionJSON() == node.indexExpressionJSON()
-                 && s->collection() == node.sourceCollection()->collection()
-                 && s->scope() == node.sourceCollection()->scope() ) {
-                indexSrc = s.get();
-                break;
+            if ( auto ind = dynamic_cast<IndexSourceNode*>(s.get()) ) {
+                if ( ind->indexType() == node.indexType() && ind->indexedExpressionJSON() == node.indexExpressionJSON()
+                     && ind->collection() == node.sourceCollection()->collection()
+                     && ind->scope() == node.sourceCollection()->scope() ) {
+                    indexSrc = ind;
+                    break;
+                }
             }
         }
 
         if ( !indexSrc ) {
             // None found; need to create it:
-            auto source    = make_unique<SourceNode>(node);
+            auto source    = make_unique<IndexSourceNode>(node);
             indexSrc       = source.get();
             source->_alias = makeIndexAlias();
             // Create the join condition:
@@ -306,10 +309,12 @@ namespace litecore::qt {
     void SelectNode::writeFTSColumns(SQLWriter& ctx, delimiter& comma) const {
         if ( !_isAggregate ) {
             for ( auto& src : _sources ) {
-                if ( src->indexType() == IndexType::FTS ) {
-                    if ( comma.count() == 0 ) ctx << comma << sqlIdentifier(_from->alias()) << ".rowid";
-                    ctx << comma << "offsets(" << sqlIdentifier(src->alias()) << "." << sqlIdentifier(src->tableName())
-                        << ')';
+                if ( auto ind = dynamic_cast<IndexSourceNode*>(src.get()) ) {
+                    if ( ind->indexType() == IndexType::FTS ) {
+                        if ( comma.count() == 0 ) ctx << comma << sqlIdentifier(_from->alias()) << ".rowid";
+                        ctx << comma << "offsets(" << sqlIdentifier(ind->alias()) << "."
+                            << sqlIdentifier(ind->tableName()) << ')';
+                    }
                 }
             }
         }

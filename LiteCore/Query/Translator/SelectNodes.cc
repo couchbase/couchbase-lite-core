@@ -102,13 +102,23 @@ namespace litecore::qt {
 
 #pragma mark - SOURCE:
 
-    SourceNode::SourceNode(string_view alias) {
+    unique_ptr<SourceNode> SourceNode::parse(Dict dict, ParseContext& ctx) {
+        if ( getCaseInsensitive(dict, "UNNEST") ) return make_unique<UnnestSourceNode>(dict, ctx);
+        else
+            return unique_ptr<SourceNode>(new SourceNode(dict, ctx));
+    }
+
+    SourceNode::SourceNode(string_view alias) : SourceNode(SourceType::collection) {
         _alias            = alias;
         _hasExplicitAlias = true;
         _columnName       = alias;
     }
 
-    SourceNode::SourceNode(fleece::Dict dict, ParseContext& ctx) {
+    SourceNode::SourceNode(SourceType type, string scope, string collection, JoinType join)
+        : _type(type), _scope(std::move(scope)), _collection(std::move(collection)), _join(join) {}
+
+    SourceNode::SourceNode(Dict dict, ParseContext& ctx) : SourceNode(SourceType::collection) {
+        // Parse the SCOPE and COLLECTION properties:
         bool explicitScope = false;
         if ( slice scope = optionalString(getCaseInsensitive(dict, "SCOPE"), "SCOPE") ) {
             explicitScope = true;
@@ -140,57 +150,43 @@ namespace litecore::qt {
             _collection = ctx.from->_collection;
         }
 
-        if ( slice alias = optionalString(getCaseInsensitive(dict, "AS"), "AS") ) {
-            require(!alias.empty(), "invalid alias 'AS %.*s'", FMTSLICE(alias));
-            _hasExplicitAlias = true;
-            _alias            = alias;
-            replace(_alias, "\\", "");
-            _columnName = _alias;
-        } else {
+        // Parse AS:
+        parseAS(dict);
+        if ( !_hasExplicitAlias ) {
             require(explicitCollection, "missing AS and COLLECTION in FROM item");
             if ( !_scope.empty() ) _alias = _scope + ".";
             _alias += _columnName;
         }
 
+        // Parse JOIN and ON:
         if ( slice join = optionalString(getCaseInsensitive(dict, "JOIN"), "JOIN") ) {
             _join = lookupJoin(join);
             require(_join != JoinType::none, "invalid JOIN type");
         }
-
-        _unnestFleeceExpression = getCaseInsensitive(dict, "UNNEST");
-        if ( _unnestFleeceExpression ) {
-            require(_join == JoinType::none, "UNNEST cannot accept a JOIN clause");
-            require(!_alias.empty(), "UNNEST requires an AS alias");
-        }
-
         _tempOn = getCaseInsensitive(dict, "ON");
         if ( _tempOn ) {
             // (Don't parse the expression yet; it might refer to aliases of later sources.)
             require(_join != JoinType::cross, "CROSS JOIN cannot accept an ON clause");
-            require(!_unnestFleeceExpression, "UNNEST cannot accept an ON clause");
             if ( _join == JoinType::none ) _join = JoinType::inner;
         } else {
             require(_join == JoinType::none || _join == JoinType::cross, "missing ON for JOIN");
         }
     }
 
-    // Creates a fake UNNEST table source for use by QueryTranslator::writeCreateIndex.
-    unique_ptr<SourceNode> SourceNode::makeFakeUnnest() {
-        unique_ptr<SourceNode> source(new SourceNode);
-        source->_fakeUnnest = true;
-        source->_tableName  = "FAKE_UNNEST";
-        return source;
+    void SourceNode::parseAS(Dict dict) {
+        if ( slice alias = optionalString(getCaseInsensitive(dict, "AS"), "AS") ) {
+            require(!alias.empty(), "invalid alias 'AS %.*s'", FMTSLICE(alias));
+            _hasExplicitAlias = true;
+            _alias            = alias;
+            replace(_alias, "\\", "");
+            _columnName = _alias;
+        }
     }
 
     void SourceNode::parseChildExprs(ParseContext& ctx) {
-        // Now parse the ON or UNNEST expression:
         if ( _tempOn ) {
             setChild(_joinOn, ExprNode::parse(_tempOn, ctx));
             _tempOn = nullptr;
-        }
-        if ( _unnestFleeceExpression ) {
-            setChild(_unnest, ExprNode::parse(_unnestFleeceExpression, ctx));
-            //_tempUnnest = nullptr;
         }
     }
 
@@ -231,7 +227,29 @@ namespace litecore::qt {
         }
     }
 
-    string SourceNode::unnestIdentifier() const {
+    void SourceNode::visitChildren(ChildVisitor const& visitor) { visitor(_joinOn); }
+
+    void SourceNode::clearWeakRefs() { _joinOn.reset(); }
+
+#pragma mark - UNNEST SOURCE:
+
+    UnnestSourceNode::UnnestSourceNode(Dict dict, ParseContext& ctx) : SourceNode(SourceType::unnest) {
+        parseAS(dict);
+        _unnestFleeceExpression = getCaseInsensitive(dict, "UNNEST");
+        require(!getCaseInsensitive(dict, "JOIN") && !getCaseInsensitive(dict, "ON"),
+                "UNNEST cannot accept a JOIN or ON clause");
+    }
+
+    // Creates a fake UNNEST table source for use by QueryTranslator::writeCreateIndex.
+    UnnestSourceNode::UnnestSourceNode() : SourceNode(SourceType::unnest) {
+        setTableName("FAKE_UNNEST");  // it needs a table name, else writeSQL() will barf
+    }
+
+    void UnnestSourceNode::parseChildExprs(ParseContext& ctx) {
+        setChild(_unnest, ExprNode::parse(_unnestFleeceExpression, ctx));
+    }
+
+    string UnnestSourceNode::unnestIdentifier() const {
         DebugAssert(_unnest);
         if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
             return string(prop->path());
@@ -240,18 +258,25 @@ namespace litecore::qt {
         }
     }
 
-    IndexType SourceNode::indexType() const { return isIndex() ? _indexedNodes[0]->indexType() : IndexType::none; }
-
-    string_view SourceNode::indexedExpressionJSON() const {
-        return isIndex() ? _indexedNodes[0]->indexExpressionJSON() : "";
+    void UnnestSourceNode::visitChildren(ChildVisitor const& visitor) {
+        SourceNode::visitChildren(visitor);
+        visitor(_unnest);
     }
 
-    void SourceNode::visitChildren(ChildVisitor const& visitor) { visitor(_joinOn)(_unnest); }
-
-    void SourceNode::clearWeakRefs() {
-        _indexedNodes.clear();
-        _joinOn.reset();
+    void UnnestSourceNode::clearWeakRefs() {
+        SourceNode::clearWeakRefs();
         _unnest.reset();
+    }
+
+#pragma mark - INDEX SOURCE:
+
+    IndexType IndexSourceNode::indexType() const { return _indexedNodes[0]->indexType(); }
+
+    string_view IndexSourceNode::indexedExpressionJSON() const { return _indexedNodes[0]->indexExpressionJSON(); }
+
+    void IndexSourceNode::clearWeakRefs() {
+        SourceNode::clearWeakRefs();
+        _indexedNodes.clear();
     }
 
 #pragma mark - SELECT:
@@ -304,7 +329,7 @@ namespace litecore::qt {
             if ( Value from = getCaseInsensitive(select, "FROM") ) {
                 for ( Value i : requiredArray(from, "FROM") ) {
                     Dict item = requiredDict(i, "FROM item");
-                    addSource(make_unique<SourceNode>(item, ctx), ctx);
+                    addSource(SourceNode::parse(item, ctx), ctx);
                 }
             }
             if ( _sources.empty() ) {
@@ -393,7 +418,7 @@ namespace litecore::qt {
     }
 
     void SelectNode::addSource(unique_ptr<SourceNode> source, ParseContext& ctx) {
-        if ( !source->isIndex() ) {
+        if ( source->type() != SourceType::index ) {
             registerAlias(source.get(), ctx);
             if ( source->isCollection() && !source->isJoin() ) {
                 require(!_from, "multiple non-join FROM items");
