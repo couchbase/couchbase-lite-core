@@ -435,8 +435,8 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C]") {
     tableNames.emplace("kv_.coll");
     tableNames.emplace("kv_.scope.coll");
-    tableNames.emplace("kv_.coll::ftsIndex");
-    tableNames.emplace("kv_.scope.coll::ftsIndex");
+    tableNames.emplace("kv_.coll::fts\\Index");
+    tableNames.emplace("kv_.scope.coll::fts\\Index");
 
     CHECK(translate("SELECT x FROM coll ORDER BY y")
           == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");

@@ -4,7 +4,8 @@ The Query Translator's job is to convert a query from our [JSON schema][SCHEMA] 
 
 It operates in three passes:
 1. Traverse the JSON/Fleece tree creating a tree of `Node` objects (q.v.)
-2. Do a bit of postprocessing on the `Node` tree
+2. Do a bit of postprocessing on the `Node` tree.
+3. For each `SourceNode`, ask the delegate what its SQL table name is and store that in the node.
 3. Traverse the `Node`s, writing SQL to an output stream.
 
 ## Nodes

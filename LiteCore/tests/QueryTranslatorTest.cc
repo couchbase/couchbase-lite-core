@@ -11,6 +11,8 @@
 //
 
 #include "QueryTranslatorTest.hh"
+#include "SQLiteDataFile.hh"
+#include "SQLiteKeyStore.hh"
 #include "ExprNodes.hh"
 #include "SelectNodes.hh"
 #include "StringUtil.hh"
@@ -23,85 +25,105 @@ using namespace fleece;
 inline string operator""_j5(const char* str, size_t len) { return json5({str, len}); }
 
 string QueryTranslatorTest::parseWhere(string_view json) {
+#if 1
     Log("### %.*s", int(json.size()), json.data());
-    usedTableNames.clear();
-    ParseContext ctx;
-    Doc          doc  = Doc::fromJSON(json5(json));
-    auto         expr = ExprNode::parse(doc.root(), ctx);
-    expr->postprocess(ctx);
-    for ( auto source : ctx.sources ) fillInTableName(source);
-    ctx.clear();
-    return expr->SQLString();
+    QueryTranslator t(*this, "_default", "kv_default");
+    FLError         err;
+    Doc             doc = Doc::fromJSON(json5(json), &err);
+    REQUIRE(doc);
+    string sql     = t.expressionSQL(doc.root());
+    usedTableNames = t.collectionTablesUsed();
+    return sql;
+#else
+    string                       sql     = parse("['SELECT', {WHERE: " + string(json) + "}]");
+    static constexpr string_view kPrefix = "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc WHERE ";
+    REQUIRE(hasPrefix(sql, kPrefix));
+    return sql.substr(kPrefix.size());
+#endif
 }
 
 string QueryTranslatorTest::parse(string_view json) {
     Log("### %.*s", int(json.size()), json.data());
-    usedTableNames.clear();
-    auto query = make_unique<QueryNode>(json5(json));
-    for ( auto& source : query->allSources() ) fillInTableName(source);
-    return query->SQLString();
+    QueryTranslator t(*this, "_default", "kv_default");
+    t.parseJSON(json5(json));
+    usedTableNames = t.collectionTablesUsed();
+    return t.SQL();
 }
 
 string QueryTranslatorTest::parse(FLValue root) {
     usedTableNames.clear();
-    auto query = make_unique<QueryNode>(root);
-    for ( auto& source : query->allSources() ) fillInTableName(source);
-    return query->SQLString();
+    QueryTranslator t(*this, "_default", "kv_default");
+    t.parse(root);
+    usedTableNames = t.collectionTablesUsed();
+    return t.SQL();
 }
 
 void QueryTranslatorTest::mustFail(string_view json) {
     ExpectException(error::LiteCore, error::InvalidQuery, [&] { (void)parseWhere(json); });
 }
 
-void QueryTranslatorTest::fillInTableName(SourceNode* source) {
-    string tableName;
-    if (source->isUnnest()) {
-        auto unnestSrc = source->unnestExpression()->source();
-        if (!unnestSrc)
-            return;
-        tableName = collectionTableName(*unnestSrc);
-        string propertyStr;
-        if (auto prop = dynamic_cast<PropertyNode*>(source->unnestExpression())) {
-            propertyStr = string(prop->path());
-        }
-        tableName = unnestedTableName(tableName, propertyStr);
-        if (!tableExists(tableName))
-            return;
-    } else {
-        tableName = collectionTableName(*source);
-        //Log("\tSource %s -> table %s", source->description().c_str(), tableName.c_str());
-        INFO("table name is " << tableName);
-        if ( !tableExists(tableName) )
-            error::_throw(error::InvalidQuery, "Nonexistent table `%s` (collection '%s' in scope '%s')", tableName.c_str(),
-                          source->collection().c_str(), source->scope().c_str());
-    }
-    usedTableNames.insert(tableName);
-    source->setTableName(tableName);
+[[nodiscard]] bool QueryTranslatorTest::tableExists(const string& tableName) const {
+    string name = tableName;
+    if ( hasPrefix(name, "all_") ) name = "kv_" + name.substr(4);
+    bool exists = tableNames.count(name) > 0;
+    Log("    tableExists(\"%s\") -> %s", tableName.c_str(), (exists ? "true" : "false"));
+    return exists;
 }
 
-[[nodiscard]] string QueryTranslatorTest::collectionTableName(SourceNode const& source) const {
-    // This is a simplified version of SQLiteDataFile::collectionTableName()
-    slice collection = source.collection();
-    CHECK(!collection.hasPrefix("kv_"));  // make sure I didn't get passed a table name
-    stringstream table;
-    if ( source.usesDeletedDocs() ) {
-        table << "all_";
-    } else {
-        table << "kv_";
-    }
-    if ( !source.scope().empty() ) table << KeyStore::kCollectionPrefix << source.scope();
-    if ( collection == "" || collection == KeyStore::kDefaultCollectionName ) table << DataFile::kDefaultKeyStoreName;
-    else
-        table << KeyStore::kCollectionPrefix << collection;
+// Basically copied from SQLiteDataFile::collectionTableName()
+[[nodiscard]] string QueryTranslatorTest::collectionTableName(const string& collection, DeletionStatus type) const {
+    static const string kDeletedKeyStorePrefix = "del_";
 
-    if ( source.indexType() == IndexType::FTS ) table << "::" << source.indexedExpressionJSON();
-    else if ( source.indexType() == IndexType::vector )
-        return vectorTableName(table.str(), string(source.indexedExpressionJSON()), "");  //FIXME: Get metric
-    return table.str();
+    CHECK(!slice(collection).hasPrefix("kv_"));  // make sure I didn't get passed a table name
+    string name;
+    if ( type == QueryTranslator::kLiveAndDeletedDocs ) {
+        name = "all_";
+    } else {
+        name = "kv_";
+        if ( type == QueryTranslator::kDeletedDocs ) name += kDeletedKeyStorePrefix;
+    }
+
+    auto [scope, coll] = DataFile::splitCollectionPath(collection);
+
+    if ( collection == "_" || (DataFile::isDefaultScope(scope) && DataFile::isDefaultCollection(coll)) ) {
+        name += DataFile::kDefaultKeyStoreName;
+    } else if ( !scope && coll == databaseName
+                && !tableExists(name + string(KeyStore::kCollectionPrefix) + coll.asString()) ) {
+        // The name of this database represents the default collection,
+        // _unless_ there is a collection with that name.
+        name += DataFile::kDefaultKeyStoreName;
+    } else {
+        string candidate = name + string(KeyStore::kCollectionPrefix);
+        bool   isValid   = true;
+        if ( !DataFile::isDefaultScope(scope) ) {
+            if ( !KeyStore::isValidCollectionName(scope) ) {
+                isValid = false;
+            } else {
+                candidate += SQLiteKeyStore::transformCollectionName(scope.asString(), true)
+                             + KeyStore::kScopeCollectionSeparator;
+            }
+        }
+        if ( isValid && KeyStore::isValidCollectionName(coll) ) {
+            candidate += SQLiteKeyStore::transformCollectionName(coll.asString(), true);
+        } else {
+            error::_throw(error::InvalidQuery, "\"%s\" is not a valid collection name", collection.c_str());
+        }
+        name = candidate;
+    }
+    Log("    collectionTableName(\"%s\", %d) -> %s", collection.c_str(), int(type), name.c_str());
+    return name;
+}
+
+string QueryTranslatorTest::FTSTableName(const string& onTable, const string& property) const {
+    return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kIndexSeparator, property);
 }
 
 string QueryTranslatorTest::unnestedTableName(const string& onTable, const string& property) const {
-    return onTable + ":unnest:" + property;
+    return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
+}
+
+string QueryTranslatorTest::predictiveTableName(const string& onTable, const string& property) const {
+    return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
 }
 
 [[nodiscard]] string QueryTranslatorTest::vectorTableName(const string& onTable, const std::string& property,
@@ -113,11 +135,6 @@ string QueryTranslatorTest::unnestedTableName(const string& onTable, const strin
     REQUIRE(tableExists(tableName));
     if ( !metricName.empty() ) REQUIRE(metricName == vectorIndexMetric);
     return tableName;
-}
-
-[[nodiscard]] bool QueryTranslatorTest::tableExists(string tableName) const {
-    if ( hasPrefix(tableName, "all_") ) tableName = "kv_" + tableName.substr(4);
-    return tableNames.count(tableName) > 0;
 }
 
 void QueryTranslatorTest::CHECK_equal(string_view result, string_view expected) {
@@ -144,6 +161,8 @@ void QueryTranslatorTest::CHECK_equal(string_view result, string_view expected) 
         FAIL("Incorrect result");
     }
 }
+
+#pragma mark - THE TESTS:
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator basic", "[Query][QueryTranslator]") {
     CHECK_equal(parseWhere("['=', ['.', 'name'], 'Puddin\\' Tane']"), "fl_value(body, 'name') = 'Puddin'' Tane'");
@@ -467,20 +486,22 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST optimized",
     CHECK_equal(parseWhere("['SELECT', {\
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
-                     WHERE: ['=', ['.notes'], 'torn']}]")
-          , "SELECT book.key, book.sequence FROM kv_default AS book JOIN \"kv_default:unnest:notes\" AS notes ON "
-             "notes.docid=book.rowid WHERE fl_unnested_value(notes.body) = 'torn' AND (book.flags & 1 = 0)");
-    CHECK_equal(parseWhere("['SELECT', {\
+                     WHERE: ['=', ['.notes'], 'torn']}]"),
+                "SELECT book.key, book.sequence FROM kv_default AS book JOIN \"kv_default:unnest:notes\" AS notes ON "
+                "notes.docid=book.rowid WHERE fl_unnested_value(notes.body) = 'torn' AND (book.flags & 1 = 0)");
+    CHECK_equal(
+            parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
-                     WHERE: ['>', ['.notes.page'], 100]}]")
-          , "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN \"kv_default:unnest:notes\" "
-             "AS notes ON notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (book.flags & "
-             "1 = 0)");
+                     WHERE: ['>', ['.notes.page'], 100]}]"),
+            "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN \"kv_default:unnest:notes\" "
+            "AS notes ON notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (book.flags & "
+            "1 = 0)");
 }
 
-TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collections", "[Query][QueryTranslator][Unnest]") {
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collections",
+                 "[Query][QueryTranslator][Unnest]") {
     string str = "['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'library'}, \
@@ -489,18 +510,19 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collec
                      WHERE: ['>', ['.notes.page'], 100]}]";
     // Non-default collection gets unnested:
     tableNames.insert("kv_.books");
-    CHECK_equal(parseWhere(str)
-          , "SELECT fl_result(notes.value) FROM kv_default AS library INNER JOIN \"kv_.books\" AS book ON "
-             "fl_value(book.body, 'library') = library.key JOIN fl_each(book.body, 'notes') AS notes WHERE "
-             "fl_nested_value(notes.body, 'page') > 100 AND (library.flags & 1 = 0)");
+    CHECK_equal(parseWhere(str),
+                "SELECT fl_result(notes.value) FROM kv_default AS library INNER JOIN \"kv_.books\" AS book ON "
+                "fl_value(book.body, 'library') = library.key JOIN fl_each(book.body, 'notes') AS notes WHERE "
+                "fl_nested_value(notes.body, 'page') > 100 AND (library.flags & 1 = 0)");
 
     // Same, but optimized:
     tableNames.insert("kv_.books:unnest:notes");
-    CHECK_equal(parseWhere(str)
-          , "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS library INNER JOIN \"kv_.books\" AS "
-             "book ON fl_value(book.body, 'library') = library.key JOIN \"kv_.books:unnest:notes\" AS notes ON "
-             "notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (library.flags & 1 = "
-             "0)");
+    CHECK_equal(
+            parseWhere(str),
+            "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS library INNER JOIN \"kv_.books\" AS "
+            "book ON fl_value(book.body, 'library') = library.key JOIN \"kv_.books:unnest:notes\" AS notes ON "
+            "notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (library.flags & 1 = "
+            "0)");
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Collate", "[Query][QueryTranslator][Collation]") {
@@ -738,7 +760,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT FTS", "[Query][Que
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried FTS", "[Query][QueryTranslator][FTS]") {
-    tableNames.insert("kv_default::byStreet");
+    tableNames.insert("kv_default::by\\Street");
     parse("['SELECT', {WHERE: ['AND', ['MATCH()', 'byStreet', 'Hwy'],\
                                       ['=', ['.', 'contact', 'address', 'state'], 'CA']]}]");
     ExpectException(error::LiteCore, error::InvalidQuery, "MATCH can only appear at top-level, or in a top-level AND",

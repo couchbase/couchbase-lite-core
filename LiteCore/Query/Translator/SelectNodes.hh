@@ -98,9 +98,11 @@ namespace litecore::qt {
         /// True if this is a regular collection, not an UNNEST or a table-based index.
         bool isCollection() const { return !isUnnest() && !isIndex(); }
 
-        bool isUnnest() const { return _unnest || _unnestFleeceExpression || _fakeUnnest; }  ///< True if this is an UNNEST expression
+        bool isUnnest() const {
+            return _unnest || _unnestFleeceExpression || _fakeUnnest;
+        }  ///< True if this is an UNNEST expression
 
-        ExprNode* unnestExpression() const {return _unnest.get();}
+        ExprNode* unnestExpression() const { return _unnest.get(); }
 
         /// Returns a string identifying the UNNEST expression; used for matching against an array index table.
         string unnestIdentifier() const;
@@ -128,18 +130,18 @@ namespace litecore::qt {
 
         void clearWeakRefs();
 
-        string                                _scope;                  // Scope name, or empty for default
-        string                                _collection;             // Collection name, or empty for default
-        string                                _columnName;             // Name to use if used as result column
-        string                                _tableName;              // SQLite table name (set by caller)
-        JoinType                              _join = JoinType::none;  // Type of JOIN, or none
-        unique_ptr<ExprNode>                  _joinOn;                 // "ON ..." predicate
-        Value                                 _tempOn;                 // Temporarily holds source of _joinOn
-        unique_ptr<ExprNode>                  _unnest;                 // "UNNEST ..." source expression
-        Value                                 _unnestFleeceExpression; // Parsed-JSON form of source expression
-        std::vector<checked_ptr<IndexedNode>> _indexedNodes;           // IndexedNodes using this index, if any
-        bool                                  _usesDeleted = false;    // True if exprs refer to deleted docs
-        bool                                  _fakeUnnest = false;
+        string                                _scope;                   // Scope name, or empty for default
+        string                                _collection;              // Collection name, or empty for default
+        string                                _columnName;              // Name to use if used as result column
+        string                                _tableName;               // SQLite table name (set by caller)
+        JoinType                              _join = JoinType::none;   // Type of JOIN, or none
+        unique_ptr<ExprNode>                  _joinOn;                  // "ON ..." predicate
+        Value                                 _tempOn;                  // Temporarily holds source of _joinOn
+        unique_ptr<ExprNode>                  _unnest;                  // "UNNEST ..." source expression
+        Value                                 _unnestFleeceExpression;  // Parsed-JSON form of source expression
+        std::vector<checked_ptr<IndexedNode>> _indexedNodes;            // IndexedNodes using this index, if any
+        bool                                  _usesDeleted = false;     // True if exprs refer to deleted docs
+        bool                                  _fakeUnnest  = false;
     };
 
     /** A `SELECT` statement, whether top-level or nested. */

@@ -80,7 +80,7 @@ namespace litecore::qt {
     void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* C4NULLABLE param, SQLWriter&);
 
     // Constructs a unique identifier of an expression, from a digest of its JSON.
-    string expressionIdentifier(Array expression, unsigned maxItems =0);
+    string expressionIdentifier(Array expression, unsigned maxItems = 0);
 
 }  // namespace litecore::qt
 

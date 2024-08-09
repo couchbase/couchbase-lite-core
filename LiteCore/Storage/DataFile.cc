@@ -105,6 +105,19 @@ namespace litecore {
         return ret;
     }
 
+    std::pair<alloc_slice, alloc_slice> DataFile::splitCollectionPath(const string& collectionPath) {
+        auto        dot = DataFile::findCollectionPathSeparator(collectionPath);
+        alloc_slice scope;
+        alloc_slice collection;
+        if ( dot == string::npos ) {
+            collection = DataFile::unescapeCollectionName(collectionPath);
+        } else {
+            scope      = DataFile::unescapeCollectionName(collectionPath.substr(0, dot));
+            collection = DataFile::unescapeCollectionName(collectionPath.substr(dot + 1));
+        }
+        return std::make_pair(scope, collection);
+    }
+
 #pragma mark - DATAFILE:
 
 

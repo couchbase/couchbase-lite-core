@@ -178,7 +178,7 @@ namespace litecore::qt {
     unique_ptr<SourceNode> SourceNode::makeFakeUnnest() {
         unique_ptr<SourceNode> source(new SourceNode);
         source->_fakeUnnest = true;
-        source->_tableName = "FAKE_UNNEST";
+        source->_tableName  = "FAKE_UNNEST";
         return source;
     }
 
@@ -233,7 +233,7 @@ namespace litecore::qt {
 
     string SourceNode::unnestIdentifier() const {
         DebugAssert(_unnest);
-        if (auto prop = dynamic_cast<PropertyNode*>(_unnest.get())) {
+        if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
             return string(prop->path());
         } else {
             return expressionIdentifier(_unnestFleeceExpression.asArray());

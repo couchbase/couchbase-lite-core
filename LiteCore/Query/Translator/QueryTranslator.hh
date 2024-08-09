@@ -122,6 +122,8 @@ namespace litecore {
       private:
         QueryTranslator(const QueryTranslator& qp)         = delete;
         QueryTranslator& operator=(const QueryTranslator&) = delete;
+        string           tableNameForSource(qt::SourceNode*);
+        void             assignTableNameToSource(qt::SourceNode*);
         string           writeSQL(function_ref<void(qt::SQLWriter&)>);
         string           functionCallSQL(slice fnName, FLValue arg, FLValue C4NULLABLE param = nullptr);
 

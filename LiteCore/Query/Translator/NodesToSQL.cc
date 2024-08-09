@@ -118,10 +118,10 @@ namespace litecore::qt {
             } else {
                 // Regular property access, using the sqliteFnName as accessor:
                 bool extraCloseParen = false;
-                if (_source && _source->isUnnest() && !_source->tableName().empty()) {
-                    if (sqliteFnName == kRootFnName || sqliteFnName == kNestedValueFnName)
-                        sqliteFnName = kUnnestedValueFnName;    // Use `fl_unnested_value` to access unnest index table
-                    else if (sqliteFnName == kResultFnName) {
+                if ( _source && _source->isUnnest() && !_source->tableName().empty() ) {
+                    if ( sqliteFnName == kRootFnName || sqliteFnName == kNestedValueFnName )
+                        sqliteFnName = kUnnestedValueFnName;  // Use `fl_unnested_value` to access unnest index table
+                    else if ( sqliteFnName == kResultFnName ) {
                         sqliteFnName = kUnnestedValueFnName;
                         ctx << kResultFnName << '(';
                         extraCloseParen = true;
@@ -131,8 +131,7 @@ namespace litecore::qt {
                 if ( _path.count() > 0 ) ctx << ", " << sqlString(_path.toString());
                 if ( param ) ctx << ", " << *param;
                 ctx << ")";
-                if (extraCloseParen)
-                    ctx << ')';
+                if ( extraCloseParen ) ctx << ')';
             }
         }
     }
@@ -318,7 +317,7 @@ namespace litecore::qt {
     void SourceNode::writeSQL(SQLWriter& ctx) const {
         if ( _unnest ) {
             ctx << "JOIN ";
-            if (_tableName.empty()) {
+            if ( _tableName.empty() ) {
                 // Unindexed UNNEST, using `fl_each`:
                 if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
                     prop->setSQLiteFn(kEachFnName);
@@ -341,10 +340,12 @@ namespace litecore::qt {
             } else {
                 ctx << "FROM ";
             }
-            Assert(!_tableName.empty(), "QueryTranslator client didn't set Source's tableName");
-            if ( isIndex() ) _indexedNodes[0]->writeSourceTable(ctx, _tableName);
-            else
+            if ( isIndex() ) {
+                _indexedNodes[0]->writeSourceTable(ctx, _tableName);
+            } else {
+                Assert(!_tableName.empty(), "QueryTranslator client didn't set Source's tableName");
                 ctx << sqlIdentifier(_tableName);
+            }
         }
         if ( !_alias.empty() ) { ctx << " AS " << sqlIdentifier(_alias); }
         if ( _joinOn ) { ctx << " ON " << _joinOn; }

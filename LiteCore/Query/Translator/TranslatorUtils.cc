@@ -197,22 +197,12 @@ namespace litecore::qt {
         }
     }
 
-    static string expressionCanonicalJSON(Value expression) {
-        require(expression, "Invalid expression to index");
-        auto json = string(expression.toJSON(false, true));
-//        if ( _propertiesUseSourcePrefix ) {
-//            // Strip ".doc" from property paths if necessary:
-//            replace(json, "[\"." + _dbAlias + ".", "[\".");
-//        }
-        return json;
-    }
-
     string expressionIdentifier(Array expression, unsigned maxItems) {
         SHA1Builder sha;
         unsigned    item = 0;
         for ( Array::iterator i(expression); i; ++i ) {
             if ( maxItems > 0 && ++item > maxItems ) break;
-            sha << expressionCanonicalJSON(i.value());
+            sha << i.value().toJSON(false, true);
         }
         return sha.finish().asBase64();
     }

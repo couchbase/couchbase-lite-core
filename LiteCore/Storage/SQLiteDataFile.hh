@@ -108,11 +108,11 @@ namespace litecore {
         static void enableExtension(const string& name, string path);
 
         // QueryTranslator::Delegate:
-        bool        tableExists(const std::string& tableName) const override;
-        string      collectionTableName(const string& collection, DeletionStatus) const override;
-        string      auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) const;
-        std::string FTSTableName(const string& collection, const std::string& property) const override;
-        std::string unnestedTableName(const string& collection, const std::string& property) const override;
+        bool          tableExists(const std::string& tableName) const override;
+        string        collectionTableName(const string& collection, DeletionStatus) const override;
+        static string auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property);
+        std::string   FTSTableName(const string& collection, const std::string& property) const override;
+        std::string   unnestedTableName(const string& collection, const std::string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
         std::string predictiveTableName(const string& collection, const std::string& property) const override;
         std::string vectorTableName(const string& collection, const std::string& property,

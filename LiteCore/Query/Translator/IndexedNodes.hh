@@ -47,7 +47,7 @@ namespace litecore::qt {
         bool isAuxiliary() const { return _isAuxiliary; }
 
         /// Writes SQL for the index table name (or SELECT expression)
-        virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const;
+        virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const = 0;
 
       protected:
         IndexedNode(IndexType type);
@@ -65,6 +65,7 @@ namespace litecore::qt {
       protected:
         FTSNode(Array::iterator& args, ParseContext&, const char* name);
 
+        void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
         void writeIndex(SQLWriter&) const;
     };
 

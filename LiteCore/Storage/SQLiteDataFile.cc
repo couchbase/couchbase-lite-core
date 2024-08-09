@@ -793,25 +793,6 @@ namespace litecore {
         return ksName == kDefaultKeyStoreName || ksName.hasPrefix(KeyStore::kCollectionPrefix);
     }
 
-    namespace {
-        std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath) {
-            auto        dot = DataFile::findCollectionPathSeparator(collectionPath);
-            alloc_slice scope;
-            alloc_slice collection;
-            if ( dot == string::npos ) {
-                collection = DataFile::unescapeCollectionName(collectionPath);
-            } else {
-                scope      = DataFile::unescapeCollectionName(collectionPath.substr(0, dot));
-                collection = DataFile::unescapeCollectionName(collectionPath.substr(dot + 1));
-            }
-            return std::make_pair(scope, collection);
-        }
-
-        inline bool isDefaultCollection(slice id) { return id == KeyStore::kDefaultCollectionName; }
-
-        inline bool isDefaultScope(slice id) { return !id || isDefaultCollection(id); }
-    }  // namespace
-
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
     // (The name might be of the form "scope.collection", which is fine because that's the same
     // encoding as used in table names.)
@@ -862,8 +843,7 @@ namespace litecore {
         return name;
     }
 
-    string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator,
-                                              const string& property) const {
+    string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) {
         return onTable + string(typeSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 

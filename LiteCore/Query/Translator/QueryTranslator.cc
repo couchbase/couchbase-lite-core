@@ -39,54 +39,22 @@ namespace litecore {
         // Parse the query into a Node tree:
         unique_ptr<qt::QueryNode> query = make_unique<QueryNode>(v);
 
-        // Set the SQLite table name for each SourceNode:
-        for ( auto& source : query->sources() ) {
-            if ( source->isUnnest() ) {
-                // Check whether there's an array index we can use for an UNNEST:
-                string tableName = _delegate.unnestedTableName(_defaultTableName, source->unnestIdentifier());
-                if (_delegate.tableExists(tableName))
-                    source->setTableName(tableName);
-            } else {
-                string name = source->collection();
-                if ( name.empty() ) name = _defaultCollectionName;
-                if ( !source->scope().empty() ) name = source->scope() + "." + name;
-
-                DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
-                //FIXME: Support kDeletedDocs
-
-                string tableName = _delegate.collectionTableName(name, delStatus);
-                if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
-                    fail("no such collection \"%s\"", name.c_str());
-
-                if ( source->indexType() == IndexType::FTS ) {
-                    tableName = _delegate.FTSTableName(tableName, string(source->indexedExpressionJSON()));
-                    _ftsTables.push_back(tableName);
-                } else if ( source->indexType() == IndexType::vector ) {
-#ifdef COUCHBASE_ENTERPRISE
-                    auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(source->indexedNodes().front().get());
-                    Assert(vecSource);
-                    tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
-                                                          vecSource->metric());
-#endif
-                } else if ( source->isCollection() ) {
-                    if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table
-                        _kvTables.insert(tableName);
-                }
-                source->setTableName(tableName);
+        query->visitTree([this](Node& node, unsigned /*depth*/) {
+            if ( auto source = dynamic_cast<SourceNode*>(&node) ) {
+                // Set the SQLite table name for each SourceNode:
+                assignTableNameToSource(source);
+            } else if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
+                // Capture the parameter names:
+                _parameters.emplace(p->name());
+            } else if ( !_usesExpiration ) {
+                // Detect whether the query uses the `expiration` column:
+                if ( auto m = dynamic_cast<MetaNode*>(&node); m && m->property() == MetaProperty::expiration )
+                    _usesExpiration = true;
             }
-        }
+        });
 
         // Get the column titles:
         for ( auto& what : query->what() ) _columnTitles.push_back(what->columnName());
-
-        // Get the parameter names:
-        query->visitTree([this](Node& node, unsigned /*depth*/) {
-            if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
-                _parameters.emplace(p->name());
-            } else if ( auto m = dynamic_cast<MetaNode*>(&node) ) {
-                if ( m->property() == MetaProperty::expiration ) _usesExpiration = true;
-            }
-        });
 
         _isAggregateQuery   = query->isAggregate();
         _1stCustomResultCol = query->numPrependedColumns();
@@ -111,7 +79,63 @@ namespace litecore {
     string QueryTranslator::expressionSQL(FLValue exprSource) {
         ParseContext ctx;
         auto         expr = ExprNode::parse(exprSource, ctx);
+        expr->postprocess(ctx);
+        ctx.clear();
+
+        // Set the SQLite table name for each SourceNode:
+        expr->visitTree([this](Node& node, unsigned /*depth*/) {
+            if ( auto source = dynamic_cast<SourceNode*>(&node) ) assignTableNameToSource(source);
+        });
+
         return writeSQL([&](SQLWriter& writer) { writer << *expr; });
+    }
+
+    void QueryTranslator::assignTableNameToSource(SourceNode* source) {
+        if ( source->tableName().empty() ) {
+            string tableName = tableNameForSource(source);
+            if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) )
+                source->setTableName(tableName);
+        }
+    }
+
+    string QueryTranslator::tableNameForSource(SourceNode* source) {
+        string tableName(source->tableName());
+        if ( !tableName.empty() ) return tableName;
+
+        if ( source->isUnnest() ) {
+            // Check whether there's an array index we can use for an UNNEST:
+            auto unnestSrc = source->unnestExpression()->source();
+            if ( !unnestSrc ) return "";
+            tableName = _delegate.unnestedTableName(tableNameForSource(unnestSrc), source->unnestIdentifier());
+            if ( _delegate.tableExists(tableName) ) source->setTableName(tableName);
+        } else {
+            string name = source->collection();
+            if ( name.empty() ) name = _defaultCollectionName;
+            if ( !source->scope().empty() ) name = source->scope() + "." + name;
+
+            DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
+            //FIXME: Support kDeletedDocs
+
+            tableName = _delegate.collectionTableName(name, delStatus);
+            if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
+                fail("no such collection \"%s\"", name.c_str());
+
+            if ( source->indexType() == IndexType::FTS ) {
+                tableName = _delegate.FTSTableName(tableName, string(source->indexedExpressionJSON()));
+                _ftsTables.push_back(tableName);
+            } else if ( source->indexType() == IndexType::vector ) {
+#ifdef COUCHBASE_ENTERPRISE
+                auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(source->indexedNodes().front().get());
+                Assert(vecSource);
+                tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
+                                                      vecSource->metric());
+#endif
+            } else if ( source->isCollection() ) {
+                if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table
+                    _kvTables.insert(tableName);
+            }
+        }
+        return tableName;
     }
 
 #pragma mark - INDEX CREATION:
@@ -123,8 +147,8 @@ namespace litecore {
             ParseContext ctx;
 
             unique_ptr<SourceNode> source;
-            if (isUnnestedTable) {
-                source = SourceNode::makeFakeUnnest();
+            if ( isUnnestedTable ) {
+                source   = SourceNode::makeFakeUnnest();
                 ctx.from = source.get();
             }
 
@@ -201,11 +225,11 @@ namespace litecore {
 
     string QueryTranslator::unnestedTableName(FLValue flExpr) const {
         ParseContext ctx;
-        auto expr = ExprNode::parse(flExpr, ctx);
+        auto         expr = ExprNode::parse(flExpr, ctx);
         ctx.clear();
 
         string propertyStr;
-        if (auto prop = dynamic_cast<PropertyNode*>(expr.get())) {
+        if ( auto prop = dynamic_cast<PropertyNode*>(expr.get()) ) {
             propertyStr = string(prop->path());
         } else {
             propertyStr = expressionIdentifier(Value(flExpr).asArray());
@@ -215,15 +239,13 @@ namespace litecore {
 
     string QueryTranslator::eachExpressionSQL(FLValue flExpr) {
         ParseContext ctx;
-        auto expr = ExprNode::parse(flExpr, ctx);
+        auto         expr = ExprNode::parse(flExpr, ctx);
         ctx.clear();
 
         auto prop = dynamic_cast<PropertyNode*>(expr.get());
         Assert(prop, "eachExpressionSQL: expression must be a property path");
         prop->setSQLiteFn(kEachFnName);
-        return writeSQL([&prop](SQLWriter &sql) {
-            prop->writeSQL(sql);
-        });
+        return writeSQL([&prop](SQLWriter& sql) { prop->writeSQL(sql); });
     }
 
     string QueryTranslator::predictiveTableName(FLValue) const { error::_throw(error::Unimplemented); }

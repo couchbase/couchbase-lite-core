@@ -27,8 +27,6 @@ namespace litecore::qt {
 
     IndexedNode::IndexedNode(IndexType type) : _type(type) { DebugAssert(type != IndexType::none); }
 
-    void IndexedNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const { ctx << sqlIdentifier(tableName); }
-
 #pragma mark - FTS:
 
     // Initializes using the index name as the first argument (for FTS)
@@ -42,6 +40,11 @@ namespace litecore::qt {
         require(_sourceCollection->isCollection(), "invalid source collection for %s()", name);
         require(path.count() > 0, "missing property after collection alias in %s()", name);
         _indexExpressionJSON = string(path.toString());
+    }
+
+    void FTSNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const {
+        require(!tableName.empty(), "missing FTS index");
+        ctx << sqlIdentifier(tableName);
     }
 
     void FTSNode::writeIndex(SQLWriter& sql) const {
@@ -171,6 +174,7 @@ namespace litecore::qt {
     }
 
     void VectorDistanceNode::writeSourceTable(SQLWriter& sql, string_view tableName) const {
+        require(!tableName.empty(), "missing vector index");
         if ( _simple ) {
             // In a "simple" vector match, run the vector query as a nested SELECT:
             sql << "(SELECT docid, distance FROM " << sqlIdentifier(tableName) << " WHERE vector MATCH encode_vector("
@@ -180,7 +184,7 @@ namespace litecore::qt {
             require(limit, "a LIMIT must be given when using APPROX_VECTOR_DISTANCE()");
             sql << " LIMIT " << limit << ")";
         } else {
-            IndexedNode::writeSourceTable(sql, tableName);
+            sql << sqlIdentifier(tableName);
         }
     }
 
