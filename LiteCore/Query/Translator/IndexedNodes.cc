@@ -21,11 +21,8 @@ namespace litecore::qt {
     using namespace std;
     using namespace fleece;
 
-
-    // These are indexed by IndexType:
-    constexpr const char* kOwnerFnName[3] = {nullptr, "MATCH", "APPROX_VECTOR_DISTANCE"};
-
-    IndexedNode::IndexedNode(IndexType type) : _type(type) { DebugAssert(type != IndexType::none); }
+    // indexed by IndexType:
+    constexpr const char* kOwnerFnName[2] = {"MATCH", "APPROX_VECTOR_DISTANCE"};
 
 #pragma mark - FTS:
 
@@ -197,11 +194,28 @@ namespace litecore::qt {
 #endif
 
 
-#pragma mark - ADDITIONS TO SOURCE & SELECT NODES:
+#pragma mark - INDEX SOURCE:
 
-    IndexSourceNode::IndexSourceNode(IndexedNode& node)
-        : SourceNode(SourceType::index, node.sourceCollection()->scope(), node.sourceCollection()->collection(),
-                     JoinType::inner) {}
+    IndexSourceNode::IndexSourceNode(IndexedNode* node, string alias)
+        : SourceNode(SourceType::index, node->sourceCollection()->scope(), node->sourceCollection()->collection(),
+                     JoinType::inner)
+        , _indexedNodes{checked_ptr{node}} {
+        _alias = std::move(alias);
+        // Create the join condition:
+        auto cond = make_unique<OpNode>(*lookupOp("=", 2));
+        cond->addArg(make_unique<RawSQLNode>("\"" + _alias + "\".docid"));
+        cond->addArg(make_unique<MetaNode>(MetaProperty::rowid, node->sourceCollection()));
+        addJoinCondition(std::move(cond));
+    }
+
+    IndexType IndexSourceNode::indexType() const { return _indexedNodes.front()->indexType(); }
+
+    string_view IndexSourceNode::indexedExpressionJSON() const { return _indexedNodes.front()->indexExpressionJSON(); }
+
+    void IndexSourceNode::clearWeakRefs() {
+        SourceNode::clearWeakRefs();
+        _indexedNodes.clear();
+    }
 
     void IndexSourceNode::checkIndexUsage() const {
         if ( indexType() == IndexType::FTS ) {
@@ -213,6 +227,15 @@ namespace litecore::qt {
                 fail("Sorry, multiple MATCHes of the same property are not allowed");
         }
     }
+
+    bool IndexSourceNode::matchesNode(const IndexedNode* node) const {
+        IndexedNode* mine = _indexedNodes.front();
+        return mine->indexType() == node->indexType() && mine->indexExpressionJSON() == node->indexExpressionJSON()
+               && collection() == node->sourceCollection()->collection()
+               && scope() == node->sourceCollection()->scope();
+    }
+
+#pragma mark - ADDITIONS TO SELECTNODE:
 
     template <class T>
     static bool aliasExists(string const& alias, vector<T> const& _sources) {
@@ -243,7 +266,7 @@ namespace litecore::qt {
                         require(depth == validToDepth, "%s can only appear at top-level, or in a top-level AND",
                                 kOwnerFnName[int(ind->indexType())]);
                     }
-                    addIndexForNode(*ind, ctx);
+                    addIndexForNode(ind, ctx);
                 }
             });
         }
@@ -252,7 +275,7 @@ namespace litecore::qt {
             if ( auto ind = dynamic_cast<IndexedNode*>(&node); ind && !ind->indexSource() ) {
                 require(ind->indexType() != IndexType::FTS || ind->isAuxiliary(),
                         "a %s is not allowed outside the WHERE clause", kOwnerFnName[int(ind->indexType())]);
-                addIndexForNode(*ind, ctx);
+                addIndexForNode(ind, ctx);
             }
         });
 
@@ -264,44 +287,33 @@ namespace litecore::qt {
 
     /// Adds a SourceNode for an IndexedNode, or finds an existing one.
     /// Sets the source as its indexSource.
-    void SelectNode::addIndexForNode(IndexedNode& node, ParseContext& ctx) {
-        DebugAssert(node.indexType() != IndexType::none);
-        DebugAssert(!node.indexExpressionJSON().empty());
+    void SelectNode::addIndexForNode(IndexedNode* node, ParseContext& ctx) {
+        DebugAssert(!node->indexExpressionJSON().empty());
 
         // Look for an existing index source:
         IndexSourceNode* indexSrc = nullptr;
         for ( auto& s : _sources ) {
-            if ( auto ind = dynamic_cast<IndexSourceNode*>(s.get()) ) {
-                if ( ind->indexType() == node.indexType() && ind->indexedExpressionJSON() == node.indexExpressionJSON()
-                     && ind->collection() == node.sourceCollection()->collection()
-                     && ind->scope() == node.sourceCollection()->scope() ) {
-                    indexSrc = ind;
-                    break;
-                }
+            if ( auto ind = dynamic_cast<IndexSourceNode*>(s.get()); ind && ind->matchesNode(node) ) {
+                indexSrc = ind;
+                break;
             }
         }
 
-        if ( !indexSrc ) {
-            // None found; need to create it:
-            auto source    = make_unique<IndexSourceNode>(node);
-            indexSrc       = source.get();
-            source->_alias = makeIndexAlias();
-            // Create the join condition:
-            auto cond = make_unique<OpNode>(*lookupOp("=", 2));
-            cond->addArg(make_unique<RawSQLNode>("\"" + source->_alias + "\".docid"));
-            cond->addArg(make_unique<MetaNode>(MetaProperty::rowid, node.sourceCollection()));
-            source->_joinOn = std::move(cond);
-
+        if ( indexSrc ) {
+            indexSrc->_indexedNodes.emplace_back(node);
+        } else {
+            // No source found; need to create it:
+            auto source = make_unique<IndexSourceNode>(node, makeIndexAlias());
+            indexSrc    = source.get();
             addSource(std::move(source), ctx);
 
-            if ( node.indexType() == IndexType::FTS && !_isAggregate ) {
+            if ( node->indexType() == IndexType::FTS && !_isAggregate ) {
                 // writeSQL is going to prepend extra columns for an FTS index:
                 _numPrependedColumns = std::max(_numPrependedColumns, 1u) + 1;
             }
         }
 
-        indexSrc->_indexedNodes.emplace_back(&node);
-        node.setIndexSource(indexSrc, this);
+        node->setIndexSource(indexSrc, this);
     }
 
     // When FTS is used in a query, invisible columns are prepended that help the Query API
@@ -319,4 +331,5 @@ namespace litecore::qt {
             }
         }
     }
+
 }  // namespace litecore::qt

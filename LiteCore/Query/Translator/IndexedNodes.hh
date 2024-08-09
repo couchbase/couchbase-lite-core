@@ -12,6 +12,7 @@
 
 #pragma once
 #include "ExprNodes.hh"
+#include "SelectNodes.hh"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -51,9 +52,9 @@ namespace litecore::qt {
         virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const = 0;
 
       protected:
-        IndexedNode(IndexType type);
+        IndexedNode(IndexType type) : _type(type) {}
 
-        IndexType                    _type;                 // Index type
+        IndexType const              _type;                 // Index type
         string                       _indexExpressionJSON;  // Expression/property that's indexed, as JSON
         checked_ptr<SourceNode>      _sourceCollection;     // The collection being queried
         checked_ptr<IndexSourceNode> _indexSource;          // Source representing the index
@@ -118,6 +119,29 @@ namespace litecore::qt {
     };
 
 #endif
+
+#pragma mark - INDEX SOURCE:
+
+    /** A table-based index, implicitly added to the tree by an `IndexedNode` (FTS or vector.) */
+    class IndexSourceNode final : public SourceNode {
+      public:
+        explicit IndexSourceNode(IndexedNode*, string alias);
+
+        IndexType   indexType() const;
+        string_view indexedExpressionJSON() const;
+
+        bool matchesNode(IndexedNode const*) const;
+
+        std::vector<checked_ptr<IndexedNode>> const& indexedNodes() const { return _indexedNodes; }
+
+      private:
+        friend class SelectNode;
+        void checkIndexUsage() const;
+        void clearWeakRefs() override;
+
+        std::vector<checked_ptr<IndexedNode>> _indexedNodes;  // IndexedNodes using this index
+    };
+
 }  // namespace litecore::qt
 
 C4_ASSUME_NONNULL_END

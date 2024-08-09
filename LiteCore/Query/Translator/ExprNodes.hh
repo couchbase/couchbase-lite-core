@@ -62,7 +62,7 @@ namespace litecore::qt {
     };
 
     /** Types of indexes. */
-    enum class IndexType { none, FTS, vector };
+    enum class IndexType { FTS, vector };
 
     /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {

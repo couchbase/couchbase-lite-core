@@ -268,17 +268,6 @@ namespace litecore::qt {
         _unnest.reset();
     }
 
-#pragma mark - INDEX SOURCE:
-
-    IndexType IndexSourceNode::indexType() const { return _indexedNodes[0]->indexType(); }
-
-    string_view IndexSourceNode::indexedExpressionJSON() const { return _indexedNodes[0]->indexExpressionJSON(); }
-
-    void IndexSourceNode::clearWeakRefs() {
-        SourceNode::clearWeakRefs();
-        _indexedNodes.clear();
-    }
-
 #pragma mark - SELECT:
 
     // Parses a LIMIT or OFFSET value. If it's a literal, it's checked for validity.

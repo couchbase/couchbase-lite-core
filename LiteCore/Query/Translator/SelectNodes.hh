@@ -152,24 +152,6 @@ namespace litecore::qt {
         Value                _unnestFleeceExpression;  // Parsed-JSON form of source expression
     };
 
-    /** A table-based index, implicitly added to the tree by an `IndexedNode` (FTS or vector.) */
-    class IndexSourceNode final : public SourceNode {
-      public:
-        explicit IndexSourceNode(IndexedNode&);
-
-        IndexType   indexType() const;
-        string_view indexedExpressionJSON() const;
-
-        std::vector<checked_ptr<IndexedNode>> const& indexedNodes() const { return _indexedNodes; }
-
-      private:
-        friend class SelectNode;
-        void checkIndexUsage() const;
-        void clearWeakRefs() override;
-
-        std::vector<checked_ptr<IndexedNode>> _indexedNodes;  // IndexedNodes using this index, if any
-    };
-
     /** A `SELECT` statement, whether top-level or nested. */
     class SelectNode : public ExprNode {
       public:
@@ -210,7 +192,7 @@ namespace litecore::qt {
         void   registerAlias(AliasedNode*, ParseContext&);
         void   addSource(std::unique_ptr<SourceNode>, ParseContext&);
         void   addIndexes(ParseContext&);
-        void   addIndexForNode(IndexedNode&, ParseContext&);
+        void   addIndexForNode(IndexedNode*, ParseContext&);
         string makeIndexAlias() const;
         void   writeFTSColumns(SQLWriter&, fleece::delimiter&) const;
 

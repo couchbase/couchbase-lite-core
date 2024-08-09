@@ -122,6 +122,7 @@ string QueryTranslatorTest::unnestedTableName(const string& onTable, const strin
     return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
 }
 
+#ifdef COUCHBASE_ENTERPRISE
 string QueryTranslatorTest::predictiveTableName(const string& onTable, const string& property) const {
     return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
 }
@@ -136,6 +137,7 @@ string QueryTranslatorTest::predictiveTableName(const string& onTable, const str
     if ( !metricName.empty() ) REQUIRE(metricName == vectorIndexMetric);
     return tableName;
 }
+#endif
 
 void QueryTranslatorTest::CHECK_equal(string_view result, string_view expected) {
     if ( result != expected ) {
