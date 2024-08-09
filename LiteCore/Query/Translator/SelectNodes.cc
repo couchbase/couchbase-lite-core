@@ -158,7 +158,10 @@ namespace litecore::qt {
         }
 
         _tempUnnest = getCaseInsensitive(dict, "UNNEST");
-        if ( _tempUnnest ) { require(_join == JoinType::none, "UNNEST cannot accept a JOIN clause"); }
+        if ( _tempUnnest ) {
+            require(_join == JoinType::none, "UNNEST cannot accept a JOIN clause");
+            require(!_alias.empty(), "UNNEST requires an AS alias");
+        }
 
         _tempOn = getCaseInsensitive(dict, "ON");
         if ( _tempOn ) {
@@ -171,6 +174,14 @@ namespace litecore::qt {
         }
     }
 
+    // Creates a fake UNNEST table source for use by QueryTranslator::writeCreateIndex.
+    unique_ptr<SourceNode> SourceNode::makeFakeUnnest() {
+        unique_ptr<SourceNode> source(new SourceNode);
+        source->_fakeUnnest = true;
+        source->_tableName = "FAKE_UNNEST";
+        return source;
+    }
+
     void SourceNode::parseChildExprs(ParseContext& ctx) {
         // Now parse the ON or UNNEST expression:
         if ( _tempOn ) {
@@ -179,7 +190,7 @@ namespace litecore::qt {
         }
         if ( _tempUnnest ) {
             setChild(_unnest, ExprNode::parse(_tempUnnest, ctx));
-            _tempUnnest = nullptr;
+            //_tempUnnest = nullptr;
         }
     }
 

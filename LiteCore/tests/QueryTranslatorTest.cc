@@ -54,12 +54,27 @@ void QueryTranslatorTest::mustFail(string_view json) {
 }
 
 void QueryTranslatorTest::fillInTableName(SourceNode* source) {
-    string tableName = collectionTableName(*source);
-    //Log("\tSource %s -> table %s", source->description().c_str(), tableName.c_str());
-    INFO("table name is " << tableName);
-    if ( !tableExists(tableName) )
-        error::_throw(error::InvalidQuery, "Nonexistent table `%s` (collection '%s' in scope '%s')", tableName.c_str(),
-                      source->collection().c_str(), source->scope().c_str());
+    string tableName;
+    if (source->isUnnest()) {
+        auto unnestSrc = source->unnestExpression()->source();
+        if (!unnestSrc)
+            return;
+        tableName = collectionTableName(*unnestSrc);
+        string propertyStr;
+        if (auto prop = dynamic_cast<PropertyNode*>(source->unnestExpression())) {
+            propertyStr = string(prop->path());
+        }
+        tableName = unnestedTableName(tableName, propertyStr);
+        if (!tableExists(tableName))
+            return;
+    } else {
+        tableName = collectionTableName(*source);
+        //Log("\tSource %s -> table %s", source->description().c_str(), tableName.c_str());
+        INFO("table name is " << tableName);
+        if ( !tableExists(tableName) )
+            error::_throw(error::InvalidQuery, "Nonexistent table `%s` (collection '%s' in scope '%s')", tableName.c_str(),
+                          source->collection().c_str(), source->scope().c_str());
+    }
     usedTableNames.insert(tableName);
     source->setTableName(tableName);
 }
@@ -83,6 +98,10 @@ void QueryTranslatorTest::fillInTableName(SourceNode* source) {
     else if ( source.indexType() == IndexType::vector )
         return vectorTableName(table.str(), string(source.indexedExpressionJSON()), "");  //FIXME: Get metric
     return table.str();
+}
+
+string QueryTranslatorTest::unnestedTableName(const string& onTable, const string& property) const {
+    return onTable + ":unnest:" + property;
 }
 
 [[nodiscard]] string QueryTranslatorTest::vectorTableName(const string& onTable, const std::string& property,
@@ -418,7 +437,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Join", "[Query][QueryTran
             "OR fl_value(machines.body, 'Disabled'))) AND (machines.flags & 1 = 0)");
 }
 
-TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST", "[Query][QueryTranslator]") {
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST", "[Query][QueryTranslator][Unnest]") {
     CHECK_equal(
             parseWhere("['SELECT', {\
                       FROM: [{as: 'book'}, \
@@ -442,8 +461,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST", "[Query][
                 "fl_nested_value(notes.body, 'page') > 100 AND (book.flags & 1 = 0)");
 }
 
-#if 0
-TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST optimized", "[Query][QueryTranslator]") {
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST optimized", "[Query][QueryTranslator][Unnest]") {
     tableNames.insert("kv_default:unnest:notes");
 
     CHECK_equal(parseWhere("['SELECT', {\
@@ -451,18 +469,18 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST optimized",
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['=', ['.notes'], 'torn']}]")
           , "SELECT book.key, book.sequence FROM kv_default AS book JOIN \"kv_default:unnest:notes\" AS notes ON "
-             "notes.docid=book.rowid WHERE (fl_unnested_value(notes.body) = 'torn') AND (book.flags & 1 = 0)");
+             "notes.docid=book.rowid WHERE fl_unnested_value(notes.body) = 'torn' AND (book.flags & 1 = 0)");
     CHECK_equal(parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]")
           , "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN \"kv_default:unnest:notes\" "
-             "AS notes ON notes.docid=book.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND (book.flags & "
+             "AS notes ON notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (book.flags & "
              "1 = 0)");
 }
 
-TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collections", "[Query][QueryTranslator]") {
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collections", "[Query][QueryTranslator][Unnest]") {
     string str = "['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'library'}, \
@@ -473,18 +491,17 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collec
     tableNames.insert("kv_.books");
     CHECK_equal(parseWhere(str)
           , "SELECT fl_result(notes.value) FROM kv_default AS library INNER JOIN \"kv_.books\" AS book ON "
-             "(fl_value(book.body, 'library') = library.key) JOIN fl_each(book.body, 'notes') AS notes WHERE "
-             "(fl_nested_value(notes.body, 'page') > 100) AND (library.flags & 1 = 0)");
+             "fl_value(book.body, 'library') = library.key JOIN fl_each(book.body, 'notes') AS notes WHERE "
+             "fl_nested_value(notes.body, 'page') > 100 AND (library.flags & 1 = 0)");
 
     // Same, but optimized:
     tableNames.insert("kv_.books:unnest:notes");
     CHECK_equal(parseWhere(str)
           , "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS library INNER JOIN \"kv_.books\" AS "
-             "book ON (fl_value(book.body, 'library') = library.key) JOIN \"kv_.books:unnest:notes\" AS notes ON "
-             "notes.docid=library.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND (library.flags & 1 = "
+             "book ON fl_value(book.body, 'library') = library.key JOIN \"kv_.books:unnest:notes\" AS notes ON "
+             "notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (library.flags & 1 = "
              "0)");
 }
-#endif
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Collate", "[Query][QueryTranslator][Collation]") {
     CHECK_equal(

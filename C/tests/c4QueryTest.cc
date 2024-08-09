@@ -17,8 +17,6 @@
 #include <thread>
 using namespace std;
 
-#define SKIP_ARRAY_INDEXES  // Array indexes aren't exposed in Couchbase Lite (yet?)
-
 static bool operator==(C4FullTextMatch a, C4FullTextMatch b) { return memcmp(&a, &b, sizeof(a)) == 0; }
 
 static ostream& operator<<(ostream& o, C4FullTextMatch match) {
@@ -774,8 +772,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
     c4queryenum_release(e);
 }
 
-#ifndef SKIP_ARRAY_INDEXES
-N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C][Unnest]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
@@ -816,7 +813,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C][Unnest]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
@@ -845,7 +842,6 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
         CHECK(run() == (vector<string>{"11"}));
     }
 }
-#endif
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));

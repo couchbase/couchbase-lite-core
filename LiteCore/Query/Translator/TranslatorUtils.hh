@@ -78,6 +78,10 @@ namespace litecore::qt {
     /// - Otherwise it writes the function call, passing the value of `expr` as the first arg;
     ///   if `param` is non-null it also passes a NULL arg (for historical reasons) and then `param`
     void writeFnGetter(slice sqliteFnName, ExprNode& expr, ExprNode* C4NULLABLE param, SQLWriter&);
+
+    // Constructs a unique identifier of an expression, from a digest of its JSON.
+    string expressionIdentifier(Array expression, unsigned maxItems =0);
+
 }  // namespace litecore::qt
 
 C4_ASSUME_NONNULL_END

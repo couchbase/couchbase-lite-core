@@ -23,6 +23,7 @@ namespace litecore {
     namespace qt {
         class Node;
         class QueryNode;
+        class SourceNode;
         class SQLWriter;
     }  // namespace qt
 
@@ -123,6 +124,7 @@ namespace litecore {
         QueryTranslator& operator=(const QueryTranslator&) = delete;
         string           writeSQL(function_ref<void(qt::SQLWriter&)>);
         string           functionCallSQL(slice fnName, FLValue arg, FLValue C4NULLABLE param = nullptr);
+        string unnestedTableName(qt::SourceNode const*) const;
 
         const Delegate&     _delegate;                 // delegate object (SQLiteKeyStore)
         string              _defaultTableName;         // Name of the default table to use

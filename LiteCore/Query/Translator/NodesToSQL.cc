@@ -111,16 +111,28 @@ namespace litecore::qt {
             }
         } else {
             string aliasDot = "";
-            if ( _source ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
-            if ( _source && _source->isUnnest() && _path.count() == 0 ) {
+            if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
+            if ( _source && _source->isUnnest() && _source->tableName().empty() && _path.count() == 0 ) {
                 // Accessing the outer item of a `fl_each` table-valued function:
                 ctx << aliasDot << "value";
             } else {
                 // Regular property access, using the sqliteFnName as accessor:
+                bool extraCloseParen = false;
+                if (_source && _source->isUnnest() && !_source->tableName().empty()) {
+                    if (sqliteFnName == kRootFnName || sqliteFnName == kNestedValueFnName)
+                        sqliteFnName = kUnnestedValueFnName;    // Use `fl_unnested_value` to access unnest index table
+                    else if (sqliteFnName == kResultFnName) {
+                        sqliteFnName = kUnnestedValueFnName;
+                        ctx << kResultFnName << '(';
+                        extraCloseParen = true;
+                    }
+                }
                 ctx << sqliteFnName << '(' << aliasDot << ctx.bodyColumnName;
                 if ( _path.count() > 0 ) ctx << ", " << sqlString(_path.toString());
                 if ( param ) ctx << ", " << *param;
                 ctx << ")";
+                if (extraCloseParen)
+                    ctx << ')';
             }
         }
     }
@@ -306,12 +318,22 @@ namespace litecore::qt {
     void SourceNode::writeSQL(SQLWriter& ctx) const {
         if ( _unnest ) {
             ctx << "JOIN ";
-            if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
-                prop->setSQLiteFn(kEachFnName);
-                ctx << *prop;
+            if (_tableName.empty()) {
+                // Unindexed UNNEST, using `fl_each`:
+                if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
+                    prop->setSQLiteFn(kEachFnName);
+                    ctx << *prop;
+                } else {
+                    WithPrecedence listP(ctx, kArgListPrecedence);
+                    ctx << kEachFnName << '(' << _unnest << ')';
+                }
             } else {
-                WithPrecedence listP(ctx, kArgListPrecedence);
-                ctx << kEachFnName << '(' << _unnest << ')';
+                // Indexed UNNEST:
+                auto sourceTable = _unnest->source();
+                Assert(sourceTable);
+                ctx << sqlIdentifier(_tableName) << " AS " << sqlIdentifier(_alias);
+                ctx << " ON " << sqlIdentifier(_alias) << ".docid=" << sqlIdentifier(sourceTable->alias()) << ".rowid";
+                return;
             }
         } else {
             if ( _join > JoinType::none ) {

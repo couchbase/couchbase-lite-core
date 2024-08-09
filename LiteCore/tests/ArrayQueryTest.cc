@@ -80,7 +80,7 @@ N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
                    false);
 }
 
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query][Unnest]") {
     testArrayQuery(json5("['SELECT', {\
                               FROM: [{as: 'doc'}, \
                                      {as: 'num', 'unnest': ['.doc.numbers']}],\
@@ -101,7 +101,7 @@ N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
     checkQuery(12, 2);
 }
 
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query][Unnest]") {
     addArrayDocs(1, 90);
 
     auto json          = json5("['SELECT', {\

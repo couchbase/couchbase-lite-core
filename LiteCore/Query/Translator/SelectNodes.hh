@@ -77,6 +77,7 @@ namespace litecore::qt {
         explicit SourceNode(Dict, ParseContext&);
         explicit SourceNode(string_view alias);
         explicit SourceNode(IndexedNode&);
+        static unique_ptr<SourceNode> makeFakeUnnest();
 
         string const& scope() const { return _scope; }  ///< Scope name, or empty if default
 
@@ -90,8 +91,6 @@ namespace litecore::qt {
 
         string asColumnName() const { return _columnName; }  ///< Name to use, if used as result column
 
-        JoinType joinType() const { return _join; }  ///< The type of join, else `none`
-
         bool isJoin() const { return _join != JoinType::none; }  ///< True if this is a JOIN
 
         void addJoinCondition(unique_ptr<ExprNode>);  ///< Sets/adds an `ON` condition to a JOIN
@@ -99,7 +98,10 @@ namespace litecore::qt {
         /// True if this is a regular collection, not an UNNEST or a table-based index.
         bool isCollection() const { return !isUnnest() && !isIndex(); }
 
-        bool isUnnest() const { return _unnest || _tempUnnest; }  ///< True if this is an UNNEST expression
+        bool isUnnest() const { return _unnest || _tempUnnest || _fakeUnnest; }  ///< True if this is an UNNEST expression
+
+        ExprNode* unnestExpression() const {return _unnest.get();}
+        Value unnestFLValue() const {return _tempUnnest;}
 
         bool isIndex() const { return !_indexedNodes.empty(); }  ///< True if this is a table-based index
 
@@ -116,6 +118,7 @@ namespace litecore::qt {
 
       private:
         friend class SelectNode;
+        SourceNode() = default;
         void parseChildExprs(ParseContext&);
         void disambiguateColumnName(ParseContext&);
 
@@ -134,6 +137,7 @@ namespace litecore::qt {
         Value                                 _tempUnnest;             // Temporarily holds source of _unnest
         std::vector<checked_ptr<IndexedNode>> _indexedNodes;           // IndexedNodes using this index, if any
         bool                                  _usesDeleted = false;    // True if exprs refer to deleted docs
+        bool                                  _fakeUnnest = false;
     };
 
     /** A `SELECT` statement, whether top-level or nested. */
