@@ -43,7 +43,7 @@ namespace litecore {
         for ( auto& source : query->sources() ) {
             if ( source->isUnnest() ) {
                 // Check whether there's an array index we can use for an UNNEST:
-                string tableName = unnestedTableName(source.get());
+                string tableName = _delegate.unnestedTableName(_defaultTableName, source->unnestIdentifier());
                 if (_delegate.tableExists(tableName))
                     source->setTableName(tableName);
             } else {
@@ -197,15 +197,6 @@ namespace litecore {
         a.append(dimensions);
         Value dimAsFleece = a[0];
         return functionCallSQL(kVectorToIndexFnName, exprToIndex, dimAsFleece);
-    }
-
-    string QueryTranslator::unnestedTableName(SourceNode const* source) const {
-        if (auto prop = dynamic_cast<PropertyNode*>(source->unnestExpression())) {
-            string propertyStr = string(prop->path());
-            return _delegate.unnestedTableName(_defaultTableName, propertyStr);
-        } else {
-            return unnestedTableName(source->unnestFLValue());
-        }
     }
 
     string QueryTranslator::unnestedTableName(FLValue flExpr) const {

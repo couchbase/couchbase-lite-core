@@ -157,8 +157,8 @@ namespace litecore::qt {
             require(_join != JoinType::none, "invalid JOIN type");
         }
 
-        _tempUnnest = getCaseInsensitive(dict, "UNNEST");
-        if ( _tempUnnest ) {
+        _unnestFleeceExpression = getCaseInsensitive(dict, "UNNEST");
+        if ( _unnestFleeceExpression ) {
             require(_join == JoinType::none, "UNNEST cannot accept a JOIN clause");
             require(!_alias.empty(), "UNNEST requires an AS alias");
         }
@@ -167,7 +167,7 @@ namespace litecore::qt {
         if ( _tempOn ) {
             // (Don't parse the expression yet; it might refer to aliases of later sources.)
             require(_join != JoinType::cross, "CROSS JOIN cannot accept an ON clause");
-            require(!_tempUnnest, "UNNEST cannot accept an ON clause");
+            require(!_unnestFleeceExpression, "UNNEST cannot accept an ON clause");
             if ( _join == JoinType::none ) _join = JoinType::inner;
         } else {
             require(_join == JoinType::none || _join == JoinType::cross, "missing ON for JOIN");
@@ -188,8 +188,8 @@ namespace litecore::qt {
             setChild(_joinOn, ExprNode::parse(_tempOn, ctx));
             _tempOn = nullptr;
         }
-        if ( _tempUnnest ) {
-            setChild(_unnest, ExprNode::parse(_tempUnnest, ctx));
+        if ( _unnestFleeceExpression ) {
+            setChild(_unnest, ExprNode::parse(_unnestFleeceExpression, ctx));
             //_tempUnnest = nullptr;
         }
     }
@@ -228,6 +228,15 @@ namespace litecore::qt {
             conjunction->addArg(std::move(_joinOn));
             conjunction->addArg(std::move(expr));
             _joinOn = std::move(conjunction);
+        }
+    }
+
+    string SourceNode::unnestIdentifier() const {
+        DebugAssert(_unnest);
+        if (auto prop = dynamic_cast<PropertyNode*>(_unnest.get())) {
+            return string(prop->path());
+        } else {
+            return expressionIdentifier(_unnestFleeceExpression.asArray());
         }
     }
 
