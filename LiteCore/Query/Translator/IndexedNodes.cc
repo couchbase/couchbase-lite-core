@@ -1,5 +1,5 @@
 //
-// FTSNodes.cc
+// IndexedNodes.cc
 //
 // Copyright 2024-Present Couchbase, Inc.
 //
@@ -13,6 +13,7 @@
 #include "IndexedNodes.hh"
 #include "Delimiter.hh"
 #include "Error.hh"
+#include "VectorIndexSpec.hh"
 #include "SelectNodes.hh"
 #include "SQLWriter.hh"
 #include "TranslatorUtils.hh"
@@ -32,10 +33,11 @@ namespace litecore::qt {
         require(!pathStr.empty(), "first arg of %s() must be an index name", name);
         KeyPath path = parsePath(pathStr);
         // Find the source collection and property name/path:
-        _sourceCollection = dynamic_cast<SourceNode*>(resolvePropertyPath(path, ctx, true));
-        require(_sourceCollection, "unknown source collection for %s()", name);
-        require(_sourceCollection->isCollection(), "invalid source collection for %s()", name);
+        auto source = dynamic_cast<SourceNode*>(resolvePropertyPath(path, ctx, true));
+        require(source, "unknown source collection for %s()", name);
+        require(source->isCollection(), "invalid source collection for %s()", name);
         require(path.count() > 0, "missing property after collection alias in %s()", name);
+        _sourceCollection    = source;
         _indexExpressionJSON = string(path.toString());
     }
 
@@ -87,19 +89,19 @@ namespace litecore::qt {
         ExprNode*        _vector;
     };
 
-    VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx) : IndexedNode(IndexType::vector) {
-        _indexedExpr = parse(args[0], ctx);
-
+    VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx)
+        : IndexedNode(IndexType::vector), _indexedExpr(parse(args[0], ctx)) {
         // Determine which collection the vector is based on:
+        SourceNode* source = nullptr;
         _indexedExpr->visitTree([&](Node& n, unsigned /*depth*/) {
-            if ( SourceNode* src = n.source() ) {
-                require(_sourceCollection == nullptr || _sourceCollection == src,
+            if ( SourceNode* nodeSource = n.source() ) {
+                require(source == nullptr || source == nodeSource,
                         "1st argument (vector) to APPROX_VECTOR_DISTANCE may only refer to a single collection");
-                _sourceCollection = src;
+                source = nodeSource;
             }
         });
-        if ( !_sourceCollection ) _sourceCollection = ctx.from;
-        require(_sourceCollection, "unknown source collection for APPROX_VECTOR_DISTANCE()");
+        require(source, "unknown source collection for APPROX_VECTOR_DISTANCE()");
+        _sourceCollection = source;
 
         // Create the JSON expression used to locate the index:
         _indexExpressionJSON = args[0].toJSON(false, true);
@@ -117,7 +119,13 @@ namespace litecore::qt {
 
         _vector = ExprNode::parse(args[1], ctx);
 
-        _metric = optionalString(args[2], "3rd argument (metric) to APPROX_VECTOR_DISTANCE");
+        if ( slice metricName = optionalString(args[2], "3rd argument (metric) to APPROX_VECTOR_DISTANCE") ) {
+            if ( auto metric = vectorsearch::MetricNamed(metricName) ) _metric = int(metric.value());
+            else
+                fail("invalid metric name '%.*s' for APPROX_VECTOR_DISTANCE", FMTSLICE(metricName));
+        } else {
+            _metric = int(vectorsearch::Metric::Default);
+        }
 
         if ( Value numProbesVal = args[3] ) {
             require(numProbesVal.isInteger(), "4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be an integer");
@@ -133,8 +141,10 @@ namespace litecore::qt {
         }
     }
 
-    void VectorDistanceNode::setIndexSource(IndexSourceNode* source, SelectNode* select) {
-        IndexedNode::setIndexSource(source, select);
+    string_view VectorDistanceNode::metric() const { return vectorsearch::NameOfMetric(vectorsearch::Metric(_metric)); }
+
+    void VectorDistanceNode::setIndexSource(IndexSourceNode* source, SelectNode* select, ParseContext& ctx) {
+        IndexedNode::setIndexSource(source, select, ctx);
         _simple = [&] {
             // Returns true if the WHERE clause does _not_ require a hybrid query,
             // i.e. if it's nonexistent or consists only of a test that APPROX_VECTOR_DISTANCE() is less than something.
@@ -155,7 +165,7 @@ namespace litecore::qt {
         if ( !_simple && source->indexedNodes().size() < 2 ) {
             // Hybrid query: add a join condition "idx.vector MATCH _vector"
             DebugAssert(source->indexedNodes().front() == this);
-            source->addJoinCondition(make_unique<VectorMatchNode>(source, _vector.get()));
+            source->addJoinCondition(new (ctx) VectorMatchNode(source, _vector), ctx);
         }
 
         // Disallow distance within an OR because it can lead to incorrect results:
@@ -196,26 +206,28 @@ namespace litecore::qt {
 
 #pragma mark - INDEX SOURCE:
 
-    IndexSourceNode::IndexSourceNode(IndexedNode* node, string alias)
+    IndexSourceNode::IndexSourceNode(IndexedNode* node, string alias, ParseContext& ctx)
         : SourceNode(SourceType::index, node->sourceCollection()->scope(), node->sourceCollection()->collection(),
                      JoinType::inner)
-        , _indexedNodes{checked_ptr{node}} {
+        , _indexedNodes{node} {
         _alias = std::move(alias);
         // Create the join condition:
-        auto cond = make_unique<OpNode>(*lookupOp("=", 2));
-        cond->addArg(make_unique<RawSQLNode>("\"" + _alias + "\".docid"));
-        cond->addArg(make_unique<MetaNode>(MetaProperty::rowid, node->sourceCollection()));
-        addJoinCondition(std::move(cond));
+        auto cond = new (ctx) OpNode(*lookupOp("=", 2));
+        cond->addArg(new (ctx) RawSQLNode("\"" + _alias + "\".docid"));
+        cond->addArg(new (ctx) MetaNode(MetaProperty::rowid, node->sourceCollection()));
+        addJoinCondition(cond, ctx);
+    }
+
+    bool IndexSourceNode::matchesNode(const IndexedNode* node) const {
+        IndexedNode* mine = _indexedNodes.front();
+        return mine->indexType() == node->indexType() && mine->indexExpressionJSON() == node->indexExpressionJSON()
+               && collection() == node->sourceCollection()->collection()
+               && scope() == node->sourceCollection()->scope();
     }
 
     IndexType IndexSourceNode::indexType() const { return _indexedNodes.front()->indexType(); }
 
     string_view IndexSourceNode::indexedExpressionJSON() const { return _indexedNodes.front()->indexExpressionJSON(); }
-
-    void IndexSourceNode::clearWeakRefs() {
-        SourceNode::clearWeakRefs();
-        _indexedNodes.clear();
-    }
 
     void IndexSourceNode::checkIndexUsage() const {
         if ( indexType() == IndexType::FTS ) {
@@ -226,13 +238,6 @@ namespace litecore::qt {
             else if ( n > 1 )
                 fail("Sorry, multiple MATCHes of the same property are not allowed");
         }
-    }
-
-    bool IndexSourceNode::matchesNode(const IndexedNode* node) const {
-        IndexedNode* mine = _indexedNodes.front();
-        return mine->indexType() == node->indexType() && mine->indexExpressionJSON() == node->indexExpressionJSON()
-               && collection() == node->sourceCollection()->collection()
-               && scope() == node->sourceCollection()->scope();
     }
 
 #pragma mark - ADDITIONS TO SELECTNODE:
@@ -281,7 +286,7 @@ namespace litecore::qt {
 
         // Then check that there's exactly one function call that 'owns' each index:
         for ( auto& source : _sources ) {
-            if ( auto index = dynamic_cast<IndexSourceNode*>(source.get()) ) index->checkIndexUsage();
+            if ( auto index = dynamic_cast<IndexSourceNode*>(source) ) index->checkIndexUsage();
         }
     }
 
@@ -293,7 +298,7 @@ namespace litecore::qt {
         // Look for an existing index source:
         IndexSourceNode* indexSrc = nullptr;
         for ( auto& s : _sources ) {
-            if ( auto ind = dynamic_cast<IndexSourceNode*>(s.get()); ind && ind->matchesNode(node) ) {
+            if ( auto ind = dynamic_cast<IndexSourceNode*>(s); ind && ind->matchesNode(node) ) {
                 indexSrc = ind;
                 break;
             }
@@ -303,9 +308,9 @@ namespace litecore::qt {
             indexSrc->_indexedNodes.emplace_back(node);
         } else {
             // No source found; need to create it:
-            auto source = make_unique<IndexSourceNode>(node, makeIndexAlias());
-            indexSrc    = source.get();
-            addSource(std::move(source), ctx);
+            auto source = new (ctx) IndexSourceNode(node, makeIndexAlias(), ctx);
+            indexSrc    = source;
+            addSource(source, ctx);
 
             if ( node->indexType() == IndexType::FTS && !_isAggregate ) {
                 // writeSQL is going to prepend extra columns for an FTS index:
@@ -313,7 +318,7 @@ namespace litecore::qt {
             }
         }
 
-        node->setIndexSource(indexSrc, this);
+        node->setIndexSource(indexSrc, this, ctx);
     }
 
     // When FTS is used in a query, invisible columns are prepended that help the Query API
@@ -321,7 +326,7 @@ namespace litecore::qt {
     void SelectNode::writeFTSColumns(SQLWriter& ctx, delimiter& comma) const {
         if ( !_isAggregate ) {
             for ( auto& src : _sources ) {
-                if ( auto ind = dynamic_cast<IndexSourceNode*>(src.get()) ) {
+                if ( auto ind = dynamic_cast<IndexSourceNode*>(src) ) {
                     if ( ind->indexType() == IndexType::FTS ) {
                         if ( comma.count() == 0 ) ctx << comma << sqlIdentifier(_from->alias()) << ".rowid";
                         ctx << comma << "offsets(" << sqlIdentifier(ind->alias()) << "."

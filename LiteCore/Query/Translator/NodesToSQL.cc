@@ -140,7 +140,7 @@ namespace litecore::qt {
     void ParameterNode::writeSQL(SQLWriter& ctx) const { ctx << '$' << sqlIdentifier("_" + _name); }
 
     void VariableNode::writeSQL(SQLWriter& ctx) const {
-        ctx << sqlIdentifier("_" + _name);
+        ctx << sqlIdentifier("_" + string(_name));
         if ( _returnBody ) ctx << '.' << ctx.bodyColumnName;
         else
             ctx << ".value";
@@ -175,7 +175,7 @@ namespace litecore::qt {
             case OpType::is_not:
                 {
                     slice opName = _op.name;
-                    if ( auto lit = dynamic_cast<LiteralNode*>(_operands[1].get()) ) {
+                    if ( auto lit = dynamic_cast<LiteralNode*>(_operands[1]) ) {
                         // Ugly special case where SQLite's semantics for 'IS [NOT]' don't match N1QL's (#410)
                         if ( lit->literal().type() == kFLNull ) opName = (_op.type == OpType::is) ? "=" : "!=";
                     }
@@ -200,8 +200,8 @@ namespace litecore::qt {
                 {
                     // If the LHS has a COLLATE spec, emit a custom function because SQLite's
                     // built-in LIKE is case-sensitive.
-                    auto lhs = _operands[0].get();
-                    auto rhs = _operands[1].get();
+                    auto lhs = _operands[0];
+                    auto rhs = _operands[1];
                     if ( auto coll = dynamic_cast<CollateNode*>(lhs); coll && !coll->isBinary() ) {
                         lhs = coll->child();
                         ctx << kLikeFnName << '(' << *lhs << ", " << *rhs << ", "
@@ -222,7 +222,7 @@ namespace litecore::qt {
                 {
                     // Check whether the test expression is a literal `null`:
                     ctx << "CASE";
-                    auto test = _operands[0].get();
+                    auto test = _operands[0];
                     assert(test);
                     if ( auto literal = dynamic_cast<LiteralNode*>(test);
                          literal && literal->literal().type() == kFLNull ) {
@@ -242,8 +242,7 @@ namespace litecore::qt {
                     break;
                 }
             case OpType::blob:
-                if ( auto prop = dynamic_cast<PropertyNode*>(_operands[0].get()) )
-                    prop->writeSQL(ctx, kBlobFnName, nullptr);
+                if ( auto prop = dynamic_cast<PropertyNode*>(_operands[0]) ) prop->writeSQL(ctx, kBlobFnName, nullptr);
                 else
                     fail("argument of BLOB() must be a document property");
                 break;
@@ -336,10 +335,11 @@ namespace litecore::qt {
     }
 
     void UnnestSourceNode::writeSQL(SQLWriter& ctx) const {
+        Assert(_unnest);
         ctx << "JOIN ";
         if ( tableName().empty() ) {
             // Unindexed UNNEST, using `fl_each`:
-            if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
+            if ( auto prop = dynamic_cast<PropertyNode*>(_unnest) ) {
                 prop->setSQLiteFn(kEachFnName);
                 ctx << *prop;
             } else {

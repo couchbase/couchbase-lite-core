@@ -102,10 +102,10 @@ namespace litecore::qt {
 
 #pragma mark - SOURCE:
 
-    unique_ptr<SourceNode> SourceNode::parse(Dict dict, ParseContext& ctx) {
-        if ( getCaseInsensitive(dict, "UNNEST") ) return make_unique<UnnestSourceNode>(dict, ctx);
+    SourceNode* SourceNode::parse(Dict dict, ParseContext& ctx) {
+        if ( getCaseInsensitive(dict, "UNNEST") ) return new (ctx) UnnestSourceNode(dict, ctx);
         else
-            return unique_ptr<SourceNode>(new SourceNode(dict, ctx));
+            return new (ctx) SourceNode(dict, ctx);
     }
 
     SourceNode::SourceNode(string_view alias) : SourceNode(SourceType::collection) {
@@ -216,20 +216,18 @@ namespace litecore::qt {
         }
     }
 
-    void SourceNode::addJoinCondition(unique_ptr<ExprNode> expr) {
+    void SourceNode::addJoinCondition(ExprNode* expr, ParseContext& ctx) {
         if ( !_joinOn ) {
-            _joinOn = std::move(expr);
+            _joinOn = expr;
         } else {
-            auto conjunction = make_unique<OpNode>(*lookupOp("AND", 2));
-            conjunction->addArg(std::move(_joinOn));
-            conjunction->addArg(std::move(expr));
-            _joinOn = std::move(conjunction);
+            auto conjunction = new (ctx) OpNode(*lookupOp("AND", 2));
+            conjunction->addArg(_joinOn);
+            conjunction->addArg(expr);
+            _joinOn = conjunction;
         }
     }
 
     void SourceNode::visitChildren(ChildVisitor const& visitor) { visitor(_joinOn); }
-
-    void SourceNode::clearWeakRefs() { _joinOn.reset(); }
 
 #pragma mark - UNNEST SOURCE:
 
@@ -251,7 +249,7 @@ namespace litecore::qt {
 
     string UnnestSourceNode::unnestIdentifier() const {
         DebugAssert(_unnest);
-        if ( auto prop = dynamic_cast<PropertyNode*>(_unnest.get()) ) {
+        if ( auto prop = dynamic_cast<PropertyNode*>(_unnest) ) {
             return string(prop->path());
         } else {
             return expressionIdentifier(_unnestFleeceExpression.asArray());
@@ -263,40 +261,28 @@ namespace litecore::qt {
         visitor(_unnest);
     }
 
-    void UnnestSourceNode::clearWeakRefs() {
-        SourceNode::clearWeakRefs();
-        _unnest.reset();
-    }
-
 #pragma mark - SELECT:
 
     // Parses a LIMIT or OFFSET value. If it's a literal, it's checked for validity.
     // Otherwise it's wrapped in `GREATEST(x, 0)` to ensure a negative value means 0 not infinity.
-    static unique_ptr<ExprNode> parseLimitOrOffset(Value val, ParseContext& ctx, const char* name) {
+    static ExprNode* parseLimitOrOffset(Value val, ParseContext& ctx, const char* name) {
         auto expr = ExprNode::parse(val, ctx);
-        if ( auto litNode = dynamic_cast<LiteralNode*>(expr.get()) ) {
+        if ( auto litNode = dynamic_cast<LiteralNode*>(expr) ) {
             require(litNode->literal().isInteger() && litNode->literal().asInt() >= 0,
                     "%s must be a non-negative integer", name);
         } else {
-            auto fixed = make_unique<FunctionNode>(lookupFn("GREATEST", 2));
-            fixed->addArg(std::move(expr));
-            fixed->addArg(make_unique<LiteralNode>(0));
-            expr = std::move(fixed);
+            auto fixed = new (ctx) FunctionNode(lookupFn("GREATEST", 2));
+            fixed->addArg(expr);
+            fixed->addArg(new (ctx) LiteralNode(0));
+            expr = fixed;
         }
         return expr;
-    }
-
-    SelectNode::~SelectNode() {
-        // Clear weak references to Nodes that will be deleted before their referents,
-        // because it's illegal to delete a Node that still has weak refs.
-        _nestedSelects.clear();
-        for ( auto& src : _sources ) src->clearWeakRefs();
     }
 
     void SelectNode::parse(Value v, ParseContext& ctx) {
         if ( ctx.select != nullptr ) {
             // About to parse a nested SELECT, with its own namespace; use a new ParseContext:
-            ParseContext nestedCtx;
+            ParseContext nestedCtx(ctx.arena);
             parse(v, nestedCtx);
             ctx.select->_nestedSelects.emplace_back(this);
             return;
@@ -324,16 +310,16 @@ namespace litecore::qt {
             if ( _sources.empty() ) {
                 // For historical reasons, if no primary source is given,
                 // we add one for the default collection aliased `_doc`.
-                addSource(make_unique<SourceNode>("_doc"), ctx);
+                addSource(new (ctx) SourceNode("_doc"), ctx);
             }
             require(_from, "missing a primary non-JOIN source");
 
             // Parse the WHAT clause (projections):
             if ( Value what = getCaseInsensitive(select, "WHAT") ) {
                 for ( Value w : requiredArray(what, "WHAT") ) {
-                    auto whatNode = make_unique<WhatNode>(w, ctx);
-                    if ( whatNode->hasExplicitAlias() ) registerAlias(whatNode.get(), ctx);
-                    addChild(_what, std::move(whatNode));
+                    auto whatNode = new (ctx) WhatNode(w, ctx);
+                    if ( whatNode->hasExplicitAlias() ) registerAlias(whatNode, ctx);
+                    addChild(_what, whatNode);
                 }
             }
 
@@ -362,14 +348,14 @@ namespace litecore::qt {
 
             if ( Value groupList = getCaseInsensitive(select, "GROUP_BY") ) {
                 for ( Value groupItem : requiredArray(groupList, "GROUP BY") ) {
-                    unique_ptr<ExprNode> group;
+                    ExprNode* group;
                     if ( slice prop = groupItem.asString() ) {
                         // Convenience shortcut: interpret a string in GROUP_BY as a property path
                         group = PropertyNode::parse(prop, nullptr, ctx);
                     } else {
                         group = ExprNode::parse(groupItem, ctx);
                     }
-                    addChild(_groupBy, std::move(group));
+                    addChild(_groupBy, group);
                 }
             }
 
@@ -385,14 +371,14 @@ namespace litecore::qt {
 
         } else {
             // If not given a Dict or ["SELECT",...], assume it's a WHERE clause:
-            addSource(make_unique<SourceNode>("_doc"), ctx);
+            addSource(new (ctx) SourceNode("_doc"), ctx);
             setChild(_where, ExprNode::parse(v, ctx));
         }
 
         if ( _what.empty() ) {
             // Default WHAT is id and sequence, for historical reasons:
-            addChild(_what, make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::id, _from)));
-            addChild(_what, make_unique<WhatNode>(make_unique<MetaNode>(MetaProperty::sequence, _from)));
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, _from)));
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, _from)));
         }
 
         Assert(_from);
@@ -402,27 +388,27 @@ namespace litecore::qt {
 
     void SelectNode::registerAlias(AliasedNode* node, ParseContext& ctx) {
         slice alias    = node->alias();
-        bool  inserted = ctx.aliases.insert({lowercase(string(alias)), checked_ptr{node}}).second;
+        bool  inserted = ctx.aliases.insert({lowercase(string(alias)), node}).second;
         require(inserted, "duplicate alias '%.*s'", FMTSLICE(alias));
     }
 
-    void SelectNode::addSource(unique_ptr<SourceNode> source, ParseContext& ctx) {
+    void SelectNode::addSource(SourceNode* source, ParseContext& ctx) {
         if ( source->type() != SourceType::index ) {
-            registerAlias(source.get(), ctx);
+            registerAlias(source, ctx);
             if ( source->isCollection() && !source->isJoin() ) {
                 require(!_from, "multiple non-join FROM items");
-                _from    = source.get();
+                _from    = source;
                 ctx.from = _from;
             } else {
                 require(_from, "first FROM item must be primary source");
             }
-            ctx.sources.emplace_back(source.get());
+            ctx.sources.emplace_back(source);
         }
-        addChild(_sources, std::move(source));
+        addChild(_sources, source);
     }
 
     void SelectNode::addAllSourcesTo(std::vector<SourceNode*>& sources) const {
-        for ( auto& s : _sources ) sources.push_back(s.get());
+        for ( auto& s : _sources ) sources.push_back(s);
         for ( auto sel : _nestedSelects ) sel->addAllSourcesTo(sources);
     }
 
@@ -454,18 +440,18 @@ namespace litecore::qt {
                 // The default collection may contain deleted documents in its main table,
                 // so if the query didn't ask for deleted docs, add a condition to the WHERE
                 // or ON clause that only passes live docs:
-                auto                  m    = make_unique<MetaNode>(MetaProperty::_notDeleted, source.get());
-                unique_ptr<ExprNode>& cond = source->isJoin() ? source->_joinOn : _where;
+                auto       m    = new (ctx) MetaNode(MetaProperty::_notDeleted, source);
+                ExprNode*& cond = source->isJoin() ? source->_joinOn : _where;
                 if ( cond ) {
                     cond->setParent(nullptr);
-                    auto a = make_unique<OpNode>(*lookupOp("AND", 2));
-                    a->addArg(std::move(cond));
-                    a->addArg(std::move(m));
-                    cond = std::move(a);
+                    auto a = new (ctx) OpNode(*lookupOp("AND", 2));
+                    a->addArg(cond);
+                    a->addArg(m);
+                    cond = a;
                 } else {
-                    cond = std::move(m);
+                    cond = m;
                 }
-                cond->setParent(source->isJoin() ? (Node*)source.get() : (Node*)this);
+                cond->setParent(source->isJoin() ? (Node*)source : (Node*)this);
             }
         }
 
@@ -483,21 +469,6 @@ namespace litecore::qt {
                 }
             }
         }
-    }
-
-    QueryNode::QueryNode(Value root) {
-        _root = root;  // retain it for safety
-        ParseContext ctx;
-        parse(root, ctx);
-        postprocess(ctx);
-    }
-
-    QueryNode::QueryNode(string_view json) : QueryNode(Doc::fromJSON(json).root()) {}
-
-    vector<SourceNode*> QueryNode::allSources() const {
-        vector<SourceNode*> sources;
-        addAllSourcesTo(sources);
-        return sources;
     }
 
 }  // namespace litecore::qt

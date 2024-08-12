@@ -40,13 +40,6 @@ namespace litecore::qt {
             return *this;
         }
 
-        /// Convenience method to write a `unique_ptr<Node>`.
-        template <typename T>
-        SQLWriter& operator<<(unique_ptr<T> const& n) {
-            n->writeSQL(*this);
-            return *this;
-        }
-
         /// Any other types are written directly to the ostream:
         template <typename T,  // (template gunk is to prevent T being a Node* or Node&)
                   typename = typename std::enable_if<

@@ -46,7 +46,7 @@ namespace litecore::qt {
       public:
         WhatNode(Value, ParseContext&);
 
-        explicit WhatNode(unique_ptr<ExprNode> expr) { setChild(_expr, std::move(expr)); }
+        explicit WhatNode(ExprNode* expr) { initChild(_expr, expr); }
 
         /// The name of the result column. If not explicitly set, makes one up based on the expression.
         string columnName() const;
@@ -63,7 +63,7 @@ namespace litecore::qt {
         void parseChildExprs(ParseContext&);
         void ensureUniqueColumnName(std::unordered_set<string>& columnNames);
 
-        unique_ptr<ExprNode> _expr;                 // The value to return
+        ExprNode* C4NULLABLE _expr{};               // The expression being returned
         Value                _tempChild;            // Temporarily holds source of _expr
         string               _columnName;           // Computed name of the result column
         bool                 _parsingExpr = false;  // kludgy temporary flag
@@ -74,7 +74,7 @@ namespace litecore::qt {
     /** An item in the `FROM` clause: a collection, join, unnested expression, or table-based index. */
     class SourceNode : public AliasedNode {
       public:
-        static unique_ptr<SourceNode> parse(Dict, ParseContext&);
+        static SourceNode* parse(Dict, ParseContext&);
         explicit SourceNode(string_view alias);
 
         SourceType type() const { return _type; }
@@ -91,7 +91,7 @@ namespace litecore::qt {
 
         bool isJoin() const { return _join != JoinType::none; }  ///< True if this is a JOIN
 
-        void addJoinCondition(unique_ptr<ExprNode>);  ///< Sets/adds an `ON` condition to a JOIN
+        void addJoinCondition(ExprNode*, ParseContext&);  ///< Sets/adds an `ON` condition to a JOIN
 
         string_view tableName() const { return _tableName; }  ///< SQLite table name (set by QueryTranslator)
 
@@ -115,15 +115,13 @@ namespace litecore::qt {
 
         void setUsesDeleted() { _usesDeleted = true; }
 
-        virtual void clearWeakRefs();
-
       private:
         string               _scope;                  // Scope name, or empty for default
         string               _collection;             // Collection name, or empty for default
         string               _columnName;             // Name to use if used as result column
         string               _tableName;              // SQLite table name (set by caller)
         JoinType             _join = JoinType::none;  // Type of JOIN, or none
-        unique_ptr<ExprNode> _joinOn;                 // "ON ..." predicate
+        ExprNode* C4NULLABLE _joinOn{};               // "ON ..." predicate
         Value                _tempOn;                 // Temporarily holds source of _joinOn
         bool                 _usesDeleted = false;    // True if exprs refer to deleted docs
         SourceType const     _type;
@@ -136,7 +134,7 @@ namespace litecore::qt {
         UnnestSourceNode(Dict, ParseContext&);
 
         /// The expression referencing the document property that's the source of the data.
-        ExprNode* unnestExpression() const { return _unnest.get(); }
+        ExprNode* unnestExpression() const { return _unnest; }
 
         /// Returns a string identifying the UNNEST expression; used for matching against an array index table.
         string unnestIdentifier() const;
@@ -146,9 +144,8 @@ namespace litecore::qt {
 
       private:
         void parseChildExprs(ParseContext&) override;
-        void clearWeakRefs() override;
 
-        unique_ptr<ExprNode> _unnest;                  // "UNNEST ..." source expression
+        ExprNode* C4NULLABLE _unnest{};                // "UNNEST ..." source expression
         Value                _unnestFleeceExpression;  // Parsed-JSON form of source expression
     };
 
@@ -157,19 +154,17 @@ namespace litecore::qt {
       public:
         explicit SelectNode(Value v, ParseContext& ctx) { parse(v, ctx); }
 
-        virtual ~SelectNode();
-
         /// All the sources: collections, joins, unnested expressions, table-based indexes.
-        std::vector<unique_ptr<SourceNode>> const& sources() const { return _sources; }
+        std::vector<SourceNode*> const& sources() const { return _sources; }
 
         /// All the projections (returned values.)
-        std::vector<unique_ptr<WhatNode>> const& what() const { return _what; }
+        std::vector<WhatNode*> const& what() const { return _what; }
 
         /// The WHERE clause.
-        ExprNode* C4NULLABLE where() const { return _where.get(); }
+        ExprNode* C4NULLABLE where() const { return _where; }
 
         /// The LIMIT clause.
-        ExprNode* C4NULLABLE limit() const { return _limit.get(); }
+        ExprNode* C4NULLABLE limit() const { return _limit; }
 
         /// True if the query uses aggregate functions, `GROUP BY` or `DISTINCT`.
         /// Set during postprocessing.
@@ -190,39 +185,26 @@ namespace litecore::qt {
 
       private:
         void   registerAlias(AliasedNode*, ParseContext&);
-        void   addSource(std::unique_ptr<SourceNode>, ParseContext&);
+        void   addSource(SourceNode*, ParseContext&);
         void   addIndexes(ParseContext&);
         void   addIndexForNode(IndexedNode*, ParseContext&);
         string makeIndexAlias() const;
         void   writeFTSColumns(SQLWriter&, fleece::delimiter&) const;
 
-        std::vector<unique_ptr<SourceNode>>  _sources;                      // The sources (FROM exprs)
-        std::vector<unique_ptr<WhatNode>>    _what;                         // The WHAT expressions
-        unique_ptr<ExprNode>                 _where;                        // The WHERE expression
-        std::vector<unique_ptr<ExprNode>>    _groupBy;                      // The GROUP BY expressions
-        unique_ptr<ExprNode>                 _having;                       // The HAVING expression
-        std::vector<unique_ptr<ExprNode>>    _orderBy;                      // The ORDER BY expressions
-        std::vector<bool>                    _orderDesc;                    // Which items in _orderBy are DESC
-        unique_ptr<ExprNode>                 _limit;                        // The LIMIT expression
-        unique_ptr<ExprNode>                 _offset;                       // The OFFSET expression
-        checked_ptr<SourceNode>              _from;                         // Main source (also in _sources)
-        std::vector<checked_ptr<SelectNode>> _nestedSelects;                // SELECTs nested in this one
-        unsigned                             _numPrependedColumns = 0;      // Columns added by FTS
-        bool                                 _distinct            = false;  // True if DISTINCT is given
-        bool                                 _isAggregate         = false;  // Uses aggregate fns?
-    };
-
-    /** The root node of a query; a simple subclass of `SelectNode`. */
-    class QueryNode final : public SelectNode {
-      public:
-        explicit QueryNode(string_view json);
-        explicit QueryNode(Value);
-
-        /// Returns sources of all SELECTs including nested ones.
-        std::vector<SourceNode*> allSources() const;
-
-      private:
-        RetainedValue _root;  // Ensures the Fleece object tree is retained.
+        std::vector<SourceNode*> _sources;                      // The sources (FROM exprs)
+        std::vector<WhatNode*>   _what;                         // The WHAT expressions
+        ExprNode* C4NULLABLE     _where{};                      // The WHERE expression
+        std::vector<ExprNode*>   _groupBy;                      // The GROUP BY expressions
+        ExprNode* C4NULLABLE     _having{};                     // The HAVING expression
+        std::vector<ExprNode*>   _orderBy;                      // The ORDER BY expressions
+        std::vector<bool>        _orderDesc;                    // Which items in _orderBy are DESC
+        ExprNode* C4NULLABLE     _limit{};                      // The LIMIT expression
+        ExprNode* C4NULLABLE     _offset{};                     // The OFFSET expression
+        SourceNode* C4NULLABLE   _from{};                       // Main source (also in _sources)
+        std::vector<SelectNode*> _nestedSelects;                // SELECTs nested in this one
+        unsigned                 _numPrependedColumns = 0;      // Columns added by FTS
+        bool                     _distinct            = false;  // True if DISTINCT is given
+        bool                     _isAggregate         = false;  // Uses aggregate fns?
     };
 
 }  // namespace litecore::qt

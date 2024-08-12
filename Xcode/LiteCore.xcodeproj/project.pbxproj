@@ -241,6 +241,9 @@
 		27727C55230F279D0082BCC9 /* HTTPLogic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27727C53230F279D0082BCC9 /* HTTPLogic.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
+		277911BE2C66DD610044E660 /* Arena.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277911BD2C66DD610044E660 /* Arena.cc */; };
+		277911C12C6A96FA0044E660 /* Node.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277911C02C6A96FA0044E660 /* Node.cc */; };
+		277911C22C6A96FA0044E660 /* Node.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277911C02C6A96FA0044E660 /* Node.cc */; };
 		277D40062C2F3DE700DBDC97 /* c4IndexUpdaterTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */; };
 		2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
 		278054952B3214BF009630D8 /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
@@ -1257,7 +1260,11 @@
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		277911B12C6187CD0044E660 /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
 		277911B22C6188190044E660 /* Result.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Result.md; sourceTree = "<group>"; };
-		277911BB2C64373C0044E660 /* checked_ptr.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = checked_ptr.hh; path = ../Query/Translator/checked_ptr.hh; sourceTree = "<group>"; };
+		277911BC2C66DD610044E660 /* Arena.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Arena.hh; sourceTree = "<group>"; };
+		277911BD2C66DD610044E660 /* Arena.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Arena.cc; sourceTree = "<group>"; };
+		277911BF2C6A96FA0044E660 /* Node.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Node.hh; sourceTree = "<group>"; };
+		277911C02C6A96FA0044E660 /* Node.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Node.cc; sourceTree = "<group>"; };
+		277911C32C6AD3F90044E660 /* checked_ptr.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = checked_ptr.hh; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
@@ -1336,7 +1343,7 @@
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4CppUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4CppUtils.hh; sourceTree = "<group>"; };
-		27B895752B8FDF99001C448B /* QueryTranslator.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = QueryTranslator.md; path = overview/QueryTranslator.md; sourceTree = "<group>"; };
+		27B895752B8FDF99001C448B /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		27BB9DFB236D05650039C896 /* aes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = aes.c; sourceTree = "<group>"; };
 		27BB9DFC236D05650039C896 /* psa_crypto_slot_management.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = psa_crypto_slot_management.c; sourceTree = "<group>"; };
 		27BB9DFD236D05650039C896 /* md4.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = md4.c; sourceTree = "<group>"; };
@@ -2225,7 +2232,6 @@
 			children = (
 				2745B7CB26825F970012A17A /* index.html */,
 				2745B7CC26825F970012A17A /* overview */,
-				27B895752B8FDF99001C448B /* QueryTranslator.md */,
 				277911B22C6188190044E660 /* Result.md */,
 			);
 			name = docs;
@@ -2374,10 +2380,12 @@
 			children = (
 				2744B36124185D24005A194D /* Actors */,
 				276CE67D2267991400B681AC /* Any.hh */,
+				277911BC2C66DD610044E660 /* Arena.hh */,
+				277911BD2C66DD610044E660 /* Arena.cc */,
 				275A74461ED37992008CB57B /* Base.hh */,
 				2744B33C241854F2005A194D /* Batcher.hh */,
 				729272F22238DB8500E7208E /* c4ExceptionUtils.hh */,
-				277911BB2C64373C0044E660 /* checked_ptr.hh */,
+				277911C32C6AD3F90044E660 /* checked_ptr.hh */,
 				2744B334241854F2005A194D /* Codec.cc */,
 				2744B33E241854F2005A194D /* Codec.hh */,
 				276CF337254C893200C493B5 /* DeDuplicateEncoder.hh */,
@@ -2981,8 +2989,11 @@
 		27D62A5F2B7C2ECA004C0787 /* Translator */ = {
 			isa = PBXGroup;
 			children = (
+				27B895752B8FDF99001C448B /* README.md */,
 				2763FE342B8570F300015EA4 /* QueryTranslator.hh */,
 				2763FE352B8570F300015EA4 /* QueryTranslator.cc */,
+				277911BF2C6A96FA0044E660 /* Node.hh */,
+				277911C02C6A96FA0044E660 /* Node.cc */,
 				27D62A632B7C2EED004C0787 /* ExprNodes.hh */,
 				27D62A642B7C3110004C0787 /* ExprNodes.cc */,
 				271E51B22B87FD4000DCC203 /* IndexedNodes.hh */,
@@ -4181,6 +4192,7 @@
 				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				271E51B12B86CCB600DCC203 /* SelectNodes.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
+				277911C22C6A96FA0044E660 /* Node.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 				2763FE2D2B7D901800015EA4 /* NodesToSQL.cc in Sources */,
 			);
@@ -4503,6 +4515,7 @@
 				27469D06233D719800A1EE1A /* Certificate.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
 				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
+				277911C12C6A96FA0044E660 /* Node.cc in Sources */,
 				272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
@@ -4562,6 +4575,7 @@
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,
+				277911BE2C66DD610044E660 /* Arena.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,
 				276993E625390C3300FDF699 /* VectorRecord.cc in Sources */,
 			);

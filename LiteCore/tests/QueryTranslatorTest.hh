@@ -38,6 +38,6 @@ struct QueryTranslatorTest
     std::set<string> tableNames{"kv_default", "kv_del_default"};
     std::map<std::pair<string, string>, string>
                              vectorIndexedProperties;  // maps {table name,expression JSON} -> vector-index table name
-    std::string              vectorIndexMetric;
+    std::string              vectorIndexMetric = "euclidean2";
     mutable std::set<string> usedTableNames;
 };

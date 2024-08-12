@@ -29,15 +29,17 @@ namespace litecore {
 
     QueryTranslator::QueryTranslator(const Delegate& delegate, string defaultCollectionName, string defaultTableName)
         : _delegate(delegate)
-        , _defaultCollectionName(std::move(defaultCollectionName))
-        , _defaultTableName(std::move(defaultTableName))
+        , _defaultCollectionName(defaultCollectionName)
+        , _defaultTableName(defaultTableName)
         , _bodyColumnName("body") {}
 
     QueryTranslator::~QueryTranslator() = default;
 
     void QueryTranslator::parse(FLValue v) {
+        RootContext ctx;
         // Parse the query into a Node tree:
-        unique_ptr<qt::QueryNode> query = make_unique<QueryNode>(v);
+        SelectNode* query = new (ctx) SelectNode(v, ctx);
+        query->postprocess(ctx);
 
         query->visitTree([this](Node& node, unsigned /*depth*/) {
             if ( auto source = dynamic_cast<SourceNode*>(&node) ) {
@@ -68,7 +70,7 @@ namespace litecore {
         parse(doc.root());
     }
 
-    string QueryTranslator::writeSQL(function_ref<void(qt::SQLWriter&)> callback) {
+    string QueryTranslator::writeSQL(function_ref<void(SQLWriter&)> callback) {
         std::stringstream out;
         SQLWriter         writer(out);
         writer.bodyColumnName = _bodyColumnName;
@@ -77,10 +79,9 @@ namespace litecore {
     }
 
     string QueryTranslator::expressionSQL(FLValue exprSource) {
-        ParseContext ctx;
-        auto         expr = ExprNode::parse(exprSource, ctx);
+        RootContext ctx;
+        auto        expr = ExprNode::parse(exprSource, ctx);
         expr->postprocess(ctx);
-        ctx.clear();
 
         // Set the SQLite table name for each SourceNode:
         expr->visitTree([this](Node& node, unsigned /*depth*/) {
@@ -126,7 +127,7 @@ namespace litecore {
                     _ftsTables.push_back(tableName);
                 } else if ( index->indexType() == IndexType::vector ) {
 #ifdef COUCHBASE_ENTERPRISE
-                    auto vecSource = dynamic_cast<qt::VectorDistanceNode*>(index->indexedNodes().front().get());
+                    auto vecSource = dynamic_cast<VectorDistanceNode*>(index->indexedNodes().front());
                     Assert(vecSource);
                     tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
                                                           vecSource->metric());
@@ -146,12 +147,12 @@ namespace litecore {
                                            FLArrayIterator& whatExpressions, FLArray whereClause,
                                            bool isUnnestedTable) {
         _sql = writeSQL([&](SQLWriter& writer) {
-            ParseContext ctx;
+            RootContext ctx;
 
-            unique_ptr<SourceNode> source;
+            SourceNode* source;
             if ( isUnnestedTable ) {
-                source   = make_unique<UnnestSourceNode>();
-                ctx.from = source.get();
+                source   = new (ctx) UnnestSourceNode();
+                ctx.from = source;
             }
 
             writer << "CREATE INDEX " << sqlIdentifier(indexName) << " ON " << sqlIdentifier(onTableName) << " (";
@@ -159,7 +160,7 @@ namespace litecore {
             if ( i.count() > 0 ) {
                 delimiter comma(", ");
                 for ( ; i; ++i ) {
-                    unique_ptr<ExprNode> node;
+                    ExprNode* node;
                     if ( Value item = i.value(); item.asString() ) {
                         // If an index item is a string, wrap it in an array:
                         auto a = MutableArray::newArray();
@@ -168,6 +169,7 @@ namespace litecore {
                     } else {
                         node = ExprNode::parse(i.value(), ctx);
                     }
+                    node->postprocess(ctx);
                     writer << comma << *node;
                 }
             } else {
@@ -178,30 +180,32 @@ namespace litecore {
             writer << ')';
             if ( whereClause && !isUnnestedTable ) {
                 auto where = ExprNode::parse(Array(whereClause), ctx);
+                where->postprocess(ctx);
                 writer << " WHERE " << *where;
             }
-
-            ctx.clear();
         });
     }
 
     string QueryTranslator::whereClauseSQL(FLValue exprSource, string_view dbAlias) {
         if ( !exprSource ) return "";
-        ParseContext ctx;
-        auto         src = make_unique<SourceNode>(dbAlias);
-        ctx.from         = src.get();
-        auto expr        = ExprNode::parse(exprSource, ctx);
-        ctx.clear();
+        RootContext ctx;
+        auto        src = new (ctx) SourceNode(dbAlias);
+        ctx.from        = src;
+        auto expr       = ExprNode::parse(exprSource, ctx);
+        expr->postprocess(ctx);
         return writeSQL([&](SQLWriter& writer) { writer << "WHERE " << *expr; });
     }
 
     string QueryTranslator::functionCallSQL(slice fnName, FLValue arg, FLValue param) {
-        ParseContext         ctx;
-        auto                 argExpr = ExprNode::parse(arg, ctx);
-        unique_ptr<ExprNode> paramExpr;
-        if ( param ) paramExpr = ExprNode::parse(param, ctx);
-        ctx.clear();
-        return writeSQL([&](SQLWriter& writer) { writeFnGetter(fnName, *argExpr, paramExpr.get(), writer); });
+        RootContext ctx;
+        auto        argExpr = ExprNode::parse(arg, ctx);
+        argExpr->postprocess(ctx);
+        ExprNode* paramExpr = nullptr;
+        if ( param ) {
+            paramExpr = ExprNode::parse(param, ctx);
+            paramExpr->postprocess(ctx);
+        }
+        return writeSQL([&](SQLWriter& writer) { writeFnGetter(fnName, *argExpr, paramExpr, writer); });
     }
 
     string QueryTranslator::FTSExpressionSQL(FLValue exprFleece) {
@@ -226,12 +230,12 @@ namespace litecore {
     }
 
     string QueryTranslator::unnestedTableName(FLValue flExpr) const {
-        ParseContext ctx;
-        auto         expr = ExprNode::parse(flExpr, ctx);
-        ctx.clear();
+        RootContext ctx;
+        auto        expr = ExprNode::parse(flExpr, ctx);
+        expr->postprocess(ctx);
 
         string propertyStr;
-        if ( auto prop = dynamic_cast<PropertyNode*>(expr.get()) ) {
+        if ( auto prop = dynamic_cast<PropertyNode*>(expr) ) {
             propertyStr = string(prop->path());
         } else {
             propertyStr = expressionIdentifier(Value(flExpr).asArray());
@@ -240,11 +244,10 @@ namespace litecore {
     }
 
     string QueryTranslator::eachExpressionSQL(FLValue flExpr) {
-        ParseContext ctx;
-        auto         expr = ExprNode::parse(flExpr, ctx);
-        ctx.clear();
+        RootContext ctx;
+        auto        expr = ExprNode::parse(flExpr, ctx);
 
-        auto prop = dynamic_cast<PropertyNode*>(expr.get());
+        auto prop = dynamic_cast<PropertyNode*>(expr);
         Assert(prop, "eachExpressionSQL: expression must be a property path");
         prop->setSQLiteFn(kEachFnName);
         return writeSQL([&prop](SQLWriter& sql) { prop->writeSQL(sql); });

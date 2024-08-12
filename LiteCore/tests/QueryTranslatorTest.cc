@@ -776,7 +776,6 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried FTS", "[Query][Que
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][QueryTranslator][VectorSearch]") {
     tableNames.insert("kv_default:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
-    vectorIndexMetric = "cosine";
     // Pure vector search (no other WHERE criteria):
     CHECK_equal(parse("['SELECT', {"
                       "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ],"
@@ -786,6 +785,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
                 "\"<idx1>\" ON "
                 "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
     // Pure vector search, specifying metric and numProbes:
+    vectorIndexMetric = "cosine";
     CHECK_equal(
             parse("['SELECT', {ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 'cosine', 50] ],"
                   "LIMIT: 5}]"),
@@ -794,6 +794,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
             "vectorsearch_probes(vector, 50) LIMIT 5) AS \"<idx1>\" ON "
             "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
     // Pure vector search, testing distance in the WHERE:
+    vectorIndexMetric = "euclidean2";
     CHECK_equal(parse("['SELECT', {"
                       "WHERE: ['<', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]], 1234],"
                       "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ],"
@@ -814,6 +815,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
                 "'x' AND (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance");
 
     // The optional 'accurate' parameter is ignored, but if given must be false:
+    vectorIndexMetric = "cosine";
     CHECK_equal(parse("['SELECT', {"
                       "ORDER_BY: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34], 'cosine', 50, false] ],"
                       "LIMIT: 5}]"),

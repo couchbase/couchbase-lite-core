@@ -52,6 +52,7 @@ function(set_litecore_source_base)
         LiteCore/Query/Translator/QueryTranslator.cc
         LiteCore/Query/Translator/ExprNodes.cc
         LiteCore/Query/Translator/IndexedNodes.cc
+        LiteCore/Query/Translator/Node.cc
         LiteCore/Query/Translator/SelectNodes.cc
         LiteCore/Query/Translator/NodesToSQL.cc
         LiteCore/Query/Translator/TranslatorUtils.cc
@@ -118,6 +119,7 @@ function(set_litecore_source_base)
         Replicator/RevFinder.cc
         Replicator/URLTransformer.cc
         Replicator/Worker.cc
+        LiteCore/Support/Arena.cc
         LiteCore/Support/Logging.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc

@@ -29,7 +29,7 @@ namespace litecore {
 
     /** Translates queries from our JSON schema (actually Fleece) into SQL runnable by SQLite.
         https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
-        For some architectural info, see docs/QueryTranslator.md */
+        For some architectural info, see the [README](./README.md) */
     class QueryTranslator {
       public:
         /** Which docs to include from a collection in a query; determines which table to use. */
@@ -136,9 +136,9 @@ namespace litecore {
         std::vector<string> _ftsTables;                // FTS virtual tables being used
         unsigned            _1stCustomResultCol{0};    // Index of 1st result after _baseResultColumns
         std::vector<string> _columnTitles;             // Pretty names of result columns
+        string              _bodyColumnName;           // Name of the `body` column
         bool                _isAggregateQuery{false};  // Is this an aggregate query?
         bool                _usesExpiration{false};    // Has query accessed _expiration meta-property?
-        string              _bodyColumnName;           // Name of the `body` column
     };
 
 }  // namespace litecore

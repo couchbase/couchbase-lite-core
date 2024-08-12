@@ -24,23 +24,10 @@ namespace litecore::qt {
     using namespace fleece;
     using namespace std;
 
-    void ParseContext::clear() { *this = ParseContext{}; }
-
-    void Node::setParent(Node* p) {
-        DebugAssert(!_parent || !p);
-        _parent = p;
-    }
-
-    void Node::visitTree(VisitorFn const& visitor, bool preorder, unsigned depth) {
-        if ( preorder ) visitor(*this, depth);
-        visitChildren({[&](Node& child) { child.visitTree(visitor, preorder, depth + 1); }});
-        if ( !preorder ) visitor(*this, depth);
-    }
-
 #pragma mark - EXPRESSION PARSING:
 
     // Top-level method to parse an expression.
-    unique_ptr<ExprNode> ExprNode::parse(Value v, ParseContext& ctx) {
+    ExprNode* ExprNode::parse(Value v, ParseContext& ctx) {
         switch ( v.type() ) {
             case kFLUndefined:
                 fail("internal error: missing Value for expression");
@@ -48,7 +35,7 @@ namespace litecore::qt {
             case kFLBoolean:
             case kFLNumber:
             case kFLString:
-                return make_unique<LiteralNode>(v);
+                return new (ctx) LiteralNode(v);
             case kFLData:
                 fail("Binary data not supported in query");
             case kFLArray:
@@ -56,9 +43,9 @@ namespace litecore::qt {
             case kFLDict:
                 {
                     // Construct a `dict_of(...)` call:
-                    auto result = make_unique<FunctionNode>(kDictOfFunctionSpec);
+                    auto result = new (ctx) FunctionNode(kDictOfFunctionSpec);
                     for ( Dict::iterator i(v.asDict()); i; ++i ) {
-                        result->addArg(make_unique<LiteralNode>(i.key()));
+                        result->addArg(new (ctx) LiteralNode(i.key()));
                         result->addArg(ExprNode::parse(i.value(), ctx));
                     }
                     return result;
@@ -66,7 +53,7 @@ namespace litecore::qt {
         }
     }
 
-    unique_ptr<ExprNode> ExprNode::parseArray(Array array, ParseContext& ctx) {
+    ExprNode* ExprNode::parseArray(Array array, ParseContext& ctx) {
         // The first item of an array is a string, the operation; the rest are operands:
         Array::iterator operands(array);
         slice           opName = requiredString(operands[0], "operation");
@@ -79,13 +66,13 @@ namespace litecore::qt {
             return PropertyNode::parse(opName.from(1), &operands, ctx);
         } else if ( opName.hasPrefix("_."_sl) ) {
             require(nargs == 1, "expected single arg for '%.*s' object accessor", FMTSLICE(opName));
-            auto fn = make_unique<FunctionNode>(kNestedValueFunctionSpec);
+            auto fn = new (ctx) FunctionNode(kNestedValueFunctionSpec);
             fn->addArg(ExprNode::parse(operands[0], ctx));
-            fn->addArg(make_unique<LiteralNode>(opName.from(2)));
+            fn->addArg(new (ctx) LiteralNode(opName.from(2)));
             return fn;
         } else if ( opName.hasPrefix('$') ) {
             require(operands.count() == 0, "extra operands to '%.*s'", FMTSLICE(opName));
-            return make_unique<ParameterNode>(opName.from(1));
+            return new (ctx) ParameterNode(opName.from(1));
         } else if ( opName.hasPrefix('?') ) {
             return VariableNode::parse(opName.from(1), operands, ctx);
         } else if ( opName.hasSuffix("()"_sl) ) {
@@ -95,15 +82,15 @@ namespace litecore::qt {
         }
     }
 
-    unique_ptr<ExprNode> ExprNode::parseOp(Operation const& op, Array::iterator operands, ParseContext& ctx) {
+    ExprNode* ExprNode::parseOp(Operation const& op, Array::iterator operands, ParseContext& ctx) {
         switch ( op.type ) {
             case OpType::any:
             case OpType::every:
             case OpType::anyAndEvery:
-                return make_unique<AnyEveryNode>(op, operands, ctx);
+                return new (ctx) AnyEveryNode(op, operands, ctx);
             case OpType::arrayLiteral:
                 {
-                    auto fn = make_unique<FunctionNode>(lookupFn(kArrayOfFnName, operands.count()));
+                    auto fn = new (ctx) FunctionNode(lookupFn(kArrayOfFnName, operands.count()));
                     fn->addArgs(operands, ctx);
                     return fn;
                 }
@@ -121,49 +108,49 @@ namespace litecore::qt {
             case OpType::isValued:
                 return FunctionNode::parse(kIsValuedFnName, operands, ctx);
             case OpType::match:
-                return make_unique<MatchNode>(operands, ctx);
+                return new (ctx) MatchNode(operands, ctx);
             case OpType::meta:
-                return make_unique<MetaNode>(operands, ctx);
+                return new (ctx) MetaNode(operands, ctx);
             case OpType::objectProperty:
                 return parseObjectProperty(op, operands, ctx);
             case OpType::property:
                 return PropertyNode::parse(nullslice, &operands, ctx);
             case OpType::parameter:
-                return make_unique<ParameterNode>(operands[0]);
+                return new (ctx) ParameterNode(operands[0]);
             case OpType::rank:
-                return make_unique<RankNode>(operands, ctx);
+                return new (ctx) RankNode(operands, ctx);
             case OpType::select:
-                return make_unique<SelectNode>(operands[0], ctx);
+                return new (ctx) SelectNode(operands[0], ctx);
             case OpType::variable:
                 return VariableNode::parse(nullslice, operands, ctx);
 #ifdef COUCHBASE_ENTERPRISE
             case OpType::vectorDistance:
-                return make_unique<VectorDistanceNode>(operands, ctx);
+                return new (ctx) VectorDistanceNode(operands, ctx);
 #endif
             default:
                 // A normal OpNode
-                return make_unique<OpNode>(op, operands, ctx);
+                return new (ctx) OpNode(op, operands, ctx);
         }
     }
 
-    unique_ptr<ExprNode> ExprNode::parseInNotIn(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+    ExprNode* ExprNode::parseInNotIn(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
         auto lhs          = parse(operands[0], ctx);
         auto arrayOperand = operands[1].asArray();
         if ( arrayOperand && arrayOperand[0].asString() == "[]"_sl ) {
             // RHS is a literal array, so use SQL "IN" syntax:
-            auto result = make_unique<OpNode>(op);
-            result->addArg(std::move(lhs));
+            auto result = new (ctx) OpNode(op);
+            result->addArg(lhs);
             for ( unsigned i = 1; i < arrayOperand.count(); ++i ) result->addArg(parse(arrayOperand[i], ctx));
             return result;
         } else {
             // Otherwise generate a call to array_contains():
             // [yes, operands are in reverse order]
-            auto contains = make_unique<FunctionNode>(lookupFn("array_contains", 2));
+            auto contains = new (ctx) FunctionNode(lookupFn("array_contains", 2));
             contains->addArg(parse(operands[1], ctx));
-            contains->addArg(std::move(lhs));
+            contains->addArg(lhs);
             if ( op.type == OpType::not_in ) {
-                auto n = make_unique<OpNode>(*lookupOp("NOT", 1));
-                n->addArg(std::move(contains));
+                auto n = new (ctx) OpNode(*lookupOp("NOT", 1));
+                n->addArg(contains);
                 return n;
             } else {
                 return contains;
@@ -171,35 +158,34 @@ namespace litecore::qt {
         }
     }
 
-    unique_ptr<ExprNode> ExprNode::parseExists(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
-        auto arg = parse(operands[0], ctx);
-        if ( auto prop = dynamic_cast<PropertyNode*>(arg.get()) ) {
+    ExprNode* ExprNode::parseExists(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+        ExprNode* arg = parse(operands[0], ctx);
+        if ( auto prop = dynamic_cast<PropertyNode*>(arg) ) {
             // "EXISTS propertyname" turns into a call to fl_exists()
             prop->setSQLiteFn(kExistsFnName);
             return arg;
         } else {
-            auto exists = make_unique<OpNode>(op);
-            exists->addArg(std::move(arg));
+            auto exists = new (ctx) OpNode(op);
+            exists->addArg(arg);
             return exists;
         }
     }
 
-    unique_ptr<ExprNode> ExprNode::parseBlob(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
-        unique_ptr<ExprNode> arg;
+    ExprNode* ExprNode::parseBlob(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+        ExprNode* arg;
         if ( slice propStr = operands[0].asString() ) {
             arg = PropertyNode::parse(propStr, nullptr, ctx);
         } else {
             arg = parse(operands[0], ctx);
-            require(dynamic_cast<PropertyNode*>(arg.get()), "argument of BLOB() must be a document property");
+            require(dynamic_cast<PropertyNode*>(arg), "argument of BLOB() must be a document property");
         }
-        auto blob = make_unique<OpNode>(op);
-        blob->addArg(std::move(arg));
+        auto blob = new (ctx) OpNode(op);
+        blob->addArg(arg);
         return blob;
     }
 
-    unique_ptr<ExprNode> ExprNode::parseObjectProperty(Operation const& op, Array::iterator& operands,
-                                                       ParseContext& ctx) {
-        auto node = make_unique<OpNode>(op, operands, ctx);
+    ExprNode* ExprNode::parseObjectProperty(Operation const& op, Array::iterator& operands, ParseContext& ctx) {
+        auto node = new (ctx) OpNode(op, operands, ctx);
         // Convert ['_.', ['META()'], 'x']  ->  ['._x'] :
         auto meta = dynamic_cast<MetaNode*>(node->operand(0));
         if ( meta && meta->property() == MetaProperty::none ) {
@@ -209,7 +195,7 @@ namespace litecore::qt {
                     if ( keyStr.hasPrefix('.') ) keyStr.moveStart(1);
                     MetaProperty prop = lookupMeta(keyStr, kMetaPropertyNames);
                     require(prop != MetaProperty::none, "'%.*s' is not a valid Meta key", FMTSLICE(keyStr));
-                    return make_unique<MetaNode>(prop, meta->source());
+                    return new (ctx) MetaNode(prop, meta->source());
                 }
             }
         }
@@ -259,11 +245,13 @@ namespace litecore::qt {
         require(isAlphanumericOrUnderscore(_name), "Invalid query parameter name '%s'", _name.c_str());
     }
 
-    unique_ptr<ExprNode> PropertyNode::parse(slice pathStr, fleece::Array::iterator* components, ParseContext& ctx) {
+#pragma mark - PROPERTY NODE:
+
+    ExprNode* PropertyNode::parse(slice pathStr, fleece::Array::iterator* components, ParseContext& ctx) {
         KeyPath     path   = parsePath(pathStr, components);
         SourceNode* source = nullptr;
         WhatNode*   result = nullptr;
-        string      sqliteFn;
+        string_view sqliteFn;
 
         if ( AliasedNode* a = resolvePropertyPath(path, ctx) ) {
             // 1st component of path names a source or result, and has been removed from `path`.
@@ -286,17 +274,17 @@ namespace litecore::qt {
             if ( meta != MetaProperty::none ) {
                 path.dropComponents(1);
                 require(path.count() == 0, "invalid properties after a meta property");
-                return make_unique<MetaNode>(meta, source);
+                return new (ctx) MetaNode(meta, source);
             }
             if ( source && source->type() == SourceType::unnest ) sqliteFn = kNestedValueFnName;
             else
                 sqliteFn = kValueFnName;
         }
-        return unique_ptr<ExprNode>(new PropertyNode(source, result, std::move(path), sqliteFn));
+        return new (ctx) PropertyNode(source, result, std::move(path), sqliteFn);
     }
 
-    PropertyNode::PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string fn)
-        : _source(src), _result(result), _path(std::move(path)), _sqliteFn(std::move(fn)) {}
+    PropertyNode::PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string_view fn)
+        : _source(src), _result(result), _path(std::move(path)), _sqliteFn(fn) {}
 
     string PropertyNode::asColumnName() const {
         if ( _path.count() > 0 ) {
@@ -310,7 +298,9 @@ namespace litecore::qt {
 
     SourceNode* PropertyNode::source() const { return _source; }
 
-    unique_ptr<ExprNode> VariableNode::parse(slice pathStr, Array::iterator& args, ParseContext& ctx) {
+#pragma mark - VARIABLE NODE:
+
+    ExprNode* VariableNode::parse(slice pathStr, Array::iterator& args, ParseContext& ctx) {
         if ( !pathStr ) {
             pathStr = requiredString(*args, "variable name");
             ++args;
@@ -318,7 +308,7 @@ namespace litecore::qt {
         KeyPath path = parsePath(pathStr, &args);
         require(path.count() > 0, "invalid variable name");
         slice varName = path.get(0).first;
-        auto  var     = make_unique<VariableNode>(varName);
+        auto  var     = new (ctx) VariableNode(varName);
 
         if ( path.count() == 1 ) {
             return var;
@@ -327,9 +317,9 @@ namespace litecore::qt {
             path.dropComponents(1);
             var->_returnBody = true;
 
-            auto expr = make_unique<OpNode>(lookupOp(OpType::objectProperty));
-            expr->addArg(std::move(var));
-            expr->addArg(make_unique<LiteralNode>(path.toString()));
+            auto expr = new (ctx) OpNode(lookupOp(OpType::objectProperty));
+            expr->addArg(var);
+            expr->addArg(new (ctx) LiteralNode(path.toString()));
             return expr;
         }
     }
@@ -340,7 +330,7 @@ namespace litecore::qt {
 
 #pragma mark - COLLATE NODE:
 
-    unique_ptr<ExprNode> CollateNode::parse(Dict options, Value childVal, ParseContext& ctx) {
+    ExprNode* CollateNode::parse(Dict options, Value childVal, ParseContext& ctx) {
         // a COLLATE op merely changes the current collation.
         // First update the current Collation from the options dict and push it:
         Collation savedCollation        = ctx.collation;
@@ -361,8 +351,8 @@ namespace litecore::qt {
 
         if ( !ctx.collationApplied ) {
             // If no nested node used the collation, insert it into the tree here
-            // so it will get written:
-            node = make_unique<CollateNode>(std::move(node), ctx);
+            // so it will written:
+            node = new (ctx) CollateNode(node, ctx);
         }
 
         // Finally pop the saved Collation:
@@ -371,8 +361,8 @@ namespace litecore::qt {
         return node;
     }
 
-    CollateNode::CollateNode(unique_ptr<ExprNode> child, ParseContext& ctx) : _collation(ctx.collation) {
-        setChild(_child, std::move(child));
+    CollateNode::CollateNode(ExprNode* child, ParseContext& ctx) : _collation(ctx.collation) {
+        initChild(_child, child);
         ctx.collationApplied = true;
     }
 
@@ -387,9 +377,9 @@ namespace litecore::qt {
 
         if ( !ctx.collationApplied && (op.type == OpType::infix || op.type == OpType::like) ) {
             // Apply the current collation by wrapping the first operand in a CollateNode:
-            unique_ptr<ExprNode> op0 = std::move(_operands[0]);
+            ExprNode* op0 = _operands[0];
             op0->setParent(nullptr);
-            setChild<ExprNode>(_operands[0], make_unique<CollateNode>(std::move(op0), ctx));
+            setChild<ExprNode>(_operands[0], new (ctx) CollateNode(op0, ctx));
         }
     }
 
@@ -407,22 +397,24 @@ namespace litecore::qt {
 #endif
 
 
+#pragma mark - ANY/EVERY NODE:
+
     AnyEveryNode::AnyEveryNode(Operation const& op, Array::iterator& operands, ParseContext& ctx)
         : OpNode(op, operands, ctx) {
-        if ( auto lit = dynamic_cast<LiteralNode*>(_operands[0].get()) ) _variableName = lit->literal().asString();
+        if ( auto lit = dynamic_cast<LiteralNode*>(_operands[0]) ) _variableName = lit->literal().asString();
         require(isValidIdentifier(_variableName), "invalid variable name in ANY/EVERY");
     }
 
 #pragma mark - FUNCTION NODE:
 
-    unique_ptr<ExprNode> FunctionNode::parse(slice name, Array::iterator& args, ParseContext& ctx) {
+    ExprNode* FunctionNode::parse(slice name, Array::iterator& args, ParseContext& ctx) {
         auto& spec = lookupFn(name, args.count());
-        auto  fn   = make_unique<FunctionNode>(spec);
+        auto  fn   = new (ctx) FunctionNode(spec);
         fn->addArgs(args, ctx);
 
         if ( spec.name == kArrayCountFnName ) {
             auto& arg0 = fn->_args[0];
-            if ( auto prop = dynamic_cast<PropertyNode*>(arg0.get()) ) {
+            if ( auto prop = dynamic_cast<PropertyNode*>(arg0) ) {
                 // Special case: "array_count(propertyname)" turns into a call to fl_count:
                 prop->setSQLiteFn(kCountFnName);
                 arg0->setParent(nullptr);
@@ -454,7 +446,7 @@ namespace litecore::qt {
 #endif
         if ( _collation ) {
             // Add implicit collation arg to functions that take one:
-            addArg(make_unique<LiteralNode>(_collation->sqliteName()));
+            addArg(new (ctx) LiteralNode(_collation->sqliteName()));
         }
     }
 
