@@ -284,7 +284,6 @@ namespace litecore::qt {
             // About to parse a nested SELECT, with its own namespace; use a new ParseContext:
             ParseContext nestedCtx(ctx.arena);
             parse(v, nestedCtx);
-            ctx.select->_nestedSelects.emplace_back(this);
             return;
         }
 
@@ -312,7 +311,7 @@ namespace litecore::qt {
                 // we add one for the default collection aliased `_doc`.
                 addSource(new (ctx) SourceNode("_doc"), ctx);
             }
-            require(_from, "missing a primary non-JOIN source");
+            require(!_sources.empty(), "missing a primary non-JOIN source");
 
             // Parse the WHAT clause (projections):
             if ( Value what = getCaseInsensitive(select, "WHAT") ) {
@@ -377,12 +376,13 @@ namespace litecore::qt {
 
         if ( _what.empty() ) {
             // Default WHAT is id and sequence, for historical reasons:
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, _from)));
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, _from)));
+            auto f = from();
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, f)));
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, f)));
         }
 
-        Assert(_from);
-        Assert(ctx.from);
+        Assert(!_sources.empty());
+        Assert(ctx.from == from());
         Assert(!ctx.aliases.empty());
     }
 
@@ -393,23 +393,18 @@ namespace litecore::qt {
     }
 
     void SelectNode::addSource(SourceNode* source, ParseContext& ctx) {
+        bool isFrom = false;
         if ( source->type() != SourceType::index ) {
             registerAlias(source, ctx);
             if ( source->isCollection() && !source->isJoin() ) {
-                require(!_from, "multiple non-join FROM items");
-                _from    = source;
-                ctx.from = _from;
-            } else {
-                require(_from, "first FROM item must be primary source");
+                isFrom = true;
+                require(_sources.empty(), "multiple non-join FROM items");
+                ctx.from = source;
             }
             ctx.sources.emplace_back(source);
         }
+        if ( !isFrom ) { require(!_sources.empty(), "first FROM item must be primary source"); }
         addChild(_sources, source);
-    }
-
-    void SelectNode::addAllSourcesTo(std::vector<SourceNode*>& sources) const {
-        for ( auto& s : _sources ) sources.push_back(s);
-        for ( auto sel : _nestedSelects ) sel->addAllSourcesTo(sources);
     }
 
     void SelectNode::visitChildren(ChildVisitor const& visitor) {

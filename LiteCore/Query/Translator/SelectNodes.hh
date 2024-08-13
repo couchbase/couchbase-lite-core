@@ -157,6 +157,9 @@ namespace litecore::qt {
         /// All the sources: collections, joins, unnested expressions, table-based indexes.
         std::vector<SourceNode*> const& sources() const { return _sources; }
 
+        /// The main collection data source, i.e. the first source after `FROM`.
+        SourceNode* from() const { return _sources.at(0); }
+
         /// All the projections (returned values.)
         std::vector<WhatNode*> const& what() const { return _what; }
 
@@ -200,9 +203,7 @@ namespace litecore::qt {
         std::vector<bool>        _orderDesc;                    // Which items in _orderBy are DESC
         ExprNode* C4NULLABLE     _limit{};                      // The LIMIT expression
         ExprNode* C4NULLABLE     _offset{};                     // The OFFSET expression
-        SourceNode* C4NULLABLE   _from{};                       // Main source (also in _sources)
-        std::vector<SelectNode*> _nestedSelects;                // SELECTs nested in this one
-        unsigned                 _numPrependedColumns = 0;      // Columns added by FTS
+        uint8_t                  _numPrependedColumns = 0;      // Columns added by FTS
         bool                     _distinct            = false;  // True if DISTINCT is given
         bool                     _isAggregate         = false;  // Uses aggregate fns?
     };

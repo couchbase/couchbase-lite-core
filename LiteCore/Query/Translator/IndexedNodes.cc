@@ -314,7 +314,7 @@ namespace litecore::qt {
 
             if ( node->indexType() == IndexType::FTS && !_isAggregate ) {
                 // writeSQL is going to prepend extra columns for an FTS index:
-                _numPrependedColumns = std::max(_numPrependedColumns, 1u) + 1;
+                _numPrependedColumns = std::max(_numPrependedColumns, uint8_t(1u)) + 1;
             }
         }
 
@@ -328,7 +328,7 @@ namespace litecore::qt {
             for ( auto& src : _sources ) {
                 if ( auto ind = dynamic_cast<IndexSourceNode*>(src) ) {
                     if ( ind->indexType() == IndexType::FTS ) {
-                        if ( comma.count() == 0 ) ctx << comma << sqlIdentifier(_from->alias()) << ".rowid";
+                        if ( comma.count() == 0 ) ctx << comma << sqlIdentifier(from()->alias()) << ".rowid";
                         ctx << comma << "offsets(" << sqlIdentifier(ind->alias()) << "."
                             << sqlIdentifier(ind->tableName()) << ')';
                     }

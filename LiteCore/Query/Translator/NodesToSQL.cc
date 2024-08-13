@@ -371,7 +371,7 @@ namespace litecore::qt {
             for ( auto& what : _what ) ctx << comma << what;
         }
 
-        ctx << ' ' << *_from;
+        ctx << ' ' << from();
         for ( auto& join : _sources )
             if ( join->isJoin() || join->type() == SourceType::unnest ) ctx << ' ' << join;
 
