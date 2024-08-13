@@ -190,7 +190,7 @@ namespace litecore::qt {
         auto meta = dynamic_cast<MetaNode*>(node->operand(0));
         if ( meta && meta->property() == MetaProperty::none ) {
             if ( auto key = dynamic_cast<LiteralNode*>(node->operand(1)) ) {
-                if ( slice keyStr = key->literal().asString() ) {
+                if ( slice keyStr = key->asString() ) {
                     // OK, matched the pattern. Now identify the key:
                     if ( keyStr.hasPrefix('.') ) keyStr.moveStart(1);
                     MetaProperty prop = lookupMeta(keyStr, kMetaPropertyNames);
@@ -204,14 +204,48 @@ namespace litecore::qt {
 
 #pragma mark - LEAF NODES:
 
-    LiteralNode::LiteralNode(Value v) : _literal(v) {
-        Assert(v.type() < kFLData);
-        if ( v.isMutable() ) _retained = v;
+    LiteralNode::LiteralNode(Value v) : _literal(v) { Assert(v.type() < kFLData); }
+
+    LiteralNode::LiteralNode(int64_t i) : _literal(i) {}
+
+    LiteralNode::LiteralNode(string_view str) : _literal(str) {}
+
+    FLValueType LiteralNode::type() const {
+        switch ( _literal.index() ) {
+            case 0:
+                return get<Value>(_literal).type();
+            case 1:
+                return kFLNumber;
+            case 2:
+                return kFLString;
+            default:
+                abort();  // unreachable
+        }
     }
 
-    LiteralNode::LiteralNode(int64_t i) : LiteralNode(RetainedValue::newInt(i)) {}
+    optional<int64_t> LiteralNode::asInt() const {
+        switch ( _literal.index() ) {
+            case 0:
+                if ( Value v = get<Value>(_literal); v.isInteger() ) return v.asInt();
+                break;
+            case 1:
+                return get<int64_t>(_literal);
+            default:
+                break;
+        }
+        return nullopt;
+    }
 
-    LiteralNode::LiteralNode(string_view str) : LiteralNode(RetainedValue::newString(str)) {}
+    string_view LiteralNode::asString() const {
+        switch ( _literal.index() ) {
+            case 0:
+                return get<Value>(_literal).asString();
+            case 2:
+                return get<string_view>(_literal);
+            default:
+                return "";
+        }
+    }
 
     MetaNode::MetaNode(Array::iterator& args, ParseContext& ctx) {
         if ( args.count() == 0 ) {
@@ -322,7 +356,7 @@ namespace litecore::qt {
 
             auto expr = new (ctx) OpNode(lookupOp(OpType::objectProperty));
             expr->addArg(var);
-            expr->addArg(new (ctx) LiteralNode(path.toString()));
+            expr->addArg(new (ctx) LiteralNode(ctx.newString(path.toString())));
             return expr;
         }
     }
@@ -376,7 +410,7 @@ namespace litecore::qt {
 
         if ( !ctx.collationApplied && (op.type == OpType::infix || op.type == OpType::like) ) {
             // Apply the current collation by wrapping the first operand in a CollateNode:
-            ExprNode* op0 = _operands.removeFront();
+            ExprNode* op0 = _operands.pop_front();
             op0->setParent(nullptr);
             auto coll = new (ctx) CollateNode(op0, ctx);
             coll->setParent(this);
@@ -402,7 +436,7 @@ namespace litecore::qt {
 
     AnyEveryNode::AnyEveryNode(Operation const& op, Array::iterator& operands, ParseContext& ctx)
         : OpNode(op, operands, ctx) {
-        if ( auto lit = dynamic_cast<LiteralNode*>(_operands[0]) ) _variableName = lit->literal().asString();
+        if ( auto lit = dynamic_cast<LiteralNode*>(_operands[0]) ) _variableName = lit->asString();
         require(isValidIdentifier(_variableName), "invalid variable name in ANY/EVERY");
     }
 
@@ -416,7 +450,7 @@ namespace litecore::qt {
         if ( spec.name == kArrayCountFnName ) {
             if ( auto prop = dynamic_cast<PropertyNode*>(fn->_args.front()) ) {
                 // Special case: "array_count(propertyname)" turns into a call to fl_count:
-                fn->_args.removeFront();
+                fn->_args.pop_front();
                 prop->setParent(nullptr);
                 prop->setSQLiteFn(kCountFnName);
                 return prop;
@@ -440,14 +474,13 @@ namespace litecore::qt {
         ExprNode::postprocess(ctx);
 #if DEBUG
         // Verify that manual use of addArg() didn't produce the wrong number of args.
-        // (The kOpWantsCollation flag indicates that an extra collation arg can be added.)
         size_t nArgs = std::min(_args.size(), size_t(9));
         Assert(nArgs >= _fn.minArgs && nArgs <= _fn.maxArgs, "wrong number of args (%zu) for %.*s", nArgs,
                FMTSLICE(_fn.name));
 #endif
         if ( _collation ) {
             // Add implicit collation arg to functions that take one:
-            addArg(new (ctx) LiteralNode(_collation->sqliteName()));
+            addArg(new (ctx) LiteralNode(ctx.newString(_collation->sqliteName())));
         }
     }
 

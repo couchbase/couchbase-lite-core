@@ -52,11 +52,10 @@ I originally used `unique_ptr` for the links to children, and plain pointers for
 
 I ended up switching to an [**arena allocator**][ARENA]. All `Node` objects are allocated by it; then when the QueryTranslator is done it frees the arena. This makes the code simpler, with no `unique_ptr<>` or `Retained<>` nonsense: you allocate a node with e.g. `new (ctx) ExprNode(...)`; node references are typed `Node*`; and there's no need to delete nodes. Very old school!
 
-The only tricky part is the cleanup. Unfortunately some Node subclasses have `string` or `vector` members that allocate memory, so to avoid leaks it's necessary to call each Node's destructor before freeing the arena. The `RootContext` destructor takes care of this by iterating every block in the arena, casting it to `Node*` and destructing it.
+The downside is that, since the arena never calls destructors, **`Node` and its subclasses cannot declare any data members that require destruction.** That rules out using `std::string`, `std::vector`, `fleece::MutableArray`, etc. There are a few utilities to mitigate this:
 
-Unfortunately there's a special case that happens when a Node constructor throws an exception as a result of a parse error. The C++ runtime code destructs the partly-completed object and tells the allocator to delete the block, but the arena doesn't have a notion of a free block, so `free` is usually a no-op. To prevent the cleanup code (previons paragraph) from double-destructing, the pseudo-"free" code zeroes the first bytes of the block to identify it as not being a real object anymore.
-
-(The ideal solution would be to allocate everything including `string`s and `vector`s in the arena; then there'd be no need to run any destructors. That would require figuring out the C++ allocator APIs.)
+- `ParseContext::newString()` allocates a C string in the arena.
+- `List<T>` is a simple intrusive linked-list for Nodes. Several of the subclasses use this to create dynamic lists of their child nodes.
 
 [SCHEMA]: https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
 [ARENA]: https://en.wikipedia.org/wiki/Region-based_memory_management

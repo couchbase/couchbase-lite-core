@@ -32,29 +32,39 @@ namespace litecore {
 
 #pragma mark - FIXED ARENA:
 
-    FixedArena::FixedArena(size_t capacity, size_t alignment)
+    FixedArena::FixedArena(size_t capacity, size_t alignment, bool iterable)
         : _heap(new uint8_t[capacity])
         , _sizes(&_heap[capacity])
         , _heapEnd(_sizes)
         , _nextBlock(&_heap[0])
-        , _alignment(alignment) {
+        , _alignment(alignment)
+        , _iterable(iterable) {
         DebugAssert(alignment > 0 && (alignment & (alignment - 1)) == 0);  // alignment must be power of 2
         Assert((uintptr_t(_heap.get()) & (alignment - 1)) == 0, "FixedArena heap isn't aligned");
         // NOTE: There are ways to allocate `_heap` and enforce the right alignment,
         // but none of the ways I tried (std::aligned_alloc, std::align_val_t) worked with MSVC.
     }
 
+    size_t FixedArena::blockCount() const {
+        Assert(_iterable);
+        return _sizes - _heapEnd;
+    }
+
     void* FixedArena::alloc(size_t size) {
         size = (size + _alignment - 1) & ~(_alignment - 1);  // Bump size to ensure next block will be aligned
-        if ( size > 0xFF ) {
-            DebugAssert(size <= 0xFF);
-            return nullptr;
-        }
         uint8_t* result  = _nextBlock;
         uint8_t* newNext = result + size;
-        if ( _usuallyFalse(newNext >= _heapEnd) ) return nullptr;  // overflow!
-        *--_heapEnd = uint8_t(size);                               // Store block size
-        _nextBlock  = newNext;
+        if ( _iterable ) {
+            if ( size > 0xFF ) {
+                DebugAssert(size <= 0xFF);
+                return nullptr;
+            }
+            if ( _usuallyFalse(newNext >= _heapEnd) ) return nullptr;  // overflow!
+            *--_heapEnd = uint8_t(size);                               // Store block size
+        } else {
+            if ( _usuallyFalse(newNext > _heapEnd) ) return nullptr;  // overflow!
+        }
+        _nextBlock = newNext;
         return result;
     }
 
@@ -65,12 +75,13 @@ namespace litecore {
     }
 
     void* FixedArena::lastBlock() const {
+        Assert(_iterable);
         if ( _usuallyFalse(_nextBlock == _heap.get()) ) return nullptr;
         return _nextBlock - *_heapEnd;
     }
 
     bool FixedArena::free(void* block) {
-        if ( block == lastBlock() ) {
+        if ( _iterable && block == lastBlock() ) {
             _nextBlock = static_cast<uint8_t*>(block);
             ++_heapEnd;  // pop the block's size
             return true;
@@ -81,6 +92,7 @@ namespace litecore {
     }
 
     void FixedArena::eachBlock(fleece::function_ref<void(void*, size_t)> const& callback) {
+        Assert(_iterable);
         uint8_t* block = _heap.get();
         for ( uint8_t* sizep = _sizes - 1; sizep >= _heapEnd; --sizep ) {
             DebugAssert(block + *sizep <= _heapEnd);
@@ -91,8 +103,9 @@ namespace litecore {
 
 #pragma mark - ARENA:
 
-    Arena::Arena(size_t chunkSize, size_t alignment) : _chunkSize(chunkSize), _alignment(alignment) {
-        _chunks.emplace_back(_chunkSize, _alignment);
+    Arena::Arena(size_t chunkSize, size_t alignment, bool iterable)
+        : _chunkSize(chunkSize), _alignment(alignment), _iterable(iterable) {
+        _chunks.emplace_back(_chunkSize, _alignment, _iterable);
     }
 
     void* Arena::alloc(size_t size) {

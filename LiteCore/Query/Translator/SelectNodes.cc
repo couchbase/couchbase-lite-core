@@ -272,8 +272,8 @@ namespace litecore::qt {
     static ExprNode* parseLimitOrOffset(Value val, ParseContext& ctx, const char* name) {
         auto expr = ExprNode::parse(val, ctx);
         if ( auto litNode = dynamic_cast<LiteralNode*>(expr) ) {
-            require(litNode->literal().isInteger() && litNode->literal().asInt() >= 0,
-                    "%s must be a non-negative integer", name);
+            optional<int64_t> i = litNode->asInt();
+            require(i && i.value() >= 0, "%s must be a non-negative integer", name);
         } else {
             auto fixed = new (ctx) FunctionNode(lookupFn("GREATEST", 2));
             fixed->addArg(expr);

@@ -41,21 +41,34 @@ namespace litecore::qt {
     void RawSQLNode::writeSQL(SQLWriter& ctx) const { ctx << _sql; }
 
     void LiteralNode::writeSQL(SQLWriter& ctx) const {
-        switch ( _literal.type() ) {
-            case kFLNull:
-                ctx << kNullFnName << "()";
+        switch ( _literal.index() ) {
+            case 0:
+                {
+                    Value value = get<Value>(_literal);
+                    switch ( value.type() ) {
+                        case kFLNull:
+                            ctx << kNullFnName << "()";
+                            break;
+                        case kFLNumber:
+                            ctx << value.toString();
+                            break;
+                        case kFLBoolean:
+                            ctx << kBoolFnName << '(' << (int)value.asBool() << ')';
+                            break;
+                        case kFLString:
+                            ctx << sqlString(value.asString());
+                            break;
+                        default:
+                            fail("internal error: invalid LiteralNode");
+                    }
+                    break;
+                }
+            case 1:
+                ctx << get<int64_t>(_literal);
                 break;
-            case kFLNumber:
-                ctx << _literal.toString();
+            case 2:
+                ctx << sqlString(get<string_view>(_literal));
                 break;
-            case kFLBoolean:
-                ctx << kBoolFnName << '(' << (int)_literal.asBool() << ')';
-                break;
-            case kFLString:
-                ctx << sqlString(_literal.asString());
-                break;
-            default:
-                fail("internal error: invalid LiteralNode");
         }
     }
 
@@ -175,7 +188,7 @@ namespace litecore::qt {
                     slice opName = _op.name;
                     if ( auto lit = dynamic_cast<LiteralNode*>(_operands[1]) ) {
                         // Ugly special case where SQLite's semantics for 'IS [NOT]' don't match N1QL's (#410)
-                        if ( lit->literal().type() == kFLNull ) opName = (_op.type == OpType::is) ? "=" : "!=";
+                        if ( lit->type() == kFLNull ) opName = (_op.type == OpType::is) ? "=" : "!=";
                     }
                     ctx << _operands[0] << ' ' << opName << ' ' << _operands[1];
                     break;
@@ -222,8 +235,7 @@ namespace litecore::qt {
                     ctx << "CASE";
                     ExprNode* test = _operands[0];
                     assert(test);
-                    if ( auto literal = dynamic_cast<LiteralNode*>(test);
-                         literal && literal->literal().type() == kFLNull ) {
+                    if ( auto literal = dynamic_cast<LiteralNode*>(test); literal && literal->type() == kFLNull ) {
                         test = nullptr;
                     } else {
                         ctx << ' ' << *test;

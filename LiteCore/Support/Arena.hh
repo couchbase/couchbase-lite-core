@@ -32,22 +32,19 @@ namespace litecore {
 
         Most likely you won't use this directly, instead preferring `Arena`, which is growable.
 
-        @warning  The current implementation only supports block sizes up to 255 bytes, because that's all the
-            QueryTranslator needs. Raising this limit would take a little bit of work.
-
         @note  This class is not thread-safe. If you need that, see `ConcurrentArena` in Fleece.*/
     class FixedArena {
       public:
         /// Constructs an arena with the given byte capacity. This allocates a block of that size
         /// from the default heap using ::operator new.
-        explicit FixedArena(size_t capacity, size_t alignment = sizeof(void*));
+        explicit FixedArena(size_t capacity, size_t alignment = sizeof(void*), bool iterable = false);
 
         FixedArena(FixedArena const&)            = delete;
         FixedArena& operator=(FixedArena const&) = delete;
         FixedArena(FixedArena&&)                 = default;
         FixedArena& operator=(FixedArena&&)      = default;
 
-        size_t blockCount() const FLPURE { return _sizes - _heapEnd; }
+        size_t blockCount() const FLPURE;
 
         size_t capacity() const FLPURE { return _heapEnd - _heap.get(); }
 
@@ -70,7 +67,7 @@ namespace litecore {
         /// (Does not free the arena heap itself!)
         void freeAll() { _nextBlock = _heap.get(); }
 
-        /// Calls a function with each block's address.
+        /// Calls a function with each block's address. Only supported in arenas with iterable=true.
         void eachBlock(fleece::function_ref<void(void*, size_t)> const&);
 
       protected:
@@ -86,6 +83,7 @@ namespace litecore {
         uint8_t*                   _heapEnd;    // Points just past the last byte that can be allocated
         uint8_t*                   _nextBlock;  // Points to the next available byte
         size_t                     _alignment;  // Alignment of blocks
+        bool                       _iterable;
     };
 
     /** A growable arena. It maintains multiple FixedArenas, and when there's no space for a new
@@ -93,7 +91,7 @@ namespace litecore {
         @note  This class is not thread-safe. If you need that, see `ConcurrentArena` in Fleece.*/
     class Arena {
       public:
-        explicit Arena(size_t chunkSize, size_t alignment = alignof(void*));
+        explicit Arena(size_t chunkSize, size_t alignment = alignof(void*), bool iterable = false);
 
         Arena(Arena const&)            = delete;
         Arena& operator=(Arena const&) = delete;
@@ -115,6 +113,7 @@ namespace litecore {
         std::vector<FixedArena> _chunks;
         FixedArena* C4NULLABLE  _lastAllocedChunk = nullptr;
         size_t                  _chunkSize, _alignment;
+        bool                    _iterable;
     };
 }  // namespace litecore
 

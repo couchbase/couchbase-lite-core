@@ -13,6 +13,7 @@
 #pragma once
 #include "Node.hh"
 #include <optional>
+#include <variant>
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -50,13 +51,14 @@ namespace litecore::qt {
         explicit LiteralNode(int64_t);
         explicit LiteralNode(string_view);
 
-        Value literal() const { return _literal; }
+        FLValueType            type() const;
+        std::optional<int64_t> asInt() const;
+        string_view            asString() const;
 
         void writeSQL(SQLWriter&) const override;
 
       private:
-        Value         _literal;
-        RetainedValue _retained;
+        std::variant<Value, int64_t, string_view> _literal;
     };
 
     /** The magic `meta()` or `meta('collection')` function, or one of its properties. */

@@ -69,9 +69,11 @@ namespace litecore::qt {
 
     /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {
-        ParseContext(ParseContext const&);
+        ParseContext(Arena& a) : arena(a) {}
 
-        Arena&                                   arena;                    // The arena allocator for Nodes
+        ParseContext(ParseContext const& parent) : arena(parent.arena){};
+
+        Arena&                                   arena;                    // The arena allocator
         SelectNode* C4NULLABLE                   select{};                 // The enclosing SELECT, if any
         std::unordered_map<string, AliasedNode*> aliases;                  // All of the sources & named results
         std::vector<SourceNode*>                 sources;                  // All sources
@@ -79,11 +81,7 @@ namespace litecore::qt {
         Collation                                collation;                // Current collation in effect
         bool                                     collationApplied = true;  // False if no COLLATE node generated
 
-        const char* newString(string_view);  ///< Allocates a string
-      protected:
-        ParseContext(Arena& a, std::deque<string>& strings) : arena(a), _strings(strings) {}
-
-        std::deque<string>& _strings;
+        const char* newString(string_view);  ///< Allocates a string in the arena
     };
 
     /** Top-level Context that provides an Arena, and destructs all Nodes in its destructor. */
@@ -91,31 +89,33 @@ namespace litecore::qt {
         : Arena
         , public ParseContext {
         RootContext();
-        ~RootContext();
-
-      private:
-        std::deque<string> _actualStrings;
     };
 
 #pragma mark - NODE CLASS:
 
     /** Abstract syntax tree node for parsing N1QL queries from JSON/Fleece.
         Nodes are allocated in an Arena and are not copyable.
-        The Node class hierarchy is described in the [README](./README.md) */
+        The Node class hierarchy is described in the [README](./README.md)
+
+        @warning  Node and its subclasses MUST NOT have data members that require destruction --
+            that means no `string`, no `vector`, no `fleece::MutableArray`. The destructors will not be called when
+            the Arena is freed, meaning memory will be leaked.
+            - Call `ParseContext::newString()` to allocate a string in the Arena.
+            - Use `List` (below) instead of `vector` to collect child Nodes into lists. */
     class Node {
       public:
-        // Nodes are allocated in an Arena. The ParseContext has a reference to it. Use `new (ctx) FooNode(...)`.
+        // Nodes are allocated in an Arena owned by the RootContext. Use `new (ctx) FooNode(...)`.
         void* C4NONNULL operator new(size_t size, ParseContext& ctx) noexcept;
         void            operator delete(void* C4NULLABLE ptr, ParseContext& ctx) noexcept;
 
         /// The node's parent in the parse tree.
         Node const* parent() const { return _parent; }
 
+        void setParent(Node* C4NULLABLE);
+
         /// Next sibling in list.
         /// @note Only some parents organize children into lists! Some parents use multiple lists!
         Node const* C4NULLABLE next() const { return _next; }
-
-        void setParent(Node* C4NULLABLE);
 
         /// The SourceNode (`FROM` item) this references, if any. Overridden by MetaNode and PropertyNode.
         virtual SourceNode* C4NULLABLE source() const { return nullptr; }
@@ -192,6 +192,8 @@ namespace litecore::qt {
         Node* C4NULLABLE       _next{};    // Next sibling in list (but not all parents put children in lists!)
     };
 
+#pragma mark - LIST:
+
     /** A simple linked list of Nodes. */
     template <class T>
     class List {
@@ -227,7 +229,7 @@ namespace litecore::qt {
             _tail = node;
         }
 
-        T* C4NONNULL removeFront() noexcept {
+        T* C4NONNULL pop_front() noexcept {
             auto f = _head;
             _head  = static_cast<T*>(f->_next);
             if ( !_head ) _tail = nullptr;
