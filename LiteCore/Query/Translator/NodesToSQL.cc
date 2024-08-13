@@ -164,7 +164,7 @@ namespace litecore::qt {
                 {
                     string    spaced = " " + string(_op.name) + " ";
                     delimiter delim(spaced.c_str());
-                    for ( auto& operand : _operands ) ctx << delim << operand;
+                    for ( ExprNode* operand : _operands ) ctx << delim << operand;
                     break;
                 }
             case OpType::postfix:
@@ -222,7 +222,7 @@ namespace litecore::qt {
                 {
                     // Check whether the test expression is a literal `null`:
                     ctx << "CASE";
-                    auto test = _operands[0];
+                    ExprNode* test = _operands[0];
                     assert(test);
                     if ( auto literal = dynamic_cast<LiteralNode*>(test);
                          literal && literal->literal().type() == kFLNull ) {
@@ -255,7 +255,7 @@ namespace litecore::qt {
         delimiter comma(", ");
         ctx << (_fn.sqlite_name ? _fn.sqlite_name : _fn.name) << '(';
         WithPrecedence wp(ctx, kArgListPrecedence);
-        for ( auto& arg : _args ) ctx << comma << arg;
+        for ( ExprNode* arg : _args ) ctx << comma << arg;
         ctx << ')';
     }
 
@@ -321,7 +321,7 @@ namespace litecore::qt {
             ctx << "FROM ";
         }
         if ( auto index = dynamic_cast<IndexSourceNode const*>(this) ) {
-            index->indexedNodes().front()->writeSourceTable(ctx, _tableName);
+            index->indexedNode()->writeSourceTable(ctx, _tableName);
         } else {
             Assert(!_tableName.empty(), "QueryTranslator client didn't set Source's tableName");
             ctx << sqlIdentifier(_tableName);
@@ -368,11 +368,11 @@ namespace litecore::qt {
             // Write extra columns used for FTS
             writeFTSColumns(ctx, comma);
             // ...before the actual columns:
-            for ( auto& what : _what ) ctx << comma << what;
+            for ( WhatNode* what : _what ) ctx << comma << what;
         }
 
         ctx << ' ' << from();
-        for ( auto& join : _sources )
+        for ( SourceNode* join : _sources )
             if ( join->isJoin() || join->type() == SourceType::unnest ) ctx << ' ' << join;
 
         if ( _where ) ctx << " WHERE " << _where;
@@ -380,7 +380,7 @@ namespace litecore::qt {
         if ( !_groupBy.empty() ) {
             ctx << " GROUP BY ";
             delimiter comma(", ");
-            for ( auto& g : _groupBy ) ctx << comma << g;
+            for ( ExprNode* g : _groupBy ) ctx << comma << g;
         }
 
         if ( _having ) ctx << " HAVING " << _having;

@@ -56,7 +56,7 @@ namespace litecore {
         });
 
         // Get the column titles:
-        for ( auto& what : query->what() ) _columnTitles.push_back(what->columnName());
+        for ( WhatNode* what : query->what() ) _columnTitles.push_back(what->columnName());
 
         _isAggregateQuery   = query->isAggregate();
         _1stCustomResultCol = query->numPrependedColumns();
@@ -127,7 +127,7 @@ namespace litecore {
                     _ftsTables.push_back(tableName);
                 } else if ( index->indexType() == IndexType::vector ) {
 #ifdef COUCHBASE_ENTERPRISE
-                    auto vecSource = dynamic_cast<VectorDistanceNode*>(index->indexedNodes().front());
+                    auto vecSource = dynamic_cast<VectorDistanceNode*>(index->indexedNode());
                     Assert(vecSource);
                     tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
                                                           vecSource->metric());

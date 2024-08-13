@@ -377,9 +377,11 @@ namespace litecore::qt {
 
         if ( !ctx.collationApplied && (op.type == OpType::infix || op.type == OpType::like) ) {
             // Apply the current collation by wrapping the first operand in a CollateNode:
-            ExprNode* op0 = _operands[0];
+            ExprNode* op0 = _operands.removeFront();
             op0->setParent(nullptr);
-            setChild<ExprNode>(_operands[0], new (ctx) CollateNode(op0, ctx));
+            auto coll = new (ctx) CollateNode(op0, ctx);
+            coll->setParent(this);
+            _operands.push_front(coll);
         }
     }
 
@@ -413,12 +415,12 @@ namespace litecore::qt {
         fn->addArgs(args, ctx);
 
         if ( spec.name == kArrayCountFnName ) {
-            auto& arg0 = fn->_args[0];
-            if ( auto prop = dynamic_cast<PropertyNode*>(arg0) ) {
+            if ( auto prop = dynamic_cast<PropertyNode*>(fn->_args.front()) ) {
                 // Special case: "array_count(propertyname)" turns into a call to fl_count:
+                fn->_args.removeFront();
+                prop->setParent(nullptr);
                 prop->setSQLiteFn(kCountFnName);
-                arg0->setParent(nullptr);
-                return std::move(arg0);
+                return prop;
             }
         }
 

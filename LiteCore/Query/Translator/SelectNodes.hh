@@ -155,13 +155,13 @@ namespace litecore::qt {
         explicit SelectNode(Value v, ParseContext& ctx) { parse(v, ctx); }
 
         /// All the sources: collections, joins, unnested expressions, table-based indexes.
-        std::vector<SourceNode*> const& sources() const { return _sources; }
+        List<SourceNode> const& sources() const { return _sources; }
 
         /// The main collection data source, i.e. the first source after `FROM`.
-        SourceNode* from() const { return _sources.at(0); }
+        SourceNode* from() const { return _sources.front(); }
 
         /// All the projections (returned values.)
-        std::vector<WhatNode*> const& what() const { return _what; }
+        List<WhatNode> const& what() const { return _what; }
 
         /// The WHERE clause.
         ExprNode* C4NULLABLE where() const { return _where; }
@@ -194,18 +194,18 @@ namespace litecore::qt {
         string makeIndexAlias() const;
         void   writeFTSColumns(SQLWriter&, fleece::delimiter&) const;
 
-        std::vector<SourceNode*> _sources;                      // The sources (FROM exprs)
-        std::vector<WhatNode*>   _what;                         // The WHAT expressions
-        ExprNode* C4NULLABLE     _where{};                      // The WHERE expression
-        std::vector<ExprNode*>   _groupBy;                      // The GROUP BY expressions
-        ExprNode* C4NULLABLE     _having{};                     // The HAVING expression
-        std::vector<ExprNode*>   _orderBy;                      // The ORDER BY expressions
-        std::vector<bool>        _orderDesc;                    // Which items in _orderBy are DESC
-        ExprNode* C4NULLABLE     _limit{};                      // The LIMIT expression
-        ExprNode* C4NULLABLE     _offset{};                     // The OFFSET expression
-        uint8_t                  _numPrependedColumns = 0;      // Columns added by FTS
-        bool                     _distinct            = false;  // True if DISTINCT is given
-        bool                     _isAggregate         = false;  // Uses aggregate fns?
+        List<SourceNode>     _sources;                      // The sources (FROM exprs)
+        List<WhatNode>       _what;                         // The WHAT expressions
+        ExprNode* C4NULLABLE _where{};                      // The WHERE expression
+        List<ExprNode>       _groupBy;                      // The GROUP BY expressions
+        ExprNode* C4NULLABLE _having{};                     // The HAVING expression
+        List<ExprNode>       _orderBy;                      // The ORDER BY expressions
+        std::vector<bool>    _orderDesc;                    // Which items in _orderBy are DESC
+        ExprNode* C4NULLABLE _limit{};                      // The LIMIT expression
+        ExprNode* C4NULLABLE _offset{};                     // The OFFSET expression
+        uint8_t              _numPrependedColumns = 0;      // Columns added by FTS
+        bool                 _distinct            = false;  // True if DISTINCT is given
+        bool                 _isAggregate         = false;  // Uses aggregate fns?
     };
 
 }  // namespace litecore::qt

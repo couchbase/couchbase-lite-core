@@ -29,6 +29,8 @@ namespace litecore::qt {
     class AliasedNode;
     class SelectNode;
     class SourceNode;
+    template <class T>
+    class List;
 
 #pragma mark - TYPES:
 
@@ -99,6 +101,10 @@ namespace litecore::qt {
         /// The node's parent in the parse tree.
         Node const* parent() const { return _parent; }
 
+        /// Next sibling in list.
+        /// @note Only some parents organize children into lists! Some parents use multiple lists!
+        Node const* C4NULLABLE next() const { return _next; }
+
         void setParent(Node* C4NULLABLE);
 
         /// The SourceNode (`FROM` item) this references, if any. Overridden by MetaNode and PropertyNode.
@@ -127,6 +133,8 @@ namespace litecore::qt {
 
       protected:
         friend struct RootContext;
+        template <class T>
+        friend class List;
 
         Node()          = default;
         virtual ~Node() = default;
@@ -146,12 +154,9 @@ namespace litecore::qt {
             var = c;
         }
 
-        /// Utility to add a child reference to a vector, ensuring its parent points to me.
+        /// Utility to add a child reference to a list, ensuring its parent points to me.
         template <class T>
-        void addChild(std::vector<T*>& var, T* C4NONNULL c) {
-            c->setParent(this);
-            var.push_back(c);
-        }
+        void addChild(List<T>& list, T* C4NONNULL c);
 
         struct ChildVisitor {
             function_ref<void(Node&)> fn;
@@ -162,10 +167,7 @@ namespace litecore::qt {
             }
 
             template <class T>
-            ChildVisitor const& operator()(std::vector<T> const& children) const {
-                for ( auto& child : children ) fn(*child);
-                return *this;
-            }
+            ChildVisitor const& operator()(List<T> const& children) const;
         };
 
         /// Subclasses that add children MUST override this and call `visitor(child)` on each direct child.
@@ -177,7 +179,95 @@ namespace litecore::qt {
         Node& operator=(Node const&) = delete;
 
         const Node* C4NULLABLE _parent{};  // The parent node
+        Node* C4NULLABLE       _next{};    // Next sibling in list (but not all parents put children in lists!)
     };
+
+    /** A simple linked list of Nodes. */
+    template <class T>
+    class List {
+      public:
+        T* C4NULLABLE front() const noexcept FLPURE { return _head; }
+
+        bool empty() const noexcept FLPURE { return !_head; }
+
+        size_t size() const noexcept FLPURE {
+            size_t s = 0;
+            for ( Node* node = _head; node; node = node->_next ) ++s;
+            return s;
+        }
+
+        T* C4NONNULL operator[](size_t i) const noexcept FLPURE {
+            T* node = _head;
+            while ( i-- > 0 ) node = static_cast<T*>(node->_next);
+            return node;
+        }
+
+        void push_front(T* C4NONNULL node) {
+            DebugAssert(!node->_next);
+            node->_next = _head;
+            _head       = node;
+            if ( !_tail ) _tail = node;
+        }
+
+        void push_back(T* C4NONNULL node) {
+            DebugAssert(!node->_next);
+            if ( _tail ) _tail->_next = node;
+            else
+                _head = node;
+            _tail = node;
+        }
+
+        T* C4NONNULL removeFront() noexcept {
+            auto f = _head;
+            _head  = static_cast<T*>(f->_next);
+            if ( !_head ) _tail = nullptr;
+            f->_next = nullptr;
+            return f;
+        }
+
+        class iterator {
+          public:
+            bool operator==(iterator const& i) noexcept FLPURE { return _cur == i._cur; }
+
+            bool operator!=(iterator const& i) noexcept FLPURE { return _cur != i._cur; }
+
+            iterator& operator++() noexcept {
+                _cur = static_cast<T*>(_cur->_next);
+                return *this;
+            }
+
+            T* C4NULLABLE operator*() noexcept FLPURE { return _cur; }
+
+            T* C4NULLABLE operator->() noexcept FLPURE { return _cur; }
+
+          private:
+            friend class List;
+
+            iterator(T* C4NULLABLE first) noexcept : _cur(first) {}
+
+            T* C4NULLABLE _cur{};
+        };
+
+        iterator begin() const noexcept FLPURE { return iterator{_head}; }
+
+        iterator end() const noexcept FLPURE { return iterator{nullptr}; }
+
+      private:
+        T* C4NULLABLE _head{};
+        T* C4NULLABLE _tail{};
+    };
+
+    template <class T>
+    void Node::addChild(List<T>& list, T* C4NONNULL c) {
+        list.push_back(c);
+        c->setParent(this);
+    }
+
+    template <class T>
+    Node::ChildVisitor const& Node::ChildVisitor::operator()(List<T> const& children) const {
+        for ( auto child : children ) fn(*child);
+        return *this;
+    }
 
 }  // namespace litecore::qt
 

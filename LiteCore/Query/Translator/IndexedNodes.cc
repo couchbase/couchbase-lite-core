@@ -162,9 +162,8 @@ namespace litecore::qt {
             return expr && dynamic_cast<VectorDistanceNode*>(expr);
         }();
 
-        if ( !_simple && source->indexedNodes().size() < 2 ) {
+        if ( !_simple && source->indexedNode() == this ) {
             // Hybrid query: add a join condition "idx.vector MATCH _vector"
-            DebugAssert(source->indexedNodes().front() == this);
             source->addJoinCondition(new (ctx) VectorMatchNode(source, _vector), ctx);
         }
 
@@ -209,7 +208,7 @@ namespace litecore::qt {
     IndexSourceNode::IndexSourceNode(IndexedNode* node, string alias, ParseContext& ctx)
         : SourceNode(SourceType::index, node->sourceCollection()->scope(), node->sourceCollection()->collection(),
                      JoinType::inner)
-        , _indexedNodes{node} {
+        , _indexedNode{node} {
         _alias = std::move(alias);
         // Create the join condition:
         auto cond = new (ctx) OpNode(*lookupOp("=", 2));
@@ -219,34 +218,37 @@ namespace litecore::qt {
     }
 
     bool IndexSourceNode::matchesNode(const IndexedNode* node) const {
-        IndexedNode* mine = _indexedNodes.front();
-        return mine->indexType() == node->indexType() && mine->indexExpressionJSON() == node->indexExpressionJSON()
+        return _indexedNode->indexType() == node->indexType()
+               && _indexedNode->indexExpressionJSON() == node->indexExpressionJSON()
                && collection() == node->sourceCollection()->collection()
                && scope() == node->sourceCollection()->scope();
     }
 
-    IndexType IndexSourceNode::indexType() const { return _indexedNodes.front()->indexType(); }
+    IndexType IndexSourceNode::indexType() const { return _indexedNode->indexType(); }
 
-    string_view IndexSourceNode::indexedExpressionJSON() const { return _indexedNodes.front()->indexExpressionJSON(); }
+    string_view IndexSourceNode::indexedExpressionJSON() const { return _indexedNode->indexExpressionJSON(); }
 
-    void IndexSourceNode::checkIndexUsage() const {
-        if ( indexType() == IndexType::FTS ) {
-            // There must be exactly one MATCH node:
-            size_t n = std::count_if(_indexedNodes.begin(), _indexedNodes.end(),
-                                     [](IndexedNode* node) { return !dynamic_cast<FTSNode*>(node)->isAuxiliary(); });
-            if ( n == 0 ) fail("RANK() cannot be used without MATCH()");
-            else if ( n > 1 )
+    void IndexSourceNode::addIndexedNode(IndexedNode* node) {
+        Assert(node != _indexedNode && node->indexType() == _indexedNode->indexType());
+        if ( _indexedNode->isAuxiliary() ) {
+            _indexedNode = node;
+        } else if ( !node->isAuxiliary() ) {
+            if ( node->indexType() == IndexType::FTS )
                 fail("Sorry, multiple MATCHes of the same property are not allowed");
         }
+    }
+
+    void IndexSourceNode::checkIndexUsage() const {
+        require(!_indexedNode->isAuxiliary(), "RANK() cannot be used without MATCH()");
     }
 
 #pragma mark - ADDITIONS TO SELECTNODE:
 
     template <class T>
-    static bool aliasExists(string const& alias, vector<T> const& _sources) {
-        return _sources.end() != std::find_if(_sources.begin(), _sources.end(), [&](auto& s) {
-                   return 0 == compareIgnoringCase(alias, s->alias());
-               });
+    static bool aliasExists(string const& alias, List<T> const& list) {
+        for ( auto n : list )
+            if ( 0 == compareIgnoringCase(alias, n->alias()) ) return true;
+        return false;
     }
 
     string SelectNode::makeIndexAlias() const {
@@ -285,7 +287,7 @@ namespace litecore::qt {
         });
 
         // Then check that there's exactly one function call that 'owns' each index:
-        for ( auto& source : _sources ) {
+        for ( SourceNode* source : _sources ) {
             if ( auto index = dynamic_cast<IndexSourceNode*>(source) ) index->checkIndexUsage();
         }
     }
@@ -297,7 +299,7 @@ namespace litecore::qt {
 
         // Look for an existing index source:
         IndexSourceNode* indexSrc = nullptr;
-        for ( auto& s : _sources ) {
+        for ( SourceNode* s : _sources ) {
             if ( auto ind = dynamic_cast<IndexSourceNode*>(s); ind && ind->matchesNode(node) ) {
                 indexSrc = ind;
                 break;
@@ -305,7 +307,7 @@ namespace litecore::qt {
         }
 
         if ( indexSrc ) {
-            indexSrc->_indexedNodes.emplace_back(node);
+            indexSrc->addIndexedNode(node);
         } else {
             // No source found; need to create it:
             auto source = new (ctx) IndexSourceNode(node, makeIndexAlias(), ctx);
@@ -325,7 +327,7 @@ namespace litecore::qt {
     // find the matched text. This was a bad design but we're stuck with it...
     void SelectNode::writeFTSColumns(SQLWriter& ctx, delimiter& comma) const {
         if ( !_isAggregate ) {
-            for ( auto& src : _sources ) {
+            for ( SourceNode* src : _sources ) {
                 if ( auto ind = dynamic_cast<IndexSourceNode*>(src) ) {
                     if ( ind->indexType() == IndexType::FTS ) {
                         if ( comma.count() == 0 ) ctx << comma << sqlIdentifier(from()->alias()) << ".rowid";

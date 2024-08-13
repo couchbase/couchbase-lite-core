@@ -323,8 +323,8 @@ namespace litecore::qt {
             }
 
             // After all aliases are known, allow Source and What Nodes to parse their expressions:
-            for ( auto& source : _sources ) source->parseChildExprs(ctx);
-            for ( auto& what : _what ) what->parseChildExprs(ctx);
+            for ( SourceNode* source : _sources ) source->parseChildExprs(ctx);
+            for ( WhatNode* what : _what ) what->parseChildExprs(ctx);
 
             // Parse the WHERE clause:
             if ( Value where = getCaseInsensitive(select, "WHERE") ) { setChild(_where, ExprNode::parse(where, ctx)); }
@@ -430,7 +430,7 @@ namespace litecore::qt {
         // Locate FTS and vector indexed expressions and add corresponding SourceNodes:
         addIndexes(ctx);
 
-        for ( auto& source : _sources ) {
+        for ( SourceNode* source : _sources ) {
             if ( !source->_usesDeleted && source->_collection.empty() && source->isCollection() ) {
                 // The default collection may contain deleted documents in its main table,
                 // so if the query didn't ask for deleted docs, add a condition to the WHERE
@@ -451,7 +451,7 @@ namespace litecore::qt {
         }
 
         // Ensure sources' column names are unique
-        for ( auto& source : _sources ) source->disambiguateColumnName(ctx);
+        for ( SourceNode* source : _sources ) source->disambiguateColumnName(ctx);
 
         {
             // Ensure the WHAT nodes have non-empty, unique column names.
@@ -459,7 +459,7 @@ namespace litecore::qt {
             // in the second pass, the other columns will add "$n" or " #n" to make themselves unique.
             unordered_set<string> columnNames;
             for ( int x = 1; x >= 0; --x ) {
-                for ( auto& what : _what ) {
+                for ( WhatNode* what : _what ) {
                     if ( what->hasExplicitAlias() == x ) what->ensureUniqueColumnName(columnNames);
                 }
             }

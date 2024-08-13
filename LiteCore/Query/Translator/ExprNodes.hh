@@ -183,7 +183,7 @@ namespace litecore::qt {
 
         Operation const& op() const { return _op; }
 
-        ExprNode* operand(size_t i) const { return _operands.at(i); }
+        ExprNode* operand(size_t i) const { return _operands[i]; }
 
         void addArg(ExprNode* node) { addChild(_operands, node); }
 
@@ -195,8 +195,8 @@ namespace litecore::qt {
 #endif
 
       protected:
-        Operation const&       _op;        // Spec of the operation
-        std::vector<ExprNode*> _operands;  // Operand list
+        Operation const& _op;          // Spec of the operation
+        List<ExprNode>   _operands{};  // Operand list
     };
 
     /** A N1QL function call in an expression. */
@@ -210,7 +210,7 @@ namespace litecore::qt {
 
         void addArgs(Array::iterator&, ParseContext&);
 
-        std::vector<ExprNode*> const& args() const { return _args; }
+        List<ExprNode> const& args() const { return _args; }
 
         struct FunctionSpec const& spec() { return _fn; }
 
@@ -221,7 +221,7 @@ namespace litecore::qt {
 
       private:
         struct FunctionSpec const& _fn;         // Spec of the function
-        std::vector<ExprNode*>     _args;       // Argument list
+        List<ExprNode>             _args;       // Argument list
         std::optional<Collation>   _collation;  // Collation arg to add last
     };
 

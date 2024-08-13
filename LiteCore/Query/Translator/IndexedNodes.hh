@@ -132,13 +132,15 @@ namespace litecore::qt {
 
         bool matchesNode(IndexedNode const*) const;
 
-        std::vector<IndexedNode*> const& indexedNodes() const { return _indexedNodes; }
+        IndexedNode* indexedNode() const { return _indexedNode; }
+
+        void addIndexedNode(IndexedNode*);
 
       private:
         friend class SelectNode;
         void checkIndexUsage() const;
 
-        std::vector<IndexedNode*> _indexedNodes;  // IndexedNodes using this index
+        IndexedNode* _indexedNode;  // Main IndexedNode using this index
     };
 
 }  // namespace litecore::qt
