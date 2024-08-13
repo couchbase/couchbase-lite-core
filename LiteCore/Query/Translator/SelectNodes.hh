@@ -27,7 +27,7 @@ namespace litecore::qt {
     class AliasedNode : public Node {
       public:
         /// The column alias.
-        string const& alias() const { return _alias; }
+        string_view alias() const { return _alias; }
 
         /// True if an alias was set explicitly by an `AS` expression.
         bool hasExplicitAlias() const { return _hasExplicitAlias; }
@@ -37,8 +37,8 @@ namespace litecore::qt {
         virtual bool matchPath(KeyPath& path) const;
 
       protected:
-        string _alias;                     // Name I'm referred to by
-        bool   _hasExplicitAlias = false;  // _alias was given by an AS property
+        string_view _alias;                     // Name I'm referred to by
+        bool        _hasExplicitAlias = false;  // _alias was given by an AS property
     };
 
     /** A projection returned by a query; an item in the `WHAT` clause. Wraps an ExprNode. */
@@ -46,13 +46,13 @@ namespace litecore::qt {
       public:
         WhatNode(Value, ParseContext&);
 
-        explicit WhatNode(ExprNode* expr) { initChild(_expr, expr); }
+        explicit WhatNode(ExprNode* expr, ParseContext& ctx) { initChild(_expr, expr); }
 
         /// The name of the result column. If not explicitly set, makes one up based on the expression.
-        string columnName() const;
+        string_view columnName() const;
 
         /// Explicitly sets the column name.
-        void setColumnName(string s) { _columnName = std::move(s); }
+        void setColumnName(const char* s) { _columnName = s; }
 
         void visitChildren(ChildVisitor const&) override;
         void writeSQL(SQLWriter&) const override;
@@ -61,12 +61,12 @@ namespace litecore::qt {
       private:
         friend class SelectNode;
         void parseChildExprs(ParseContext&);
-        void ensureUniqueColumnName(std::unordered_set<string>& columnNames);
+        void ensureUniqueColumnName(std::unordered_set<string>& columnNames, ParseContext&);
 
-        ExprNode* C4NULLABLE _expr{};               // The expression being returned
-        Value                _tempChild;            // Temporarily holds source of _expr
-        string               _columnName;           // Computed name of the result column
-        bool                 _parsingExpr = false;  // kludgy temporary flag
+        ExprNode* C4NULLABLE   _expr{};               // The expression being returned
+        Value                  _tempChild;            // Temporarily holds source of _expr
+        const char* C4NULLABLE _columnName{};         // Computed name of the result column
+        bool                   _parsingExpr = false;  // kludgy temporary flag
     };
 
     enum class SourceType : uint8_t { collection, unnest, index };
@@ -75,19 +75,19 @@ namespace litecore::qt {
     class SourceNode : public AliasedNode {
       public:
         static SourceNode* parse(Dict, ParseContext&);
-        explicit SourceNode(string_view alias);
+        explicit SourceNode(const char* alias);
 
         SourceType type() const { return _type; }
 
         bool isCollection() const { return _type == SourceType::collection; }
 
-        string const& scope() const { return _scope; }  ///< Scope name, or empty if default
+        string_view scope() const { return _scope; }  ///< Scope name, or empty if default
 
-        string const& collection() const { return _collection; }  ///< Collection name, or empty if default
+        string_view collection() const { return _collection; }  ///< Collection name, or empty if default
 
         bool usesDeletedDocs() const { return _usesDeleted; }  ///< True if exprs refer to deleted docs
 
-        string asColumnName() const { return _columnName; }  ///< Name to use, if used as result column
+        string_view asColumnName() const { return _columnName; }  ///< Name to use, if used as result column
 
         bool isJoin() const { return _join != JoinType::none; }  ///< True if this is a JOIN
 
@@ -95,7 +95,7 @@ namespace litecore::qt {
 
         string_view tableName() const { return _tableName; }  ///< SQLite table name (set by QueryTranslator)
 
-        void setTableName(string_view name) { _tableName = name; }  ///< Sets SQLite table name
+        void setTableName(const char* name) { _tableName = name; }  ///< Sets SQLite table name
 
         bool matchPath(KeyPath& path) const override;
         void visitChildren(ChildVisitor const&) override;
@@ -107,8 +107,8 @@ namespace litecore::qt {
         SourceNode(SourceType type) : _type(type) {}
 
         SourceNode(Dict, ParseContext&);
-        SourceNode(SourceType, string scope, string collection, JoinType join);
-        void         parseAS(Dict);
+        SourceNode(SourceType, string_view scope, string_view collection, JoinType join);
+        void         parseAS(Dict, ParseContext&);
         virtual void parseChildExprs(ParseContext&);
         void         disambiguateColumnName(ParseContext&);
         void         writeASandON(SQLWriter& ctx) const;
@@ -116,10 +116,10 @@ namespace litecore::qt {
         void setUsesDeleted() { _usesDeleted = true; }
 
       private:
-        string               _scope;                  // Scope name, or empty for default
-        string               _collection;             // Collection name, or empty for default
-        string               _columnName;             // Name to use if used as result column
-        string               _tableName;              // SQLite table name (set by caller)
+        string_view          _scope;                  // Scope name, or empty for default
+        string_view          _collection;             // Collection name, or empty for default
+        string_view          _columnName;             // Name to use if used as result column
+        string_view          _tableName;              // SQLite table name (set by caller)
         JoinType             _join = JoinType::none;  // Type of JOIN, or none
         ExprNode* C4NULLABLE _joinOn{};               // "ON ..." predicate
         Value                _tempOn;                 // Temporarily holds source of _joinOn
@@ -178,11 +178,9 @@ namespace litecore::qt {
         unsigned numPrependedColumns() const { return _numPrependedColumns; }
 
         void visitChildren(ChildVisitor const&) override;
-        void postprocess(ParseContext&) override;
         void writeSQL(SQLWriter&) const override;
 
       protected:
-        SelectNode() = default;
         void parse(Value, ParseContext&);
         void addAllSourcesTo(std::vector<SourceNode*>&) const;
 
@@ -200,7 +198,7 @@ namespace litecore::qt {
         List<ExprNode>       _groupBy;                      // The GROUP BY expressions
         ExprNode* C4NULLABLE _having{};                     // The HAVING expression
         List<ExprNode>       _orderBy;                      // The ORDER BY expressions
-        std::vector<bool>    _orderDesc;                    // Which items in _orderBy are DESC
+        uint64_t             _orderDesc{};                  // Which items in _orderBy are DESC
         ExprNode* C4NULLABLE _limit{};                      // The LIMIT expression
         ExprNode* C4NULLABLE _offset{};                     // The OFFSET expression
         uint8_t              _numPrependedColumns = 0;      // Columns added by FTS

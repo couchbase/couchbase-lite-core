@@ -29,7 +29,7 @@ namespace litecore::qt {
         static ExprNode* parse(Value, ParseContext&) C4_RETURNS_NONNULL;
 
         /// The column name to use if this expression is the child of a WhatNode.
-        virtual string asColumnName() const { return ""; }
+        virtual string_view asColumnName() const { return ""; }
 
         /// The operation flags that apply to this expression.
         virtual OpFlags opFlags() const { return kOpNoFlags; }
@@ -69,7 +69,7 @@ namespace litecore::qt {
         MetaProperty property() const { return _property; }
 
         SourceNode* source() const override;
-        string      asColumnName() const override;
+        string_view asColumnName() const override;
         OpFlags     opFlags() const override;
         void        writeSQL(SQLWriter&) const override;
         static void writeMetaSQL(string_view aliasDot, MetaProperty, SQLWriter&);
@@ -82,16 +82,16 @@ namespace litecore::qt {
     /** A query parameter (`$foo`) in an expression. */
     class ParameterNode final : public ExprNode {
       public:
-        explicit ParameterNode(slice name);
+        explicit ParameterNode(string_view name, ParseContext&);
 
-        explicit ParameterNode(Value v) : ParameterNode(v.toString()) {}
+        explicit ParameterNode(Value v, ParseContext& ctx) : ParameterNode(v.toString(), ctx) {}
 
         string_view name() const { return _name; }
 
         void writeSQL(SQLWriter&) const override;
 
       private:
-        string _name;  // Parameter name (without the '$')
+        const char* _name;  // Parameter name (without the '$')
     };
 
     /** A document property path in an expression. */
@@ -110,7 +110,7 @@ namespace litecore::qt {
         void setSQLiteFn(string_view fn) { _sqliteFn = fn; }
 
         SourceNode* source() const override;
-        string      asColumnName() const override;
+        string_view asColumnName() const override;
 
         void writeSQL(SQLWriter& ctx) const override { writeSQL(ctx, nullslice, nullptr); }
 
@@ -129,13 +129,14 @@ namespace litecore::qt {
     class VariableNode final : public ExprNode {
       public:
         static ExprNode* parse(slice op, Array::iterator& args, ParseContext&);
-        explicit VariableNode(slice name);
 
         void writeSQL(SQLWriter&) const override;
 
       private:
-        string _name;                // Variable name (without the '?')
-        bool   _returnBody = false;  // If true, expands to `.body` not `.value`
+        explicit VariableNode(const char* name) : _name(name) {}
+
+        const char* _name;                // Variable name (without the '?')
+        bool        _returnBody = false;  // If true, expands to `.body` not `.value`
     };
 
     /** A COLLATE clause; affects the SQLite text collation of its child node. */
@@ -164,12 +165,12 @@ namespace litecore::qt {
     /** A Node that just writes arbitrary SQL. Use sparingly and with caution. */
     class RawSQLNode final : public ExprNode {
       public:
-        explicit RawSQLNode(string sql) : _sql(std::move(sql)) {}
+        explicit RawSQLNode(string_view sql, ParseContext& ctx) : _sql(ctx.newString(sql)) {}
 
         void writeSQL(SQLWriter&) const override;
 
       private:
-        string _sql;
+        const char* _sql;
     };
 
 #pragma mark - COMPOUND EXPRESSIONS:
@@ -241,7 +242,7 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
 
       private:
-        slice _variableName;  // Name of the variable used in predicate
+        string_view _variableName;  // Name of the variable used in predicate
     };
 
 }  // namespace litecore::qt

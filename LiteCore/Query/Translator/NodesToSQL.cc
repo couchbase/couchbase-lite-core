@@ -137,7 +137,7 @@ namespace litecore::qt {
         }
     }
 
-    void ParameterNode::writeSQL(SQLWriter& ctx) const { ctx << '$' << sqlIdentifier("_" + _name); }
+    void ParameterNode::writeSQL(SQLWriter& ctx) const { ctx << '$' << sqlIdentifier("_" + string(_name)); }
 
     void VariableNode::writeSQL(SQLWriter& ctx) const {
         ctx << sqlIdentifier("_" + string(_name));
@@ -388,9 +388,10 @@ namespace litecore::qt {
         if ( !_orderBy.empty() ) {
             ctx << " ORDER BY ";
             delimiter comma(", ");
-            for ( size_t i = 0; i < _orderBy.size(); ++i ) {
-                ctx << comma << _orderBy[i];
-                if ( _orderDesc[i] ) ctx << " DESC";
+            size_t    i = 0;
+            for ( ExprNode* ob : _orderBy ) {
+                ctx << comma << ob;
+                if ( _orderDesc & (1 << i++) ) ctx << " DESC";
             }
         }
 

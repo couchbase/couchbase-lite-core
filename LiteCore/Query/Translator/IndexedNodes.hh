@@ -125,7 +125,7 @@ namespace litecore::qt {
     /** A table-based index, implicitly added to the tree by an `IndexedNode` (FTS or vector.) */
     class IndexSourceNode final : public SourceNode {
       public:
-        explicit IndexSourceNode(IndexedNode*, string alias, ParseContext& ctx);
+        explicit IndexSourceNode(IndexedNode*, string_view alias, ParseContext& ctx);
 
         IndexType   indexType() const;
         string_view indexedExpressionJSON() const;

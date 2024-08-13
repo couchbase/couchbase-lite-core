@@ -15,11 +15,19 @@
 namespace litecore::qt {
     using namespace std;
 
+    ParseContext::ParseContext(ParseContext const& parent) : arena(parent.arena), _strings(parent._strings) {}
+
+    const char* ParseContext::newString(string_view sv) {
+        _strings.emplace_back(sv);
+        return _strings.back().c_str();
+    }
+
     // Size of the blocks that the Arena grabs from the malloc heap.
     // Typical queries only allocate a few KB, not enough to fill a single chunk.
     static constexpr size_t kArenaChunkSize = 4000;
 
-    RootContext::RootContext() : Arena(kArenaChunkSize, alignof(Node)), ParseContext(*static_cast<Arena*>(this)) {}
+    RootContext::RootContext()
+        : Arena(kArenaChunkSize, alignof(Node)), ParseContext(*static_cast<Arena*>(this), _actualStrings) {}
 
     RootContext::~RootContext() {
         // Visit each Node allocated by the Arena and call its destructor, so that string and vector members

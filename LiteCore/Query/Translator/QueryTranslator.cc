@@ -41,10 +41,10 @@ namespace litecore {
         SelectNode* query = new (ctx) SelectNode(v, ctx);
         query->postprocess(ctx);
 
-        query->visitTree([this](Node& node, unsigned /*depth*/) {
+        query->visitTree([&](Node& node, unsigned /*depth*/) {
             if ( auto source = dynamic_cast<SourceNode*>(&node) ) {
                 // Set the SQLite table name for each SourceNode:
-                assignTableNameToSource(source);
+                assignTableNameToSource(source, ctx);
             } else if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
                 // Capture the parameter names:
                 _parameters.emplace(p->name());
@@ -56,7 +56,7 @@ namespace litecore {
         });
 
         // Get the column titles:
-        for ( WhatNode* what : query->what() ) _columnTitles.push_back(what->columnName());
+        for ( WhatNode* what : query->what() ) _columnTitles.emplace_back(what->columnName());
 
         _isAggregateQuery   = query->isAggregate();
         _1stCustomResultCol = query->numPrependedColumns();
@@ -84,22 +84,22 @@ namespace litecore {
         expr->postprocess(ctx);
 
         // Set the SQLite table name for each SourceNode:
-        expr->visitTree([this](Node& node, unsigned /*depth*/) {
-            if ( auto source = dynamic_cast<SourceNode*>(&node) ) assignTableNameToSource(source);
+        expr->visitTree([&](Node& node, unsigned /*depth*/) {
+            if ( auto source = dynamic_cast<SourceNode*>(&node) ) assignTableNameToSource(source, ctx);
         });
 
         return writeSQL([&](SQLWriter& writer) { writer << *expr; });
     }
 
-    void QueryTranslator::assignTableNameToSource(SourceNode* source) {
+    void QueryTranslator::assignTableNameToSource(SourceNode* source, ParseContext& ctx) {
         if ( source->tableName().empty() ) {
-            string tableName = tableNameForSource(source);
+            string tableName = tableNameForSource(source, ctx);
             if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) )
-                source->setTableName(tableName);
+                source->setTableName(ctx.newString(tableName));
         }
     }
 
-    string QueryTranslator::tableNameForSource(SourceNode* source) {
+    string QueryTranslator::tableNameForSource(SourceNode* source, ParseContext& ctx) {
         string tableName(source->tableName());
         if ( !tableName.empty() ) return tableName;
 
@@ -107,12 +107,12 @@ namespace litecore {
             // Check whether there's an array index we can use for an UNNEST:
             auto unnestSrc = unnest->unnestExpression()->source();
             if ( !unnestSrc ) return "";
-            tableName = _delegate.unnestedTableName(tableNameForSource(unnestSrc), unnest->unnestIdentifier());
-            if ( _delegate.tableExists(tableName) ) source->setTableName(tableName);
+            tableName = _delegate.unnestedTableName(tableNameForSource(unnestSrc, ctx), unnest->unnestIdentifier());
+            if ( _delegate.tableExists(tableName) ) source->setTableName(ctx.newString(tableName));
         } else {
-            string name = source->collection();
+            string name(source->collection());
             if ( name.empty() ) name = _defaultCollectionName;
-            if ( !source->scope().empty() ) name = source->scope() + "." + name;
+            if ( !source->scope().empty() ) name = string(source->scope()) + "." + name;
 
             DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
             //FIXME: Support kDeletedDocs
@@ -189,7 +189,7 @@ namespace litecore {
     string QueryTranslator::whereClauseSQL(FLValue exprSource, string_view dbAlias) {
         if ( !exprSource ) return "";
         RootContext ctx;
-        auto        src = new (ctx) SourceNode(dbAlias);
+        auto        src = new (ctx) SourceNode(ctx.newString(dbAlias));
         ctx.from        = src;
         auto expr       = ExprNode::parse(exprSource, ctx);
         expr->postprocess(ctx);

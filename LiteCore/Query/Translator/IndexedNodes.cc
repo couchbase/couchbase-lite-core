@@ -104,18 +104,20 @@ namespace litecore::qt {
         _sourceCollection = source;
 
         // Create the JSON expression used to locate the index:
-        _indexExpressionJSON = args[0].toJSON(false, true);
-        bool fixed           = false;
-        if ( string const& alias = _sourceCollection->alias(); !alias.empty() ) {
-            fixed = replace(_indexExpressionJSON, "[\"." + alias + ".", "[\".");
+        string indexExpr(args[0].toJSON(false, true));
+        bool   fixed = false;
+        if ( string_view alias = _sourceCollection->alias(); !alias.empty() ) {
+            fixed = replace(indexExpr, "[\"." + string(alias) + ".", "[\".");
         }
         if ( !fixed ) {
-            if ( string prefix = _sourceCollection->collection(); !prefix.empty() ) {
+            if ( string prefix = string(_sourceCollection->collection()); !prefix.empty() ) {
                 // A kludge to remove the collection name from the path:
-                if ( string const& scope = _sourceCollection->scope(); !scope.empty() ) prefix = scope + "." + prefix;
-                replace(_indexExpressionJSON, "[\"." + prefix + ".", "[\".");
+                if ( string_view scope = _sourceCollection->scope(); !scope.empty() )
+                    prefix = string(scope) + "." + prefix;
+                replace(indexExpr, "[\"." + prefix + ".", "[\".");
             }
         }
+        _indexExpressionJSON = ctx.newString(indexExpr);
 
         _vector = ExprNode::parse(args[1], ctx);
 
@@ -205,14 +207,14 @@ namespace litecore::qt {
 
 #pragma mark - INDEX SOURCE:
 
-    IndexSourceNode::IndexSourceNode(IndexedNode* node, string alias, ParseContext& ctx)
+    IndexSourceNode::IndexSourceNode(IndexedNode* node, string_view alias, ParseContext& ctx)
         : SourceNode(SourceType::index, node->sourceCollection()->scope(), node->sourceCollection()->collection(),
                      JoinType::inner)
         , _indexedNode{node} {
-        _alias = std::move(alias);
+        _alias = ctx.newString(alias);
         // Create the join condition:
         auto cond = new (ctx) OpNode(*lookupOp("=", 2));
-        cond->addArg(new (ctx) RawSQLNode("\"" + _alias + "\".docid"));
+        cond->addArg(new (ctx) RawSQLNode("\"" + string(_alias) + "\".docid", ctx));
         cond->addArg(new (ctx) MetaNode(MetaProperty::rowid, node->sourceCollection()));
         addJoinCondition(cond, ctx);
     }
@@ -247,7 +249,7 @@ namespace litecore::qt {
     template <class T>
     static bool aliasExists(string const& alias, List<T> const& list) {
         for ( auto n : list )
-            if ( 0 == compareIgnoringCase(alias, n->alias()) ) return true;
+            if ( 0 == compareIgnoringCase(alias, string(n->alias())) ) return true;
         return false;
     }
 

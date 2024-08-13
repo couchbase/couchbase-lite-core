@@ -150,8 +150,8 @@ namespace litecore::qt {
     static bool hasMultipleCollections(ParseContext& ctx, bool ignoreJoins) {
         if ( ctx.sources.size() >= 2 ) {
             if ( ignoreJoins ) {
-                string const& collection = ctx.from->collection();
-                string const& scope      = ctx.from->scope();
+                auto collection = ctx.from->collection();
+                auto scope      = ctx.from->scope();
                 for ( auto source : ctx.sources ) {
                     if ( source->collection() != collection || source->scope() != scope ) return true;
                 }

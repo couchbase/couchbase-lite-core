@@ -72,7 +72,7 @@ namespace litecore::qt {
             return fn;
         } else if ( opName.hasPrefix('$') ) {
             require(operands.count() == 0, "extra operands to '%.*s'", FMTSLICE(opName));
-            return new (ctx) ParameterNode(opName.from(1));
+            return new (ctx) ParameterNode(opName.from(1), ctx);
         } else if ( opName.hasPrefix('?') ) {
             return VariableNode::parse(opName.from(1), operands, ctx);
         } else if ( opName.hasSuffix("()"_sl) ) {
@@ -116,7 +116,7 @@ namespace litecore::qt {
             case OpType::property:
                 return PropertyNode::parse(nullslice, &operands, ctx);
             case OpType::parameter:
-                return new (ctx) ParameterNode(operands[0]);
+                return new (ctx) ParameterNode(operands[0], ctx);
             case OpType::rank:
                 return new (ctx) RankNode(operands, ctx);
             case OpType::select:
@@ -229,9 +229,9 @@ namespace litecore::qt {
 
     SourceNode* MetaNode::source() const { return _source; }
 
-    string MetaNode::asColumnName() const {
+    string_view MetaNode::asColumnName() const {
         if ( _property != MetaProperty::none ) {
-            return string(kMetaPropertyNames[int(_property) - 1]);
+            return kMetaPropertyNames[int(_property) - 1];
         } else if ( _source ) {
             return _source->asColumnName();
         } else {
@@ -241,8 +241,8 @@ namespace litecore::qt {
 
     OpFlags MetaNode::opFlags() const { return kMetaFlags[int(_property) + 1]; }
 
-    ParameterNode::ParameterNode(slice name) : _name(name) {
-        require(isAlphanumericOrUnderscore(_name), "Invalid query parameter name '%s'", _name.c_str());
+    ParameterNode::ParameterNode(string_view name, ParseContext& ctx) : _name(ctx.newString(name)) {
+        require(isAlphanumericOrUnderscore(_name), "Invalid query parameter name '%s'", _name);
     }
 
 #pragma mark - PROPERTY NODE:
@@ -286,9 +286,9 @@ namespace litecore::qt {
     PropertyNode::PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string_view fn)
         : _source(src), _result(result), _path(std::move(path)), _sqliteFn(fn) {}
 
-    string PropertyNode::asColumnName() const {
+    string_view PropertyNode::asColumnName() const {
         if ( _path.count() > 0 ) {
-            return string(_path.get(_path.count() - 1).first);  // last path component
+            return _path.get(_path.count() - 1).first;  // last path component
         } else if ( _source ) {
             return _source->asColumnName();
         } else {
@@ -308,7 +308,8 @@ namespace litecore::qt {
         KeyPath path = parsePath(pathStr, &args);
         require(path.count() > 0, "invalid variable name");
         slice varName = path.get(0).first;
-        auto  var     = new (ctx) VariableNode(varName);
+        require(isValidIdentifier(varName), "Invalid variable name '%.*s'", FMTSLICE(varName));
+        auto var = new (ctx) VariableNode(ctx.newString(varName));
 
         if ( path.count() == 1 ) {
             return var;
@@ -322,10 +323,6 @@ namespace litecore::qt {
             expr->addArg(new (ctx) LiteralNode(path.toString()));
             return expr;
         }
-    }
-
-    VariableNode::VariableNode(slice name) : _name(name) {
-        require(isValidIdentifier(_name), "Invalid variable name '%s'", _name.c_str());
     }
 
 #pragma mark - COLLATE NODE:

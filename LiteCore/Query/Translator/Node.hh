@@ -19,6 +19,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
 #include <iosfwd>
+#include <queue>
 #include <unordered_map>
 
 C4_ASSUME_NONNULL_BEGIN
@@ -68,7 +69,7 @@ namespace litecore::qt {
 
     /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {
-        explicit ParseContext(Arena& a) : arena(a) {}
+        ParseContext(ParseContext const&);
 
         Arena&                                   arena;                    // The arena allocator for Nodes
         SelectNode* C4NULLABLE                   select{};                 // The enclosing SELECT, if any
@@ -77,6 +78,12 @@ namespace litecore::qt {
         SourceNode* C4NULLABLE                   from{};                   // The main source
         Collation                                collation;                // Current collation in effect
         bool                                     collationApplied = true;  // False if no COLLATE node generated
+
+        const char* newString(string_view);  ///< Allocates a string
+      protected:
+        ParseContext(Arena& a, std::deque<string>& strings) : arena(a), _strings(strings) {}
+
+        std::deque<string>& _strings;
     };
 
     /** Top-level Context that provides an Arena, and destructs all Nodes in its destructor. */
@@ -85,6 +92,9 @@ namespace litecore::qt {
         , public ParseContext {
         RootContext();
         ~RootContext();
+
+      private:
+        std::deque<string> _actualStrings;
     };
 
 #pragma mark - NODE CLASS:

@@ -43,8 +43,8 @@ namespace litecore::qt {
         if ( Array a = v.asArray(); a[0].asString() == "AS" ) {
             // Handle ["AS", expr, alias]:
             require(a.count() == 3, "AS must have 2 operands");
-            _alias = requiredString(a[2], "name in AS");
-            require(!_alias.empty(), "invalid identifier '%s' in AS", _alias.c_str());
+            _alias = ctx.newString(requiredString(a[2], "name in AS"));
+            require(!_alias.empty(), "invalid empty 'AS'");
             _hasExplicitAlias = true;
             _tempChild        = a[1];
         } else {
@@ -70,8 +70,8 @@ namespace litecore::qt {
         return !_parsingExpr && AliasedNode::matchPath(path);
     }
 
-    void WhatNode::ensureUniqueColumnName(unordered_set<string>& columnNames) {
-        string curName = columnName();
+    void WhatNode::ensureUniqueColumnName(unordered_set<string>& columnNames, ParseContext& ctx) {
+        string curName(columnName());
         if ( curName.empty() || !columnNames.insert(curName).second ) {
             if ( hasExplicitAlias() ) {
                 DebugAssert(!curName.empty());
@@ -85,13 +85,13 @@ namespace litecore::qt {
                         name = format("%s #%u", curName.c_str(), count + 1);
                     ++count;
                 } while ( !columnNames.insert(name).second );
-                setColumnName(name);
+                setColumnName(ctx.newString(name));
             }
         }
     }
 
-    string WhatNode::columnName() const {
-        if ( !_columnName.empty() ) return _columnName;
+    string_view WhatNode::columnName() const {
+        if ( _columnName && *_columnName ) return _columnName;
         else if ( _hasExplicitAlias )
             return _alias;
         else
@@ -108,14 +108,14 @@ namespace litecore::qt {
             return new (ctx) SourceNode(dict, ctx);
     }
 
-    SourceNode::SourceNode(string_view alias) : SourceNode(SourceType::collection) {
+    SourceNode::SourceNode(const char* alias) : SourceNode(SourceType::collection) {
         _alias            = alias;
         _hasExplicitAlias = true;
         _columnName       = alias;
     }
 
-    SourceNode::SourceNode(SourceType type, string scope, string collection, JoinType join)
-        : _type(type), _scope(std::move(scope)), _collection(std::move(collection)), _join(join) {}
+    SourceNode::SourceNode(SourceType type, string_view scope, string_view collection, JoinType join)
+        : _type(type), _scope(scope), _collection(collection), _join(join) {}
 
     SourceNode::SourceNode(Dict dict, ParseContext& ctx) : SourceNode(SourceType::collection) {
         // Parse the SCOPE and COLLECTION properties:
@@ -151,11 +151,14 @@ namespace litecore::qt {
         }
 
         // Parse AS:
-        parseAS(dict);
+        parseAS(dict, ctx);
         if ( !_hasExplicitAlias ) {
             require(explicitCollection, "missing AS and COLLECTION in FROM item");
-            if ( !_scope.empty() ) _alias = _scope + ".";
-            _alias += _columnName;
+            string alias;
+            if ( _scope.empty() ) alias = string(_alias);
+            else
+                alias = ctx.newString(string(_scope) + ".");
+            _alias = ctx.newString(alias + string(_columnName));
         }
 
         // Parse JOIN and ON:
@@ -173,12 +176,13 @@ namespace litecore::qt {
         }
     }
 
-    void SourceNode::parseAS(Dict dict) {
+    void SourceNode::parseAS(Dict dict, ParseContext& ctx) {
         if ( slice alias = optionalString(getCaseInsensitive(dict, "AS"), "AS") ) {
             require(!alias.empty(), "invalid alias 'AS %.*s'", FMTSLICE(alias));
             _hasExplicitAlias = true;
-            _alias            = alias;
-            replace(_alias, "\\", "");
+            string aliasStr(alias);
+            replace(aliasStr, "\\", "");
+            _alias      = ctx.newString(aliasStr);
             _columnName = _alias;
         }
     }
@@ -194,8 +198,8 @@ namespace litecore::qt {
         if ( AliasedNode::matchPath(path) ) return true;
         if ( path.count() >= 2 && !_hasExplicitAlias ) {
             // If my alias is "scope.collection", see if that matches 1st 2 components:
-            string_view scope      = _scope.empty() ? kDefaultScopeName : _scope;
-            string_view collection = _collection.empty() ? kDefaultCollectionName : _collection;
+            string_view scope      = _scope.empty() ? string_view(kDefaultScopeName) : _scope;
+            string_view collection = _collection.empty() ? string_view(kDefaultCollectionName) : _collection;
             if ( path.get(0).first.caseEquivalent(scope) && path.get(1).first.caseEquivalent(collection) ) {
                 path.dropComponents(2);
                 return true;
@@ -209,7 +213,7 @@ namespace litecore::qt {
             // Should I prepend my scope to my column name to disambiguate it?
             for ( SourceNode* src : ctx.sources ) {
                 if ( src != this && src->_columnName == _columnName ) {
-                    _columnName = _scope + "." + _columnName;
+                    _columnName = ctx.newString(string(_scope) + "." + string(_columnName));
                     break;
                 }
             }
@@ -232,7 +236,7 @@ namespace litecore::qt {
 #pragma mark - UNNEST SOURCE:
 
     UnnestSourceNode::UnnestSourceNode(Dict dict, ParseContext& ctx) : SourceNode(SourceType::unnest) {
-        parseAS(dict);
+        parseAS(dict, ctx);
         _unnestFleeceExpression = getCaseInsensitive(dict, "UNNEST");
         require(!getCaseInsensitive(dict, "JOIN") && !getCaseInsensitive(dict, "ON"),
                 "UNNEST cannot accept a JOIN or ON clause");
@@ -282,7 +286,7 @@ namespace litecore::qt {
     void SelectNode::parse(Value v, ParseContext& ctx) {
         if ( ctx.select != nullptr ) {
             // About to parse a nested SELECT, with its own namespace; use a new ParseContext:
-            ParseContext nestedCtx(ctx.arena);
+            ParseContext nestedCtx(ctx);
             parse(v, nestedCtx);
             return;
         }
@@ -338,8 +342,8 @@ namespace litecore::qt {
                         descending = true;
                         orderItem  = a[1];
                     }
+                    if ( descending ) _orderDesc |= (1 << _orderBy.size());
                     addChild(_orderBy, ExprNode::parse(orderItem, ctx));
-                    _orderDesc.push_back(descending);
                 }
             }
 
@@ -377,42 +381,13 @@ namespace litecore::qt {
         if ( _what.empty() ) {
             // Default WHAT is id and sequence, for historical reasons:
             auto f = from();
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, f)));
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, f)));
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, f), ctx));
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, f), ctx));
         }
 
         Assert(!_sources.empty());
         Assert(ctx.from == from());
         Assert(!ctx.aliases.empty());
-    }
-
-    void SelectNode::registerAlias(AliasedNode* node, ParseContext& ctx) {
-        slice alias    = node->alias();
-        bool  inserted = ctx.aliases.insert({lowercase(string(alias)), node}).second;
-        require(inserted, "duplicate alias '%.*s'", FMTSLICE(alias));
-    }
-
-    void SelectNode::addSource(SourceNode* source, ParseContext& ctx) {
-        bool isFrom = false;
-        if ( source->type() != SourceType::index ) {
-            registerAlias(source, ctx);
-            if ( source->isCollection() && !source->isJoin() ) {
-                isFrom = true;
-                require(_sources.empty(), "multiple non-join FROM items");
-                ctx.from = source;
-            }
-            ctx.sources.emplace_back(source);
-        }
-        if ( !isFrom ) { require(!_sources.empty(), "first FROM item must be primary source"); }
-        addChild(_sources, source);
-    }
-
-    void SelectNode::visitChildren(ChildVisitor const& visitor) {
-        visitor(_sources)(_what)(_where)(_groupBy)(_having)(_orderBy)(_limit)(_offset);
-    }
-
-    void SelectNode::postprocess(ParseContext& ctx) {
-        Node::postprocess(ctx);
 
         // Check if this is an aggregate query, and whether it references a collections `deleted` property:
         _isAggregate = _distinct || !_groupBy.empty();
@@ -453,17 +428,40 @@ namespace litecore::qt {
         // Ensure sources' column names are unique
         for ( SourceNode* source : _sources ) source->disambiguateColumnName(ctx);
 
-        {
-            // Ensure the WHAT nodes have non-empty, unique column names.
-            // In the first pass, make sure explicitly named columns (WHAT nodes) have unique names;
-            // in the second pass, the other columns will add "$n" or " #n" to make themselves unique.
-            unordered_set<string> columnNames;
-            for ( int x = 1; x >= 0; --x ) {
-                for ( WhatNode* what : _what ) {
-                    if ( what->hasExplicitAlias() == x ) what->ensureUniqueColumnName(columnNames);
-                }
+        // Ensure the WHAT nodes have non-empty, unique column names.
+        // In the first pass, make sure explicitly named columns (WHAT nodes) have unique names;
+        // in the second pass, the other columns will add "$n" or " #n" to make themselves unique.
+        unordered_set<string> columnNames;
+        for ( int x = 1; x >= 0; --x ) {
+            for ( WhatNode* what : _what ) {
+                if ( what->hasExplicitAlias() == bool(x) ) what->ensureUniqueColumnName(columnNames, ctx);
             }
         }
+    }
+
+    void SelectNode::registerAlias(AliasedNode* node, ParseContext& ctx) {
+        slice alias    = node->alias();
+        bool  inserted = ctx.aliases.insert({lowercase(string(alias)), node}).second;
+        require(inserted, "duplicate alias '%.*s'", FMTSLICE(alias));
+    }
+
+    void SelectNode::addSource(SourceNode* source, ParseContext& ctx) {
+        bool isFrom = false;
+        if ( source->type() != SourceType::index ) {
+            registerAlias(source, ctx);
+            if ( source->isCollection() && !source->isJoin() ) {
+                isFrom = true;
+                require(_sources.empty(), "multiple non-join FROM items");
+                ctx.from = source;
+            }
+            ctx.sources.emplace_back(source);
+        }
+        if ( !isFrom ) { require(!_sources.empty(), "first FROM item must be primary source"); }
+        addChild(_sources, source);
+    }
+
+    void SelectNode::visitChildren(ChildVisitor const& visitor) {
+        visitor(_sources)(_what)(_where)(_groupBy)(_having)(_orderBy)(_limit)(_offset);
     }
 
 }  // namespace litecore::qt

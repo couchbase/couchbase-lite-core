@@ -22,6 +22,7 @@ C4_ASSUME_NONNULL_BEGIN
 namespace litecore {
     namespace qt {
         class Node;
+        struct ParseContext;
         class QueryNode;
         class SourceNode;
         class SQLWriter;
@@ -122,8 +123,8 @@ namespace litecore {
       private:
         QueryTranslator(const QueryTranslator& qp)         = delete;
         QueryTranslator& operator=(const QueryTranslator&) = delete;
-        string           tableNameForSource(qt::SourceNode*);
-        void             assignTableNameToSource(qt::SourceNode*);
+        string           tableNameForSource(qt::SourceNode*, qt::ParseContext&);
+        void             assignTableNameToSource(qt::SourceNode*, qt::ParseContext&);
         string           writeSQL(function_ref<void(qt::SQLWriter&)>);
         string           functionCallSQL(slice fnName, FLValue arg, FLValue C4NULLABLE param = nullptr);
 
