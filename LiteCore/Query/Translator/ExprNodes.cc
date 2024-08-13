@@ -280,20 +280,22 @@ namespace litecore::qt {
             else
                 sqliteFn = kValueFnName;
         }
-        return new (ctx) PropertyNode(source, result, std::move(path), sqliteFn);
+
+        string_view lastComponent;
+        if ( path.count() > 0 ) lastComponent = ctx.newString(path.get(path.count() - 1).first);
+        return new (ctx) PropertyNode(source, result, ctx.newString(string(path)), lastComponent, sqliteFn);
     }
 
-    PropertyNode::PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string_view fn)
-        : _source(src), _result(result), _path(std::move(path)), _sqliteFn(fn) {}
+    PropertyNode::PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, string_view path,
+                               string_view lastComponent, string_view fn)
+        : _source(src), _result(result), _path(path), _lastComponent(lastComponent), _sqliteFn(fn) {}
 
     string_view PropertyNode::asColumnName() const {
-        if ( _path.count() > 0 ) {
-            return _path.get(_path.count() - 1).first;  // last path component
-        } else if ( _source ) {
+        if ( !_path.empty() ) return _lastComponent;
+        else if ( _source )
             return _source->asColumnName();
-        } else {
+        else
             return "";
-        }
     }
 
     SourceNode* PropertyNode::source() const { return _source; }

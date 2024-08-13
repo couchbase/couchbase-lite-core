@@ -2558,197 +2558,138 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         t.commit();
     }
 
-    string meta_default = "META(" + collectionName + ").revisionID";
-    std::tuple<const char*, std::function<bool(const Value*, bool)>> testCases[] = {{"acos(3)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"acos(\"abc\")",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"2/0",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return missing;
-                                                                                     }},
-                                                                                    {"lower([1,2])",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    /*4*/
-                                                                                    {"length(missingValue)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =MISSING
-                                                                                         return missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"is_array(null)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"atan(asin(1.1))",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"round(12.5)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =13
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 13;
-                                                                                     }},
-                                                                                    {"8/10",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    /*9*/
-                                                                                    {"unitPrice/10",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    {"orderlines",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // type() == kArray & columnTitle="orderlines"
-                                                                                         return !missing
-                                                                                                && v->type() == kArray;
-                                                                                     }},
-                                                                                    {"orderlines[0]",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // columnTitle="$11"
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 1;
-                                                                                     }},
-                                                                                    {"div(8, 10)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0.8
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0.8;
-                                                                                     }},
-                                                                                    {"idiv(8, 10)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    /*14*/
-                                                                                    {"idiv(-1, 1.9)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =-1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == -1;
-                                                                                     }},
-                                                                                    {"idiv(-1, 2.0)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    {"idiv(-1, 2.9)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    {"idiv(-3.9, 2.1)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =-1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == -1;
-                                                                                     }},
-                                                                                    {"idiv(5, 3)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 1;
-                                                                                     }},
-                                                                                    /*19*/
-                                                                                    {"idiv(5, 3.0)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 1;
-                                                                                     }},
-                                                                                    {"idiv(1, 0.99)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"round_even(12.5)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 12;
-                                                                                     }},
-                                                                                    {"round_even(11.5)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 12;
-                                                                                     }},
-                                                                                    {"round_even(12.115, 2)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble()
-                                                                                                           == 12.12;
-                                                                                     }},
-                                                                                    /*24*/
-                                                                                    {"round_even(-12.125, 2)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble()
-                                                                                                           == -12.12;
-                                                                                     }},
-                                                                                    {"META().id",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kString
-                                                                                                && (v->asString()
-                                                                                                            .compare(
-                                                                                                                    "do"
-                                                                                                                    "c"
-                                                                                                                    "1")
-                                                                                                    == 0);
-                                                                                     }},
-                                                                                    {meta_default.c_str(),
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"round_even(8.8343534, -1)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 10;
-                                                                                     }}};
+    string meta_default  = "META(" + collectionName + ").revisionID";
+    using TestCase       = std::tuple<const char*, std::function<bool(const Value*, bool)>>;
+    TestCase testCases[] = {
+            {"acos(3)",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"acos(\"abc\")",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"2/0",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return missing;
+             }},
+            {"lower([1,2])",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            /*4*/
+            {"length(missingValue)",
+             [](const Value* v,
+                bool         missing) {  // =MISSING
+                 return missing && v->type() == kNull;
+             }},
+            {"is_array(null)",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"atan(asin(1.1))",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"round(12.5)",
+             [](const Value* v,
+                bool         missing) {  // =13
+                 return !missing && v->type() == kNumber && v->asDouble() == 13;
+             }},
+            {"8/10",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            /*9*/
+            {"unitPrice/10",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            {"orderlines",
+             [](const Value* v,
+                bool         missing) {  // type() == kArray & columnTitle="orderlines"
+                 return !missing && v->type() == kArray;
+             }},
+            {"orderlines[0]",
+             [](const Value* v,
+                bool         missing) {  // columnTitle="$11"
+                 return !missing && v->type() == kNumber && v->asDouble() == 1;
+             }},
+            {"div(8, 10)",
+             [](const Value* v,
+                bool         missing) {  // =0.8
+                 return !missing && v->type() == kNumber && v->asDouble() == 0.8;
+             }},
+            {"idiv(8, 10)",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            /*14*/
+            {"idiv(-1, 1.9)",
+             [](const Value* v,
+                bool         missing) {  // =-1
+                 return !missing && v->type() == kNumber && v->asDouble() == -1;
+             }},
+            {"idiv(-1, 2.0)",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            {"idiv(-1, 2.9)",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            {"idiv(-3.9, 2.1)",
+             [](const Value* v,
+                bool         missing) {  // =-1
+                 return !missing && v->type() == kNumber && v->asDouble() == -1;
+             }},
+            {"idiv(5, 3)",
+             [](const Value* v,
+                bool         missing) {  // =1
+                 return !missing && v->type() == kNumber && v->asDouble() == 1;
+             }},
+            /*19*/
+            {"idiv(5, 3.0)",
+             [](const Value* v,
+                bool         missing) {  // =1
+                 return !missing && v->type() == kNumber && v->asDouble() == 1;
+             }},
+            {"idiv(1, 0.99)",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"round_even(12.5)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+            {"round_even(11.5)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+            {"round_even(12.115, 2)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12.12; }},
+            /*24*/
+            {"round_even(-12.125, 2)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == -12.12; }},
+            {"META().id",
+             [](const Value* v, bool missing) {
+                 return !missing && v->type() == kString
+                        && (v->asString().compare("do"
+                                                  "c"
+                                                  "1")
+                            == 0);
+             }},
+            {meta_default.c_str(), [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"round_even(8.8343534, -1)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 10; }}};
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr      = "select ";
     queryStr += std::get<0>(testCases[0]);

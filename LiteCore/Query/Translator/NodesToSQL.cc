@@ -106,14 +106,12 @@ namespace litecore::qt {
             if ( sqliteFnName.empty() ) {
                 ctx << sqlIdentifier(_result->alias());
             } else {
-                ctx << sqliteFnName << '(' << sqlIdentifier(_result->alias()) << ", " << sqlString(_path.toString())
-                    << ')';
+                ctx << sqliteFnName << '(' << sqlIdentifier(_result->alias()) << ", " << sqlString(_path) << ')';
             }
         } else {
             string aliasDot = "";
             if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
-            if ( _source && _source->type() == SourceType::unnest && _source->tableName().empty()
-                 && _path.count() == 0 ) {
+            if ( _source && _source->type() == SourceType::unnest && _source->tableName().empty() && _path.empty() ) {
                 // Accessing the outer item of a `fl_each` table-valued function:
                 ctx << aliasDot << "value";
             } else {
@@ -129,7 +127,7 @@ namespace litecore::qt {
                     }
                 }
                 ctx << sqliteFnName << '(' << aliasDot << ctx.bodyColumnName;
-                if ( _path.count() > 0 ) ctx << ", " << sqlString(_path.toString());
+                if ( !_path.empty() ) ctx << ", " << sqlString(_path);
                 if ( param ) ctx << ", " << *param;
                 ctx << ")";
                 if ( extraCloseParen ) ctx << ')';

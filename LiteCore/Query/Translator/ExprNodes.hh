@@ -104,7 +104,7 @@ namespace litecore::qt {
         static ExprNode* parse(slice pathStr, Array::iterator* C4NULLABLE operands, ParseContext& ctx);
 
         /// The parsed path as a Fleece KeyPath.
-        KeyPath const& path() const { return _path; }
+        string_view path() const { return _path; }
 
         /// Sets the SQLite function used to dereference the property; default is `fl_value`
         void setSQLiteFn(string_view fn) { _sqliteFn = fn; }
@@ -117,12 +117,14 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&, slice sqliteFnName, ExprNode* C4NULLABLE param) const;
 
       private:
-        PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, KeyPath path, string_view fn);
+        PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, string_view path,
+                     string_view lastComponent, string_view fn);
 
-        SourceNode* C4NULLABLE _source{};  // Source I am relative to
-        WhatNode* C4NULLABLE   _result{};  // Result I am relative to (only if _source is nullptr)
-        KeyPath                _path;      // The path (possibly empty)
-        string_view            _sqliteFn;  // SQLite function to emit; usually `fl_value`
+        SourceNode* C4NULLABLE _source{};       // Source I am relative to
+        WhatNode* C4NULLABLE   _result{};       // Result I am relative to (only if _source is nullptr)
+        string_view            _path;           // The path (possibly empty)
+        string_view            _lastComponent;  // Last component of path
+        string_view            _sqliteFn;       // SQLite function to emit; usually `fl_value`
     };
 
     /** A local variable (`?foo`) used in an ANY/EVERY expression. */
