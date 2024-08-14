@@ -1835,11 +1835,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
         t.commit();
     }
 
-    auto                      query = store->compileQuery(json5("{'WHAT': ['.num', '.string'], 'LIMIT': ['-', 1]}"));
+    auto                      query = store->compileQuery(json5("{'WHAT': ['.num', '.string'], 'LIMIT': -1}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     CHECK(e->getRowCount() == 0);
 
-    query = store->compileQuery(json5("{'WHAT': ['.num', '.string'], 'LIMIT': 100, 'OFFSET': ['-', 1]}"));
+    query = store->compileQuery(json5("{'WHAT': ['.num', '.string'], 'LIMIT': 100, 'OFFSET': -1}"));
     e     = (query->createEnumerator());
     CHECK(e->getRowCount() == 1);
     REQUIRE(e->next());

@@ -55,6 +55,8 @@ namespace litecore::qt {
         std::optional<int64_t> asInt() const;
         string_view            asString() const;
 
+        void setInt(int64_t);
+
         void writeSQL(SQLWriter&) const override;
 
       private:

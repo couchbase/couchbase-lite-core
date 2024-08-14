@@ -273,7 +273,9 @@ namespace litecore::qt {
         auto expr = ExprNode::parse(val, ctx);
         if ( auto litNode = dynamic_cast<LiteralNode*>(expr) ) {
             optional<int64_t> i = litNode->asInt();
-            require(i && i.value() >= 0, "%s must be a non-negative integer", name);
+            require(i, "%s must be an integer", name);
+            if (i.value() < 0)
+                litNode->setInt(0);
         } else {
             auto fixed = new (ctx) FunctionNode(lookupFn("GREATEST", 2));
             fixed->addArg(expr);
