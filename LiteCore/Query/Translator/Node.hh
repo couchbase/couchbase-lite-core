@@ -95,12 +95,12 @@ namespace litecore::qt {
 
     /** Abstract syntax tree node for parsing N1QL queries from JSON/Fleece.
         Nodes are allocated in an Arena and are not copyable.
-        The Node class hierarchy is described in the [README](./README.md)
+        The Node class hierarchy is described in the `docs/QueryTranslator.md`
 
         @warning  Node and its subclasses MUST NOT have data members that require destruction --
             that means no `string`, no `vector`, no `fleece::MutableArray`. The destructors will not be called when
             the Arena is freed, meaning memory will be leaked.
-            - Call `ParseContext::newString()` to allocate a string in the Arena.
+            - Call `ParseContext::newString()` to allocate a C string in the Arena.
             - Use `List` (below) instead of `vector` to collect child Nodes into lists. */
     class Node {
       public:

@@ -29,7 +29,7 @@ namespace litecore {
 
     /** Translates queries from our JSON schema (actually Fleece) into SQL runnable by SQLite.
         https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
-        For some architectural info, see the [README](./README.md) */
+        For some architectural info, see `docs/QueryTranslator.md`) */
     class QueryTranslator {
       public:
         /** Which docs to include from a collection in a query; determines which table to use. */
