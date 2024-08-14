@@ -48,4 +48,43 @@ namespace litecore::qt {
         if ( !preorder ) visitor(*this, depth);
     }
 
+    Node* NodeList::front() const noexcept { return _head; }
+
+    bool NodeList::empty() const noexcept { return !_head; }
+
+    size_t NodeList::size() const noexcept {
+        size_t s = 0;
+        for ( Node* node = _head; node; node = node->_next ) ++s;
+        return s;
+    }
+
+    Node* C4NONNULL NodeList::operator[](size_t i) const noexcept {
+        Node* node = _head;
+        while ( i-- > 0 ) node = node->_next;
+        return node;
+    }
+
+    void NodeList::push_front(Node* node) noexcept {
+        DebugAssert(!node->_next);
+        node->_next = _head;
+        _head       = node;
+        if ( !_tail ) _tail = node;
+    }
+
+    void NodeList::push_back(Node* node) noexcept {
+        DebugAssert(!node->_next);
+        if ( _tail ) _tail->_next = node;
+        else
+            _head = node;
+        _tail = node;
+    }
+
+    Node* NodeList::pop_front() noexcept {
+        auto f = _head;
+        _head  = f->_next;
+        if ( !_head ) _tail = nullptr;
+        f->_next = nullptr;
+        return f;
+    }
+
 }  // namespace litecore::qt

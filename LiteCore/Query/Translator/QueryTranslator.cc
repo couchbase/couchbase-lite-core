@@ -29,8 +29,8 @@ namespace litecore {
 
     QueryTranslator::QueryTranslator(const Delegate& delegate, string defaultCollectionName, string defaultTableName)
         : _delegate(delegate)
-        , _defaultCollectionName(defaultCollectionName)
-        , _defaultTableName(defaultTableName)
+        , _defaultCollectionName(std::move(defaultCollectionName))
+        , _defaultTableName(std::move(defaultTableName))
         , _bodyColumnName("body") {}
 
     QueryTranslator::~QueryTranslator() = default;

@@ -56,7 +56,7 @@ namespace litecore::qt {
 
         IndexType const             _type;                 // Index type
         string                      _indexExpressionJSON;  // Expression/property that's indexed, as JSON
-        SourceNode*                 _sourceCollection;     // The collection being queried
+        SourceNode* C4NULLABLE      _sourceCollection{};   // The collection being queried
         IndexSourceNode* C4NULLABLE _indexSource{};        // Source representing the index
         SelectNode* C4NULLABLE      _select{};             // The containing SELECT statement
         bool                        _isAuxiliary = false;  // True if this is an auxiliary expression (e.g. `RANK()`)

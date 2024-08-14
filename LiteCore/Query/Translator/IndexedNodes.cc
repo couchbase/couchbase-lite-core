@@ -17,6 +17,7 @@
 #include "SelectNodes.hh"
 #include "SQLWriter.hh"
 #include "TranslatorUtils.hh"
+#include <climits>
 
 namespace litecore::qt {
     using namespace std;
@@ -174,7 +175,7 @@ namespace litecore::qt {
         for ( Node const* n = parent(); n; n = n->parent() ) {
             if ( auto op = dynamic_cast<OpNode const*>(n); op && op->op().name == "OR" ) {
                 withinOR = true;
-            } else if ( auto sel = dynamic_cast<SelectNode const*>(n) ) {
+            } else if ( dynamic_cast<SelectNode const*>(n) ) {
                 require(!withinOR, "APPROX_VECTOR_DISTANCE can't be used within an OR in a WHERE clause");
                 break;
             }

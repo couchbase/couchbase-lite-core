@@ -46,7 +46,7 @@ namespace litecore::qt {
       public:
         WhatNode(Value, ParseContext&);
 
-        explicit WhatNode(ExprNode* expr, ParseContext& ctx) { initChild(_expr, expr); }
+        explicit WhatNode(ExprNode* expr) { initChild(_expr, expr); }
 
         /// The name of the result column. If not explicitly set, makes one up based on the expression.
         string_view columnName() const;
@@ -150,7 +150,7 @@ namespace litecore::qt {
     };
 
     /** A `SELECT` statement, whether top-level or nested. */
-    class SelectNode : public ExprNode {
+    class SelectNode final : public ExprNode {
       public:
         explicit SelectNode(Value v, ParseContext& ctx) { parse(v, ctx); }
 
@@ -180,11 +180,8 @@ namespace litecore::qt {
         void visitChildren(ChildVisitor const&) override;
         void writeSQL(SQLWriter&) const override;
 
-      protected:
-        void parse(Value, ParseContext&);
-        void addAllSourcesTo(std::vector<SourceNode*>&) const;
-
       private:
+        void   parse(Value, ParseContext&);
         void   registerAlias(AliasedNode*, ParseContext&);
         void   addSource(SourceNode*, ParseContext&);
         void   addIndexes(ParseContext&);

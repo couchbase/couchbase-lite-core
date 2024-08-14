@@ -200,8 +200,8 @@ namespace litecore::qt {
 #endif
 
       protected:
-        Operation const& _op;          // Spec of the operation
-        List<ExprNode>   _operands{};  // Operand list
+        Operation const& _op;        // Spec of the operation
+        List<ExprNode>   _operands;  // Operand list
     };
 
     /** A N1QL function call in an expression. */
@@ -211,7 +211,7 @@ namespace litecore::qt {
 
         explicit FunctionNode(struct FunctionSpec const& fn) : _fn(fn) {}
 
-        void addArg(ExprNode* n) { addChild(_args, std::move(n)); }
+        void addArg(ExprNode* n) { addChild(_args, n); }
 
         void addArgs(Array::iterator&, ParseContext&);
 

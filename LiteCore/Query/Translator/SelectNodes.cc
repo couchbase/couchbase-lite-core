@@ -381,8 +381,8 @@ namespace litecore::qt {
         if ( _what.empty() ) {
             // Default WHAT is id and sequence, for historical reasons:
             auto f = from();
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, f), ctx));
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, f), ctx));
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, f)));
+            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, f)));
         }
 
         Assert(!_sources.empty());

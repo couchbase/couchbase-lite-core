@@ -20,7 +20,6 @@
 #include "StringUtil.hh"
 #include "TranslatorTables.hh"
 #include "TranslatorUtils.hh"
-#include <iostream>
 #include <type_traits>
 
 namespace litecore::qt {
@@ -30,12 +29,6 @@ namespace litecore::qt {
     void Node::writeSQL(std::ostream& out) const {
         SQLWriter ctx{out};
         writeSQL(ctx);
-    }
-
-    string Node::SQLString() const {
-        std::stringstream s;
-        writeSQL(s);
-        return s.str();
     }
 
     void RawSQLNode::writeSQL(SQLWriter& ctx) const { ctx << _sql; }
@@ -122,7 +115,7 @@ namespace litecore::qt {
                 ctx << sqliteFnName << '(' << sqlIdentifier(_result->alias()) << ", " << sqlString(_path) << ')';
             }
         } else {
-            string aliasDot = "";
+            string aliasDot;
             if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
             if ( _source && _source->type() == SourceType::unnest && _source->tableName().empty() && _path.empty() ) {
                 // Accessing the outer item of a `fl_each` table-valued function:

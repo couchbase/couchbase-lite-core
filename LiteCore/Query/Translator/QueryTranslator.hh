@@ -23,7 +23,6 @@ namespace litecore {
     namespace qt {
         class Node;
         struct ParseContext;
-        class QueryNode;
         class SourceNode;
         class SQLWriter;
     }  // namespace qt
@@ -95,7 +94,7 @@ namespace litecore {
 
         /// Renames the `body` column; used by index creation code when defining triggers.
         /// Must be called before `parse`.
-        void setBodyColumnName(string name) { _bodyColumnName = name; }
+        void setBodyColumnName(string name) { _bodyColumnName = std::move(name); }
 
         /// Writes a CREATE INDEX statement.
         void writeCreateIndex(const string& indexName, const string& onTableName, FLArrayIterator& whatExpressions,

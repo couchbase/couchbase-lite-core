@@ -26,10 +26,10 @@ C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore::qt {
 
-    class SQLWriter;
     class AliasedNode;
     class SelectNode;
     class SourceNode;
+    class SQLWriter;
     template <class T>
     class List;
 
@@ -109,13 +109,13 @@ namespace litecore::qt {
         void            operator delete(void* C4NULLABLE ptr, ParseContext& ctx) noexcept;
 
         /// The node's parent in the parse tree.
-        Node const* parent() const { return _parent; }
+        Node const* parent() const noexcept { return _parent; }
 
         void setParent(Node* C4NULLABLE);
 
         /// Next sibling in list.
         /// @note Only some parents organize children into lists! Some parents use multiple lists!
-        Node const* C4NULLABLE next() const { return _next; }
+        Node const* C4NULLABLE next() const noexcept { return _next; }
 
         /// The SourceNode (`FROM` item) this references, if any. Overridden by MetaNode and PropertyNode.
         virtual SourceNode* C4NULLABLE source() const { return nullptr; }
@@ -132,9 +132,6 @@ namespace litecore::qt {
         /// Overrides must call the inherited method, probably first.
         virtual void postprocess(ParseContext& ctx);
 
-        /// Returns SQLite-flavor SQL representation.
-        string SQLString() const;
-
         /// Writes SQLite-flavor SQL representation to a stream.
         void writeSQL(std::ostream& out) const;
 
@@ -143,6 +140,7 @@ namespace litecore::qt {
 
       protected:
         friend struct RootContext;
+        friend class NodeList;
         template <class T>
         friend class List;
 
@@ -151,14 +149,14 @@ namespace litecore::qt {
 
         /// Utility to initialize a child reference, ensuring its parent points to me.
         template <class T>
-        void initChild(T* C4NONNULL& var, T* C4NONNULL c) {
+        void initChild(T* C4NONNULL& var, T* C4NONNULL c) noexcept {
             c->setParent(this);
             var = c;
         }
 
         /// Utility to set a child reference, ensuring its parent points to me.
         template <class T>
-        void setChild(T* C4NULLABLE& var, T* C4NULLABLE c) {
+        void setChild(T* C4NULLABLE& var, T* C4NULLABLE c) noexcept {
             if ( var ) var->setParent(nullptr);
             if ( c ) c->setParent(this);
             var = c;
@@ -166,7 +164,7 @@ namespace litecore::qt {
 
         /// Utility to add a child reference to a list, ensuring its parent points to me.
         template <class T>
-        void addChild(List<T>& list, T* C4NONNULL c);
+        void addChild(List<T>& list, T* C4NONNULL c) noexcept;
 
         struct ChildVisitor {
             function_ref<void(Node&)> fn;
@@ -194,48 +192,34 @@ namespace litecore::qt {
 
 #pragma mark - LIST:
 
-    /** A simple linked list of Nodes. */
-    template <class T>
-    class List {
+    class NodeList {
       public:
-        T* C4NULLABLE front() const noexcept FLPURE { return _head; }
+        Node* C4NULLABLE front() const noexcept FLPURE;
+        bool             empty() const noexcept FLPURE;
+        size_t           size() const noexcept FLPURE;
+        Node* C4NONNULL  operator[](size_t i) const noexcept FLPURE;
+        void             push_front(Node* C4NONNULL node) noexcept;
+        void             push_back(Node* C4NONNULL node) noexcept;
+        Node* C4NONNULL  pop_front() noexcept;
 
-        bool empty() const noexcept FLPURE { return !_head; }
+      protected:
+        Node* C4NULLABLE _head{};
+        Node* C4NULLABLE _tail{};
+    };
 
-        size_t size() const noexcept FLPURE {
-            size_t s = 0;
-            for ( Node* node = _head; node; node = node->_next ) ++s;
-            return s;
-        }
+    /** A simple linked list of Nodes, using the `Node::_next` pointer field. */
+    template <class T>
+    class List : public NodeList {
+      public:
+        T* C4NULLABLE front() const noexcept FLPURE { return static_cast<T*>(NodeList::front()); }
 
-        T* C4NONNULL operator[](size_t i) const noexcept FLPURE {
-            T* node = _head;
-            while ( i-- > 0 ) node = static_cast<T*>(node->_next);
-            return node;
-        }
+        T* C4NONNULL operator[](size_t i) const noexcept FLPURE { return static_cast<T*>(NodeList::operator[](i)); }
 
-        void push_front(T* C4NONNULL node) {
-            DebugAssert(!node->_next);
-            node->_next = _head;
-            _head       = node;
-            if ( !_tail ) _tail = node;
-        }
+        void push_front(T* C4NONNULL node) noexcept { NodeList::push_front(node); }
 
-        void push_back(T* C4NONNULL node) {
-            DebugAssert(!node->_next);
-            if ( _tail ) _tail->_next = node;
-            else
-                _head = node;
-            _tail = node;
-        }
+        void push_back(T* C4NONNULL node) noexcept { NodeList::push_back(node); }
 
-        T* C4NONNULL pop_front() noexcept {
-            auto f = _head;
-            _head  = static_cast<T*>(f->_next);
-            if ( !_head ) _tail = nullptr;
-            f->_next = nullptr;
-            return f;
-        }
+        T* C4NONNULL pop_front() noexcept { return static_cast<T*>(NodeList::pop_front()); }
 
         class iterator {
           public:
@@ -260,17 +244,13 @@ namespace litecore::qt {
             T* C4NULLABLE _cur{};
         };
 
-        iterator begin() const noexcept FLPURE { return iterator{_head}; }
+        iterator begin() const noexcept FLPURE { return iterator{front()}; }
 
         iterator end() const noexcept FLPURE { return iterator{nullptr}; }
-
-      private:
-        T* C4NULLABLE _head{};
-        T* C4NULLABLE _tail{};
     };
 
     template <class T>
-    void Node::addChild(List<T>& list, T* C4NONNULL c) {
+    void Node::addChild(List<T>& list, T* C4NONNULL c) noexcept {
         list.push_back(c);
         c->setParent(this);
     }
