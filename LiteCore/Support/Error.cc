@@ -587,7 +587,7 @@ namespace litecore {
     __cold void error::_throw(error::LiteCoreError code, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        std::string message = vformat(fmt, args);
+        std::string message = vstringprintf(fmt, args);
         va_end(args);
         error{LiteCore, code, message}._throw(1);
     }
@@ -596,7 +596,7 @@ namespace litecore {
         int     code = errno;
         va_list args;
         va_start(args, fmt);
-        std::string message = vformat(fmt, args);
+        std::string message = vstringprintf(fmt, args);
         va_end(args);
         message += ": ";
         message += strerror(code);
@@ -609,7 +609,7 @@ namespace litecore {
         if ( message ) {
             va_list args;
             va_start(args, message);
-            messageStr += vformat(message, args);
+            messageStr += vstringprintf(message, args);
             va_end(args);
         } else {
             messageStr += expr;

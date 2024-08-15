@@ -100,9 +100,9 @@ namespace litecore::crypto {
     alloc_slice convertToPEM(const slice& data, const char* name NONNULL) {
         return allocString(10000, [&](char* buf, size_t size) {
             size_t olen = 0;
-            int    err  = mbedtls_pem_write_buffer(format("-----BEGIN %s-----\n", name).c_str(),
-                                                   format("-----END %s-----\n", name).c_str(), (const uint8_t*)data.buf,
-                                                   data.size, (uint8_t*)buf, size, &olen);
+            int    err  = mbedtls_pem_write_buffer(stringprintf("-----BEGIN %s-----\n", name).c_str(),
+                                                   stringprintf("-----END %s-----\n", name).c_str(),
+                                                   (const uint8_t*)data.buf, data.size, (uint8_t*)buf, size, &olen);
             if ( err != 0 ) return err;
             if ( olen > 0 && buf[olen - 1] == '\0' ) --olen;
             return (int)olen;

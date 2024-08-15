@@ -29,7 +29,6 @@
 using namespace std;
 using namespace std::chrono;
 using namespace fleece;
-using namespace date;
 
 namespace litecore {
 
@@ -52,27 +51,27 @@ namespace litecore {
     }
 
     void LogIterator::writeTimestamp(Timestamp t, ostream& out, bool inUtcTime) {
-        local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
-        const char*              fmt = "%FT%TZ ";
+        date::local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
+        const char*                    fmt = "%FT%TZ ";
         if ( !inUtcTime ) {
             struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
             tp += GetLocalTZOffset(&tmpTime, true);
             fmt = "%FT%T ";
         }
-        out << format(fmt, tp);
+        out << date::format(fmt, tp);
     }
 
     void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream& out) {
-        sys_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
-        out << format("%FT%TZ", tp);
+        date::sys_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
+        out << date::format("%FT%TZ", tp);
     }
 
     string LogIterator::formatDate(Timestamp t) {
-        local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
-        struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        date::local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
+        struct tm                      tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
         tp += GetLocalTZOffset(&tmpTime, true);
         stringstream out;
-        out << format("%c", tp);
+        out << date::format("%c", tp);
         return out.str();
     }
 
@@ -149,8 +148,8 @@ namespace litecore {
                               std::optional<Timestamp> startingAt) {
         if ( !startingAt || *startingAt < Timestamp{_startTime, 0} ) {
             writeTimestamp({_startTime, 0}, out, true);
-            local_time<seconds> tp{seconds(_startTime)};
-            out << "---- Logging begins on " << format("%A %FT%TZ", tp) << " ----" << endl;
+            date::local_time<seconds> tp{seconds(_startTime)};
+            out << "---- Logging begins on " << date::format("%A %FT%TZ", tp) << " ----" << endl;
         }
 
         LogIterator::decodeTo(out, levelNames, startingAt);

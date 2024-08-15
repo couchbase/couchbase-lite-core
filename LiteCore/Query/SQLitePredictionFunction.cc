@@ -33,7 +33,7 @@ namespace litecore {
             auto name  = (const char*)sqlite3_value_text(argv[0]);
             auto model = PredictiveModel::named(name);
             if ( !model ) {
-                string msg = format("Unknown ML model name '%s'", name);
+                string msg = stringprintf("Unknown ML model name '%s'", name);
                 sqlite3_result_error(ctx, msg.c_str(), -1);
                 return;
             }

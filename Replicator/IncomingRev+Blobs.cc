@@ -60,7 +60,7 @@ namespace litecore::repl {
         req["digest"_sl] = _blob->key.digestString();
         req["docID"]     = _blob->docID;
         if ( _blob->compressible ) req["compress"_sl] = "true"_sl;
-        sendRequest(req, [=](const blip::MessageProgress& progress) {
+        sendRequest(req, [this](const blip::MessageProgress& progress) {
             //... After request is sent:
             if ( _blob != _pendingBlobs.end() ) {
                 if ( progress.state == MessageProgress::kDisconnected ) {

@@ -925,7 +925,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     REQUIRE(c4coll_getLastSequence(defaultColl) == 100);
     REQUIRE(docIDs.size() == 50);
     for ( unsigned i = 0; i < 50; i++ ) {
-        auto nextID = litecore::format("doc-%03u", i + 51);
+        auto nextID = litecore::stringprintf("doc-%03u", i + 51);
         CHECK(nextID == docIDs[i]);
     }
 }
@@ -977,7 +977,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     REQUIRE(c4coll_getLastSequence(defaultColl) == 50);
     REQUIRE(docIDs.size() == 50);
     for ( unsigned i = 0; i < 50; i++ ) {
-        auto nextID = litecore::format("doc-%03u", i + 1);
+        auto nextID = litecore::stringprintf("doc-%03u", i + 1);
         CHECK(nextID == docIDs[i]);
     }
 }

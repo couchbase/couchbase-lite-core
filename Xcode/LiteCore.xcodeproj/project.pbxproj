@@ -1246,6 +1246,7 @@
 		2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LegacyAttachments.cc; sourceTree = "<group>"; };
 		2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LegacyAttachments.hh; sourceTree = "<group>"; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
+		277911D72C6EB9200044E660 /* SQLiteDateTimeHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDateTimeHelpers.hh; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
@@ -2655,6 +2656,7 @@
 				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
 				274D17842177F212007FD01A /* QueryParser+Private.hh */,
 				275FF6661E42A90C005F90DD /* QueryParserTables.hh */,
+				277911D72C6EB9200044E660 /* SQLiteDateTimeHelpers.hh */,
 				27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */,
 				27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */,
 				27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */,

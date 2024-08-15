@@ -49,7 +49,7 @@ FilePath TestFixture::sTempDir = GetTempDirectory();
 string stringWithFormat(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    string str = vformat(format, args);
+    string str = vstringprintf(format, args);
     va_end(args);
     return str;
 }

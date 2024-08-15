@@ -26,7 +26,6 @@
 
 using namespace std;
 using namespace std::chrono;
-using namespace date;
 using namespace fleece;
 using namespace litecore::net;
 
@@ -41,11 +40,11 @@ namespace litecore::net {
     };
 
     static time_t parse_gmt_time(const char* timeStr) {
-        sys_seconds tp;
+        date::sys_seconds tp;
         // Go through each of the `dateFormats` and attempt to parse the date given
         for ( int i = 0; i < size(dateFormats); ++i ) {
             istringstream s(timeStr);
-            s >> parse(dateFormats[i].data(), tp);
+            s >> date::parse(dateFormats[i].data(), tp);
             if ( s.fail() ) {
                 // If we've failed to parse, and this is the last format in the list
                 if ( i == size(dateFormats) - 1 ) {

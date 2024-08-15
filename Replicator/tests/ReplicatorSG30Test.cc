@@ -129,8 +129,8 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Default Collection Incremental Revisions S
 
 
     Jthread jthread;
-    _callbackWhenIdle = [=, &jthread]() {
-        jthread.thread    = std::thread(std::thread{[=]() mutable {
+    _callbackWhenIdle = [this, &jthread, idPrefix]() {
+        jthread.thread    = std::thread(std::thread{[this, idPrefix]() mutable {
             const string collName = string(_collectionSpecs[0].name);
             const string docID    = idPrefix + "-" + collName + "-docko";
             ReplicatorLoopbackTest::addRevs(_collections[0], 500ms, alloc_slice(docID), 1, 10, true,
@@ -173,7 +173,7 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Pull deltas from Collection SG3.0", "[.Syn
             encPopulate.writeString(channelID);
 
             for ( int p = 0; p < kNumProps; ++p ) {
-                encPopulate.writeKey(format("field%03d", p));
+                encPopulate.writeKey(stringprintf("field%03d", p));
                 encPopulate.writeInt(std::rand());
             }
             encPopulate.endDict();
