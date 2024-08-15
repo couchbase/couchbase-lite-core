@@ -984,12 +984,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
 
         // Base json body for doc blob attachments
         std::string jsonBodyBase =
-                litecore::format("{attached: [{'%s':'%s', ", kC4ObjectTypeProperty, kC4ObjectType_Blob);
+                litecore::stringprintf("{attached: [{'%s':'%s', ", kC4ObjectTypeProperty, kC4ObjectType_Blob);
 
         TransactionHelper t(db);
         for ( unsigned i = 1; i <= 100; i++ ) {
-            std::string docID      = litecore::format("doc-%03u", i);
-            std::string attachment = litecore::format("I am blob #%03u", i);
+            std::string docID      = litecore::stringprintf("doc-%03u", i);
+            std::string attachment = litecore::stringprintf("I am blob #%03u", i);
             C4BlobKey   key;
             REQUIRE(c4blob_create(blobStore, fleece::slice(attachment), nullptr, &key, WITH_ERROR()));
             C4SliceResult     keyStr = c4blob_keyToString(key);
@@ -999,7 +999,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
                  << "', length: " << attachment.size() << ", content_type: 'text/plain'},]";
 
             // Doc body data
-            json << ", " << litecore::format(R"("n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
+            json << ", " << litecore::stringprintf(R"("n":%d, "even":%s})", i, (i % 2 ? "false" : "true"));
 
             c4slice_free(keyStr);
 
@@ -1233,7 +1233,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator with Conflicted Opti
         REQUIRE(encodedBody);
         unsigned numDocs = 0;
         for ( int i = 0; i < recordCount; ++i ) {
-            string docID = litecore::format("doc%07u", ++numDocs);
+            string docID = litecore::stringprintf("doc%07u", ++numDocs);
             // Save document:
             C4DocPutRequest rq      = {};
             rq.docID                = slice(docID);

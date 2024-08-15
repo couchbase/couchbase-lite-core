@@ -583,7 +583,7 @@ namespace litecore {
         }
         if ( !none ) {
             expired = db().exec(
-                    format("DELETE FROM %s WHERE expiration <= %" PRId64, _quotedTableName.c_str(), (int64_t)t));
+                    stringprintf("DELETE FROM %s WHERE expiration <= %" PRId64, _quotedTableName.c_str(), (int64_t)t));
         }
         db()._logInfo("Purged %u expired documents", expired);
         return expired;

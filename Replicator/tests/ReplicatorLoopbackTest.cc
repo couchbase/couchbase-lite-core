@@ -56,7 +56,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
     C4Error     error;
     alloc_slice path(c4db_getPath(db));
-    string      scratchDBName = format("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
+    string      scratchDBName = stringprintf("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
     REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
 
     // Open the copied db:
@@ -565,7 +565,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Pus
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push][Continuous]") {
-    _parallelThread.reset(runInParallel([=]() {
+    _parallelThread.reset(runInParallel([this]() {
         sleepFor(1s);
         {
             TransactionHelper t(db);
@@ -724,7 +724,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
 
     compareDatabases();
 
-    validateCheckpoints(db2, db, format("{\"remote\":%d}", kNumDocs).c_str());
+    validateCheckpoints(db2, db, stringprintf("{\"remote\":%d}", kNumDocs).c_str());
     CHECK(_blobPushProgressCallbacks == 0);
     CHECK(_blobPullProgressCallbacks >= kNumDocs * kNumBlobsPerDoc);
 }
@@ -1365,7 +1365,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
-    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(format("%07d", i));
+    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(stringprintf("%07d", i));
     auto opts            = Replicator::Options::pushing(kC4OneShot, _collSpec);
     _clientProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(opts, Replicator::Options::passive(_collSpec));
@@ -1374,7 +1374,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
-    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(format("%07d", i));
+    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(stringprintf("%07d", i));
     auto opts            = Replicator::Options::pulling(kC4OneShot, _collSpec);
     _serverProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(Replicator::Options::passive(_collSpec), opts);
@@ -1527,11 +1527,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     {
         TransactionHelper t(db);
         for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
-            string  docID = format("doc-%03d", docNo);
+            string  docID = stringprintf("doc-%03d", docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
-                enc.writeKey(format("field%03d", p));
+                enc.writeKey(stringprintf("field%03d", p));
                 enc.writeInt(RandomNumber());
             }
             enc.endDict();
@@ -1548,7 +1548,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     {
         TransactionHelper t(db);
         for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
-            string docID = format("doc-%03d", docNo);
+            string docID = stringprintf("doc-%03d", docNo);
             mutateDoc(_collDB1, slice(docID), [](Dict doc, Encoder& enc) {
                 enc.beginDict();
                 for ( Dict::iterator i(doc); i; ++i ) {

@@ -83,7 +83,7 @@ namespace litecore {
             ErrorInfo info;
             if ( format && *format ) {
                 try {
-                    info.message = vformat(format, args);
+                    info.message = vstringprintf(format, args);
                 } catch ( ... ) {}
             }
             return makeError(domain, code, std::move(info), skipStackFrames + 1);
@@ -214,7 +214,7 @@ namespace litecore {
     if ( format ) {
         va_list args;
         va_start(args, format);
-        message = vformat(format, args);
+        message = vstringprintf(format, args);
         va_end(args);
     }
     error{error::Domain(domain), code, message}._throw(1);

@@ -50,7 +50,7 @@ namespace litecore {
     }
 
     void BackgroundDB::useInTransaction(slice keyStoreName, TransactionTask task) {
-        _dataFile.useLocked([=](DataFile* dataFile) {
+        _dataFile.useLocked([this, keyStoreName, task](DataFile* dataFile) {
             if ( !dataFile ) return;
             ExclusiveTransaction t(dataFile);
             KeyStore&            keyStore = dataFile->getKeyStore(keyStoreName);

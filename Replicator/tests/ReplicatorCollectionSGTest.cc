@@ -483,11 +483,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
 
 
     Jthread jthread;
-    _callbackWhenIdle = [=, &jthread]() {
-        jthread.thread    = std::thread(std::thread{[=]() mutable {
+    _callbackWhenIdle = [this, idPrefix, &jthread]() {
+        jthread.thread    = std::thread(std::thread{[this, idPrefix]() mutable {
             for ( size_t i = 0; i < _collectionCount; ++i ) {
                 const string collName = string(_collectionSpecs[i].name);
-                const string docID    = format("%s-%s-docko", idPrefix.c_str(), collName.c_str());
+                const string docID    = stringprintf("%s-%s-docko", idPrefix.c_str(), collName.c_str());
                 ReplicatorLoopbackTest::addRevs(_collections[i], 500ms, alloc_slice(docID), 1, 10, true,
                                                    ("db-"s + collName).c_str());
             }
@@ -530,7 +530,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
                 encPopulate.writeString(channelID);
 
                 for ( int p = 0; p < kNumProps; ++p ) {
-                    encPopulate.writeKey(format("field%03d", p));
+                    encPopulate.writeKey(stringprintf("field%03d", p));
                     encPopulate.writeInt(std::rand());
                 }
                 encPopulate.endDict();
@@ -2366,7 +2366,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
 
     SECTION("Simultaneous push and pull") {
         // Push the bad rev of 2-gen and pull a good rev of 2-gen
-        _callbackWhenIdle = [=]() {
+        _callbackWhenIdle = [this]() {
             auto seq = c4coll_getLastSequence(_collections[0]);
             // seq 1 is the the good 1-gen rev
             // seq 2 is the bad 2-gen rev
@@ -2441,7 +2441,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Use isRevRejected to Resolve Confl
         bool succ      = _sg.upsertDoc(_collectionSpecs[0], string(docID), rev1, bodyOfNum(true, 2), {channelID});
         REQUIRE(succ);
 
-        _callbackWhenIdle = [=]() {
+        _callbackWhenIdle = [this]() {
             auto seq = c4coll_getLastSequence(_collections[0]);
             if ( seq == 4 ) { c4repl_stop(_repl); }
         };
@@ -2475,7 +2475,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
-                enc.writeKey(format("field%03d", p));
+                enc.writeKey(stringprintf("field%03d", p));
                 enc.writeInt(std::rand());
             }
             enc.writeKey("channels"_sl);
@@ -2588,7 +2588,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.Syn
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
-                enc.writeKey(format("field%03d", p));
+                enc.writeKey(stringprintf("field%03d", p));
                 enc.writeInt(std::rand());
             }
             enc.writeKey("channels"_sl);
@@ -2665,7 +2665,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
-                enc.writeKey(format("field%03d", p));
+                enc.writeKey(stringprintf("field%03d", p));
                 enc.writeInt(std::rand());  // NOLINT(cert-msc50-cpp)
             }
             enc.writeKey("channels"_sl);
@@ -2701,7 +2701,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "
             enc.writeString(channelID);
             enc.endArray();
             for ( int p = 0; p < kNumProps; ++p ) {
-                enc.writeKey(format("field%03d", p));
+                enc.writeKey(stringprintf("field%03d", p));
                 enc.writeInt(std::rand());  // NOLINT(cert-msc50-cpp)
             }
             enc.endDict();
@@ -2838,7 +2838,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Cop
     // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
     C4Error     error;
     alloc_slice path(c4db_getPath(db));
-    string      scratchDBName = format("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
+    string      scratchDBName = stringprintf("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
     REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
 
     // release the old db and Open the copied db:

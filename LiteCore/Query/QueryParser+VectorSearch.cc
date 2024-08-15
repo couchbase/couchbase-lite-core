@@ -108,14 +108,14 @@ namespace litecore {
                         kMaxMaxResults);
 
                 // Register a callback to write the nested SELECT in place of a table name:
-                info->writeTableSQL = [=] {
+                info->writeTableSQL = [this, tableName, params, maxResults] {
                     _sql << "(SELECT rowid, distance FROM " << sqlIdentifier(tableName) << " WHERE ";
                     writeVectorMatchExpression(params, "", tableName);
                     _sql << " LIMIT " << maxResults << ")";
                 };
             } else {
                 // In a hybrid query, add the MATCH condition to the JOIN's ON clause:
-                info->writeExtraOnSQL = [=] {
+                info->writeExtraOnSQL = [this, params, info, tableName] {
                     _sql << " AND ";
                     writeVectorMatchExpression(params, info->alias, tableName);
                 };

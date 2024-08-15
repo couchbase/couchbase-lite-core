@@ -78,7 +78,7 @@ namespace litecore {
                             throw Query::parseError("N1QL syntax error", errPos);
                         } else if ( !hasKeyCaseEquivalent((MutableDict*)result, "from") ) {
                             throw error(error::LiteCore, error::InvalidQuery,
-                                        format("%s", "N1QL error: missing the FROM clause"));
+                                        stringprintf("%s", "N1QL error: missing the FROM clause"));
                         }
                         _json = ((MutableDict*)result)->toJSON(true);
                         logVerbose("N1QL query translated to: %.*s", SPLAT(_json));

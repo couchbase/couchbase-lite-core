@@ -667,7 +667,7 @@ TEST_CASE("CanonicalPath") {
     startPath = u8"C:\\日本語\\";
     endPath   = startPath;
 #else
-    startPath = tmpPath + u8"日本語";
+    startPath = tmpPath + (const char*)u8"日本語";
     ::mkdir(startPath.c_str(), 777);
     endPath = startPath;
 #    if __APPLE__ && !TARGET_OS_IPHONE

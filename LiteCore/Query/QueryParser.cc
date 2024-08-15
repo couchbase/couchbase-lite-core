@@ -68,7 +68,7 @@ namespace litecore {
         void fail(const char* format, ...) {
             va_list args;
             va_start(args, format);
-            string message = vformat(format, args);
+            string message = vstringprintf(format, args);
             va_end(args);
 
             Warn("Invalid LiteCore query: %s", message.c_str());
@@ -986,7 +986,7 @@ namespace litecore {
                     }
                 }
                 if ( title.empty() ) {
-                    title = format("$%u", ++anonCount);  // default for non-properties
+                    title = stringprintf("$%u", ++anonCount);  // default for non-properties
                 } else if ( title == "*" ) {
                     title = _dbAlias;
 
@@ -1027,7 +1027,7 @@ namespace litecore {
             string   uniqueTitle = title;
             unsigned dup         = 2;
             while ( find(_columnTitles.begin(), _columnTitles.end(), uniqueTitle) != _columnTitles.end() )
-                uniqueTitle = title + format(" #%u", dup++);
+                uniqueTitle = title + stringprintf(" #%u", dup++);
             _columnTitles.push_back(uniqueTitle);
         }
     }
@@ -1712,7 +1712,7 @@ namespace litecore {
         bool postCondition = (iType != _aliases.end());
         if ( !postCondition ) {
             string message =
-                    format("property '%s' does not begin with a declared 'AS' alias", string(property).c_str());
+                    stringprintf("property '%s' does not begin with a declared 'AS' alias", string(property).c_str());
             if ( error == nullptr ) {
                 fail("%s", message.c_str());
                 // no-return

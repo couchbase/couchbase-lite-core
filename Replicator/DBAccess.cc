@@ -437,10 +437,10 @@ namespace litecore::repl {
                     C4CollectionSpec coll       = rev->collectionSpec;
                     C4Collection*    collection = idb->getCollection(coll);
                     if ( collection == nullptr ) {
-                        C4Error::raise(
-                                LiteCoreDomain, kC4ErrorNotOpen, "%s",
-                                format("Failed to find collection '%*s.%*s'.", SPLAT(coll.scope), SPLAT(coll.name))
-                                        .c_str());
+                        C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen, "%s",
+                                       stringprintf("Failed to find collection '%*s.%*s'.", SPLAT(coll.scope),
+                                                    SPLAT(coll.name))
+                                               .c_str());
                     }
                     logDebug("Marking rev '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
                              SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),

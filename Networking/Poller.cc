@@ -121,7 +121,7 @@ namespace litecore::net {
     }
 
     Poller& Poller::start() {
-        _thread = thread([=] {
+        _thread = thread([this] {
             SetThreadName("CBL Networking");
             while ( poll() )
                 ;
