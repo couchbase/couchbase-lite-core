@@ -69,11 +69,11 @@ namespace litecore::qt {
 
     /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {
-        ParseContext(Arena& a) : arena(a) {}
+        ParseContext(Arena<>& a) : arena(a) {}
 
         ParseContext(ParseContext const& parent) : arena(parent.arena){};
 
-        Arena&                                   arena;                    // The arena allocator
+        Arena<>&                                 arena;                    // The arena allocator
         SelectNode* C4NULLABLE                   select{};                 // The enclosing SELECT, if any
         std::unordered_map<string, AliasedNode*> aliases;                  // All of the sources & named results
         std::vector<SourceNode*>                 sources;                  // All sources
@@ -86,7 +86,7 @@ namespace litecore::qt {
 
     /** Top-level Context that provides an Arena, and destructs all Nodes in its destructor. */
     struct RootContext
-        : Arena
+        : Arena<>
         , public ParseContext {
         RootContext();
     };

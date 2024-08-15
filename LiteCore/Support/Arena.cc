@@ -13,145 +13,89 @@
 #include "Arena.hh"
 #include "Error.hh"
 #include <cstring>
-#include <numeric>
 
 using namespace std;
 
 namespace litecore {
 
-    /*
-     A FixedArena allocates a single block from the malloc heap.
-     - Blocks are allocated starting from the lowest address.
-     - For every block, a single byte is reserved starting from the highest address.
-       The block's size is stored in this byte. (Yes, this does limit blocks to 255 bytes...)
-     - Blocks can be iterated by walking forwards from the start of the arena, while reading the sizes starting from
-       the back.
+    [[maybe_unused]] FLCONST static inline bool validAlignment(size_t alignment) {
+        return alignment > 0 && (alignment & (alignment - 1)) == 0;  // alignment must be power of 2
+    }
 
-     The Arena class simply creates one or more FixedArenas. When it runs out of space it allocates a new one.
-     */
+    FLCONST static inline uint8_t* align(uint8_t* ptr, size_t alignment) {
+        return reinterpret_cast<uint8_t*>((uintptr_t(ptr) + alignment - 1) & ~(alignment - 1));
+    }
 
 #pragma mark - FIXED ARENA:
 
-    FixedArena::FixedArena(size_t capacity, size_t alignment, bool iterable)
-        : _heap(new uint8_t[capacity])
-        , _sizes(&_heap[capacity])
-        , _heapEnd(_sizes)
-        , _nextBlock(&_heap[0])
-        , _alignment(alignment)
-        , _iterable(iterable) {
-        DebugAssert(alignment > 0 && (alignment & (alignment - 1)) == 0);  // alignment must be power of 2
-        Assert((uintptr_t(_heap.get()) & (alignment - 1)) == 0, "FixedArena heap isn't aligned");
-        // NOTE: There are ways to allocate `_heap` and enforce the right alignment,
-        // but none of the ways I tried (std::aligned_alloc, std::align_val_t) worked with MSVC.
-    }
+    FixedArena::FixedArena(size_t capacity)
+        : _heap(new uint8_t[capacity]), _heapEnd(&_heap[capacity]), _free(_heap.get()), _sentinel(_heapEnd) {}
 
-    size_t FixedArena::blockCount() const {
-        Assert(_iterable);
-        return _sizes - _heapEnd;
-    }
-
-    void* FixedArena::alloc(size_t size) {
-        size = (size + _alignment - 1) & ~(_alignment - 1);  // Bump size to ensure next block will be aligned
-        uint8_t* result  = _nextBlock;
+    void* FixedArena::alloc(size_t size, size_t alignment) noexcept {
+        DebugAssert(validAlignment(alignment));
+        uint8_t* result  = align(_free, alignment);
         uint8_t* newNext = result + size;
-        if ( _iterable ) {
-            if ( size > 0xFF ) {
-                DebugAssert(size <= 0xFF);
-                return nullptr;
-            }
-            if ( _usuallyFalse(newNext >= _heapEnd) ) return nullptr;  // overflow!
-            *--_heapEnd = uint8_t(size);                               // Store block size
-        } else {
-            if ( _usuallyFalse(newNext > _heapEnd) ) return nullptr;  // overflow!
-        }
-        _nextBlock = newNext;
+        if ( _usuallyFalse(newNext > _sentinel) ) return nullptr;  // overflow!
+        _free = newNext;
         return result;
     }
 
-    void* FixedArena::calloc(size_t size) {
-        auto block = alloc(size);
-        if ( _usuallyTrue(block != nullptr) ) memset(block, 0, size);
-        return block;
-    }
-
-    void* FixedArena::lastBlock() const {
-        Assert(_iterable);
-        if ( _usuallyFalse(_nextBlock == _heap.get()) ) return nullptr;
-        return _nextBlock - *_heapEnd;
-    }
-
-    bool FixedArena::free(void* block) {
-        if ( _iterable && block == lastBlock() ) {
-            _nextBlock = static_cast<uint8_t*>(block);
-            ++_heapEnd;  // pop the block's size
-            return true;
-        } else {
-            DebugAssert(block == nullptr || contains(block));
-            return false;
-        }
-    }
-
-    void FixedArena::eachBlock(fleece::function_ref<void(void*, size_t)> const& callback) {
-        Assert(_iterable);
-        uint8_t* block = _heap.get();
-        for ( uint8_t* sizep = _sizes - 1; sizep >= _heapEnd; --sizep ) {
-            DebugAssert(block + *sizep <= _heapEnd);
-            callback(block, *sizep);
-            block += *sizep;
-        }
-    }
-
-#pragma mark - ARENA:
-
-    Arena::Arena(size_t chunkSize, size_t alignment, bool iterable)
-        : _chunkSize(chunkSize), _alignment(alignment), _iterable(iterable) {
-        _chunks.emplace_back(_chunkSize, _alignment, _iterable);
-    }
-
-    void* Arena::alloc(size_t size) {
-        for ( auto i = _chunks.rbegin(); i != _chunks.rend(); ++i ) {
-            if ( i->available() >= size ) {
-                if ( void* result = i->alloc(size) ) return result;
-            }
-        }
-        _chunks.emplace_back(std::max(_chunkSize, size + 1), _alignment);
-        return _chunks.back().alloc(size);
-    }
-
-    bool Arena::free(void* block) {
-        for ( auto i = _chunks.rbegin(); i != _chunks.rend(); ++i ) {
-            if ( i->contains(block) ) return i->free(block);
-        }
+    bool FixedArena::free(void* block) noexcept {
+        DebugAssert(block == nullptr || contains(block));
         return false;
     }
 
-    void Arena::freeAll(bool freeChunks) {
-        if ( freeChunks ) _chunks.erase(_chunks.begin() + 1, _chunks.end());
-        for ( auto& chunk : _chunks ) chunk.freeAll();
+    void FixedArena::freeToMark(Marker* mark) {
+        Assert(contains(mark));
+        _free = reinterpret_cast<uint8_t*>(mark);
     }
 
-    void Arena::eachBlock(fleece::function_ref<void(void*, size_t)> const& callback) {
-        for ( auto& chunk : _chunks ) chunk.eachBlock(callback);
+#pragma mark - ITERABLE:
+
+    /*
+     An IterableFixedArena saves the block sizes as a byte array that grows _downward_ from the end of the heap.
+     The `_sentinel` always points to the last (lowest) size, which is that latest (highest) block's.
+     */
+
+    size_t IterableFixedArena::blockCount() const noexcept { return _heapEnd - _sentinel; }
+
+    void* IterableFixedArena::alloc(size_t size, size_t alignment) noexcept {
+        if ( _usuallyFalse(size > 0xFF) ) {
+            DebugAssert(size <= 0xFF);
+            return nullptr;
+        }
+        DebugAssert(validAlignment(alignment));
+
+        uint8_t* result  = align(_free, alignment);
+        uint8_t* newNext = result + size;
+        if ( _usuallyFalse(newNext >= _sentinel) ) return nullptr;  // overflow! (leaving space for size byte)
+        if ( size_t adjust = result - _free; adjust > 0 && _sentinel < _heapEnd ) {
+            // increase prev block's stored size to account for the gap before the new block:
+            if ( size_t(*_sentinel) + adjust > 0xFF ) return nullptr;  // can't bump its size; give up
+            *_sentinel += adjust;
+        }
+        *--_sentinel = uint8_t(size);  // Store block size
+        _free        = newNext;
+        return result;
     }
 
-    size_t Arena::blockCount() const {
-        return std::accumulate(_chunks.begin(), _chunks.end(), 0,
-                               [](auto sum, auto& chunk) { return sum + chunk.blockCount(); });
+    bool IterableFixedArena::free(void* block) noexcept {
+        if ( _sentinel < _heapEnd && block == _free - *_sentinel ) {
+            _free = static_cast<uint8_t*>(block);
+            ++_sentinel;  // pop the block's size
+            return true;
+        } else {
+            return FixedArena::free(block);
+        }
     }
 
-    size_t Arena::capacity() const {
-        return std::accumulate(_chunks.begin(), _chunks.end(), 0,
-                               [](auto sum, auto& chunk) { return sum + chunk.capacity(); });
-    }
-
-    size_t Arena::allocated() const {
-        return std::accumulate(_chunks.begin(), _chunks.end(), 0,
-                               [](auto sum, auto& chunk) { return sum + chunk.allocated(); });
-    }
-
-    size_t Arena::available() const {
-        return std::accumulate(_chunks.begin(), _chunks.end(), 0,
-                               [](auto sum, auto& chunk) { return sum + chunk.available(); });
+    void IterableFixedArena::eachBlock(fleece::function_ref<void(void*, size_t)> const& callback) {
+        uint8_t* block = _free;
+        for ( uint8_t* sizep = _sentinel; sizep < _heapEnd; ++sizep ) {
+            block -= *sizep;
+            DebugAssert(block >= _heap.get());
+            callback(block, *sizep);
+        }
     }
 
 }  // namespace litecore

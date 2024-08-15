@@ -17,7 +17,7 @@ namespace litecore::qt {
 
     const char* ParseContext::newString(string_view sv) {
         auto len = sv.size();
-        auto str = (char*)arena.alloc(len + 1);
+        auto str = (char*)arena.alloc(len + 1, 1);
         memcpy(str, sv.data(), len);
         str[len] = '\0';
         return str;
@@ -27,9 +27,9 @@ namespace litecore::qt {
     // Typical queries only allocate a few KB, not enough to fill a single chunk.
     static constexpr size_t kArenaChunkSize = 4000;
 
-    RootContext::RootContext() : Arena(kArenaChunkSize, alignof(Node)), ParseContext(*static_cast<Arena*>(this)) {}
+    RootContext::RootContext() : Arena(kArenaChunkSize), ParseContext(*static_cast<Arena*>(this)) {}
 
-    void* Node::operator new(size_t size, ParseContext& ctx) noexcept { return ctx.arena.alloc(size); }
+    void* Node::operator new(size_t size, ParseContext& ctx) noexcept { return ctx.arena.alloc(size, alignof(Node)); }
 
     void Node::operator delete(void* ptr, ParseContext& ctx) noexcept { ctx.arena.free(ptr); }
 
