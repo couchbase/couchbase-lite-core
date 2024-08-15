@@ -247,9 +247,7 @@ namespace litecore::qt {
         }
     }
 
-    void LiteralNode::setInt(int64_t i) {
-        _literal = i;
-    }
+    void LiteralNode::setInt(int64_t i) { _literal = i; }
 
     MetaNode::MetaNode(Array::iterator& args, ParseContext& ctx) {
         if ( args.count() == 0 ) {
