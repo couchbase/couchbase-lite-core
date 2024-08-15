@@ -130,7 +130,7 @@ namespace litecore {
         virtual fleece::impl::ArrayIterator columns() const noexcept        = 0;
         virtual uint64_t                    missingColumns() const noexcept = 0;
 
-        bool isColumnMissing(unsigned col) const { return (missingColumns() & (1 << col)) != 0; }
+        bool isColumnMissing(unsigned col) const { return (missingColumns() & (1ull << col)) != 0; }
 
         /** Random access to rows. May not be supported by all implementations, but does work with
             the current SQLite query implementation. */

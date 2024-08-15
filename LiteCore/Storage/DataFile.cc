@@ -18,9 +18,10 @@
 #include "fleece/RefCounted.hh"
 #include "Stopwatch.hh"
 #include "Instrumentation.hh"
+#include <algorithm>
 #include <cerrno>
 #include <dirent.h>
-#include <algorithm>
+#include <exception>
 #include <iomanip>
 #include <thread>
 
@@ -414,7 +415,7 @@ namespace litecore {
 
     ExclusiveTransaction::~ExclusiveTransaction() {
         if ( _active ) {
-            if ( !std::uncaught_exception() )
+            if ( !std::uncaught_exceptions() )
                 _db._logInfo("Transaction exiting scope without explicit commit; aborting");
             abort();
         }
