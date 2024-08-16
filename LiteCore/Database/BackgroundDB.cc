@@ -88,7 +88,7 @@ namespace litecore {
 
     void BackgroundDB::removeTransactionObserver(TransactionObserver* obs) {
         LOCK(_transactionObserversMutex);
-        auto i = std::find(_transactionObservers.begin(), _transactionObservers.end(), obs);
+        auto i = ranges::find(_transactionObservers, obs);
         if ( i != _transactionObservers.end() ) _transactionObservers.erase(i);
     }
 

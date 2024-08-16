@@ -83,7 +83,7 @@ namespace litecore::legacy_attachments {
         Encoder enc;
         enc.setSharedKeys(sk);
         enc.writeValue(root, [&](const Value* key, const Value* value) {
-            if ( removeThese.find(value) != removeThese.end() ) {
+            if ( removeThese.contains(value)) {
                 // remove this entirely
                 return true;
             }

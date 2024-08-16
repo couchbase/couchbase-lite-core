@@ -290,7 +290,7 @@ namespace litecore {
         bool isRevRejected() override {
             mustLoadRevisions();
             std::vector<const Rev*> rejected = _revTree.getRejectedRevs();
-            return std::find(rejected.begin(), rejected.end(), _selectedRev) != rejected.end();
+            return ranges::find(rejected, _selectedRev) != rejected.end();
         }
 
         void revIsRejected(slice revID) override {
