@@ -203,7 +203,7 @@ namespace litecore {
                     case 'p':
                         {
                             size_t param = va_arg(args, size_t);
-                            if ( sizeof(param) == 8 ) param = fleece::endian::encLittle64(param);
+                            if constexpr ( sizeof(param) == 8 ) param = fleece::endian::encLittle64(param);
                             else
                                 param = fleece::endian::encLittle32((uint32_t)param);
                             _writer.write(&param, sizeof(param));
