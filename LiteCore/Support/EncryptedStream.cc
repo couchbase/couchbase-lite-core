@@ -83,7 +83,7 @@ namespace litecore {
 
     void EncryptedWriteStream::writeBlock(slice plaintext, bool finalBlock) {
         DebugAssert(plaintext.size <= kFileBlockSize, "Block is too large");
-        uint64_t iv[2] = {0, endian::enc64(_blockID)};
+        uint64_t iv[2] = {0, fleece::endian::enc64(_blockID)};
         ++_blockID;
         uint8_t       cipherBuf[kFileBlockSize + kAESBlockSize];
         mutable_slice ciphertext(cipherBuf, sizeof(cipherBuf));
@@ -158,7 +158,7 @@ namespace litecore {
         if ( finalBlock ) readSize = (size_t)(_inputLength - (_blockID * kFileBlockSize));  // don't read trailer
         size_t bytesRead = _input->read(blockBuf, readSize);
 
-        uint64_t iv[2] = {0, endian::enc64(_blockID)};
+        uint64_t iv[2] = {0, fleece::endian::enc64(_blockID)};
         ++_blockID;
         size_t outputSize = AES256(false, slice(_key, sizeof(_key)), slice(iv, sizeof(iv)), finalBlock, output,
                                    slice(blockBuf, bytesRead));

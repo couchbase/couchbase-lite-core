@@ -16,7 +16,6 @@
 #include "varint.hh"
 #include "NumConversion.hh"
 
-using namespace std;
 using namespace fleece;
 
 namespace litecore {
@@ -52,7 +51,7 @@ namespace litecore {
         unsigned count = rawRev->count();
         if ( count > UINT16_MAX )
             error::_throw(error::CorruptRevisionData, "RawRevision decodeTree reading count error");
-        deque<Rev> revs(count);
+        std::deque<Rev> revs(count);
         auto       rev = revs.begin();
         for ( ; rawRev->isValid(); rawRev = rawRev->next() ) {
             rawRev->copyTo(*rev, revs);
@@ -92,7 +91,7 @@ namespace litecore {
         return revs;
     }
 
-    alloc_slice RawRevision::encodeTree(const vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap,
+    alloc_slice RawRevision::encodeTree(const std::vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap,
                                         const std::vector<const Rev*>& rejectedRevs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
@@ -164,7 +163,7 @@ namespace litecore {
         return (RawRevision*)offsetby(this, narrow_cast<ptrdiff_t>(revSize));
     }
 
-    void RawRevision::copyTo(Rev& dst, const deque<Rev>& revs) const {
+    void RawRevision::copyTo(Rev& dst, const std::deque<Rev>& revs) const {
         const void* end       = this->next();
         dst._hasInsertedRevID = false;
         dst._hasInsertedBody  = false;
