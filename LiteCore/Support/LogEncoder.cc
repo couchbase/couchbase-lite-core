@@ -94,7 +94,7 @@ namespace litecore {
         // Write object path
         const auto objRef = (unsigned)object;
         _writeUVarInt(objRef);
-        if ( object != ObjectRef::None && !_seenObjects.contains(objRef)) {
+        if ( object != ObjectRef::None && !_seenObjects.contains(objRef) ) {
             _seenObjects.insert(objRef);
             auto objPath = LogDomain::getObjectPath(objRef, objectMap);
             if ( objPath.empty() ) {

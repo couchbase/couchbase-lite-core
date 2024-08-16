@@ -628,7 +628,7 @@ namespace litecore {
             auto               iter = sObjectMap.find(object);
             if ( iter == sObjectMap.end() ) {
                 warningCode = kNotRegistered;
-            } else if (!sObjectMap.contains(parentObject)) {
+            } else if ( !sObjectMap.contains(parentObject) ) {
                 warningCode = kParentNotRegistered;
             } else if ( iter->second.second != 0 ) {
                 warningCode = kAlreadyRegistered;

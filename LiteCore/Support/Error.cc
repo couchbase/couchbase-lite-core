@@ -197,8 +197,7 @@ namespace litecore {
             {fleece::PathSyntaxError, error::LiteCore, error::InvalidQuery}};
 
     __cold static bool mapError(error::Domain& domain, int& code, const std::vector<codeMapping>& table) {
-        const auto row =
-                ranges::find_if(table, [&code](const codeMapping& cm) { return cm.err == code; });
+        const auto row = ranges::find_if(table, [&code](const codeMapping& cm) { return cm.err == code; });
         if ( row != table.end() ) {
             domain = row->domain;
             code   = row->code;
@@ -259,8 +258,7 @@ namespace litecore {
                 "can't apply document delta: base revision body unavailable",
                 "can't apply document delta: format is invalid",
         };
-        static_assert(std::size(kLiteCoreMessages) == error::NumLiteCoreErrorsPlus1,
-                      "Incomplete error message table");
+        static_assert(std::size(kLiteCoreMessages) == error::NumLiteCoreErrorsPlus1, "Incomplete error message table");
         const char* str = nullptr;
         if ( code < sizeof(kLiteCoreMessages) / sizeof(char*) ) str = kLiteCoreMessages[code];
         if ( !str ) str = "(unknown LiteCoreError)";
@@ -406,8 +404,7 @@ namespace litecore {
         // Indexed by Domain
         static const char* kDomainNames[] = {"0",      "LiteCore", "POSIX",     "SQLite",
                                              "Fleece", "Network",  "WebSocket", "mbedTLS"};
-        static_assert(std::size(kDomainNames) == error::NumDomainsPlus1,
-                      "Incomplete domain name table");
+        static_assert(std::size(kDomainNames) == error::NumDomainsPlus1, "Incomplete domain name table");
 
         if ( domain >= NumDomainsPlus1 ) return "INVALID_DOMAIN";
         return kDomainNames[domain];
