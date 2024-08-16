@@ -188,7 +188,7 @@ namespace litecore {
 
     unsigned Rev::index() const {
         auto& revs = owner->_revs;
-        auto  i    = find(revs.begin(), revs.end(), this);
+        auto  i    = std::ranges::find(revs, this);
         Assert(i != revs.end());
         return (unsigned)(i - revs.begin());
     }
@@ -559,7 +559,7 @@ namespace litecore {
 
     void RevTree::sort() {
         if ( _sorted ) return;
-        std::sort(_revs.begin(), _revs.end(), &compareRevs);
+        std::ranges::sort(_revs, &compareRevs);
         _sorted = true;
         checkForResolvedConflict();
     }
@@ -570,7 +570,7 @@ namespace litecore {
     }
 
     bool RevTree::hasNewRevisions() const {
-        return std::any_of(_revs.begin(), _revs.end(), [](Rev* rev) { return rev->isNew() || rev->sequence == 0_seq; });
+        return std::ranges::any_of(_revs, [](Rev* rev) { return rev->isNew() || rev->sequence == 0_seq; });
     }
 
     void RevTree::saved(sequence_t newSequence) {
@@ -583,12 +583,12 @@ namespace litecore {
 #pragma mark - ETC.
 
     bool RevTree::isLatestRemoteRevision(const Rev* rev) const {
-        return std::any_of(_remoteRevs.begin(), _remoteRevs.end(), [&rev](auto& r) { return r.second == rev; });
+        return std::ranges::any_of(_remoteRevs, [&rev](auto& r) { return r.second == rev; });
     }
 
     void RevTree::revIsRejected(const Rev* rev) {
         Assert(rev);
-        if ( std::find(_rejectedRevs.begin(), _rejectedRevs.end(), rev) == _rejectedRevs.end() ) {
+        if ( std::ranges::find(_rejectedRevs, rev) == _rejectedRevs.end() ) {
             _rejectedRevs.push_back(rev);
             _changed = true;
         }

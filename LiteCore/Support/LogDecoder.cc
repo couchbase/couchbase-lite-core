@@ -133,7 +133,7 @@ namespace litecore {
             _putCurObjectInMessage = true;
             _curObject             = readUVarInt();
             if ( _curObject != 0 ) {
-                if ( _objects.find(_curObject) == _objects.end() ) {
+                if (!_objects.contains(_curObject)) {
                     _objects.insert({_curObject, readCString()});
                     _curObjectIsNew = true;
                 }

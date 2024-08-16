@@ -2609,7 +2609,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     const Value* dict = e->columns()[0];
     REQUIRE(dict->type() == kDict);
     string dictJson = dict->toJSON().asString();
-    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
+    ranges::transform(dictJson, dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
 
     string collectionAlias = collectionName;
@@ -2622,7 +2622,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     dict = e->columns()[0];
     REQUIRE(dict->type() == kDict);
     dictJson = dict->toJSON().asString();
-    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
+    ranges::transform(dictJson, dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
 
     query = store->compileQuery(string("SELECT meta().id FROM ") + collectionName, QueryLanguage::kN1QL);
@@ -2849,7 +2849,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
                                                                                                 && v->type() == kNumber
                                                                                                 && v->asDouble() == 10;
                                                                                      }}};
-    size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
+    size_t testCaseCount = std::size(testCases);
     string queryStr      = "select ";
     queryStr += std::get<0>(testCases[0]);
     for ( unsigned i = 1; i < testCaseCount; ++i ) { (queryStr += ", ") += std::get<0>(testCases[i]); }

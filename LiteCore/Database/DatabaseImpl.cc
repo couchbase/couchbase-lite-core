@@ -525,7 +525,7 @@ namespace litecore {
         // CBL-3298: Final fallback to detect scopes added in another handle
         auto allStores = _dataFile->allKeyStoreNames();
 
-        return std::any_of(allStores.begin(), allStores.end(), [&name](const std::string& store) {
+        return ranges::any_of(allStores, [&name](const std::string& store) {
             auto spec = keyStoreNameToCollectionSpec(slice(store));
             return spec.scope == name;
         });
