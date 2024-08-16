@@ -52,7 +52,7 @@ namespace litecore {
         if ( count > UINT16_MAX )
             error::_throw(error::CorruptRevisionData, "RawRevision decodeTree reading count error");
         std::deque<Rev> revs(count);
-        auto       rev = revs.begin();
+        auto            rev = revs.begin();
         for ( ; rawRev->isValid(); rawRev = rawRev->next() ) {
             rawRev->copyTo(*rev, revs);
             if ( rev->sequence == 0_seq ) rev->sequence = curSeq;

@@ -171,10 +171,10 @@ namespace litecore {
     extern LogDomain                  DBLog, QueryLog, SyncLog, &ActorLog;
 
 
-#define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                           \
-    do {                                                                                                           \
-        if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                          \
-            (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                           \
+#define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                               \
+    do {                                                                                                               \
+        if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                              \
+            (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                               \
     } while ( 0 )
 
 #define LogTo(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)

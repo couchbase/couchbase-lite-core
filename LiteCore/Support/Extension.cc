@@ -107,8 +107,7 @@ bool litecore::extension::check_extension_version(const string& extensionPath, i
     }
 
     string lowerCaseExtName = extensionName;
-    ranges::transform(lowerCaseExtName, lowerCaseExtName.begin(),
-                      [](unsigned char c) { return tolower(c); });
+    ranges::transform(lowerCaseExtName, lowerCaseExtName.begin(), [](unsigned char c) { return tolower(c); });
     version_number_func version_number_f =
             (version_number_func)get_function(libHandle, lowerCaseExtName, "_version_number");
     if ( !version_number_f ) {
