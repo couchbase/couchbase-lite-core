@@ -71,10 +71,15 @@ namespace litecore {
         string::size_type pos, next;
         for ( pos = 0; pos < end; pos = next + separator.size() ) {
             next = str.find(separator, pos);
-            if ( next == string::npos ) break;
+            if ( next == string::npos ) next = end;
             callback(str.substr(pos, next - pos));
         }
-        callback(str.substr(pos));
+    }
+
+    std::vector<std::string_view> split(std::string_view str, std::string_view separator) {
+        vector<string_view> strings;
+        split(str, separator, [&](string_view s) { strings.push_back(s); });
+        return strings;
     }
 
     stringstream& join(stringstream& s, const std::vector<std::string>& strings, const char* separator) {

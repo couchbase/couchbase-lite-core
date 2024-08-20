@@ -55,6 +55,8 @@ namespace litecore {
 
     void split(std::string_view str, std::string_view separator, fleece::function_ref<void(std::string_view)> callback);
 
+    std::vector<std::string_view> split(std::string_view str, std::string_view separator);
+
     /** Returns the strings in the vector concatenated together,
         with the separator (if non-null) between them. */
     std::string join(const std::vector<std::string>&, const char* separator = nullptr);
