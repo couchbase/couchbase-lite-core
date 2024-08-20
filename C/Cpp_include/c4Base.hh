@@ -74,7 +74,7 @@ namespace litecore {
 
     namespace REST {
         class Listener;
-        class RESTListener;
+        class HTTPListener;
     }  // namespace REST
 
     namespace websocket {

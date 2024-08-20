@@ -466,6 +466,7 @@ namespace litecore::websocket {
                 status.reason = kPOSIXError;
             else if ( err.domain == NetworkDomain )
                 status.reason = kNetworkError;
+            logError("closeWithError %s", err.description().c_str());
             onClose(status);
         }
         _selfRetain = nullptr;  // allow myself to be freed now

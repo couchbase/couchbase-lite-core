@@ -22,7 +22,8 @@
 #include <memory>
 #include <thread>
 #include <vector>
-#include <regex>
+
+#ifdef COUCHBASE_ENTERPRISE
 
 namespace sockpp {
     class acceptor;
@@ -69,14 +70,24 @@ namespace litecore::REST {
         /** Extra HTTP headers to add to every response. */
         void setExtraHeaders(const std::map<std::string, std::string>& headers);
 
+        /** Defines an API version for a handler.
+            Requests bearing an incompatible major version in their API-Version header fail. */
+        struct APIVersion {
+            uint8_t           major = 1, minor = 0;
+            static APIVersion parse(std::string_view);
+        };
+
+        static constexpr APIVersion V1{1, 0};
+
+
         /** A function that handles a request. */
         using Handler = std::function<void(RequestResponse&)>;
 
         /** Registers a handler function for a URI pattern.
-            Patterns use glob syntax: <http://man7.org/linux/man-pages/man7/glob.7.html>
-            Multiple patterns can be joined with a "|".
+            A pattern looks like a path, where "*" can be used as a path component to denote any
+            name that doesn't start with "_".
             Patterns are tested in the order the handlers are added, and the first match is used.*/
-        void addHandler(net::Methods, const std::string& pattern, const Handler&);
+        void addHandler(net::Methods, std::string_view pattern, APIVersion, Handler);
 
         int connectionCount() { return _connectionCount; }
 
@@ -84,14 +95,14 @@ namespace litecore::REST {
         struct URIRule {
             net::Methods methods;
             std::string  pattern;
-            std::regex   regex;
+            APIVersion   version;
             Handler      handler;
         };
 
         URIRule* findRule(net::Method method, const std::string& path);
         ~Server() override;
 
-        void dispatchRequest(RequestResponse*);
+        void dispatchRequest(RequestResponse&);
 
       private:
         void awaitConnection();
@@ -109,3 +120,5 @@ namespace litecore::REST {
     };
 
 }  // namespace litecore::REST
+
+#endif

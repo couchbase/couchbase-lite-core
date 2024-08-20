@@ -14,5 +14,5 @@
 // NOTE: RESTSyncListener.cc is not in this repo, and is not open source.
 // It is part of Couchbase Lite Enterprise Edition (EE), which can be licensed in binary form
 // from Couchbase.
-#    include "../../../couchbase-lite-core-EE/Listener/RESTSyncListener.cc"
+#    include "../../../couchbase-lite-core-EE/Listener/SyncListener.cc"
 #endif

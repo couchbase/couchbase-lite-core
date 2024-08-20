@@ -64,6 +64,8 @@ alloc_slice C4Query::fullTextMatched(const C4FullTextMatch& term) {
     return _query->getMatchedText((Query::FullTextTerm&)term);
 }
 
+const set<string>& C4Query::parameterNames() const noexcept { return _query->parameterNames(); }
+
 alloc_slice C4Query::parameters() const noexcept {
     LOCK(_mutex);
     return _parameters;

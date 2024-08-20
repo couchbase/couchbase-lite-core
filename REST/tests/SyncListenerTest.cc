@@ -42,7 +42,6 @@ class C4SyncListenerTest
 
     static constexpr C4ListenerConfig kConfig = [] {
         C4ListenerConfig config = {};
-        config.apis             = kC4SyncAPI;
         config.allowPush = config.allowPull = true;
         return config;
     }();

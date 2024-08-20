@@ -11,10 +11,13 @@
 //
 
 #include "Listener.hh"
+#include "DatabasePool.hh"
 #include "c4Database.hh"
 #include "c4ListenerInternal.hh"
+#include "c4Private.h"  // for _c4db_setDatabaseTag
 #include "Error.hh"
-#include <vector>
+
+#ifdef COUCHBASE_ENTERPRISE
 
 using namespace std;
 using namespace fleece;
@@ -57,8 +60,9 @@ namespace litecore::REST {
             error::_throw(error::InvalidParameter, "Invalid name for sharing a database");
         }
         lock_guard<mutex> lock(_mutex);
-        if ( _databases.find(*name) != _databases.end() ) return false;
-        _databases.emplace(*name, db);
+        if ( _databases.contains(*name) ) return false;
+        auto [i, added] = _databases.emplace(*name, new DatabasePool(db));
+        i->second->onOpen([](C4Database* db) { _c4db_setDatabaseTag(db, DatabaseTag_RESTListener); });
         return true;
     }
 
@@ -77,7 +81,7 @@ namespace litecore::REST {
     bool Listener::unregisterDatabase(C4Database* db) {
         lock_guard<mutex> lock(_mutex);
         for ( auto i = _databases.begin(); i != _databases.end(); ++i ) {
-            if ( i->second == db ) {
+            if ( i->second->sameAs(db) ) {
                 _databases.erase(i);
                 return true;
             }
@@ -116,19 +120,30 @@ namespace litecore::REST {
         return false;
     }
 
-    Retained<C4Database> Listener::databaseNamed(const string& name) const {
-        lock_guard<mutex> lock(_mutex);
-        auto              i = _databases.find(name);
+    DatabasePool* Listener::_databasePoolNamed(const std::string& name) const {
+        auto i = _databases.find(name);
         if ( i == _databases.end() ) return nullptr;
-        // Retain the database to avoid a race condition if it gets unregistered while this
-        // thread's handler is still using it.
         return i->second;
+    }
+
+    optional<FilePath> Listener::pathOfDatabaseNamed(const std::string& name) {
+        lock_guard<mutex> lock(_mutex);
+        if ( auto pool = _databasePoolNamed(name) ) return pool->databasePath();
+        else
+            return nullopt;
+    }
+
+    BorrowedDatabase Listener::databaseNamed(const string& name, bool writeable) const {
+        lock_guard<mutex> lock(_mutex);
+        if ( auto pool = _databasePoolNamed(name) ) return writeable ? pool->borrowWriteable() : pool->borrow();
+        else
+            return {};
     }
 
     optional<string> Listener::nameOfDatabase(C4Database* db) const {
         lock_guard<mutex> lock(_mutex);
-        for ( auto& [aName, aDB] : _databases )
-            if ( aDB == db ) return aName;
+        for ( auto& [aName, aPool] : _databases )
+            if ( aPool->sameAs(db) ) return aName;
         return nullopt;
     }
 
@@ -141,3 +156,5 @@ namespace litecore::REST {
     }
 
 }  // namespace litecore::REST
+
+#endif

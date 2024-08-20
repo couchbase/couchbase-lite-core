@@ -19,6 +19,8 @@
 #include <memory>
 #include <vector>
 
+#ifdef COUCHBASE_ENTERPRISE
+
 namespace litecore::net {
     class ResponderSocket;
 }  // namespace litecore::net
@@ -39,17 +41,27 @@ namespace litecore::REST {
 
         Method method() const { return _method; }
 
-        std::string path() const { return _path; }
+        std::string const& path() const { return _path; }
 
+        size_t      pathLength() const;
         std::string path(int i) const;
+
+        std::string const& queries() const { return _queries; }
 
         std::string query(const char* param) const;
         int64_t     intQuery(const char* param, int64_t defaultValue = 0) const;
+        uint64_t    uintQuery(const char* param, uint64_t defaultValue = 0) const;
         bool        boolQuery(const char* param, bool defaultValue = false) const;
 
-      protected:
-        friend class Server;
+        std::string uri() const;
 
+        enum HTTPVersion { HTTP1_0, HTTP1_1 };
+
+        HTTPVersion httpVersion() const { return _version; }
+
+        bool keepAlive() const;
+
+      protected:
         Request(Method, std::string path, std::string queries, websocket::Headers headers, fleece::alloc_slice body);
         Request() = default;
 
@@ -58,11 +70,17 @@ namespace litecore::REST {
         Method      _method{Method::None};
         std::string _path;
         std::string _queries;
+        HTTPVersion _version;
     };
 
     /** Incoming HTTP request (inherited from Request), plus setters for the response. */
     class RequestResponse : public Request {
       public:
+        RequestResponse(std::unique_ptr<net::ResponderSocket>);
+        RequestResponse(RequestResponse&&) noexcept;
+        RequestResponse& operator=(RequestResponse&&) noexcept;
+        ~RequestResponse();
+
         // Response status:
 
         void respondWithStatus(HTTPStatus, const char* message = nullptr);
@@ -76,11 +94,18 @@ namespace litecore::REST {
 
         // Response headers:
 
-        void setHeader(const char* header, const char* value);
+        void setHeader(fleece::slice header, fleece::slice value);
 
-        void setHeader(const char* header, int64_t value) { setHeader(header, std::to_string(value).c_str()); }
+        void setHeader(fleece::slice header, int64_t value) { setHeader(header, std::to_string(value)); }
 
         void addHeaders(const std::map<std::string, std::string>&);
+
+        websocket::Headers const& responseHeaders() const { return _responseHeaders; }
+
+        /// Enables HTTP 'chunked' transfer encoding.
+        void setChunked();
+
+        void setContentType(std::string_view contentType);
 
         // Response body:
 
@@ -98,8 +123,18 @@ namespace litecore::REST {
         void writeStatusJSON(HTTPStatus status, const char* message = nullptr);
         void writeErrorJSON(C4Error);
 
-        // Must be called after everything's written:
+        /// Flushes output so far to socket. The first call will send the status line + headers first.
+        /// If `setContentLength` has not been called, will add a `Connection: close` header.
+        /// @param minLength  If given, flush only if this many bytes are buffered.
+        /// @warning Not compatible with use of jsonEncoder().
+        void flush(size_t minLength = 0);
+
+        /// MUST be called after everything's written.
         void finish();
+
+        bool finished() const { return _finished || !_socket; }
+
+        C4Error socketError() const { return _error; }
 
         // WebSocket stuff:
 
@@ -111,32 +146,31 @@ namespace litecore::REST {
 
         std::unique_ptr<net::ResponderSocket> extractSocket();
 
+        bool hasSocket() const { return _socket != nullptr; }
+
         std::string peerAddress();
 
       protected:
-        RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket>);
         void sendStatus();
         void sendHeaders();
+        void writeToSocket(fleece::slice);
+        void _flush();
         void handleSocketError();
 
       private:
-        friend class Server;
-
-        fleece::Retained<Server>              _server;
         std::unique_ptr<net::ResponderSocket> _socket;
         C4Error                               _error{};
-
-        std::vector<fleece::alloc_slice> _requestBody;
-
-        HTTPStatus  _status{HTTPStatus::OK};  // Response status code
-        std::string _statusMessage;           // Response custom status message
-        bool        _sentStatus{false};       // Sent the response line yet?
-
-        fleece::Writer _responseHeaderWriter;
-        bool           _endedHeaders{false};  // True after headers are ended
-        int64_t        _contentLength{-1};    // Content-Length, once it's set
-
-        fleece::Writer                       _responseWriter;   // Output stream for response body
+        std::vector<fleece::alloc_slice>      _requestBody;
+        HTTPStatus                            _status{HTTPStatus::OK};  // Response status code
+        std::string                           _statusMessage;           // Response custom status message
+        bool                                  _sentStatus{false};       // Sent the response line yet?
+        fleece::Writer                        _responseHeaderWriter;
+        websocket::Headers                    _responseHeaders;
+        bool                                  _sentHeaders{false};  // True after headers are ended
+        int64_t                               _contentLength{-1};   // Content-Length, once it's set
+        bool           _streaming{false};  // If true, content is being streamed, no Content-Length header
+        bool           _chunked{false};    // True if using chunked transfer encoding
+        fleece::Writer _responseWriter;    // Output stream for response body
         std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;      // Used for writing JSON to response
         fleece::alloc_slice                  _responseBody;     // Finished response body
         fleece::slice                        _unsentBody;       // Unsent portion of _responseBody
@@ -144,3 +178,5 @@ namespace litecore::REST {
     };
 
 }  // namespace litecore::REST
+
+#endif

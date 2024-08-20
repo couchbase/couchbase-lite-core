@@ -1,5 +1,5 @@
 //
-// REST_CAPI.cc
+// c4Listener_CAPI.cc
 //
 // Copyright 2021-Present Couchbase, Inc.
 //
@@ -15,11 +15,11 @@
 #include "c4ExceptionUtils.hh"
 #include "fleece/Mutable.hh"
 
+#ifdef COUCHBASE_ENTERPRISE
+
 using namespace std;
 using namespace fleece;
 using namespace litecore;
-
-CBL_CORE_API C4ListenerAPIs c4listener_availableAPIs(void) noexcept { return C4Listener::availableAPIs(); }
 
 CBL_CORE_API C4Listener* c4listener_start(const C4ListenerConfig* config, C4Error* outError) noexcept {
     try {
@@ -82,11 +82,10 @@ CBL_CORE_API uint16_t c4listener_getPort(const C4Listener* listener) noexcept {
     catchAndWarn() return 0;
 }
 
-CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Database* db, C4ListenerAPIs api,
-                                               C4Error* err) noexcept {
+CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Database* db, C4Error* err) noexcept {
     try {
         auto urls = fleece::MutableArray::newArray();
-        for ( string& url : listener->URLs(db, api) ) urls.append(url);
+        for ( string& url : listener->URLs(db) ) urls.append(url);
         return (FLMutableArray)FLValue_Retain(urls);
     }
     catchError(err);
@@ -99,3 +98,5 @@ CBL_CORE_API void c4listener_getConnectionStatus(const C4Listener* listener, uns
     if ( connectionCount ) *connectionCount = conns;
     if ( activeConnectionCount ) *activeConnectionCount = active;
 }
+
+#endif  // COUCHBASE_ENTERPRISE

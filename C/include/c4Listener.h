@@ -20,9 +20,6 @@ C4API_BEGIN_DECLS
 /** \defgroup Listener  Network Listener: REST API and Sync Server
         @{ */
 
-/** Returns flags for the available APIs in this build (REST, sync, or both.) */
-CBL_CORE_API C4ListenerAPIs c4listener_availableAPIs(void) C4API;
-
 /** Creates and starts a new listener. Caller must release it when done. */
 NODISCARD CBL_CORE_API C4Listener* C4NULLABLE c4listener_start(const C4ListenerConfig* config,
                                                                C4Error* C4NULLABLE     error) C4API;
@@ -72,13 +69,11 @@ NODISCARD CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C
         \note This function is thread-safe.
         @param listener  The active listener.
         @param db  A database being shared, or NULL to get the listener's root URL(s).
-        @param api The API variant for which the URLs should be retrieved.  If the listener is not running in the given mode,
-                   or more than one mode is given, an error is returned
         @param err The error information, if any
         @return  Fleece array of or more URL strings, or null if an error occurred.
                 Caller is responsible for releasing the result. */
 NODISCARD CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Database* C4NULLABLE db,
-                                                         C4ListenerAPIs api, C4Error* C4NULLABLE err) C4API;
+                                                         C4Error* C4NULLABLE err) C4API;
 
 /** Returns the port number the listener is accepting connections on.
         This is useful if you didn't specify a port in the config (`port`=0), so you can find out which
