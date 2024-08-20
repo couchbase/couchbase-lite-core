@@ -71,10 +71,24 @@ namespace litecore {
         string::size_type pos, next;
         for ( pos = 0; pos < end; pos = next + separator.size() ) {
             next = str.find(separator, pos);
-            if ( next == string::npos ) break;
+            if ( next == string::npos ) next = end;
             callback(str.substr(pos, next - pos));
         }
-        callback(str.substr(pos));
+    }
+
+    std::vector<std::string_view> split(std::string_view str, std::string_view separator) {
+        vector<string_view> strings;
+        split(str, separator, [&](string_view s) { strings.push_back(s); });
+        return strings;
+    }
+
+    std::pair<string_view, string_view> split2(std::string_view str, std::string_view separator) {
+        string_view rest;
+        if ( auto pos = str.find(separator); pos != string::npos ) {
+            rest = str.substr(pos + 1);
+            str  = str.substr(0, pos);
+        }
+        return {str, rest};
     }
 
     stringstream& join(stringstream& s, const std::vector<std::string>& strings, const char* separator) {
@@ -116,6 +130,12 @@ namespace litecore {
             replaced = true;
         }
         return replaced;
+    }
+
+    std::string_view trimWhitespace(std::string_view str) {
+        while ( !str.empty() && isspace(str[0]) ) str.remove_prefix(1);
+        while ( !str.empty() && isspace(str[str.size() - 1]) ) str.remove_suffix(1);
+        return str;
     }
 
     bool hasPrefix(string_view str, string_view prefix) noexcept {

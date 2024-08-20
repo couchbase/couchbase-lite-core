@@ -38,7 +38,6 @@ namespace litecore {
         , Logging
         , Replicator::Delegate
         , public InstanceCountedIn<C4ReplicatorImpl> {
-
         // Bump this when incompatible changes are made to API or implementation.
         // Subclass c4LocalReplicator is in the couchbase-lite-core-EE repo, which doesn not have a
         // submodule relationship to this one, so it's possible for it to get out of sync.
