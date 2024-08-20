@@ -61,7 +61,6 @@
 		27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */; };
 		27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */; };
 		27098AC421752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */; };
-		270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
 		270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
 		270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
 		270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
@@ -72,7 +71,7 @@
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F91E248578D000BE21D9 /* mbedSnippets.cc */; };
 		2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
-		27175B12261B91170045F3AC /* REST_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27175B11261B91170045F3AC /* REST_CAPI.cc */; };
+		27175B12261B91170045F3AC /* c4Listener_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27175B11261B91170045F3AC /* c4Listener_CAPI.cc */; };
 		2718B38A2CAF1545006C09CB /* libCatch2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2718B3892CAF1545006C09CB /* libCatch2.a */; };
 		2718B38B2CAF154C006C09CB /* libCatch2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2718B3892CAF1545006C09CB /* libCatch2.a */; };
 		271925132396FE160053DDA6 /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
@@ -94,7 +93,6 @@
 		2719252A23970BDF0053DDA6 /* c4PredictiveQueryTest+CoreML.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */; };
 		2719252B23970BE40053DDA6 /* CoreMLPredictiveModel.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */; };
 		2719252C23970BFD0053DDA6 /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
-		2719252D23970BFD0053DDA6 /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
 		2719252E23970BFD0053DDA6 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		2719252F23970C050053DDA6 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2719253023970C480053DDA6 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
@@ -122,7 +120,6 @@
 		272850EE1E9D4D23009CA22F /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		272850F11E9D4F94009CA22F /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		272850F21E9D4FB1009CA22F /* libfleeceStatic.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libfleeceStatic.a */; };
-		272851241EA4537A009CA22F /* RESTListener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272851211EA4537A009CA22F /* RESTListener.hh */; };
 		2728512B1EA46421009CA22F /* Request.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272851281EA46421009CA22F /* Request.hh */; };
 		272851301EA46475009CA22F /* Server.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2728512D1EA46475009CA22F /* Server.hh */; };
 		272B1BE11FB13B7400F56620 /* stopwordset.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BDF1FB13B7400F56620 /* stopwordset.cc */; };
@@ -179,7 +176,6 @@
 		2746C8E62639E88700A3B2CC /* ThreadUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2746C8E52639E88700A3B2CC /* ThreadUtil.cc */; };
 		2747A1D0279B37E100F286AF /* SQLUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A1CF279B37E100F286AF /* SQLUtil.cc */; };
 		27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */; };
-		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274B36D225B271F7001FC28D /* Version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274B36D125B271F7001FC28D /* Version.cc */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
@@ -275,7 +271,6 @@
 		278F478A24C914CD00E1CA7A /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F478924C914CC00E1CA7A /* SystemConfiguration.framework */; };
 		278F478B24C914DE00E1CA7A /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2791EA1420326F7100BD813C /* SQLiteChooser.c in Sources */ = {isa = PBXBuildFile; fileRef = 2791EA1320326F7100BD813C /* SQLiteChooser.c */; };
-		279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */; };
 		2796A28423072F7000774850 /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -344,7 +339,6 @@
 		27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */; };
 		27B953DD239872C700C8AA90 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		27B953DE239872D900C8AA90 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
-		27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
 		27BEEE712A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */; };
 		27BEEE792A783A17005AD4BF /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
@@ -400,6 +394,12 @@
 		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* RevTreeRecord.cc */; };
+		27E55D242CE55963000DE11A /* DatabasePool.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E55D1E2CE55963000DE11A /* DatabasePool.hh */; };
+		27E55D252CE55963000DE11A /* MIMEType.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E55D222CE55963000DE11A /* MIMEType.hh */; };
+		27E55D262CE55963000DE11A /* SyncListener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E55D232CE55963000DE11A /* SyncListener.hh */; };
+		27E55D272CE55963000DE11A /* HTTPListener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E55D202CE55963000DE11A /* HTTPListener.hh */; };
+		27E55D282CE55963000DE11A /* DatabasePool.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E55D1F2CE55963000DE11A /* DatabasePool.cc */; };
+		27E55D292CE55963000DE11A /* HTTPListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E55D212CE55963000DE11A /* HTTPListener.cc */; };
 		27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* RecordEnumerator.cc */; };
 		27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6737C1EC78144008F50C4 /* QueryTest.cc */; };
 		27E6739F1EC8DC97008F50C4 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
@@ -496,7 +496,6 @@
 		27FA568924AD0F8E00B2F1F8 /* Pusher+Revs.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FA568824AD0F8E00B2F1F8 /* Pusher+Revs.cc */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FB0C3C205B18A500987D9C /* Instrumentation.cc */; };
-		27FC81F61EAAB7C60028E38E /* RESTListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851201EA4537A009CA22F /* RESTListener.cc */; };
 		27FC81F91EAAB7C60028E38E /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
 		27FC8DB622135BCE0083B033 /* ChangesFeed.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DB522135BCE0083B033 /* ChangesFeed.cc */; };
 		27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DBC22135BDA0083B033 /* RevFinder.cc */; };
@@ -521,7 +520,6 @@
 		27FE0CFD24BE817A00A36EC2 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		27FE0CFE24BE817A00A36EC2 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
 		27FE0CFF24BE817B00A36EC2 /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
-		27FE0D0024BE817B00A36EC2 /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
 		27FE0D0124BE817B00A36EC2 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		27FE0D0224BE817B00A36EC2 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		42030A3E2498442F00283CE8 /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
@@ -911,7 +909,6 @@
 		2709D3A52363651B00462AF7 /* CertHelper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CertHelper.hh; sourceTree = "<group>"; };
 		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
 		270BEE29206483C0005E8BE8 /* Listener */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Listener; path = "../../../couchbase-lite-core-EE/Listener"; sourceTree = "<group>"; };
-		270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "RESTListener+Replicate.cc"; sourceTree = "<group>"; };
 		270C6B871EBA2CD600E73415 /* LogDecoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogDecoder.cc; sourceTree = "<group>"; };
 		270C6B881EBA2CD600E73415 /* LogDecoder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LogDecoder.hh; sourceTree = "<group>"; };
 		270C6B891EBA2CD600E73415 /* LogEncoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogEncoder.cc; sourceTree = "<group>"; };
@@ -931,7 +928,7 @@
 		2716F91E248578D000BE21D9 /* mbedSnippets.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedSnippets.cc; sourceTree = "<group>"; };
 		2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CertificateTest.cc; sourceTree = "<group>"; };
 		27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStoreTypes.h; sourceTree = "<group>"; };
-		27175B11261B91170045F3AC /* REST_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = REST_CAPI.cc; sourceTree = "<group>"; };
+		27175B11261B91170045F3AC /* c4Listener_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener_CAPI.cc; sourceTree = "<group>"; };
 		27175B73261BC3030045F3AC /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; wrapsLines = 1; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		2719253B23970F4E0053DDA6 /* replacedb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = replacedb; path = data/replacedb; sourceTree = "<group>"; };
@@ -967,8 +964,6 @@
 		272850AA1E9AF53B009CA22F /* Upgrader.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Upgrader.hh; sourceTree = "<group>"; };
 		272850B41E9BE361009CA22F /* UpgraderTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UpgraderTest.cc; sourceTree = "<group>"; };
 		272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CppTests.xcconfig; sourceTree = "<group>"; };
-		272851201EA4537A009CA22F /* RESTListener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTListener.cc; sourceTree = "<group>"; };
-		272851211EA4537A009CA22F /* RESTListener.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RESTListener.hh; sourceTree = "<group>"; };
 		272851271EA46421009CA22F /* Request.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Request.cc; sourceTree = "<group>"; };
 		272851281EA46421009CA22F /* Request.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Request.hh; sourceTree = "<group>"; };
 		2728512C1EA46475009CA22F /* Server.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Server.cc; sourceTree = "<group>"; };
@@ -1116,7 +1111,6 @@
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
 		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
 		27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Socket+Internal.hh"; sourceTree = "<group>"; };
-		2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "RESTListener+Handlers.cc"; sourceTree = "<group>"; };
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
@@ -1242,7 +1236,6 @@
 		276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteEnumerator.cc; sourceTree = "<group>"; };
 		276D15401DFF541000543B1B /* SQLiteQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteQuery.cc; sourceTree = "<group>"; };
 		276D4AD42787709200F61A89 /* c4EnumUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4EnumUtil.hh; sourceTree = "<group>"; };
-		276E02101EA9717200FEFE8A /* RESTListenerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTListenerTest.cc; sourceTree = "<group>"; };
 		276E02191EA983EE00FEFE8A /* Response.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Response.cc; sourceTree = "<group>"; };
 		276E021A1EA983EE00FEFE8A /* Response.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Response.hh; sourceTree = "<group>"; };
 		27700DFD1FB642B80005D48E /* Increment.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Increment.hh; sourceTree = "<group>"; };
@@ -1300,7 +1293,6 @@
 		2791EA1320326F7100BD813C /* SQLiteChooser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = SQLiteChooser.c; sourceTree = "<group>"; };
 		2791EA192032732500BD813C /* Project_Debug_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug_EE.xcconfig; sourceTree = "<group>"; };
 		2791EA1A203273BF00BD813C /* Project_Release_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Release_EE.xcconfig; sourceTree = "<group>"; };
-		279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "c4Listener+RESTFactory.cc"; sourceTree = "<group>"; };
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
 		27984E422249AEDD000FE777 /* dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib_Release.xcconfig; sourceTree = "<group>"; };
 		279976311E94AAD000B27639 /* IncomingRev+Blobs.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "IncomingRev+Blobs.cc"; sourceTree = "<group>"; };
@@ -1524,6 +1516,12 @@
 		27E487221922A64F007D8940 /* RevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTree.hh; sourceTree = "<group>"; };
 		27E487291923F24D007D8940 /* RevTreeRecord.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTreeRecord.cc; sourceTree = "<group>"; };
 		27E4872A1923F24D007D8940 /* RevTreeRecord.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTreeRecord.hh; sourceTree = "<group>"; };
+		27E55D1E2CE55963000DE11A /* DatabasePool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabasePool.hh; sourceTree = "<group>"; };
+		27E55D1F2CE55963000DE11A /* DatabasePool.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabasePool.cc; sourceTree = "<group>"; };
+		27E55D202CE55963000DE11A /* HTTPListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPListener.hh; sourceTree = "<group>"; };
+		27E55D212CE55963000DE11A /* HTTPListener.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPListener.cc; sourceTree = "<group>"; };
+		27E55D222CE55963000DE11A /* MIMEType.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MIMEType.hh; sourceTree = "<group>"; };
+		27E55D232CE55963000DE11A /* SyncListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SyncListener.hh; sourceTree = "<group>"; };
 		27E609A11951E4C000202B72 /* RecordEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RecordEnumerator.cc; sourceTree = "<group>"; };
 		27E609A41951E53F00202B72 /* RecordEnumerator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RecordEnumerator.hh; sourceTree = "<group>"; };
 		27E6737C1EC78144008F50C4 /* QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryTest.cc; sourceTree = "<group>"; };
@@ -2018,29 +2016,30 @@
 		272851111EA44902009CA22F /* REST */ = {
 			isa = PBXGroup;
 			children = (
-				275A74CF1ED3A4E1008CB57B /* Listener.cc */,
-				275A74D01ED3A4E1008CB57B /* Listener.hh */,
-				272851201EA4537A009CA22F /* RESTListener.cc */,
-				2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */,
-				270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */,
-				272851211EA4537A009CA22F /* RESTListener.hh */,
-				2728512C1EA46475009CA22F /* Server.cc */,
-				2728512D1EA46475009CA22F /* Server.hh */,
-				276E02191EA983EE00FEFE8A /* Response.cc */,
-				276E021A1EA983EE00FEFE8A /* Response.hh */,
-				272851271EA46421009CA22F /* Request.cc */,
-				272851281EA46421009CA22F /* Request.hh */,
 				275A74D51ED3AA11008CB57B /* c4Listener.cc */,
-				279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */,
 				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
+				27175B11261B91170045F3AC /* c4Listener_CAPI.cc */,
 				27DDC549236B56D000580B2B /* CertRequest.hh */,
 				27DDC54A236B56D000580B2B /* CertRequest.cc */,
-				279D40F51EA533D900D8DD9D /* netUtils.cc */,
+				27E55D1E2CE55963000DE11A /* DatabasePool.hh */,
+				27E55D1F2CE55963000DE11A /* DatabasePool.cc */,
+				27E55D202CE55963000DE11A /* HTTPListener.hh */,
+				27E55D212CE55963000DE11A /* HTTPListener.cc */,
+				275A74D01ED3A4E1008CB57B /* Listener.hh */,
+				275A74CF1ED3A4E1008CB57B /* Listener.cc */,
+				27E55D222CE55963000DE11A /* MIMEType.hh */,
 				279D40F61EA533D900D8DD9D /* netUtils.hh */,
-				27175B11261B91170045F3AC /* REST_CAPI.cc */,
+				279D40F51EA533D900D8DD9D /* netUtils.cc */,
+				272851281EA46421009CA22F /* Request.hh */,
+				272851271EA46421009CA22F /* Request.cc */,
+				276E021A1EA983EE00FEFE8A /* Response.hh */,
+				276E02191EA983EE00FEFE8A /* Response.cc */,
+				2728512D1EA46475009CA22F /* Server.hh */,
+				2728512C1EA46475009CA22F /* Server.cc */,
+				27E55D232CE55963000DE11A /* SyncListener.hh */,
+				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
 				270BEE1C20647E8A005E8BE8 /* EE */,
 				276E020F1EA9712700FEFE8A /* tests */,
-				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
 			);
 			name = REST;
 			path = ../REST;
@@ -2718,7 +2717,6 @@
 				2709D3A52363651B00462AF7 /* CertHelper.hh */,
 				27047CE3233AE8DE009D1CE9 /* ListenerHarness.hh */,
 				27E19D652316EDEA00E031F8 /* RESTClientTest.cc */,
-				276E02101EA9717200FEFE8A /* RESTListenerTest.cc */,
 				27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */,
 			);
 			path = tests;
@@ -3519,6 +3517,10 @@
 			files = (
 				728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */,
 				275A74D31ED3A4E1008CB57B /* Listener.hh in Headers */,
+				27E55D242CE55963000DE11A /* DatabasePool.hh in Headers */,
+				27E55D252CE55963000DE11A /* MIMEType.hh in Headers */,
+				27E55D262CE55963000DE11A /* SyncListener.hh in Headers */,
+				27E55D272CE55963000DE11A /* HTTPListener.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3542,7 +3544,6 @@
 				279D40F91EA533D900D8DD9D /* netUtils.hh in Headers */,
 				272851301EA46475009CA22F /* Server.hh in Headers */,
 				274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */,
-				272851241EA4537A009CA22F /* RESTListener.hh in Headers */,
 				278963641D7A376900493096 /* EncryptedStream.hh in Headers */,
 				27E89BA81D679542002C32B3 /* FilePath.hh in Headers */,
 				72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */,
@@ -4211,7 +4212,6 @@
 				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
-				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
 				D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				27628CD22AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
@@ -4254,7 +4254,6 @@
 				2719252F23970C050053DDA6 /* CertificateTest.cc in Sources */,
 				2719252A23970BDF0053DDA6 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				2719252C23970BFD0053DDA6 /* RESTClientTest.cc in Sources */,
-				2719252D23970BFD0053DDA6 /* RESTListenerTest.cc in Sources */,
 				2719252E23970BFD0053DDA6 /* SyncListenerTest.cc in Sources */,
 				2719253523970E070053DDA6 /* c4Listener.cc in Sources */,
 				271925172396FE2C0053DDA6 /* PredictiveQueryTest.cc in Sources */,
@@ -4395,7 +4394,6 @@
 				27FE0CFF24BE817B00A36EC2 /* RESTClientTest.cc in Sources */,
 				EA4740D32CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */,
 				2740A7522B321120003387E9 /* SGTestUser.cc in Sources */,
-				27FE0D0024BE817B00A36EC2 /* RESTListenerTest.cc in Sources */,
 				27FE0D0124BE817B00A36EC2 /* SyncListenerTest.cc in Sources */,
 				273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */,
 				27A924C91D9B374500086206 /* Catch_Tests.mm in Sources */,
@@ -4616,13 +4614,11 @@
 			files = (
 				275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */,
 				275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */,
+				27E55D282CE55963000DE11A /* DatabasePool.cc in Sources */,
+				27E55D292CE55963000DE11A /* HTTPListener.cc in Sources */,
 				275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */,
-				27FC81F61EAAB7C60028E38E /* RESTListener.cc in Sources */,
-				279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */,
-				270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
-				2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
-				27175B12261B91170045F3AC /* REST_CAPI.cc in Sources */,
+				27175B12261B91170045F3AC /* c4Listener_CAPI.cc in Sources */,
 				2796A28423072F7000774850 /* Server.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

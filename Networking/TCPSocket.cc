@@ -426,13 +426,19 @@ namespace litecore::net {
                 // Other transfer encodings are "gzip", "deflate"
             }
 
-        } else if ( auto conn = headers["Connection"]; conn.caseEquivalent("close") ) {
-            // Connection:Close mode -- read till EOF:
-            body = readToEOF();
+        } else if ( auto conn = headers["Connection"] ) {
+            if ( conn.caseEquivalent("close") ) {
+                // Connection:Close mode -- read till EOF:
+                body = readToEOF();
+            } else {
+                body.reset();
+                setError(WebSocketDomain, kCodeProtocolError, "Unsupported 'Connection' response header");
+            }
 
         } else {
             body.reset();
-            setError(WebSocketDomain, kCodeProtocolError, "Unsupported 'Connection' response header");
+            setError(WebSocketDomain, kCodeProtocolError,
+                     "Response has neither 'Content-Length', 'Transfer-Encoding' nor 'Connection: close'");
         }
 
         return !!body;

@@ -36,10 +36,10 @@ namespace litecore {
     }
 
     C4ReplicatorImpl::C4ReplicatorImpl(C4Database* db, const C4ReplicatorParameters& params)
-    :C4ReplicatorImpl(DatabaseOrPool(db), params) { }
-    C4ReplicatorImpl::C4ReplicatorImpl(DatabasePool* pool, const C4ReplicatorParameters& params)
-    :C4ReplicatorImpl(DatabaseOrPool(pool), params) { }
+        : C4ReplicatorImpl(DatabaseOrPool(db), params) {}
 
+    C4ReplicatorImpl::C4ReplicatorImpl(DatabasePool* pool, const C4ReplicatorParameters& params)
+        : C4ReplicatorImpl(DatabaseOrPool(pool), params) {}
 
     C4ReplicatorImpl::~C4ReplicatorImpl() {
         logInfo("Freeing C4BaseReplicator");

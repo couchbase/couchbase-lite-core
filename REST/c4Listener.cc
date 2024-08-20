@@ -15,9 +15,11 @@
 #include "c4ExceptionUtils.hh"
 #include "c4Database.hh"
 #include "c4Collection.hh"
-#include "Listener.hh"
-#include "RESTListener.hh"
+#include "HTTPListener.hh"
+#include "SyncListener.hh"
 #include <algorithm>
+
+#ifdef COUCHBASE_ENTERPRISE
 
 using namespace std;
 using namespace fleece;
@@ -26,16 +28,14 @@ using namespace litecore::REST;
 
 namespace litecore::REST {
     C4LogDomain ListenerLog;
+    C4LogDomain RESTLog;
 }  // namespace litecore::REST
-
-C4ListenerAPIs C4Listener::availableAPIs() { return kListenerAPIs; }
 
 string C4Listener::URLNameFromPath(slice pathSlice) { return Listener::databaseNameFromPath(FilePath(pathSlice, "")); }
 
 namespace {
     std::stringstream& operator<<(std::stringstream& ss, const C4ListenerConfig& config) {
         ss << "{"
-           << "apis: " << (config.apis == kC4RESTAPI ? "REST" : "Sync") << ", "
            << "networkInterface: "
            << (!config.networkInterface            ? "NULL"
                : config.networkInterface.size == 0 ? "\"\""
@@ -59,48 +59,24 @@ namespace {
         ss << "}, "
            << "httpAuthCallback: " << (config.httpAuthCallback == nullptr ? "NULL" : "***") << ", "
            << "callbackContext: " << (config.callbackContext == nullptr ? "NULL" : "***") << ", "
-           << "directory: "
-           << (!config.directory            ? "NULL"
-               : config.directory.size == 0 ? "\"\""
-                                            : std::string(config.directory))
-           << ", ";
-        if ( config.apis == kC4RESTAPI ) {
-            ss << "allowCreateDBs: " << config.allowCreateDBs << ", allowDeleteDBs: " << config.allowDeleteDBs
-               << ", allowCreateCollections: " << config.allowCreateCollections
-               << ", allowDeleteCollections: " << config.allowDeleteCollections;
-        } else {
-            ss << "allowPush: " << config.allowPush << ", "
-               << "allowPull: " << config.allowPull << ", "
-               << "enableDeltaSync: " << config.enableDeltaSync;
-        }
+           << "allowPush: " << config.allowPush << ", "
+           << "allowPull: " << config.allowPull << ", "
+           << "enableDeltaSync: " << config.enableDeltaSync;
         ss << "}";
         return ss;
     }
 }  // namespace
 
-C4Listener::C4Listener(C4ListenerConfig config)
-    : _httpAuthCallback(config.httpAuthCallback), _callbackContext(config.callbackContext) {
-    // Replace the callback, if any, with one to myself. This allows me to pass the correct
-    // C4Listener* to the client's callback.
-    if ( config.httpAuthCallback ) {
-        config.callbackContext  = this;
-        config.httpAuthCallback = [](C4Listener*, C4Slice authHeader, void* context) {
-            auto listener = (C4Listener*)context;
-            return listener->_httpAuthCallback(listener, authHeader, listener->_callbackContext);
-        };
-    }
-
-    _impl = dynamic_cast<RESTListener*>(NewListener(&config).get());
-    if ( !_impl ) {
-        C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported, "Unsupported listener API");
-    } else {
-        std::stringstream ss;
-        ss << config;
-        c4log(ListenerLog, kC4LogInfo, "Listener config: %s", ss.str().c_str());
-    }
+C4Listener::C4Listener(C4ListenerConfig const& config, Retained<HTTPListener> impl) : _impl(std::move(impl)) {
+    _impl->setDelegate(this);
+    std::stringstream ss;
+    ss << config;
+    c4log(ListenerLog, kC4LogInfo, "Listener config: %s", ss.str().c_str());
 }
 
-C4Listener::C4Listener(C4Listener&&) = default;
+C4Listener::C4Listener(C4ListenerConfig config) : C4Listener(config, make_retained<SyncListener>(config)) {}
+
+C4Listener::C4Listener(C4Listener&&) noexcept = default;
 
 C4Listener::~C4Listener() {
     if ( _impl ) _impl->stop();
@@ -118,9 +94,6 @@ bool C4Listener::shareCollection(slice name, C4Collection* coll) {
     if ( _usuallyFalse(!coll || !coll->isValid()) ) {
         C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen, "Invalid collection: either deleted, or db closed");
     }
-
-    optional<string> nameStr;
-    if ( name.buf ) nameStr = name;
     return _impl->registerCollection((string)name, coll->getSpec());
 }
 
@@ -128,10 +101,9 @@ bool C4Listener::unshareCollection(slice name, C4Collection* coll) {
     return _impl->unregisterCollection((string)name, coll->getSpec());
 }
 
-std::vector<std::string> C4Listener::URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api) const {
-    AssertParam(api == kC4RESTAPI || api == kC4SyncAPI, "The provided API must be one of the following:  REST, Sync.");
+std::vector<std::string> C4Listener::URLs(C4Database* C4NULLABLE db) const {
     vector<string> urls;
-    for ( net::Address& address : _impl->addresses(db, api) ) urls.emplace_back(string(address.url()));
+    for ( net::Address& address : _impl->addresses(db, true) ) urls.emplace_back(string(address.url()));
     return urls;
 }
 
@@ -143,3 +115,5 @@ std::pair<unsigned, unsigned> C4Listener::connectionStatus() const {
     auto activeConnectionCount = active;
     return {connectionCount, activeConnectionCount};
 }
+
+#endif  // COUCHBASE_ENTERPRISE

@@ -524,7 +524,9 @@ namespace litecore::crypto {
 
     Identity::Identity(Cert* cert_, PrivateKey* key_) : cert(cert_), privateKey(key_) {
         // Make sure the private and public keys match:
-        Assert(mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context()) == 0);
+        if ( int err = mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context()) ) {
+            throwMbedTLSError(err);
+        }
     }
 
 }  // namespace litecore::crypto

@@ -16,14 +16,9 @@
 #include "c4ListenerTypes.h"
 
 namespace litecore::REST {
-    class Listener;
-
+    class HTTPListener;
 
     extern C4LogDomain ListenerLog;
-
-
-    extern const C4ListenerAPIs kListenerAPIs;
-    fleece::Retained<Listener>  NewListener(const C4ListenerConfig* config);
-
+    extern C4LogDomain RESTLog;
 
 }  // namespace litecore::REST

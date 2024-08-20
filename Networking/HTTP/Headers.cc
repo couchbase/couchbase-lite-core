@@ -11,15 +11,16 @@
 //
 
 #include "Headers.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"
 #include "slice_stream.hh"
 #include <cstring>
 
-#include <utility>
 #include "betterassert.hh"
 
 namespace litecore::websocket {
+    using namespace std;
     using namespace fleece;
 
     Headers::Headers(const fleece::alloc_slice& encoded) : _backingStore(encoded) {
@@ -28,12 +29,10 @@ namespace litecore::websocket {
 
     Headers::Headers(Dict dict) { readFrom(dict); }
 
-    Headers::Headers(const Headers& other) { *this = other; }
+    Headers::Headers(Headers&& other) noexcept            = default;
+    Headers& Headers::operator=(Headers&& other) noexcept = default;
 
-    Headers::Headers(Headers&& other) noexcept
-        : _map(std::move(other._map))
-        , _backingStore(std::move(other._backingStore))
-        , _writer(std::move(other._writer)) {}
+    Headers::Headers(const Headers& other) { *this = other; }
 
     Headers& Headers::operator=(const Headers& other) {
         clear();
@@ -80,6 +79,12 @@ namespace litecore::websocket {
         if ( value ) _map.insert({store(name), store(value)});
     }
 
+    void Headers::set(slice name, slice value) {
+        assert(name);
+        _map.erase(name);
+        add(name, value);
+    }
+
     slice Headers::get(slice name) const {
         auto i = _map.find(name);
         if ( i == _map.end() ) return nullslice;
@@ -92,6 +97,14 @@ namespace litecore::websocket {
         int64_t n = v.readSignedDecimal();
         if ( v.size > 0 ) return defaultValue;
         return n;
+    }
+
+    vector<slice> Headers::getCommaSeparated(slice name) const {
+        vector<slice> result;
+        if ( slice v = get(name); !v.empty() ) {
+            split(string_view(v), ",", [&](string_view component) { result.push_back(trimWhitespace(component)); });
+        }
+        return result;
     }
 
     void Headers::forEach(fleece::function_ref<void(slice, slice)> callback) const {

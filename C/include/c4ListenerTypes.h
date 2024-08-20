@@ -20,13 +20,6 @@ C4API_BEGIN_DECLS
     @{ */
 
 
-/** Flags indicating which network API(s) to serve. */
-typedef C4_OPTIONS(unsigned, C4ListenerAPIs){
-        kC4RESTAPI = 0x01,  ///< CouchDB-like REST API
-        kC4SyncAPI = 0x02   ///< Replication server
-};
-
-
 /** Different ways to provide TLS private keys. */
 typedef C4_ENUM(unsigned, C4PrivateKeyRepresentation){
         kC4PrivateKeyFromCert,  ///< Key in secure storage, associated with certificate
@@ -52,7 +45,7 @@ typedef bool (*C4ListenerHTTPAuthCallback)(C4Listener* listener, C4Slice authHea
 /** TLS configuration for C4Listener. */
 typedef struct C4TLSConfig {
     C4PrivateKeyRepresentation            privateKeyRepresentation;  ///< Interpretation of `privateKey`
-    C4KeyPair*                            key;                       ///< A key pair that contains the private key
+    C4KeyPair* C4NULLABLE                 key;                       ///< A key pair that contains the private key
     C4Cert*                               certificate;               ///< X.509 certificate data
     bool                                  requireClientCerts;  ///< True to require clients to authenticate with a cert
     C4Cert* C4NULLABLE                    rootClientCerts;     ///< Root CA certs to trust when verifying client cert
@@ -64,20 +57,13 @@ typedef struct C4TLSConfig {
 typedef struct C4ListenerConfig {
     uint16_t                port;              ///< TCP port to listen on
     C4String                networkInterface;  ///< name or address of interface to listen on; else all
-    C4ListenerAPIs          apis;              ///< Which API(s) to enable
     C4TLSConfig* C4NULLABLE tlsConfig;         ///< TLS configuration, or NULL for no TLS
+    C4String                serverName;        ///< Name for "Server:" response header (optional)
+    C4String                serverVersion;     ///< Version for "Server:" response header (optional)
 
     C4ListenerHTTPAuthCallback C4NULLABLE httpAuthCallback;  ///< Callback for HTTP auth
     void* C4NULLABLE                      callbackContext;   ///< Client value passed to HTTP auth callback
 
-    // For REST listeners only:
-    C4String directory;               ///< Directory where newly-PUT databases will be created
-    bool     allowCreateDBs;          ///< If true, "PUT /db" is allowed
-    bool     allowDeleteDBs;          ///< If true, "DELETE /db" is allowed
-    bool     allowCreateCollections;  ///< If true, "PUT /db.scope.coll" is allowed
-    bool     allowDeleteCollections;  ///< If true, "DELETE /db.scope.coll" is allowed
-
-    // For sync listeners only:
     bool allowPush;        ///< Allow peers to push changes to local db
     bool allowPull;        ///< Allow peers to pull changes from local db
     bool enableDeltaSync;  ///< Enable document-deltas optimization

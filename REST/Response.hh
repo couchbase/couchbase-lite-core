@@ -13,6 +13,7 @@
 #pragma once
 #include "Headers.hh"
 #include "HTTPTypes.hh"
+#include "MIMEType.hh"
 #include "fleece/RefCounted.hh"
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
@@ -40,7 +41,9 @@ namespace litecore::REST {
 
         fleece::slice operator[](const char* name) const { return header(name); }
 
-        bool                hasContentType(fleece::slice contentType) const;
+        std::optional<MIMEType> contentType() const;
+
+        bool                hasContentType(fleece::slice hasType) const;
         fleece::alloc_slice body() const;
         fleece::Value       bodyAsJSON() const;
 
@@ -54,10 +57,11 @@ namespace litecore::REST {
 
         void setBody(fleece::alloc_slice body) { _body = std::move(body); }
 
-        websocket::Headers  _headers;
-        fleece::alloc_slice _body;
-        mutable bool        _gotBodyFleece{false};
-        mutable fleece::Doc _bodyFleece;
+        websocket::Headers              _headers;
+        mutable std::optional<MIMEType> _contentType;
+        fleece::alloc_slice             _body;
+        mutable bool                    _gotBodyFleece{false};
+        mutable fleece::Doc             _bodyFleece;
     };
 
     /** An HTTP response from a server, created by specifying a request to send.

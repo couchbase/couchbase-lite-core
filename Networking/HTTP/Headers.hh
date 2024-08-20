@@ -40,8 +40,9 @@ namespace litecore::websocket {
         explicit Headers(fleece::Dict);
 
         Headers(const Headers&);
-        Headers(Headers&&) noexcept;
         Headers& operator=(const Headers&);
+        Headers(Headers&&) noexcept;
+        Headers& operator=(Headers&&) noexcept;
 
         void clear();
 
@@ -54,10 +55,17 @@ namespace litecore::websocket {
         /** Adds a header. If a header with that name already exists, it adds a second. */
         void add(slice name, slice value);
 
+        /** Sets the value of a header. If headers with that name exist, they're replaced. */
+        void set(slice name, slice value);
+
         /** Returns the value of a header with that name.*/
         [[nodiscard]] slice get(slice name) const;
 
+        /** Returns a header parsed as an integer. If missing, returns `defaultValue` */
         [[nodiscard]] int64_t getInt(slice name, int64_t defaultValue = 0) const;
+
+        /** Returns the comma-delimited component of a header, with leading/trailing space removed. */
+        [[nodiscard]] std::vector<slice> getCommaSeparated(slice name) const;
 
         /** Returns the value of a header with that name.*/
         slice operator[](slice name) const { return get(name); }

@@ -11,6 +11,7 @@
 //
 
 #include "Response.hh"
+#include "MIMEType.hh"
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
 #include "HTTPLogic.hh"
@@ -28,19 +29,29 @@ namespace litecore::REST {
     using namespace litecore::net;
     using namespace litecore::crypto;
 
-    bool Body::hasContentType(slice contentType) const {
-        slice actualType = header("Content-Type");
-        return actualType.size >= contentType.size && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
-               && (actualType.size == contentType.size || actualType[contentType.size] == ';');
+    std::optional<MIMEType> Body::contentType() const {
+        if ( !_contentType ) {
+            if ( auto hdr = header("Content-Type") ) _contentType.emplace(hdr);  // will throw if 'hdr' is invalid
+        }
+        return _contentType;
+    }
+
+    bool Body::hasContentType(slice hasType) const {
+        DebugAssert(MIMEType::parse(hasType));
+        (void)contentType();
+        return _contentType && _contentType.value() == string_view(hasType);
     }
 
     alloc_slice Body::body() const { return _body; }
 
     Value Body::bodyAsJSON() const {
         if ( !_gotBodyFleece ) {
-            if ( hasContentType("application/json"_sl) ) {
-                alloc_slice b = body();
-                if ( b ) _bodyFleece = Doc::fromJSON(b, nullptr);
+            if ( hasContentType("application/json") ) {
+                if ( alloc_slice b = body() ) {
+                    FLError err;
+                    _bodyFleece = Doc::fromJSON(b, &err);
+                    if ( !_bodyFleece ) Warn("HTTP Body has unparseable JSON (%d): %.*s", err, FMTSLICE(b));
+                }
             }
             _gotBodyFleece = true;
         }
