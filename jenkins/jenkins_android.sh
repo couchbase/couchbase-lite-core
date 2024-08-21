@@ -11,7 +11,7 @@
 set -e
 shopt -s extglob dotglob
 
-NDK_VER="25.1.8937393"
+NDK_VER="27.0.12077973"
 CMAKE_VER="3.28.1"
 NINJA_VER="1.10.2"
 
