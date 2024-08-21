@@ -26,6 +26,7 @@ C4API_BEGIN_DECLS
 /** Compiles a query from an expression given as JSON.
         The expression is a predicate that describes which documents should be returned.
         A separate, optional sort expression describes the ordering of the results.
+        \note The caller must use a lock for Database when this function is called.
         @param database  The database to be queried.
         @param language  The language (syntax) of the query expression.
         @param expression  The query expression, either JSON or N1QL.
@@ -39,11 +40,13 @@ NODISCARD CBL_CORE_API C4Query* C4NULLABLE c4query_new2(C4Database* database, C4
 
 /** Returns a string describing the implementation of the compiled query.
         This is intended to be read by a developer for purposes of optimizing the query, especially
-        to add database indexes. */
+        to add database indexes.
+        \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4StringResult c4query_explain(C4Query*) C4API;
 
 
-/** Returns the number of columns (the values specified in the WHAT clause) in each row. */
+/** Returns the number of columns (the values specified in the WHAT clause) in each row.
+        \note The caller must use a lock for Query when this function is called. */
 CBL_CORE_API unsigned c4query_columnCount(C4Query*) C4API;
 
 /** Returns a suggested title for a column, which may be:
@@ -51,7 +54,8 @@ CBL_CORE_API unsigned c4query_columnCount(C4Query*) C4API;
          * A property name
          * A function/operator that computes the column value, e.g. 'MAX()' or '+'
         Each column's title is unique. If multiple columns would have the same title, the
-        later ones (in numeric order) will have " #2", "#3", etc. appended. */
+        later ones (in numeric order) will have " #2", "#3", etc. appended.
+        \note The caller must use a lock for Query when this function is called. */
 CBL_CORE_API FLString c4query_columnTitle(C4Query*, unsigned column) C4API;
 
 
@@ -60,6 +64,7 @@ CBL_CORE_API FLString c4query_columnTitle(C4Query*, unsigned column) C4API;
 
 /** Sets the parameter values to use when running the query, if no parameters are given to
         \ref c4query_run.
+        \note This function is thread-safe.
         @param query  The compiled query to run.
         @param encodedParameters  JSON- or Fleece-encoded dictionary whose keys correspond
                 to the named parameters in the query expression, and values correspond to the
@@ -70,6 +75,7 @@ CBL_CORE_API void c4query_setParameters(C4Query* query, C4String encodedParamete
 /** Runs a compiled query.
         NOTE: Queries will run much faster if the appropriate properties are indexed.
         Indexes must be created explicitly by calling `c4db_createIndex`.
+        \note The caller must use a lock for Database when this function is called.
         @param query  The compiled query to run.
         @param encodedParameters  Options parameter values; if this parameter is not NULL,
                         it overrides the parameters assigned by \ref c4query_setParameters.
@@ -83,7 +89,8 @@ NODISCARD CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4query_run(C4Query* query,
         so if you get multiple matches of the same property in the same document, you can skip
         redundant calls with the same values.)
         To find the actual word that was matched, use the term's `start` and `length` fields
-        to get a substring of the returned (UTF-8) string. */
+        to get a substring of the returned (UTF-8) string. 
+        \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4StringResult c4query_fullTextMatched(C4Query* query, const C4FullTextMatch* term,
                                                     C4Error* C4NULLABLE outError) C4API;
 
@@ -108,13 +115,15 @@ NODISCARD CBL_CORE_API bool c4queryenum_seek(C4QueryEnumerator* e, int64_t rowIn
                                              C4Error* C4NULLABLE outError) C4API;
 
 /** Restarts the enumeration, as though it had just been created: the next call to
-        \ref c4queryenum_next will read the first row, and so on from there. */
+        \ref c4queryenum_next will read the first row, and so on from there. 
+        \note The caller must use a lock for Database when this function is called. */
 NODISCARD static inline bool c4queryenum_restart(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API {
     return c4queryenum_seek(e, -1, outError);
 }
 
 /** Checks whether the query results have changed since this enumerator was created;
-        if so, returns a new enumerator. Otherwise returns NULL. */
+        if so, returns a new enumerator. Otherwise returns NULL.
+        \note The caller must use a lock for Database when this function is called. */
 NODISCARD CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_refresh(C4QueryEnumerator*  e,
                                                                          C4Error* C4NULLABLE outError) C4API;
 

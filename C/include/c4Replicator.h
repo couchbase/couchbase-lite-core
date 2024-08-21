@@ -44,6 +44,7 @@ CBL_CORE_API C4StringResult c4address_toURL(C4Address address) C4API;
 
 
 /** Creates a new networked replicator.
+        \note The caller must use a lock for Database when this function is called.
         @param db  The local database.
         @param remoteAddress  The address of the remote server.
         @param remoteDatabaseName  The name of the database at the remote address.
@@ -57,6 +58,7 @@ NODISCARD CBL_CORE_API C4Replicator* c4repl_new(C4Database* db, C4Address remote
 
 #ifdef COUCHBASE_ENTERPRISE
 /** Creates a new replicator to another local database.
+        \note The caller must use a lock for Database when this function is called.
         @param db  The local database.
         @param otherLocalDB  The other local database.
         @param params Replication parameters (see above.)
@@ -71,6 +73,7 @@ NODISCARD CBL_CORE_API C4Replicator* c4repl_newLocal(C4Database* db, C4Database*
 /** Creates a new replicator from an already-open C4Socket. This is for use by listeners
         that accept incoming connections, wrap them by calling `c4socket_fromNative()`, then
         start a passive replication to service them.
+        \note The caller must use a lock for Database when this function is called.
         @param db  The local database.
         @param openSocket  An already-created C4Socket.
         @param params  Replication parameters. Will usually use kC4Passive modes.
@@ -91,7 +94,7 @@ NODISCARD CBL_CORE_API C4Replicator* c4repl_newWithSocket(C4Database* db, C4Sock
 CBL_CORE_API void c4repl_start(C4Replicator* repl, bool reset) C4API;
 
 /** Tells a replicator to stop. Ignored if in the Stopped state.
-        This function is thread-safe.  */
+        \note This function is thread-safe. */
 CBL_CORE_API void c4repl_stop(C4Replicator* repl) C4API;
 
 /** Tells a replicator that's in the offline state to reconnect immediately.
@@ -123,7 +126,7 @@ CBL_CORE_API void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API;
 CBL_CORE_API void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API;
 
 /** Returns the current state of a replicator.
-        This function is thread-safe.  */
+        \note This function is thread-safe.  */
 CBL_CORE_API C4ReplicatorStatus c4repl_getStatus(C4Replicator* repl) C4API;
 
 /** Returns the HTTP response headers as a Fleece-encoded dictionary.
@@ -134,6 +137,7 @@ CBL_CORE_API C4Slice c4repl_getResponseHeaders(C4Replicator* repl) C4API;
      *  API is a snapshot and results may change between the time the call was made and the time
      *  the call returns.
      *
+     *  \note This function is thread-safe.
      *  @param repl  The C4Replicator instance.
      *  @param spec  The collection spec
      *  @param outErr On failure, error information will be written here if non-NULL.
@@ -148,6 +152,7 @@ CBL_CORE_API C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Collect
      *  API is a snapshot and results may change between the time the call was made and the time
      *  the call returns.
      *
+     *  \note This function is thread-safe.
      *  @param repl  The C4Replicator instance.
      *  @param docID The ID of the document to check
      *  @param spec The collection the docID belongs to.
@@ -159,12 +164,14 @@ NODISCARD CBL_CORE_API bool c4repl_isDocumentPending(C4Replicator* repl, C4Strin
                                                      C4Error* C4NULLABLE outErr) C4API;
 
 
-/** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) */
+/** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) 
+    \note This function is thread-safe. */
 NODISCARD CBL_CORE_API C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* C4NULLABLE outErr) C4API;
 
 /** Sets the progress level of the replicator, indicating what information should be provided via
      *  callback.
      *
+     * \note The caller must use a lock for Replicator when this function is called.
      *  @param repl  The C4Replicator instance.
      *  @param level The progress level to set on the replicator
      *  @param outErr Records error information, if any.
@@ -183,6 +190,7 @@ NODISCARD CBL_CORE_API bool c4repl_setProgressLevel(C4Replicator* repl, C4Replic
      *  Session cookies are kept in memory, until the last C4Database handle to the given database
      *  is closed.)
      *
+     *  \note The caller must use a lock for Database when this function is called.
      *  @param db  The C4Databaser instance.
      *  @param setCookieHeader The "Set-Cookie" header.
      *  @param fromHost The host address of the request.
@@ -196,10 +204,12 @@ NODISCARD CBL_CORE_API bool c4db_setCookie(C4Database* db, C4String setCookieHea
                                            C4Error* C4NULLABLE outError) C4API;
 
 /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string
-        that can be used as the value of a "Cookie:" header. */
+        that can be used as the value of a "Cookie:" header. 
+        \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4StringResult c4db_getCookies(C4Database* db, C4Address request, C4Error* C4NULLABLE error) C4API;
 
-/** Removes all cookies from the database's cookie store. */
+/** Removes all cookies from the database's cookie store. 
+        \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API void c4db_clearCookies(C4Database* db) C4API;
 
 /** @} */

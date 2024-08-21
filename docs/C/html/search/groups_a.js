@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['querying_20the_20database_0',['Querying the Database',['../group___querying_d_b.html',1,'']]]
+  ['machine_20learning_20query_0',['Predictive (Machine-Learning) Query',['../group___predictive_query.html',1,'']]],
+  ['miscellaneous_20functions_1',['Miscellaneous Functions',['../group___miscellaneous.html',1,'']]],
+  ['mutable_20values_2',['Mutable Values',['../group___mutable.html',1,'']]]
 ];
