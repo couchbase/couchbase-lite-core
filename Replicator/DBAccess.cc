@@ -338,7 +338,7 @@ namespace litecore::repl {
         bool reEncode;
         {
             lock_guard<mutex> lock(_tempSharedKeysMutex);
-            reEncode = doc.sharedKeys() != _tempSharedKeys || _tempSharedKeys.count() > _tempSharedKeysInitialCount;
+            reEncode = doc.sharedKeys() != (FLSharedKeys)_tempSharedKeys || _tempSharedKeys.count() > _tempSharedKeysInitialCount;
         }
         if ( reEncode ) {
             // Re-encode with database's current sharedKeys:
