@@ -11,8 +11,8 @@
 set -e
 shopt -s extglob dotglob
 
-NDK_VER="23.1.7779620"
-CMAKE_VER="3.23.0"
+NDK_VER="25.1.8937393"
+CMAKE_VER="3.28.1"
 NINJA_VER="1.10.2"
 
 function usage() {
@@ -66,7 +66,7 @@ pushd "couchbase-lite-core/build_cmake/android/armeabi-v7a"
 ${CMAKE} \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
-    -DANDROID_PLATFORM=19 \
+    -DANDROID_PLATFORM=22 \
     -DANDROID_ABI=armeabi-v7a \
     -DBUILD_ENTERPRISE=ON \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
@@ -81,7 +81,7 @@ pushd "couchbase-lite-core/build_cmake/android/arm64-v8a"
 ${CMAKE} \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
-    -DANDROID_PLATFORM=21 \
+    -DANDROID_PLATFORM=22 \
     -DANDROID_ABI=arm64-v8a \
     -DBUILD_ENTERPRISE=ON \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
