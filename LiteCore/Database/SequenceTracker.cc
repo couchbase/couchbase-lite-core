@@ -14,6 +14,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "Error.hh"
+#include "SmallVector.hh"
 #include <algorithm>
 #include <sstream>
 #include <utility>
@@ -242,23 +243,24 @@ namespace litecore {
             entry->external          = true;  // it must have come from addExternalTransaction()
         }
 
-        // Notify document notifiers:
-        for ( auto docNotifier : entry->documentObservers ) docNotifier->notify(entry);
+        // Notify document notifiers. Use a copy in case the callbacks mutate the collection:
+        if ( !entry->documentObservers.empty() ) {
+            auto observers = entry->documentObservers;
+            for ( auto docNotifier : observers ) docNotifier->notify(entry);
+        }
 
         if ( listChanged && _numPlaceholders > 0 ) {
-            // Any placeholders right before this change were up to date, should be notified:
-            bool notified = false;
-            auto ph       = next(_changes.rbegin());  // iterating _backwards_, skipping latest
-            while ( ph != _changes.rend() && ph->isPlaceholder() ) {
-                auto nextph = ph;
-                ++nextph;  // precompute next pos, in case 'ph' moves itself during the callback
-                if ( ph->databaseObserver ) {
-                    ph->databaseObserver->notify();
-                    notified = true;
-                }
-                ph = nextph;
+            // Any placeholders right before this change were up to date and should be notified:
+            // Iterate _backwards_, skipping latest. Call observers after iteration in case the callbacks delete
+            // the observers or otherwise mutate _changes.
+            smallVector<CollectionChangeNotifier*, 4> observers;
+            for ( auto ph = next(_changes.rbegin()); ph != _changes.rend() && ph->isPlaceholder(); ++ph ) {
+                if ( ph->databaseObserver ) observers.push_back(ph->databaseObserver);
             }
-            if ( notified ) removeObsoleteEntries();
+            if ( !observers.empty() ) {
+                for ( auto obs : observers ) obs->notify();
+                removeObsoleteEntries();
+            }
         }
     }
 
