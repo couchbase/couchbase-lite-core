@@ -87,7 +87,7 @@ NODISCARD CBL_CORE_API C4Database* c4db_openAgain(C4Database* db, C4Error* C4NUL
         directory, with the given name. If a database already exists there, it will be overwritten.
         However if there is a failure, the original database will be restored as if nothing
         happened.
-        \note The caller must use a lock for Database when this function is called.
+        \note This function is thread-safe.
         @param sourcePath  The path to the database to be copied.
         @param destinationName  The name (without filename extension) of the database to create.
         @param config  Database configuration (including destination directory.)

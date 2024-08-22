@@ -535,7 +535,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Copies a prebuilt database from the given source path and places it in the destination directory, with the given name. </p>
-<p>If a database already exists there, it will be overwritten. However if there is a failure, the original database will be restored as if nothing happened. </p><dl class="section note"><dt>Note</dt><dd>The caller must use a lock for Database when this function is called. </dd></dl>
+<p>If a database already exists there, it will be overwritten. However if there is a failure, the original database will be restored as if nothing happened. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">sourcePath</td><td>The path to the database to be copied. </td></tr>
