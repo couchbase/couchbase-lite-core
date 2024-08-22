@@ -37,18 +37,22 @@ namespace litecore::actor {
 
             } else if ( earliest->first <= clock::now() ) {
                 // A Timer is ready to fire, so remove it and call the callback:
-                auto timer        = earliest->second;
-                timer->_triggered = true;
-                _unschedule(timer);
+                _triggeredTimer             = earliest->second;
+                _triggeredTimer->_triggered = true;
+                _unschedule(_triggeredTimer);
 
                 // Fire the timer, while not holding the mutex (to avoid deadlocks if the
                 // timer callback calls the Timer API.)
                 lock.unlock();
                 try {
-                    timer->_callback();
+                    _triggeredTimer->_callback();
                 } catch ( ... ) {}
-                timer->_triggered = false;  // note: not holding any lock
-                if ( timer->_autoDelete ) delete timer;
+
+                if ( _triggeredTimer ) {
+                    _triggeredTimer->_triggered = false;  // note: not holding any lock
+                    if ( _triggeredTimer->_autoDelete ) delete _triggeredTimer;
+                    _triggeredTimer = nullptr;
+                }
                 lock.lock();
 
             } else {
@@ -83,8 +87,15 @@ namespace litecore::actor {
         if ( deleting ) {
             timer->_state = kDeleted;
             lock.unlock();
-            // Wait for timer to exit the triggered state (i.e. wait for its callback to complete):
-            while ( timer->_triggered ) this_thread::sleep_for(100us);
+            if ( this_thread::get_id() != _thread.get_id() ) {
+                // If not called on the Manager's thread, wait for timer to exit the triggered state
+                // (i.e. wait for its callback to complete):
+                while ( timer->_triggered ) this_thread::sleep_for(100us);
+            } else {
+                // If called on the Manager's thread, and this is the Timer being triggered,
+                // clear `_triggeredTimer` so when control returns to the run() method it won't access the deleted Timer.
+                if ( timer == _triggeredTimer ) _triggeredTimer = nullptr;
+            }
         }
     }
 

@@ -104,6 +104,7 @@ namespace litecore::actor {
             std::mutex              _mutex;      // Thread-safety for _schedule
             std::condition_variable _condition;  // Used to signal that _schedule has changed
             std::thread             _thread;     // Bg thread that waits & fires Timers
+            Timer*                  _triggeredTimer{nullptr};
         };
 
         friend class Manager;
