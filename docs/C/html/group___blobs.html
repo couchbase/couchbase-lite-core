@@ -358,7 +358,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the path of the file that stores the blob, if possible. </p>
-<p>This call may fail with error kC4ErrorWrongFormat if the blob is encrypted (in which case the file would be unreadable by the caller) or with kC4ErrorUnsupported if for some implementation reason the blob isn't stored as a standalone file. Thus, the caller MUST use this function only as an optimization, and fall back to reading the contents via the API if it fails. Also, it goes without saying that the caller MUST not modify the file! </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
+<p>This call may fail with error kC4ErrorWrongFormat if the blob is encrypted (in which case the file would be unreadable by the caller) or with kC4ErrorUnsupported if for some implementation reason the blob isn't stored as a standalone file. Thus, the caller MUST use this function only as an optimization, and fall back to reading the contents via the API if it fails. Also, it goes without saying that the caller MUST not modify the file! </p>
 
 </div>
 </div>
@@ -382,8 +382,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Gets the content size of a blob given its key. </p>
-<p>Returns -1 if it doesn't exist. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe.</dd></dl>
-<p>WARNING: If the blob is encrypted, the return value is a conservative estimate that may be up to 16 bytes larger than the actual size. </p>
+<p>Returns -1 if it doesn't exist. WARNING: If the blob is encrypted, the return value is a conservative estimate that may be up to 16 bytes larger than the actual size. </p>
 
 </div>
 </div>
@@ -456,7 +455,6 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Opens a blob for reading, as a random-access byte stream. </p>
-<dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 </div>
 </div>
@@ -525,7 +523,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Opens a write stream for creating a new blob. </p>
-<p>You should then call c4stream_write to write the data, ending with c4stream_install to compute the blob's key and add it to the store, and then c4stream_closeWriter. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
+<p>You should then call c4stream_write to write the data, ending with c4stream_install to compute the blob's key and add it to the store, and then c4stream_closeWriter. </p>
 
 </div>
 </div>
@@ -614,7 +612,6 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the exact length in bytes of the stream. </p>
-<dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 </div>
 </div>

@@ -89,8 +89,6 @@ CBL_CORE_API bool c4blob_deleteStore(C4BlobStore*, C4Error* C4NULLABLE) C4API;
        to c4blob_freeStore, c4blob_deleteStore or c4db_close. */
 
 /** Gets the content size of a blob given its key. Returns -1 if it doesn't exist.
-        \note This function is thread-safe.
-        
         WARNING: If the blob is encrypted, the return value is a conservative estimate that may
         be up to 16 bytes larger than the actual size. */
 CBL_CORE_API int64_t c4blob_getSize(C4BlobStore*, C4BlobKey) C4API;
@@ -104,8 +102,7 @@ CBL_CORE_API C4SliceResult c4blob_getContents(C4BlobStore*, C4BlobKey, C4Error* 
         the blob isn't stored as a standalone file.
         Thus, the caller MUST use this function only as an optimization, and fall back to reading
         the contents via the API if it fails.
-        Also, it goes without saying that the caller MUST not modify the file! 
-        \note This function is thread-safe. */
+        Also, it goes without saying that the caller MUST not modify the file! */
 CBL_CORE_API C4StringResult c4blob_getFilePath(C4BlobStore*, C4BlobKey, C4Error* C4NULLABLE) C4API;
 
 /** Derives the key of the given data, without storing it. */
@@ -132,8 +129,7 @@ NODISCARD CBL_CORE_API bool c4blob_delete(C4BlobStore*, C4BlobKey, C4Error* C4NU
        section, with the additional restriction that a stream cannot be called concurrently on
        multiple threads. */
 
-/** Opens a blob for reading, as a random-access byte stream.
-    \note This function is thread-safe. */
+/** Opens a blob for reading, as a random-access byte stream. */
 NODISCARD CBL_CORE_API C4ReadStream* c4blob_openReadStream(C4BlobStore*, C4BlobKey, C4Error* C4NULLABLE) C4API;
 
 /** Reads from an open stream.
@@ -146,8 +142,7 @@ NODISCARD CBL_CORE_API C4ReadStream* c4blob_openReadStream(C4BlobStore*, C4BlobK
 NODISCARD CBL_CORE_API size_t c4stream_read(C4ReadStream* stream, void* buffer, size_t maxBytesToRead,
                                             C4Error* C4NULLABLE error) C4API;
 
-/** Returns the exact length in bytes of the stream. 
-    \note This function is thread-safe. */
+/** Returns the exact length in bytes of the stream. */
 CBL_CORE_API int64_t c4stream_getLength(C4ReadStream*, C4Error* C4NULLABLE) C4API;
 
 /** Moves to a random location in the stream; the next c4stream_read call will read from that
@@ -161,10 +156,13 @@ NODISCARD CBL_CORE_API bool c4stream_seek(C4ReadStream*, uint64_t position, C4Er
 /** \name Streamed Writes
         @{ */
 
+/* NOTE: These functions are thread-safe in the same manner as described in the previous
+       section, with the additional restriction that a stream cannot be called concurrently on
+       multiple threads. */
+
 /** Opens a write stream for creating a new blob. You should then call c4stream_write to
         write the data, ending with c4stream_install to compute the blob's key and add it to
-        the store, and then c4stream_closeWriter. 
-    \note This function is thread-safe. */
+        the store, and then c4stream_closeWriter. */
 NODISCARD CBL_CORE_API C4WriteStream* c4blob_openWriteStream(C4BlobStore*, C4Error* C4NULLABLE) C4API;
 
 /** Writes data to a stream. 
