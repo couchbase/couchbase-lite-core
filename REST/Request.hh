@@ -84,11 +84,13 @@ namespace litecore::REST {
 
         void setHeader(const char* header, const char* value);
 
+        void setHeader(const char* header, std::string const& value) { setHeader(header, value.c_str()); }
+
         void setHeader(const char* header, int64_t value) { setHeader(header, std::to_string(value).c_str()); }
 
         void addHeaders(const std::map<std::string, std::string>&);
 
-        /// Enables 'chunked' encoding.
+        /// Enables HTTP 'chunked' transfer encoding.
         void setChunked();
 
         // Response body:
@@ -107,7 +109,7 @@ namespace litecore::REST {
         void writeStatusJSON(HTTPStatus status, const char* message = nullptr);
         void writeErrorJSON(C4Error);
 
-        /// Flushes output so far to socket. The first call will send the headers first.
+        /// Flushes output so far to socket. The first call will send the status line + headers first.
         /// If `setContentLength` has not been called, will add a `Connection: close` header.
         /// @param minLength  If given, flush only if this many bytes are buffered.
         /// @warning Not compatible with use of jsonEncoder().
@@ -116,7 +118,9 @@ namespace litecore::REST {
         /// MUST be called after everything's written.
         void finish();
 
-        bool finished() const { return _finished; }
+        bool finished() const { return _finished || !_socket; }
+
+        C4Error socketError() const { return _error; }
 
         // WebSocket stuff:
 

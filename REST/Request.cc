@@ -120,7 +120,10 @@ namespace litecore::REST {
             handleSocketError();
             return;
         }
-        if ( !readFromHTTP(request) ) return;
+        if ( !readFromHTTP(request) ) {
+            _error = C4Error::make(WebSocketDomain, int(HTTPStatus::BadRequest));
+            return;
+        }
         if ( _method == Method::POST || _method == Method::PUT ) {
             if ( !_socket->readHTTPBody(_headers, _body) ) {
                 handleSocketError();
@@ -147,11 +150,11 @@ namespace litecore::REST {
         _responseHeaderWriter.write(statusLine);
         _sentStatus = true;
 
-        // Add the 'Date:' header:
-        stringstream s;
-        auto         tp = floor<seconds>(system_clock::now());
-        s << date::format("%a, %d %b %Y %H:%M:%S GMT", tp);
-        setHeader("Date", s.str().c_str());
+        // Add standard headers:
+        auto tp = floor<seconds>(system_clock::now());
+        setHeader("Date", date::format("%a, %d %b %Y %H:%M:%S GMT", tp).c_str());
+        setHeader("Connection", "close");  // I don't support Keep-Alive yet
+        setHeader("Server", ("CouchbaseLite/" + string(c4_getVersion())).c_str());
     }
 
     void RequestResponse::writeStatusJSON(HTTPStatus status, const char* message) {
@@ -243,8 +246,10 @@ namespace litecore::REST {
     }
 
     void RequestResponse::handleSocketError() {
-        C4Error err = _socket->error();
-        WarnError("Socket error sending response: %s", err.description().c_str());
+        if ( C4Error err = _socket->error(); err != _error ) {
+            WarnError("Socket error sending HTTP response: %s", err.description().c_str());
+            if ( !_error ) _error = err;
+        }
     }
 
     void RequestResponse::writeToSocket(slice data) {
@@ -367,7 +372,6 @@ namespace litecore::REST {
         }
         sendHeaders();
 
-        Log("Now sending body...");
         _flush();
         if ( _chunked ) {
             writeToSocket("0\r\n\r\n");  // Ending chunk

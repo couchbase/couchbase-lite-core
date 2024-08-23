@@ -181,7 +181,7 @@ namespace litecore::REST {
                 c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s", responder->peerAddress().c_str());
         }
         RequestResponse rq(this, std::move(responder));
-        if ( rq.isValid() ) {
+        if ( rq.isValid() && !rq.socketError() ) {
             dispatchRequest(&rq);
             rq.finish();
         }
@@ -231,7 +231,7 @@ namespace litecore::REST {
             auto   rule = findRule(method, pathStr);
             if ( rule ) {
                 c4log(ListenerLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
-                rule->handler(*rq);
+                rule->handler(*rq);  // Dispatch request to handler method!
             } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
                 c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
                 rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
@@ -244,7 +244,7 @@ namespace litecore::REST {
             }
         } catch ( const std::exception& x ) {
             c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
-            rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
+            if ( !rq->finished() ) rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }
     }
 
