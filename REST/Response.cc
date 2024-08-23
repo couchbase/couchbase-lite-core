@@ -39,8 +39,11 @@ namespace litecore::REST {
     Value Body::bodyAsJSON() const {
         if ( !_gotBodyFleece ) {
             if ( hasContentType("application/json"_sl) ) {
-                alloc_slice b = body();
-                if ( b ) _bodyFleece = Doc::fromJSON(b, nullptr);
+                if ( alloc_slice b = body() ) {
+                    FLError err;
+                    _bodyFleece = Doc::fromJSON(b, &err);
+                    if ( !_bodyFleece ) Warn("HTTP Body has unparseable JSON (%d): %.*s", err, FMTSLICE(b));
+                }
             }
             _gotBodyFleece = true;
         }
