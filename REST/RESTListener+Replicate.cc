@@ -60,7 +60,7 @@ namespace litecore::REST {
                     replCollections[i].pull       = pullMode;
                 }
                 C4ReplicatorParameters params{};
-                AllocedDict            optionsDict;
+                Doc                    options;
                 params.collectionCount = collections.size();
                 params.collections     = replCollections.data();
                 params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void* context) {
@@ -72,16 +72,13 @@ namespace litecore::REST {
                     enc.beginDict();
                     enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
                     enc.beginDict();
-                    enc.writeKey(C4STR(kC4ReplicatorAuthType));
-                    enc.writeString(kC4AuthTypeBasic);
-                    enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
-                    enc.writeString(_user);
-                    enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
-                    enc.writeString(_password);
+                    enc[kC4ReplicatorAuthType]     = kC4AuthTypeBasic;
+                    enc[kC4ReplicatorAuthUserName] = _user;
+                    enc[kC4ReplicatorAuthPassword] = _password;
                     enc.endDict();
                     enc.endDict();
-                    optionsDict              = AllocedDict(enc.finish());
-                    params.optionsDictFleece = optionsDict.data();
+                    options                  = enc.finishDoc();
+                    params.optionsDictFleece = options.data();
                 }
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
                 _repl->start();
@@ -132,25 +129,10 @@ namespace litecore::REST {
 
         void writeDescription(fleece::JSONEncoder& json) override {
             Task::writeDescription(json);
+            json.writeFormatted(
+                    "type:'replication', session_id:%u, source:%.*s, target:%.*s, continuous: %-c, bidi: %-c", taskID(),
+                    SPLAT(_source), SPLAT(_target), char(_continuous), char(_bidi));
 
-            json.writeKey("type"_sl);
-            json.writeString("replication"_sl);
-            json.writeKey("session_id"_sl);
-            json.writeUInt(taskID());
-            json.writeKey("source"_sl);
-            json.writeString(_source);
-            json.writeKey("target"_sl);
-            json.writeString(_target);
-            if ( _continuous ) {
-                json.writeKey("continuous"_sl);
-                json.writeBool(true);
-            }
-            if ( _bidi ) {
-                json.writeKey("bidi"_sl);
-                json.writeBool(true);
-            }
-
-            Lock lock(_mutex);
 
             json.writeKey("updated_on"_sl);
             json.writeUInt(_timeUpdated);
@@ -316,12 +298,7 @@ namespace litecore::REST {
 
         auto& json = rq.jsonEncoder();
         if ( statusCode == HTTPStatus::OK ) {
-            json.beginDict();
-            json.writeKey("ok"_sl);
-            json.writeBool(true);
-            json.writeKey("session_id"_sl);
-            json.writeUInt(task->taskID());
-            json.endDict();
+            json.writeFormatted("{ok: true, session_id: %u}", task->taskID());
         } else {
             task->writeErrorInfo(json);
         }

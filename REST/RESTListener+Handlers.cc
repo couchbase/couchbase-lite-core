@@ -29,38 +29,25 @@ namespace litecore::REST {
 
     void RESTListener::handleGetRoot(RequestResponse& rq) {
         alloc_slice version(c4_getVersion());
-        auto&       json = rq.jsonEncoder();
-        json.beginDict();
-        json.writeKey("couchdb"_sl);
-        json.writeString("Welcome"_sl);
-        json.writeKey("vendor"_sl);
-        json.beginDict();
-        json.writeKey("name"_sl);
-        json.writeString(kServerName);
-        json.writeKey("version"_sl);
-        json.writeString(version);
-        json.endDict();
-        json.writeKey("version"_sl);
-        json.writeString(serverNameAndVersion());
-        json.endDict();
+        alloc_slice nameAndVersion(serverNameAndVersion());
+        rq.jsonEncoder().writeFormatted("{couchdb:'Welcome', vendor: {name: %s, version: %.*s}, version: %.*s}",
+                                        kServerName.c_str(), FMTSLICE(version), FMTSLICE(nameAndVersion));
     }
 
     void RESTListener::handleGetAllDBs(RequestResponse& rq) {
         auto& json = rq.jsonEncoder();
-        json.beginArray();
-        for ( string& name : databaseNames() ) json.writeString(name);
-        json.endArray();
+        json.writeArray([&] {
+            for ( string& name : databaseNames() ) json.writeString(name);
+        });
     }
 
     void RESTListener::handleActiveTasks(RequestResponse& rq) {
         auto& json = rq.jsonEncoder();
-        json.beginArray();
-        for ( auto& task : tasks() ) {
-            json.beginDict();
-            task->writeDescription(json);
-            json.endDict();
-        }
-        json.endArray();
+        json.writeArray([&] {
+            for ( auto& task : tasks() ) {
+                json.writeDict([&] { task->writeDescription(json); });
+            }
+        });
     }
 
 #pragma mark - DATABASE HANDLERS:
@@ -72,49 +59,36 @@ namespace litecore::REST {
         auto   docCount     = coll->getDocumentCount();
         auto   lastSequence = coll->getLastSequence();
         C4UUID uuid         = db->getPublicUUID();
-        auto   uuidStr      = slice(&uuid, sizeof(uuid)).hexString();
+        string uuidStr      = slice(&uuid, sizeof(uuid)).hexString();
         slice  scope        = coll->getScope();
+        slice  collection   = coll->getName();
         if ( !scope ) scope = kC4DefaultScopeID;
 
         auto& json = rq.jsonEncoder();
-        json.beginDict();
-        json.writeKey("db_name"_sl);
-        json.writeString(*dbName);
-        json.writeKey("db_uuid"_sl);
-        json.writeString(uuidStr);
-        json.writeKey("scope_name"_sl);
-        json.writeString(scope);
-        json.writeKey("collection_name"_sl);
-        json.writeString(coll->getName());
-        json.writeKey("doc_count"_sl);
-        json.writeUInt(docCount);
-        json.writeKey("update_seq"_sl);
-        json.writeUInt(uint64_t(lastSequence));
-        json.writeKey("committed_update_seq"_sl);
-        json.writeUInt(uint64_t(lastSequence));
+        json.writeDict([&] {
+            json.writeFormatted("db_name: %s, db_uuid: %s, scope_name: %.*s, collection_name: %.*s, "
+                                "doc_count: %llu, update_seq: %llu, committed_update_seq: %llu",
+                                dbName->c_str(), uuidStr.c_str(), FMTSLICE(scope), FMTSLICE(collection), docCount,
+                                uint64_t(lastSequence), uint64_t(lastSequence));
 
-        if ( !collectionGiven(rq) ) {
-            // List all the scope and collections:
-            json.writeKey("scopes");
-            json.beginDict();
-            db->forEachScope([&](slice scope) {
-                json.writeKey(scope);
-                json.beginDict();
-                db->forEachCollection(scope, [&](C4CollectionSpec const& spec) {
-                    C4Collection* coll = db->getCollection(spec);
-                    json.writeKey(spec.name);
-                    json.beginDict();
-                    json.writeKey("doc_count"_sl);
-                    json.writeUInt(coll->getDocumentCount());
-                    json.writeKey("update_seq"_sl);
-                    json.writeUInt(uint64_t(coll->getLastSequence()));
-                    json.endDict();
+            if ( !collectionGiven(rq) ) {
+                // List all the scope and collections:
+                json.writeKey("scopes");
+                json.writeDict([&] {
+                    db->forEachScope([&](slice scope) {
+                        json.writeKey(scope);
+                        json.writeDict([&] {
+                            db->forEachCollection(scope, [&](C4CollectionSpec const& spec) {
+                                C4Collection* coll = db->getCollection(spec);
+                                json.writeKey(spec.name);
+                                json.writeFormatted("{doc_count: %llu, update_seq: %llu}", coll->getDocumentCount(),
+                                                    uint64_t(coll->getLastSequence()));
+                            });
+                        });
+                    });
                 });
-                json.endDict();
-            });
-            json.endDict();
-        }
-        json.endDict();
+            }
+        });
     }
 
     void RESTListener::handleCreateDatabase(RequestResponse& rq) {
@@ -183,38 +157,32 @@ namespace litecore::REST {
         int64_t limit = rq.intQuery("limit", INT64_MAX);
         // TODO: Implement startkey, endkey, etc.
 
+        rq.setHeader("Content-Type", "application/json");
+        rq.write("{\"rows\": [\n");
+
         // Create enumerator:
         C4DocEnumerator e(coll, options);
 
         // Enumerate, building JSON:
-        auto& json = rq.jsonEncoder();
-        json.beginDict();
-        json.writeKey("rows"_sl);
-        json.beginArray();
+        JSONEncoder json;
         while ( e.next() ) {
             if ( skip-- > 0 ) continue;
             else if ( limit-- <= 0 )
                 break;
             C4DocumentInfo info = e.documentInfo();
-            json.beginDict();
-            json.writeKey("key"_sl);
-            json.writeString(info.docID);
-            json.writeKey("id"_sl);
-            json.writeString(info.docID);
-            json.writeKey("value"_sl);
-            json.beginDict();
-            json.writeKey("rev"_sl);
-            json.writeString(info.revID);
-            json.endDict();
-
-            if ( includeDocs ) {
-                json.writeKey("doc"_sl);
-                expert(json).writeRaw(e.getDocument()->bodyAsJSON());
-            }
-            json.endDict();
+            json.writeDict([&] {
+                json.writeFormatted("key: %.*s, id: %.*s, value: {rev: %.*s},", FMTSLICE(info.docID),
+                                    FMTSLICE(info.docID), FMTSLICE(info.revID));
+                if ( includeDocs ) {
+                    json.writeKey("doc"_sl);
+                    json.writeRaw(e.getDocument()->bodyAsJSON());
+                }
+            });
+            rq.write(json.finish());
+            rq.write("\n");
+            rq.flush(32768);
         }
-        json.endArray();
-        json.endDict();
+        rq.write("]}");
     }
 
     void RESTListener::handleGetDoc(RequestResponse& rq, C4Collection* coll) {

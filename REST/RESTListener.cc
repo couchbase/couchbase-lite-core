@@ -207,10 +207,7 @@ namespace litecore::REST {
     }
 
     void RESTListener::Task::writeDescription(fleece::JSONEncoder& json) {
-        json.writeKey("pid"_sl);
-        json.writeUInt(_taskID);
-        json.writeKey("started_on"_sl);
-        json.writeUInt(_timeStarted);
+        json.writeFormatted("pid: %u, started_on: %lu", _taskID, _timeStarted.load());
     }
 
     unsigned RESTListener::registerTask(Task* task) {
