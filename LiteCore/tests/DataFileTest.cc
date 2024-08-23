@@ -664,7 +664,7 @@ TEST_CASE("CanonicalPath") {
     CHECK(path.canonicalPath() == endPath);
 
 #ifdef _MSC_VER
-    startPath = (const char *)u8"C:\\日本語\\";
+    startPath = (const char*)u8"C:\\日本語\\";
     endPath   = startPath;
 #else
     startPath = tmpPath + (const char*)u8"日本語";
