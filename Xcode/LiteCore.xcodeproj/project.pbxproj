@@ -500,6 +500,7 @@
 		27FA568424AD0E9300B2F1F8 /* Pusher+Attachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FA568324AD0E9300B2F1F8 /* Pusher+Attachments.cc */; };
 		27FA568924AD0F8E00B2F1F8 /* Pusher+Revs.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FA568824AD0F8E00B2F1F8 /* Pusher+Revs.cc */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
+		27FACB6E2C7697B1006A7917 /* RESTListener+Changes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FACB6D2C7697B1006A7917 /* RESTListener+Changes.cc */; };
 		27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FB0C3C205B18A500987D9C /* Instrumentation.cc */; };
 		27FC81F61EAAB7C60028E38E /* RESTListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851201EA4537A009CA22F /* RESTListener.cc */; };
 		27FC81F91EAAB7C60028E38E /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
@@ -1623,6 +1624,7 @@
 		27FA568824AD0F8E00B2F1F8 /* Pusher+Revs.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Pusher+Revs.cc"; sourceTree = "<group>"; };
 		27FA568F24AD4BBB00B2F1F8 /* ChangesFeed.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ChangesFeed.hh; sourceTree = "<group>"; };
 		27FA569524B640E700B2F1F8 /* RemoteSequence.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequence.hh; sourceTree = "<group>"; };
+		27FACB6D2C7697B1006A7917 /* RESTListener+Changes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "RESTListener+Changes.cc"; sourceTree = "<group>"; };
 		27FB0C37205B177100987D9C /* Instrumentation.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Instrumentation.hh; sourceTree = "<group>"; };
 		27FB0C3C205B18A500987D9C /* Instrumentation.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Instrumentation.cc; sourceTree = "<group>"; };
 		27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libLiteCoreREST-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2009,12 +2011,13 @@
 		272851111EA44902009CA22F /* REST */ = {
 			isa = PBXGroup;
 			children = (
-				275A74CF1ED3A4E1008CB57B /* Listener.cc */,
 				275A74D01ED3A4E1008CB57B /* Listener.hh */,
+				275A74CF1ED3A4E1008CB57B /* Listener.cc */,
+				272851211EA4537A009CA22F /* RESTListener.hh */,
 				272851201EA4537A009CA22F /* RESTListener.cc */,
 				2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */,
+				27FACB6D2C7697B1006A7917 /* RESTListener+Changes.cc */,
 				270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */,
-				272851211EA4537A009CA22F /* RESTListener.hh */,
 				2728512C1EA46475009CA22F /* Server.cc */,
 				2728512D1EA46475009CA22F /* Server.hh */,
 				276E02191EA983EE00FEFE8A /* Response.cc */,
@@ -4603,6 +4606,7 @@
 				27FC81F61EAAB7C60028E38E /* RESTListener.cc in Sources */,
 				279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */,
 				270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
+				27FACB6E2C7697B1006A7917 /* RESTListener+Changes.cc in Sources */,
 				2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
 				27175B12261B91170045F3AC /* REST_CAPI.cc in Sources */,

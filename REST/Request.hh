@@ -43,8 +43,11 @@ namespace litecore::REST {
 
         std::string path(int i) const;
 
+        std::string_view queries() const { return _queries; }
+
         std::string query(const char* param) const;
         int64_t     intQuery(const char* param, int64_t defaultValue = 0) const;
+        uint64_t    uintQuery(const char* param, uint64_t defaultValue = 0) const;
         bool        boolQuery(const char* param, bool defaultValue = false) const;
 
       protected:
@@ -63,6 +66,9 @@ namespace litecore::REST {
     /** Incoming HTTP request (inherited from Request), plus setters for the response. */
     class RequestResponse : public Request {
       public:
+        RequestResponse(RequestResponse&&);
+        ~RequestResponse();
+
         // Response status:
 
         void respondWithStatus(HTTPStatus, const char* message = nullptr);
@@ -82,6 +88,9 @@ namespace litecore::REST {
 
         void addHeaders(const std::map<std::string, std::string>&);
 
+        /// Enables 'chunked' encoding.
+        void setChunked();
+
         // Response body:
 
         void setContentLength(uint64_t length);
@@ -98,8 +107,16 @@ namespace litecore::REST {
         void writeStatusJSON(HTTPStatus status, const char* message = nullptr);
         void writeErrorJSON(C4Error);
 
-        // Must be called after everything's written:
+        /// Flushes output so far to socket. The first call will send the headers first.
+        /// If `setContentLength` has not been called, will add a `Connection: close` header.
+        /// @param minLength  If given, flush only if this many bytes are buffered.
+        /// @warning Not compatible with use of jsonEncoder().
+        void flush(size_t minLength = 0);
+
+        /// MUST be called after everything's written.
         void finish();
+
+        bool finished() const { return _finished; }
 
         // WebSocket stuff:
 
@@ -117,6 +134,8 @@ namespace litecore::REST {
         RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket>);
         void sendStatus();
         void sendHeaders();
+        void writeToSocket(fleece::slice);
+        void _flush();
         void handleSocketError();
 
       private:
@@ -135,6 +154,8 @@ namespace litecore::REST {
         fleece::Writer _responseHeaderWriter;
         bool           _endedHeaders{false};  // True after headers are ended
         int64_t        _contentLength{-1};    // Content-Length, once it's set
+        bool           _streaming{false};     // If true, content is being streamed, no Content-Length header
+        bool           _chunked{false};       // True if using chunked transfer encoding
 
         fleece::Writer                       _responseWriter;   // Output stream for response body
         std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;      // Used for writing JSON to response

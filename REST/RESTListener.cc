@@ -13,6 +13,7 @@
 #include "RESTListener.hh"
 #include "c4Certificate.hh"
 #include "c4Database.hh"
+#include "c4ListenerInternal.hh"
 #include "Server.hh"
 #include "TLSContext.hh"
 #include "Certificate.hh"
@@ -76,6 +77,7 @@ namespace litecore::REST {
             // Database-level special handlers:
             addCollectionHandler(Method::GET, "/[^_][^/]*/_all_docs", &RESTListener::handleGetAllDocs);
             addCollectionHandler(Method::POST, "/[^_][^/]*/_bulk_docs", &RESTListener::handleBulkDocs);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_changes", &RESTListener::handleChanges);
 
             // Document:
             addCollectionHandler(Method::GET, "/[^_][^/]*/[^_].*", &RESTListener::handleGetDoc);
@@ -194,17 +196,19 @@ namespace litecore::REST {
 
     void RESTListener::Task::registerTask() {
         if ( !_taskID ) {
-            time(&_timeStarted);
-            _taskID = _listener->registerTask(this);
+            _timeStarted = ::time(nullptr);
+            _taskID      = _listener->registerTask(this);
         }
     }
 
     void RESTListener::Task::unregisterTask() {
         if ( _taskID ) {
-            _listener->unregisterTask(this);
             _taskID = 0;
+            _listener->unregisterTask(this);
         }
     }
+
+    void RESTListener::Task::bumpTimeUpdated() { _timeUpdated = ::time(nullptr); }
 
     void RESTListener::Task::writeDescription(fleece::JSONEncoder& json) {
         json.writeFormatted("pid: %u, started_on: %lu", _taskID, _timeStarted.load());

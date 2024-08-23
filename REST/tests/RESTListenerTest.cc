@@ -109,8 +109,8 @@ class C4RESTTest
         string               scheme = config.tlsConfig ? "https" : "http";
         auto                 port   = c4listener_getPort(listener());
         unique_ptr<Response> r;
-        unsigned             totalAttempt = 5;
-        double               timeout      = 5;
+        unsigned             totalAttempt = 3;
+        double               timeout      = 10;
         for ( unsigned attemptCount = 0; attemptCount < totalAttempt; ++attemptCount ) {
             r.reset(new Response(scheme, method, requestHostname, port, uri));
             r->setHeaders(headers).setBody(body);
@@ -121,12 +121,16 @@ class C4RESTTest
 #    endif
             r->setTimeout(timeout);
             if ( !r->run() ) {
-                if ( r->error().code != websocket::kNetErrTimeout || attemptCount + 1 == totalAttempt ) {
+                if ( r->error() != C4Error{NetworkDomain, websocket::kNetErrTimeout}
+                     || attemptCount + 1 == totalAttempt ) {
                     if ( attemptCount > 0 )
                         C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s after %d timeouts",
                                   c4error_descriptionStr(r->error()), attemptCount);
                     else
                         C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
+                    break;
+                } else {
+                    C4LogToAt(kC4DefaultLog, kC4LogWarning, "Request timed out; retrying...");
                 }
             } else {
                 if ( attemptCount > 0 )
@@ -607,6 +611,158 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
     CHECK(doc["error"].asString() == "Not Found"_sl);
 }
 
+#    pragma mark - CHANGES:
+
+TEST_CASE_METHOD(C4RESTTest, "REST _changes", "[REST][Listener][C]") {
+    // Empty database:
+    unique_ptr<Response> r;
+    r         = request("GET", "/db/_changes", HTTPStatus::OK);
+    Dict body = r->bodyAsJSON().asDict();
+    CHECK(body["last_seq"].type() == kFLNumber);
+    CHECK(body["last_seq"].asInt() == 0);
+    auto rows = body["results"].asArray();
+    CHECK(rows);
+    CHECK(rows.empty());
+
+    request("PUT", "/db/mydocument", {{"Content-Type", "application/json"}}, R"({"year": 1964})", HTTPStatus::Created);
+    request("PUT", "/db/foo", {{"Content-Type", "application/json"}}, R"({"age": 17})", HTTPStatus::Created);
+
+    // Get 2 changes:
+    r    = request("GET", "/db/_changes", HTTPStatus::OK);
+    body = r->bodyAsJSON().asDict();
+    CHECK(body["last_seq"].asInt() == 2);
+    rows = body["results"].asArray();
+    CHECK(rows);
+    REQUIRE(rows.count() == 2);
+    Dict row = rows[0].asDict();
+    CHECK(row);
+    CHECK(row["seq"].asInt() == 1);
+    CHECK(row["id"].asString() == "mydocument");
+    CHECK(row["changes"].asArray()[0].asDict()["rev"].type() == kFLString);
+    row = rows[1].asDict();
+    CHECK(row);
+    CHECK(row["seq"].asInt() == 2);
+    CHECK(row["id"].asString() == "foo");
+    CHECK(row["changes"].asArray()[0].asDict()["rev"].type() == kFLString);
+
+    // ?since=1
+    r    = request("GET", "/db/_changes?since=1", HTTPStatus::OK);
+    body = r->bodyAsJSON().asDict();
+    rows = body["results"].asArray();
+    CHECK(rows[0].asDict()["seq"].asInt() == 2);
+
+    // ?since=99
+    r    = request("GET", "/db/_changes?since=99", HTTPStatus::OK);
+    body = r->bodyAsJSON().asDict();
+    rows = body["results"].asArray();
+    CHECK(rows.empty());
+
+    // ?since=1&include_docs=true
+    r    = request("GET", "/db/_changes?since=1&include_docs=true", HTTPStatus::OK);
+    body = r->bodyAsJSON().asDict();
+    row  = body["results"].asArray()[0].asDict();
+    CHECK(row);
+    CHECK(row["seq"].asInt() == 2);
+    CHECK(row["id"].asString() == "foo");
+    CHECK(row["changes"].asArray()[0].asDict()["rev"].type() == kFLString);
+    Dict doc = row["doc"].asDict();
+    CHECK(doc.count() == 1);
+    CHECK(doc["age"].asInt() == 17);
+}
+
+TEST_CASE_METHOD(C4RESTTest, "REST _changes longpoll", "[REST][Listener][C]") {
+    createFleeceRev(db, "mydocument"_sl, "1-1111"_sl, R"({"year": 1964})"_sl);
+    createFleeceRev(db, "foo"_sl, "1-1111"_sl, R"({"age": 17})"_sl);
+
+    share(db, "db"_sl);
+
+    SECTION("No wait") {
+        // Changes are already available; will not wait:
+        auto r = request("GET", "/db/_changes?feed=longpoll", HTTPStatus::OK);
+        Log("Response: %.*s", SPLAT(r->body()));
+        Dict body = r->bodyAsJSON().asDict();
+        CHECK(body["last_seq"].asInt() == 2);
+        Array rows = body["results"].asArray();
+        CHECK(rows.count() == 2);
+    }
+
+    SECTION("Timeout") {
+        // No changes but a short timeout:
+        auto r    = request("GET", "/db/_changes?since=2&feed=longpoll&timeout=2000", HTTPStatus::OK);
+        Dict body = r->bodyAsJSON().asDict();
+        CHECK(body["last_seq"].asInt() == 2);
+        Array rows = body["results"].asArray();
+        CHECK(rows.count() == 0);
+    }
+
+    SECTION("Wait then data") {
+        // No changes, but after 2 seconds create a new doc so the call will return it:
+        mutex  dbMutex;
+        thread bgUpdate([this, &dbMutex] {
+            this_thread::sleep_for(2s);
+            unique_lock lock(dbMutex);
+            Log("---- Creating new doc!");
+            createFleeceRev(db, "new"_sl, "1-f000"_sl, R"({"age": 1})"_sl);
+            Log("---- Done creating doc!");
+        });
+        auto   r = request("GET", "/db/_changes?since=2&feed=longpoll&include_docs=true", HTTPStatus::OK);
+
+        unique_lock lock(dbMutex);
+        Dict        body = r->bodyAsJSON().asDict();
+        CHECK(body["last_seq"].asInt() == 3);
+        Array rows = body["results"].asArray();
+        REQUIRE(rows.count() == 1);
+        Dict row = rows[0].asDict();
+        CHECK(row);
+        CHECK(row["seq"].asInt() == 3);
+        CHECK(row["id"].asString() == "new");
+        CHECK(row["changes"].asArray()[0].asDict()["rev"].type() == kFLString);
+        CHECK(row["doc"].asDict()["age"].asInt() == 1);
+        bgUpdate.join();
+    }
+}
+
+TEST_CASE_METHOD(C4RESTTest, "REST _changes continuous", "[REST][Listener][C]") {
+    createFleeceRev(db, "mydocument"_sl, "1-1111"_sl, R"({"year": 1964})"_sl);
+    createFleeceRev(db, "foo"_sl, "2-2222"_sl, R"({"age": 17})"_sl);
+
+    SECTION("No wait") {
+        // Changes are already available; will not wait:
+        auto r = request("GET", "/db/_changes?feed=continuous&timeout=100", HTTPStatus::OK);
+        CHECK(r->hasContentType("text/plain; charset=utf-8"));
+        vector<string_view> lines = split(r->body(), "\n");
+        REQUIRE(lines.size() == 2);
+        CHECK(lines[0] == R"({"seq":1,"id":"mydocument","changes":[{"rev":"1-1111"}]})");
+        CHECK(lines[1] == R"({"seq":2,"id":"foo","changes":[{"rev":"2-2222"}]})");
+    }
+
+    SECTION("Timeout") {
+        // No changes but a short timeout:
+        auto                r     = request("GET", "/db/_changes?since=2&feed=continuous&timeout=2000", HTTPStatus::OK);
+        vector<string_view> lines = split(r->body(), "\n");
+        REQUIRE(lines.size() == 0);
+    }
+
+    SECTION("Wait then data") {
+        // No changes, but after 2 seconds create a new doc so the call will return it:
+        mutex  dbMutex;
+        thread bgUpdate([this, &dbMutex] {
+            this_thread::sleep_for(2s);
+            unique_lock lock(dbMutex);
+            Log("---- Creating new doc!");
+            createFleeceRev(db, "new"_sl, "1-f000"_sl, R"({"age": 1})"_sl);
+            Log("---- Done creating doc!");
+        });
+        auto r = request("GET", "/db/_changes?since=2&feed=continuous&include_docs=true&timeout=4000", HTTPStatus::OK);
+
+        unique_lock         lock(dbMutex);
+        vector<string_view> lines = split(r->body(), "\n");
+        REQUIRE(lines.size() == 1);
+        CHECK(lines[0] == R"({"seq":3,"id":"new","changes":[{"rev":"1-f000"}],"doc":{"age":1}})");
+        bgUpdate.join();
+    }
+}
+
 #    pragma mark - HTTP AUTH:
 
 TEST_CASE_METHOD(C4RESTTest, "REST HTTP auth missing", "[REST][Listener][C]") {
@@ -781,7 +937,7 @@ TEST_CASE_METHOD(C4RESTTest, "Sync Listener URLs", "[REST][Listener][TLS][C]") {
 // They require special set-up of the Sync Gateway server, c.f. ReplicatorSGTest.cc.
 
 // Continuous replication without authentication
-TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, Continuous", "[REST][Listener][C][.SyncServer]") {
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous", "[REST][Listener][C][.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     std::stringstream body;
     string            targetDb = slice(ReplicatorAPITest::kScratchDBName).asString();
@@ -802,7 +958,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, Continuous", "[REST][Listener
 }
 
 // OneShot replication.
-TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, OneShot", "[REST][Listener][C][.SyncServer]") {
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate OneShot", "[REST][Listener][C][.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     std::stringstream body;
     body << "{source: 'db',"
@@ -814,7 +970,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, OneShot", "[REST][Listener][C
 }
 
 // Continuous replication with authentication
-TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Listener][C][.SyncServer]") {
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous Auth", "[REST][Listener][C][.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     std::stringstream body;
     string            targetDb = slice(ReplicatorAPITest::kProtectedDBName).asString();
@@ -868,7 +1024,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous (collections)",
 }
 
 // OneShot replication with authentication.
-TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Oneshot, Auth", "[REST][Listener][C][.SyncServer]") {
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Oneshot Auth", "[REST][Listener][C][.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     std::stringstream body;
     body << "{source: 'db',"

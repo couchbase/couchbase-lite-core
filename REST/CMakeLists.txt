@@ -28,6 +28,7 @@ set(
     netUtils.cc
     Request.cc
     Response.cc
+    RESTListener+Changes.cc
     RESTListener+Handlers.cc
     RESTListener+Replicate.cc
     RESTListener.cc

@@ -31,9 +31,6 @@ namespace litecore::REST {
 
     class ReplicationTask : public RESTListener::Task {
       public:
-        using Mutex = recursive_mutex;
-        using Lock  = unique_lock<Mutex>;
-
         ReplicationTask(RESTListener* listener, slice source, slice target, bool bidi, bool continuous)
             : Task(listener), _source(source), _target(target), _bidi(bidi), _continuous(continuous) {}
 
@@ -42,7 +39,7 @@ namespace litecore::REST {
                    const std::vector<C4CollectionSpec>& collections = {kC4DefaultCollectionSpec}) {
             if ( findMatchingTask() ) C4Error::raise(WebSocketDomain, 409, "Equivalent replication already running");
 
-            Lock lock(_mutex);
+            unique_lock lock(_mutex);
             _push = (pushMode >= kC4OneShot);
             registerTask();
             try {
@@ -113,17 +110,17 @@ namespace litecore::REST {
         }
 
         bool finished() const override {
-            Lock lock(_mutex);
+            unique_lock lock(_mutex);
             return _finalResult != HTTPStatus::undefined;
         }
 
         C4ReplicatorStatus status() {
-            Lock lock(_mutex);
+            unique_lock lock(_mutex);
             return _status;
         }
 
         alloc_slice message() {
-            Lock lock(_mutex);
+            unique_lock lock(_mutex);
             return _message;
         }
 
@@ -133,9 +130,10 @@ namespace litecore::REST {
                     "type:'replication', session_id:%u, source:%.*s, target:%.*s, continuous: %-c, bidi: %-c", taskID(),
                     SPLAT(_source), SPLAT(_target), char(_continuous), char(_bidi));
 
+            unique_lock lock(_mutex);
 
             json.writeKey("updated_on"_sl);
-            json.writeUInt(_timeUpdated);
+            json.writeUInt(timeUpdated());
 
             static slice const kStatusName[] = {"Stopped"_sl, "Offline"_sl, "Connecting"_sl, "Idle"_sl, "Active"_sl};
             json.writeKey("status"_sl);
@@ -147,10 +145,9 @@ namespace litecore::REST {
             }
 
             if ( _status.progress.unitsTotal > 0 ) {
-                double fraction = narrow_cast<double>(_status.progress.unitsCompleted) * 100.0
-                                  / narrow_cast<double>(_status.progress.unitsTotal);
-                json.writeKey("progress"_sl);
-                json.writeInt(int64_t(fraction));
+                double percent = narrow_cast<double>(_status.progress.unitsCompleted) * 100.0
+                                 / narrow_cast<double>(_status.progress.unitsTotal);
+                json["progress"] = int64_t(percent);
             }
 
             if ( _status.progress.documentCount > 0 ) {
@@ -164,25 +161,19 @@ namespace litecore::REST {
         }
 
         void writeErrorInfo(JSONEncoder& json) {
-            Lock lock(_mutex);
-            json.beginDict();
-            json.writeKey("error"_sl);
-            json.writeString(_message);
-            json.writeKey("x-litecore-domain"_sl);
-            json.writeInt(_status.error.domain);
-            json.writeKey("x-litecore-code"_sl);
-            json.writeInt(_status.error.code);
-            json.endDict();
+            unique_lock lock(_mutex);
+            json.writeFormatted("{error: %.*s, 'x-litecore-domain': %d, 'x-litecore-code': %d}", SPLAT(_message),
+                                _status.error.domain, _status.error.code);
         }
 
         HTTPStatus wait() {
-            Lock lock(_mutex);
+            unique_lock lock(_mutex);
             _cv.wait(lock, [this] { return finished(); });
             return _finalResult;
         }
 
         void stop() override {
-            Lock lock(_mutex);
+            unique_lock lock(_mutex);
             if ( _repl ) {
                 c4log(ListenerLog, kC4LogInfo, "Replicator task #%u stopping...", taskID());
                 _repl->stop();
@@ -198,14 +189,14 @@ namespace litecore::REST {
       private:
         void onReplStateChanged(const C4ReplicatorStatus& status) {
             {
-                Lock lock(_mutex);
+                unique_lock lock(_mutex);
                 _status  = status;
                 _message = c4error_getMessage(status.error);
                 if ( status.level == kC4Stopped ) {
                     _finalResult = status.error.code ? HTTPStatus::GatewayError : HTTPStatus::OK;
                     _repl        = nullptr;
                 }
-                time(&_timeUpdated);
+                bumpTimeUpdated();
             }
             if ( finished() ) {
                 c4log(ListenerLog, kC4LogInfo, "Replicator task #%u finished", taskID());
@@ -217,7 +208,6 @@ namespace litecore::REST {
         alloc_slice            _source, _target;
         alloc_slice            _user, _password;
         bool                   _bidi, _continuous, _push{};
-        mutable Mutex          _mutex;
         condition_variable_any _cv;
         Retained<C4Replicator> _repl;
         C4ReplicatorStatus     _status{};
@@ -242,11 +232,16 @@ namespace litecore::REST {
         bool             continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
 
-        Array                         collections = params["collections"].asArray();
         std::vector<C4CollectionSpec> collSpecs;
-        for ( Array::iterator iter(collections); iter; iter.next() ) {
-            slice collPath = iter.value().asString();
-            collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
+        if ( Array collections = params["collections"].asArray() ) {
+            for ( Array::iterator iter(collections); iter; iter.next() ) {
+                slice collPath = iter.value().asString();
+                collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
+            }
+            if ( collSpecs.empty() )
+                return rq.respondWithStatus(HTTPStatus::BadRequest, "At least one collection must be replicated");
+        } else {
+            collSpecs.push_back({kC4DefaultScopeID, kC4DefaultCollectionName});
         }
 
         slice            localName;

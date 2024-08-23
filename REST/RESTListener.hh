@@ -15,6 +15,7 @@
 #include "Listener.hh"
 #include "Server.hh"
 #include "FilePath.hh"
+#include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
 #include <memory>
 #include <mutex>
@@ -49,33 +50,43 @@ namespace litecore::REST {
         bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
 
         /** An asynchronous task (like a replication). */
-        class Task : public RefCounted {
+        class Task
+            : public RefCounted
+            , public InstanceCountedIn<Task> {
           public:
             explicit Task(RESTListener* listener) : _listener(listener) {}
 
             RESTListener* listener() const { return _listener; }
 
+            /// A unique integer ID, assigned when registerTask is called (until then, 0.)
             unsigned taskID() const { return _taskID; }
 
+            /// The time activity last occurred (i.e. when bumpTimeUpdated was called.)
             time_t timeUpdated() const { return _timeUpdated; }
 
+            /// Call this when activity occurs: it sets timeUpdated to now.
+            void bumpTimeUpdated();
+
+            /// Should return true if the Task has completed its work.
             virtual bool finished() const = 0;
+
+            /// Should add keys+values to the encoder to describe the Task.
             virtual void writeDescription(fleece::JSONEncoder&);
 
+            /// Should stop whatever activity the Task is doing.
             virtual void stop() = 0;
 
-            void registerTask();
-            void unregisterTask();
+            void registerTask();    ///< Call this before returning from handler
+            void unregisterTask();  ///< Call this when the Task is finished.
 
           protected:
-            ~Task() override = default;
-
-            time_t _timeUpdated{0};
+            mutable std::recursive_mutex _mutex;
 
           private:
             RESTListener* const _listener;
             unsigned            _taskID{0};
-            time_t              _timeStarted{0};
+            std::atomic<time_t> _timeStarted{0};
+            time_t              _timeUpdated{0};
         };
 
         /** The currently-running tasks. */
@@ -128,6 +139,7 @@ namespace litecore::REST {
         void handleGetDoc(RequestResponse&, C4Collection*);
         void handleModifyDoc(RequestResponse&, C4Collection*);
         void handleBulkDocs(RequestResponse&, C4Collection*);
+        void handleChanges(RequestResponse&, C4Collection*);
 
         bool modifyDoc(fleece::Dict body, std::string docID, const std::string& revIDQuery, bool deleting,
                        bool newEdits, C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;

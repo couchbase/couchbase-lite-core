@@ -97,13 +97,21 @@ namespace litecore::REST {
         return defaultValue;
     }
 
+    uint64_t Request::uintQuery(const char* param, uint64_t defaultValue) const {
+        defaultValue = std::min(defaultValue, uint64_t(INT64_MAX));
+        return std::max(int64_t(0), intQuery(param, defaultValue));
+    }
+
     bool Request::boolQuery(const char* param, bool defaultValue) const {
         string val = query(param);
         if ( val.empty() ) return defaultValue;
         return val != "false" && val != "0";  // same behavior as Obj-C CBL 1.x
     }
 
-#pragma mark - RESPONSE STATUS LINE:
+#pragma mark - REQUESTRESPONSE:
+
+    RequestResponse::RequestResponse(RequestResponse&&) = default;
+    RequestResponse::~RequestResponse()                 = default;
 
     RequestResponse::RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket> socket)
         : _server(server), _socket(std::move(socket)) {
@@ -239,6 +247,10 @@ namespace litecore::REST {
         WarnError("Socket error sending response: %s", err.description().c_str());
     }
 
+    void RequestResponse::writeToSocket(slice data) {
+        if ( _socket->write_n(data) < 0 ) handleSocketError();
+    }
+
 #pragma mark - RESPONSE HEADERS:
 
     void RequestResponse::setHeader(const char* header, const char* value) {
@@ -257,6 +269,7 @@ namespace litecore::REST {
     void RequestResponse::setContentLength(uint64_t length) {
         sendStatus();
         Assert(_contentLength < 0, "Content-Length has already been set");
+        Assert(!_chunked);
         Log("Content-Length: %" PRIu64, length);
         _contentLength           = (int64_t)length;
         constexpr size_t bufSize = 20;
@@ -265,10 +278,17 @@ namespace litecore::REST {
         setHeader("Content-Length", len);
     }
 
+    void RequestResponse::setChunked() {
+        Assert(_contentLength < 0, "Content-Length has already been set");
+        setHeader("Transfer-Encoding", "chunked");
+        _streaming = _chunked = true;
+    }
+
     void RequestResponse::sendHeaders() {
+        if ( _endedHeaders ) return;
         if ( _jsonEncoder ) setHeader("Content-Type", "application/json");
         _responseHeaderWriter.write("\r\n"_sl);
-        if ( _socket->write_n(_responseHeaderWriter.finish()) < 0 ) handleSocketError();
+        writeToSocket(_responseHeaderWriter.finish());
         _endedHeaders = true;
     }
 
@@ -296,28 +316,62 @@ namespace litecore::REST {
         free(str);
     }
 
+    void RequestResponse::flush(size_t minLength) {
+        if ( _responseWriter.length() < minLength ) return;
+        Assert(!_jsonEncoder);
+        if ( !_streaming ) {
+            _streaming = true;
+            if ( _contentLength < 0 ) setHeader("Connection", "close");
+        }
+        sendHeaders();
+        _flush();
+    }
+
+    void RequestResponse::_flush() {
+        if ( _chunked ) {
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding
+            auto chunkSize = _responseWriter.length();
+            if ( chunkSize == 0 ) return;
+            char   buf[100];
+            size_t len = snprintf(buf, sizeof(buf), "%zx\r\n", chunkSize);
+            writeToSocket({buf, len});
+            write("\r\n");  // this is at the end of the chunk
+        }
+        _responseWriter.finish([&](slice responseData) { writeToSocket(responseData); });
+    }
+
     fleece::JSONEncoder& RequestResponse::jsonEncoder() {
         if ( !_jsonEncoder ) _jsonEncoder = std::make_unique<fleece::JSONEncoder>();
         return *_jsonEncoder;
     }
 
     void RequestResponse::finish() {
-        if ( _finished ) return;
+        if ( _finished || !_socket ) return;
 
         if ( _jsonEncoder ) {
             alloc_slice json = _jsonEncoder->finish();
+            if ( !json ) {
+                WarnError("HTTP handler failed to encode JSON response: %s (%d)", _jsonEncoder->errorMessage(),
+                          _jsonEncoder->error());
+                respondWithStatus(HTTPStatus::ServerError, "Internal error");
+                return;
+            }
+            DebugAssert(Doc::fromJSON(json, nullptr), "Response is not valid JSON: %.*s", FMTSLICE(json));
             write(json);
         }
 
-        alloc_slice responseData = _responseWriter.finish();
-        if ( _contentLength < 0 ) setContentLength(responseData.size);
-        else
-            Assert(_contentLength == responseData.size);
-
+        if ( !_streaming ) {
+            if ( _contentLength < 0 ) setContentLength(_responseWriter.length());
+            else
+                Assert(_contentLength == _responseWriter.length());
+        }
         sendHeaders();
 
         Log("Now sending body...");
-        if ( _socket->write_n(responseData) < 0 ) handleSocketError();
+        _flush();
+        if ( _chunked ) {
+            writeToSocket("0\r\n\r\n");  // Ending chunk
+        }
         _finished = true;
     }
 
