@@ -10,6 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
+// Reference: <https://docs.couchbase.com/sync-gateway/current/rest-api.html>
+
 #include "RESTListener.hh"
 #include "c4Private.h"
 #include "c4Collection.hh"
@@ -42,6 +44,7 @@ namespace litecore::REST {
     }
 
     void RESTListener::handleActiveTasks(RequestResponse& rq) {
+        rq.uncacheable();
         auto& json = rq.jsonEncoder();
         json.writeArray([&] {
             for ( auto& task : tasks() ) {
@@ -53,6 +56,8 @@ namespace litecore::REST {
 #pragma mark - DATABASE HANDLERS:
 
     void RESTListener::handleGetDatabase(RequestResponse& rq, C4Collection* coll) {
+        if ( rq.method() == HEAD ) return;
+
         C4Database*      db     = coll->getDatabase();
         optional<string> dbName = nameOfDatabase(db);
         if ( !dbName ) return rq.respondWithStatus(HTTPStatus::NotFound);
@@ -165,6 +170,7 @@ namespace litecore::REST {
 
         // Enumerate, building JSON:
         JSONEncoder json;
+        int64_t     rows = 0;
         while ( e.next() ) {
             if ( skip-- > 0 ) continue;
             else if ( limit-- <= 0 )
@@ -181,8 +187,9 @@ namespace litecore::REST {
             rq.write(json.finish());
             rq.write("\n");
             rq.flush(32768);
+            ++rows;
         }
-        rq.write("]}");
+        rq.printf("],\n\"total_rows\":%lld,\"update_seq\":%llu}", rows, coll->getLastSequence());
     }
 
     void RESTListener::handleGetDoc(RequestResponse& rq, C4Collection* coll) {
@@ -191,7 +198,7 @@ namespace litecore::REST {
         Retained<C4Document> doc   = coll->getDocument(docID, true, (revID.empty() ? kDocGetCurrentRev : kDocGetAll));
         if ( doc ) {
             if ( revID.empty() ) {
-                if ( doc->flags() & kDocDeleted ) doc = nullptr;
+                if ( doc->flags() & kDocDeleted ) doc = nullptr;  // Don't return a tombstone unless rev given
                 else
                     revID = doc->revID().asString();
             } else {
@@ -200,11 +207,20 @@ namespace litecore::REST {
         }
         if ( !doc ) return rq.respondWithStatus(HTTPStatus::NotFound);
 
+        // Use the revID as the HTTP ETag for conditional GETs:
+        string eTag = format("\"%s\"", revID.c_str());
+        if ( slice inm = rq.header("If-None-Match"); inm == eTag ) {
+            return rq.respondWithStatus(HTTPStatus::NotModified);
+        }
+        rq.setHeader("Etag", eTag);
+        rq.setHeader("Content-Type", "application/json");
+
+        if ( rq.method() == HEAD ) return;
+
         // Get the revision
         alloc_slice json = doc->bodyAsJSON(false);
 
         // Splice the _id and _rev into the start of the JSON:
-        rq.setHeader("Content-Type", "application/json");
         rq.write(R"({"_id":")");
         rq.write(docID);
         rq.write(R"(","_rev":")");
@@ -218,6 +234,7 @@ namespace litecore::REST {
         } else {
             rq.write("}");
         }
+        rq.write("\n");
     }
 
     // Core code for create/update/delete operation on a single doc.

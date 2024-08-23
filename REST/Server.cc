@@ -230,7 +230,7 @@ namespace litecore::REST {
             string pathStr(rq->path());
             auto   rule = findRule(method, pathStr);
             if ( rule ) {
-                c4log(ListenerLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                c4log(ListenerLog, kC4LogVerbose, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
                 rule->handler(*rq);  // Dispatch request to handler method!
             } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
                 c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());

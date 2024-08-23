@@ -35,7 +35,7 @@ namespace litecore::REST {
     static int kTaskExpirationTime = 10;
 
 
-    string RESTListener::kServerName = "LiteCoreServ";
+    string RESTListener::kServerName = "CouchbaseLite";
 
     string RESTListener::serverNameAndVersion() {
         alloc_slice version(c4_getVersion());
