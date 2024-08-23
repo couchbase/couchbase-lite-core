@@ -103,16 +103,20 @@ C4API_BEGIN_DECLS
     This is the one collection that exists in every newly created database.
     When a pre-existing database is upgraded to support collections, all its documents are put
     in the default collection. 
+    \note This function is thread-safe.
     @note Be sure to read `C4Collection` Lifespan in c4Collection.h.*/
 CBL_CORE_API C4Collection* c4db_getDefaultCollection(C4Database* db, C4Error* C4NULLABLE outError) C4API;
 
-/** Returns true if the collection exists. */
+/** Returns true if the collection exists. 
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API bool c4db_hasCollection(C4Database* db, C4CollectionSpec spec) C4API;
 
-/** Returns true if the named scope exists.  Note that _default will always return true. */
+/** Returns true if the named scope exists.  Note that _default will always return true. 
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API bool c4db_hasScope(C4Database* db, C4String name) C4API;
 
 /** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. 
+    \note The caller must use a lock for Database when this function is called.
     @note Be sure to read `C4Collection` Lifespan in c4Collection.h. */
 CBL_CORE_API C4Collection* C4NULLABLE c4db_getCollection(C4Database* db, C4CollectionSpec spec,
                                                          C4Error* C4NULLABLE outError) C4API;
@@ -120,23 +124,27 @@ CBL_CORE_API C4Collection* C4NULLABLE c4db_getCollection(C4Database* db, C4Colle
 /** Creates and returns an empty collection with the given name & scope.
     If the collection already exists, it just returns it.
     If the scope doesn't exist, it is implicitly created. 
+    \note The caller must use a lock for Database when this function is called.
     @note Be sure to read `C4Collection` Lifespan in c4Collection.h. */
 NODISCARD CBL_CORE_API C4Collection* C4NULLABLE c4db_createCollection(C4Database* db, C4CollectionSpec spec,
                                                                       C4Error* C4NULLABLE outError) C4API;
 
 /** Deletes the collection with the given name & scope.
     Deleting the last collection from a scope implicitly deletes the scope.
+    \note The caller must use a lock for Database when this function is called.
     @note  It is legal to delete the default collection, but it cannot be re-created. */
 NODISCARD CBL_CORE_API bool c4db_deleteCollection(C4Database* db, C4CollectionSpec spec,
                                                   C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the names of all existing collections in the given scope,
     in the order in which they were created.
+    \note The caller must use a lock for Database when this function is called.
     @note  You are responsible for releasing the returned Fleece array. */
 NODISCARD CBL_CORE_API FLMutableArray c4db_collectionNames(C4Database* db, C4String inScope,
                                                            C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the names of all existing scopes, in the order in which they were created.
+    \note The caller must use a lock for Database when this function is called.
     @note  You are responsible for releasing the returned Fleece array. */
 NODISCARD CBL_CORE_API FLMutableArray c4db_scopeNames(C4Database* db, C4Error* C4NULLABLE outError) C4API;
 
@@ -146,19 +154,24 @@ NODISCARD CBL_CORE_API FLMutableArray c4db_scopeNames(C4Database* db, C4Error* C
     @{ */
 
 
-/** Returns false if this collection has been deleted, or its database closed. */
+/** Returns false if this collection has been deleted, or its database closed. 
+    \note This function is thread-safe. */
 CBL_CORE_API bool c4coll_isValid(C4Collection* C4NULLABLE) C4API;
 
-/** Returns the name and scope of the collection. */
+/** Returns the name and scope of the collection. 
+    \note This function is thread-safe. */
 CBL_CORE_API C4CollectionSpec c4coll_getSpec(C4Collection*) C4API;
 
-/** Returns the database containing the collection, or NULL if the collection is invalid. */
+/** Returns the database containing the collection, or NULL if the collection is invalid. 
+    \note This function is thread-safe. */
 CBL_CORE_API C4Database* c4coll_getDatabase(C4Collection*) C4API;
 
-/** Returns the number of (undeleted) documents in the collection. */
+/** Returns the number of (undeleted) documents in the collection. 
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API uint64_t c4coll_getDocumentCount(C4Collection*) C4API;
 
-/** Returns the latest sequence number allocated to a revision. */
+/** Returns the latest sequence number allocated to a revision. 
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4SequenceNumber c4coll_getLastSequence(C4Collection*) C4API;
 
 
@@ -169,6 +182,7 @@ CBL_CORE_API C4SequenceNumber c4coll_getLastSequence(C4Collection*) C4API;
 
 /** Gets a document from the collection given its ID.
     The current revision is selected (if the document exists.)
+    \note The caller must use a lock for Database when this function is called.
     @note  You must call \ref c4doc_release when finished with the document.
     @param collection  The collection to read from.
     @param docID  The document's ID.
@@ -182,6 +196,7 @@ NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_getDoc(C4Collection* collec
                                                             C4Error* C4NULLABLE outError) C4API;
 
 /** Gets a document from the collection given its sequence number.
+    \note The caller must use a lock for Database when this function is called.
     @note  You must call `c4doc_release()` when finished with the document.  */
 NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collection*       collection, C4SequenceNumber,
                                                                       C4Error* C4NULLABLE outError) C4API;
@@ -196,6 +211,7 @@ NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collecti
     Note that actually saving the document back to the database is optional -- it only happens
     if request->save is true. You can set this to false if you want to review the changes
     before saving, e.g. to run them through a validation function.
+    \note The caller must use a lock for Database when this function is called.
     @note  You must call \ref c4doc_release when finished with the returned document. */
 NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_putDoc(C4Collection* collection, const C4DocPutRequest* request,
                                                             size_t* C4NULLABLE  outCommonAncestorIndex,
@@ -203,6 +219,7 @@ NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_putDoc(C4Collection* collec
 
 /** Convenience function to create a new document. This just a wrapper around \ref c4coll_putDoc.
     If the document already exists, it will fail with the error `kC4ErrorConflict`.
+    \note The caller must use a lock for Database when this function is called.
     @note  You must call \ref c4doc_release when finished with the document.
     @param collection  The collection to create the document in
     @param docID  Document ID to create; if null, a UUID will be generated
@@ -215,6 +232,7 @@ NODISCARD CBL_CORE_API C4Document* C4NULLABLE c4coll_createDoc(C4Collection* col
                                                                C4Error* C4NULLABLE error) C4API;
 
 /** Moves a document to another collection, possibly with a different docID.
+    \note The caller must use a lock for Database when this function is called.
     @param collection  The document's original collection.
     @param docID  The ID of the document to move.
     @param toCollection  The collection to move to.
@@ -233,13 +251,15 @@ NODISCARD CBL_CORE_API bool c4coll_moveDoc(C4Collection* collection, C4String do
     @{ */
 
 
-/** Removes all trace of a document and its revisions from the collection. */
+/** Removes all trace of a document and its revisions from the collection. 
+    \note The caller must use a lock for Database when this function is called. */
 NODISCARD CBL_CORE_API bool c4coll_purgeDoc(C4Collection* collection, C4String docID,
                                             C4Error* C4NULLABLE outError) C4API;
 
 
 /** Sets an expiration date on a document.  After this time the
     document will be purged from the database.
+    \note The caller must use a lock for Database when this function is called.
     @param collection The collection to set the expiration date in
     @param docID The ID of the document to set the expiration date for
     @param timestamp The timestamp of the expiration date, in milliseconds since 1/1/1970.
@@ -250,6 +270,7 @@ NODISCARD CBL_CORE_API bool c4coll_setDocExpiration(C4Collection* collection, C4
                                                     C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the expiration time of a document, if one has been set, else 0.
+    \note The caller must use a lock for Database when this function is called.
     @param collection  The collection to set the expiration date in
     @param docID  The ID of the document to check
     @param outError Information about any error that occurred
@@ -260,11 +281,13 @@ CBL_CORE_API C4Timestamp c4coll_getDocExpiration(C4Collection* collection, C4Str
                                                  C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the time at which the next document expiration in this collection should take place,
-    or 0 if there are no documents with expiration times. */
+    or 0 if there are no documents with expiration times. 
+    \note The caller must use a lock for Database when this function is called.*/
 CBL_CORE_API C4Timestamp c4coll_nextDocExpiration(C4Collection*) C4API;
 
 /** Purges all documents that have expired.
-    @return  The number of documents purged, or -1 on error. */
+    @return  The number of documents purged, or -1 on error. 
+    \note The caller must use a lock for Database when this function is called.*/
 NODISCARD CBL_CORE_API int64_t c4coll_purgeExpiredDocs(C4Collection*, C4Error* C4NULLABLE) C4API;
 
 

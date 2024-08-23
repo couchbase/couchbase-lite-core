@@ -1,10 +1,7 @@
 var searchData=
 [
-  ['fleece_20arrays_0',['Fleece Arrays',['../group___f_l_array.html',1,'']]],
-  ['fleece_20corefoundation_20and_20objective_2dc_20helpers_1',['Fleece CoreFoundation and Objective-C Helpers',['../group___c_f.html',1,'']]],
-  ['fleece_20deep_20iterator_2',['Fleece Deep Iterator',['../group___f_l_deep_iterator.html',1,'']]],
-  ['fleece_20dictionaries_3',['Fleece Dictionaries',['../group___f_l_dict.html',1,'']]],
-  ['fleece_20encoders_4',['Fleece Encoders',['../group___f_l_encoder.html',1,'']]],
-  ['fleece_20paths_5',['Fleece Paths',['../group___f_l_key_path.html',1,'']]],
-  ['fleece_20values_6',['Fleece Values',['../group___f_l_value.html',1,'']]]
+  ['encoders_0',['Fleece Encoders',['../group___f_l_encoder.html',1,'']]],
+  ['enumeration_1',['Document Enumeration',['../group___doc_enumerator.html',1,'']]],
+  ['error_20codes_20and_20error_20handling_2',['Error Codes and Error Handling',['../group___errors.html',1,'']]],
+  ['error_20handling_3',['Error Codes and Error Handling',['../group___errors.html',1,'']]]
 ];

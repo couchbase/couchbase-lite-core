@@ -20,6 +20,10 @@ C4API_BEGIN_DECLS
 /** \defgroup certificates Certificates
     @{ */
 
+/*
+ * NOTE: All functions in this section are thread-safe because objects of C4Cert are immutable.
+ */
+
 /** \name Certificate and CSR Functions
  @{ */
 

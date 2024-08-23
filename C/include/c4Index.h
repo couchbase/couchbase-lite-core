@@ -58,6 +58,7 @@ C4API_BEGIN_DECLS
     It can be in either the JSON query schema, or in N1QL syntax. It usually names a property,
     but may also be a computed value based on properties.
 
+    \note The caller must use a lock for Database when this function is called.
     @param collection  The collection to index.
     @param name  The name of the index. Any existing index with the same name will be replaced,
                  unless it has the identical expressions (in which case this is a no-op.)
@@ -72,11 +73,13 @@ NODISCARD CBL_CORE_API bool c4coll_createIndex(C4Collection* collection, C4Strin
                                                const C4IndexOptions* C4NULLABLE indexOptions,
                                                C4Error* C4NULLABLE              outError) C4API;
 
-/** Returns an object representing an existing index. */
+/** Returns an object representing an existing index.
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4Index* C4NULLABLE c4coll_getIndex(C4Collection* collection, C4String name,
                                                  C4Error* C4NULLABLE outError) C4API;
 
 /** Deletes an index that was created by `c4coll_createIndex`.
+    \note The caller must use a lock for Database when this function is called.
     @param collection  The collection to index.
     @param name The name of the index to delete
     @param outError  On failure, will be set to the error status.
@@ -87,6 +90,7 @@ NODISCARD CBL_CORE_API bool c4coll_deleteIndex(C4Collection* collection, C4Strin
 /** Returns information about all indexes in the collection.
     The result is a Fleece-encoded array of dictionaries, one per index.
     Each dictionary has keys `"name"`, `"type"` (a `C4IndexType`), and `"expr"` (the source expression).
+    \note The caller must use a lock for Database when this function is called.
     @param collection  The collection to check
     @param outError  On failure, will be set to the error status.
     @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
@@ -95,6 +99,7 @@ CBL_CORE_API C4SliceResult c4coll_getIndexesInfo(C4Collection* collection, C4Err
 /** Returns information about all indexes in the database.
     The result is a Fleece-encoded array of dictionaries, one per index.
     Each dictionary has keys `"name"`, `"type"` (a `C4IndexType`), and `"expr"` (the source expression).
+    \note The caller must use a lock for Database when this function is called.
     @param database  The database to check
     @param outError  On failure, will be set to the error status.
     @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
@@ -102,22 +107,28 @@ CBL_CORE_API C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* C4
 
 //======== C4Index Methods:
 
-/** Returns the name of this index. */
+/** Returns the name of this index.
+    \note This function is thread-safe. */
 CBL_CORE_API C4Slice c4index_getName(C4Index* index) C4API;
 
-/** Returns the collection this index belongs to. */
+/** Returns the collection this index belongs to.
+    \note This function is thread-safe. */
 CBL_CORE_API C4Collection* c4index_getCollection(C4Index* index) C4API;
 
-/** Returns the index's type. */
+/** Returns the index's type.
+    \note This function is thread-safe. */
 CBL_CORE_API C4IndexType c4index_getType(C4Index*) C4API;
 
-/** Returns the index's query language (JSON or N1QL). */
+/** Returns the index's query language (JSON or N1QL). 
+    \note This function is thread-safe. */
 CBL_CORE_API C4QueryLanguage c4index_getQueryLanguage(C4Index*) C4API;
 
-/** Returns the indexed expression. */
+/** Returns the indexed expression.
+    \note This function is thread-safe. */
 CBL_CORE_API C4String c4index_getExpression(C4Index*) C4API;
 
 /** Gets the index's FTS/vector options, if any.
+    \note This function is thread-safe.
     @param index  The index.
     @param outOpts  The options will be written here, if they exist.
     @returns  True if there are options, false if not. */
@@ -129,7 +140,8 @@ CBL_CORE_API bool c4index_getOptions(C4Index* index, C4IndexOptions* outOpts) C4
 /** Returns whether a vector index has been trained yet or not.
     If the index doesn't exist, or is not a vector index, then this method will
     return false with an appropriate error set.  Otherwise, in the absence of errors,
-    this method will zero the error and set the return value. */
+    this method will zero the error and set the return value.
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API bool c4index_isTrained(C4Index*, C4Error* C4NULLABLE outError) C4API;
 
 
@@ -151,6 +163,7 @@ CBL_CORE_API bool c4index_isTrained(C4Index*, C4Error* C4NULLABLE outError) C4AP
         will continue updating the index periodically until this call returns NULL, signaling
         that the index is now up-to-date.
 
+    \note The caller must use a lock for Database when this function is called.
     @param index  The index to update; must be a vector index with the lazy attribute.
     @param limit  The maximum number of out-of-date documents to include.
     @param outError  On failure, will be set to the error status.
@@ -158,11 +171,13 @@ CBL_CORE_API bool c4index_isTrained(C4Index*, C4Error* C4NULLABLE outError) C4AP
 NODISCARD CBL_CORE_API C4IndexUpdater* C4NULLABLE c4index_beginUpdate(C4Index* index, size_t limit,
                                                                       C4Error* outError) C4API;
 
-/** Returns the number of vectors to compute. */
+/** Returns the number of vectors to compute.
+    \note This function is thread-safe. */
 CBL_CORE_API size_t c4indexupdater_count(C4IndexUpdater* updater) C4API;
 
 /** Returns the i'th value to compute a vector from.
     This is _not_ the entire document, just the value of the expression in the index spec.
+    \note The caller must use a lock for IndexUpdater when this function is called.
     @param updater  The index updater.
     @param i  The zero-based index of the document.
     @returns  A Fleece value: the value of the index's query expression evaluated on the i'th document,
@@ -173,6 +188,7 @@ NODISCARD CBL_CORE_API FLValue C4NULLABLE c4indexupdater_valueAt(C4IndexUpdater*
 
 /** Sets the vector for the i'th value. If you don't call this, it's assumed there is no
     vector, and any existing vector will be removed upon `finish`.
+    \note The caller must use a lock for IndexUpdater when this function is called.
     @param updater  The index updater.
     @param i  The zero-based index of the document.
     @param vector  A pointer to the raw vector, or NULL if there is no vector.
@@ -187,6 +203,7 @@ NODISCARD CBL_CORE_API bool c4indexupdater_setVectorAt(C4IndexUpdater* updater, 
     The vector still needs to be recomputed, and will be included in the next update request.
     This should be called if there was a transient failure getting the vector, and the app
     will retry later.
+    \note The caller must use a lock for IndexUpdater when this function is called.
     @param updater  The index updater.
     @param i  The zero-based index of the document.
     @return  True on success, false if `i` is out of range. */
@@ -203,6 +220,7 @@ CBL_CORE_API bool c4indexupdater_skipVectorAt(C4IndexUpdater* updater, size_t i)
         It's OK to release it without calling this function; the update will effectively be canceled
         and the database left unchanged.
 
+    \note The caller must use a lock for Database when this function is called.
     @param updater  The index updater.
     @param outError  On failure, will be set to the error status.
     @returns  True if the index is now completely up-to-date; false on error, or if there are more vectors
@@ -224,6 +242,16 @@ NODISCARD CBL_CORE_API bool c4db_createIndex2(C4Database* database, C4String nam
 NODISCARD CBL_CORE_API bool c4db_deleteIndex(C4Database* database, C4String name, C4Error* C4NULLABLE outError) C4API;
 #endif
 
+/** Returns whether a vector index has been trained yet or not.
+    If the index doesn't exist, or is not a vector index, then this method will
+    return false with an appropriate error set.  Otherwise, in the absence of errors,
+    this method will zero the error and set the return value.
+
+    \note The caller must use a lock for Database when this function is called.
+    @param collection  The collection to index.
+    @param name The name of the index
+    @param outError  On failure, will be set to the error status.
+    @return  True if the index is trained. */
 CBL_CORE_API bool c4coll_isIndexTrained(C4Collection* collection, C4String name, C4Error* C4NULLABLE outError) C4API;
 
 /** @} */
