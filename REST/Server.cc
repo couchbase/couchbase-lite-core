@@ -200,7 +200,7 @@ namespace litecore::REST {
     }
 
     Server::URIRule* Server::findRule(Method method, const string& path) {
-        //lock_guard<mutex> lock(_mutex);       // called from dispatchResponder which locks
+        lock_guard<mutex> lock(_mutex);
         for ( auto& rule : _rules ) {
             if ( (rule.methods & method) && regex_match(path.c_str(), rule.regex) ) return &rule;
         }
@@ -221,8 +221,6 @@ namespace litecore::REST {
                 return;
             }
         }
-
-        lock_guard<mutex> lock(_mutex);
 
         ++_connectionCount;
         Retained<Server> retainedSelf = this;
