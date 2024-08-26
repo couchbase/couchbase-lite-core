@@ -856,6 +856,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     c4repl_stop(_repl);
 
     waitForStatus(kC4Stopped);
+    C4Log("---- The C4Replicator is Stopped ----");
 
     // Because of the above c4socket_retain, the lifetime of c4socket is
     // elongated, overliving the Replicator, Connection, and BLIPIO which serves
@@ -863,6 +864,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     // if we don't use WeakHolder.
     c4socket_gotHTTPResponse(c4socket, 0, nullslice);
 
+    C4Log("---- Releasing c4socket ----");
     c4socket_release(c4socket);
 }
 
