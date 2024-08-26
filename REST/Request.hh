@@ -39,16 +39,18 @@ namespace litecore::REST {
 
         Method method() const { return _method; }
 
-        std::string path() const { return _path; }
+        std::string const& path() const { return _path; }
 
         std::string path(int i) const;
 
-        std::string_view queries() const { return _queries; }
+        std::string const& queries() const { return _queries; }
 
         std::string query(const char* param) const;
         int64_t     intQuery(const char* param, int64_t defaultValue = 0) const;
         uint64_t    uintQuery(const char* param, uint64_t defaultValue = 0) const;
         bool        boolQuery(const char* param, bool defaultValue = false) const;
+
+        std::string uri() const;
 
       protected:
         friend class Server;
@@ -131,6 +133,8 @@ namespace litecore::REST {
         void onClose(std::function<void()>&& callback);
 
         std::unique_ptr<net::ResponderSocket> extractSocket();
+
+        bool hasSocket() const { return _socket != nullptr; }
 
         std::string peerAddress();
 

@@ -52,7 +52,7 @@ typedef bool (*C4ListenerHTTPAuthCallback)(C4Listener* listener, C4Slice authHea
 /** TLS configuration for C4Listener. */
 typedef struct C4TLSConfig {
     C4PrivateKeyRepresentation            privateKeyRepresentation;  ///< Interpretation of `privateKey`
-    C4KeyPair*                            key;                       ///< A key pair that contains the private key
+    C4KeyPair* C4NULLABLE                 key;                       ///< A key pair that contains the private key
     C4Cert*                               certificate;               ///< X.509 certificate data
     bool                                  requireClientCerts;  ///< True to require clients to authenticate with a cert
     C4Cert* C4NULLABLE                    rootClientCerts;     ///< Root CA certs to trust when verifying client cert

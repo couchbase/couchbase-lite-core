@@ -97,6 +97,12 @@ namespace litecore::REST {
         return defaultValue;
     }
 
+    string Request::uri() const {
+        if ( _queries.empty() ) return _path;
+        else
+            return _path + "?" + _queries;
+    }
+
     uint64_t Request::uintQuery(const char* param, uint64_t defaultValue) const {
         defaultValue = std::min(defaultValue, uint64_t(INT64_MAX));
         return std::max(int64_t(0), intQuery(param, defaultValue));
@@ -402,6 +408,6 @@ namespace litecore::REST {
         return std::move(_socket);
     }
 
-    string RequestResponse::peerAddress() { return _socket->peerAddress(); }
+    string RequestResponse::peerAddress() { return _socket ? _socket->peerAddress() : ""s; }
 
 }  // namespace litecore::REST

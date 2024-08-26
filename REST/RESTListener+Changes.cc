@@ -178,8 +178,10 @@ namespace litecore::REST {
                 unique_lock lock(_mutex);
                 if ( _rq.finished() ) return;
                 bumpTimeUpdated();
-                C4DatabaseObserver::Change c4changes[100];
-                auto                       prevLastSequence = _lastSequence;
+
+                C4Database::WithClientMutex with(_coll->getDatabase());
+                C4DatabaseObserver::Change  c4changes[100];
+                auto                        prevLastSequence = _lastSequence;
                 while ( _limit > 0 ) {
                     auto                    maxChanges = std::min(size_t(_limit), std::size(c4changes));
                     C4CollectionObservation o          = _observer->getChanges(c4changes, uint32_t(maxChanges));

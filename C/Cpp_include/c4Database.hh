@@ -271,8 +271,19 @@ struct C4Database
 
     const C4DatabaseConfig& configV1() const noexcept FLPURE { return _configV1; }
 
-    virtual void lockClientMutex() noexcept   = 0;
-    virtual void unlockClientMutex() noexcept = 0;
+    class WithClientMutex {
+      public:
+        explicit WithClientMutex(C4Database* db) noexcept : _db(db) { db->lockClientMutex(); }
+
+        ~WithClientMutex() noexcept { _db->unlockClientMutex(); }
+
+      private:
+        WithClientMutex(WithClientMutex const&)            = delete;
+        WithClientMutex& operator=(WithClientMutex const&) = delete;
+        WithClientMutex(WithClientMutex&&)                 = delete;
+        WithClientMutex& operator=(WithClientMutex&&)      = delete;
+        C4Database*      _db;
+    };
 
     C4ExtraInfo extraInfo{};
 
@@ -280,7 +291,9 @@ struct C4Database
     C4Database(std::string name, std::string dir, const C4DatabaseConfig&);
     static bool   deleteDatabaseFileAtPath(const std::string& dbPath, C4StorageEngine);
     C4Collection* getDefaultCollectionSafe() const;  // Same as getDefaultCollection except throws an error when null
-    virtual void  checkOpen() const = 0;
+    virtual void  checkOpen() const            = 0;
+    virtual void  lockClientMutex() noexcept   = 0;
+    virtual void  unlockClientMutex() noexcept = 0;
 
     std::string const                _name;  // Database filename (w/o extension)
     std::string const                _parentDirectory;

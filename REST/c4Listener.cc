@@ -26,6 +26,7 @@ using namespace litecore::REST;
 
 namespace litecore::REST {
     C4LogDomain ListenerLog;
+    C4LogDomain RESTLog;
 }  // namespace litecore::REST
 
 C4ListenerAPIs C4Listener::availableAPIs() { return kListenerAPIs; }

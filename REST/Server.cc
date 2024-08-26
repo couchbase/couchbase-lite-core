@@ -53,6 +53,7 @@ namespace litecore::REST {
 
     Server::Server() {
         if ( !ListenerLog ) ListenerLog = c4log_getDomain("Listener", true);
+        if ( !RESTLog ) RESTLog = c4log_getDomain("REST", true);
     }
 
     Server::~Server() { stop(); }
@@ -210,42 +211,44 @@ namespace litecore::REST {
     void Server::dispatchRequest(RequestResponse* rq) {
         Method method = rq->method();
         if ( method == Method::GET && rq->header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
+        string uri  = rq->uri();
+        string peer = rq->peerAddress();
+        if ( auto c = peer.rfind(':'); c != string::npos ) peer.resize(c);
 
-        c4log(ListenerLog, kC4LogInfo, "%s %s", MethodName(method), rq->path().c_str());
+        if ( !_authenticator || _authenticator(rq->header("Authorization")) ) {
+            ++_connectionCount;
+            Retained<Server> retainedSelf = this;
+            rq->onClose([=] { --retainedSelf->_connectionCount; });
 
-        if ( _authenticator ) {
-            if ( !_authenticator(rq->header("Authorization")) ) {
-                c4log(ListenerLog, kC4LogInfo, "Authentication failed");
-                rq->setStatus(HTTPStatus::Unauthorized, "Unauthorized");
-                rq->setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
-                return;
+            try {
+                string pathStr(rq->path());
+                auto   rule = findRule(method, pathStr);
+                if ( rule ) {
+                    c4log(ListenerLog, kC4LogVerbose, "Matched rule %s for path %s", rule->pattern.c_str(),
+                          pathStr.c_str());
+                    rule->handler(*rq);  // Dispatch request to handler method!
+                } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
+                    c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
+                    rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
+                } else {
+                    c4log(ListenerLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(),
+                          pathStr.c_str());
+                    if ( method == Method::UPGRADE )
+                        rq->respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
+                    else
+                        rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
+                }
+            } catch ( const std::exception& x ) {
+                c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
+                if ( !rq->finished() ) rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
             }
+        } else {
+            c4log(ListenerLog, kC4LogInfo, "Authentication failed");
+            rq->setStatus(HTTPStatus::Unauthorized, "Unauthorized");
+            rq->setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
         }
 
-        ++_connectionCount;
-        Retained<Server> retainedSelf = this;
-        rq->onClose([=] { --retainedSelf->_connectionCount; });
-
-        try {
-            string pathStr(rq->path());
-            auto   rule = findRule(method, pathStr);
-            if ( rule ) {
-                c4log(ListenerLog, kC4LogVerbose, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
-                rule->handler(*rq);  // Dispatch request to handler method!
-            } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
-                c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
-                rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
-            } else {
-                c4log(ListenerLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(),
-                      pathStr.c_str());
-                if ( method == Method::UPGRADE ) rq->respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
-                else
-                    rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
-            }
-        } catch ( const std::exception& x ) {
-            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
-            if ( !rq->finished() ) rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
-        }
+        c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(), rq->status());
     }
 
 }  // namespace litecore::REST

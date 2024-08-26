@@ -251,14 +251,8 @@ namespace litecore::REST {
         _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
             Retained<C4Database> db = getDatabase(rq, rq.path(0));
             if ( db ) {
-                db->lockClientMutex();
-                try {
-                    (this->*handler)(rq, db);
-                } catch ( ... ) {
-                    db->unlockClientMutex();
-                    throw;
-                }
-                db->unlockClientMutex();
+                C4Database::WithClientMutex with(db);
+                (this->*handler)(rq, db);
             }
         });
     }
@@ -267,14 +261,8 @@ namespace litecore::REST {
         _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
             auto [db, collection] = collectionFor(rq);
             if ( db ) {
-                db->lockClientMutex();
-                try {
-                    (this->*handler)(rq, collection);
-                } catch ( ... ) {
-                    db->unlockClientMutex();
-                    throw;
-                }
-                db->unlockClientMutex();
+                C4Database::WithClientMutex with(db);
+                (this->*handler)(rq, collection);
             }
         });
     }
