@@ -1767,8 +1767,15 @@ namespace litecore {
             if ( !isInColumnList ) { fail("%s", verifyDbAliasError.c_str()); }
         }
 
-        if ( verifyDbAliasError.empty() && type >= kUnnestVirtualTableAlias ) {
-            // The alias is to an UNNEST. This needs to be written specially:
+        bool isNestedUnnest = fn == kEachFnName && type == kUnnestVirtualTableAlias;
+        // ex. of nested unnest: "FROM: [{as: 'doc'}, {as: 'student', unnest: ['.doc.students']},
+        //                               {as: 'interest', unnest: ['.student.interests']}]"
+        // Target SQL: "FROM kv_default AS doc JOIN fl_each(doc.body, 'students') AS student
+        //                                     JOIN fl_each(student.value, 'interests') AS interest
+
+        if ( !isNestedUnnest && verifyDbAliasError.empty() && type >= kUnnestVirtualTableAlias ) {
+            // The alias is to an UNNEST, but not inside fl_each. This needs to be written specially:
+            // The following function will reject any fn's but kValueFnName
             writeUnnestPropertyGetter(fn, property, alias, type);
             return;
         }
@@ -1844,7 +1851,7 @@ namespace litecore {
         if ( property.empty() && fn == kValueFnName ) fn = kRootFnName;
 
         // Write the function call:
-        _sql << fn << "(" << tablePrefix << _bodyColumnName;
+        _sql << fn << "(" << tablePrefix << (isNestedUnnest ? "value" : _bodyColumnName);
         if ( !property.empty() ) { _sql << ", " << sqlString(string(property)); }
         if ( param ) {
             _sql << ", ";
