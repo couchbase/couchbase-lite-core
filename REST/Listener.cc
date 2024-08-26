@@ -57,7 +57,7 @@ namespace litecore::REST {
             error::_throw(error::InvalidParameter, "Invalid name for sharing a database");
         }
         lock_guard<mutex> lock(_mutex);
-        if ( _databases.find(*name) != _databases.end() ) return false;
+        if ( _databases.contains(*name) ) return false;
         _databases.emplace(*name, db);
         return true;
     }

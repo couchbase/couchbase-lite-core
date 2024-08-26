@@ -208,7 +208,7 @@ namespace litecore::REST {
         if ( !doc ) return rq.respondWithStatus(HTTPStatus::NotFound);
 
         // Use the revID as the HTTP ETag for conditional GETs:
-        string eTag = format("\"%s\"", revID.c_str());
+        string eTag = stringprintf("\"%s\"", revID.c_str());
         if ( slice inm = rq.header("If-None-Match"); inm == eTag ) {
             return rq.respondWithStatus(HTTPStatus::NotModified);
         }
