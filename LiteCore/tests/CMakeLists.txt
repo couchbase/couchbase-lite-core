@@ -68,6 +68,7 @@ add_executable(
     SQLiteFunctionsTest.cc
     UpgraderTest.cc
     VectorQueryTest.cc
+    LazyVectorQueryTest.cc
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTListenerTest.cc
     ${TOP}REST/tests/RESTClientTest.cc

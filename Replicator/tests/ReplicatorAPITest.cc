@@ -696,6 +696,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
     C4Error err;
     REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR(&err)));
     waitForStatus(kC4Busy, 5s);
+    // give little time in busy
+    std::this_thread::sleep_for(50ms);
 
     C4ReplicatorActivityLevel expected = kC4Stopped;
     SECTION("Stop / Start") {

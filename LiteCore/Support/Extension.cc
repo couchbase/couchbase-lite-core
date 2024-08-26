@@ -23,7 +23,8 @@ typedef int (*version_number_func)();
 
 #ifdef WIN32
 #    include <windows.h>
-#    define cbl_dlopen  LoadLibraryA
+#    define cbl_dlopen(path)                                                                                           \
+        LoadLibraryExA(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)
 #    define cbl_dlsym   GetProcAddress
 #    define cbl_dlclose FreeLibrary
 #else
@@ -92,7 +93,7 @@ static HMODULE try_open_lib(const string& extensionPath) {
 bool litecore::extension::check_extension_version(const string& extensionPath, int expectedVersion) {
     HMODULE libHandle = try_open_lib(extensionPath.c_str());
     if ( !libHandle ) {
-        LogToAt(DBLog, Error, "Unable to open extension to check version");
+        LogToAt(DBLog, Error, "Unable to open extension at %s to check version", extensionPath.c_str());
         return false;
     }
 
@@ -124,7 +125,7 @@ bool litecore::extension::check_extension_version(const string& extensionPath, i
     int         majorVersion = version_number_f() / 1000000;
     const char* versionStr   = version_f();
     if ( majorVersion == expectedVersion ) {
-        LogToAt(DBLog, Info, "Loaded extension '%s' version %s", extensionName.c_str(), versionStr);
+        LogToAt(DBLog, Info, "Found extension '%s' version %s", extensionName.c_str(), versionStr);
         return true;
     }
 

@@ -51,6 +51,8 @@ namespace litecore::repl {
       protected:
         friend class BlobDataSource;
 
+        std::string loggingClassName() const override { return "Pusher"; }
+
         void dbHasNewChanges() override { enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges)); }
 
         void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) override {
@@ -59,11 +61,11 @@ namespace litecore::repl {
 
         void          afterEvent() override;
         void          _connectionClosed() override;
-        ActivityLevel computeActivityLevel() const override;
+        ActivityLevel computeActivityLevel(std::string* reason) const override;
 
       private:
         void _start();
-        bool isBusy() const;
+        bool isBusy(std::string* reason = nullptr) const;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);

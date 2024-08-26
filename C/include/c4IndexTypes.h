@@ -34,10 +34,12 @@ typedef C4_ENUM(uint32_t, C4IndexType){
 
 /** Distance metric to use in vector indexes. */
 typedef C4_ENUM(uint32_t, C4VectorMetricType){
-        kC4VectorMetricDefault,    ///< Use default metric, Euclidean
-        kC4VectorMetricEuclidean,  ///< Euclidean distance (squared)
-        kC4VectorMetricCosine,     ///< Cosine distance (1.0 - cosine similarity)
-};                                 // Values DO NOT match IndexSpec::VectorOptions::MetricType!
+        kC4VectorMetricDefault,     ///< Use default metric, Euclidean2
+        kC4VectorMetricEuclidean2,  ///< Euclidean distance, squared ... formerly `kC4VectorMetricEuclidean`
+        kC4VectorMetricCosine,      ///< Cosine distance (1.0 - cosine similarity)
+        kC4VectorMetricEuclidean1,  ///< Euclidean distance, _not_ squared, AKA L2
+        kC4VectorMetricDot,         ///< Dot-product distance (negative of dot/inner product)
+};                                  // Values DO NOT match IndexSpec::VectorOptions::MetricType!
 
 /** Types of clustering in vector indexes. There is no default type because you must fill in
     the C4VectorClustering struct with a number of centroids or subquantizers+bits. */

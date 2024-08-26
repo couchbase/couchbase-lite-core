@@ -184,7 +184,7 @@ CBL_CORE_API C4LogDomain const kC4WebSocketLog = (C4LogDomain)&websocket::WSLogD
 C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     if ( !name ) return kC4DefaultLog;
     auto domain = LogDomain::named(name);
-    if ( !domain && create ) domain = new LogDomain(name);
+    if ( !domain && create ) domain = new LogDomain(name, LogLevel::Info, true);
     return (C4LogDomain)domain;
 }
 
@@ -215,7 +215,7 @@ bool c4log_getWarnOnErrors() noexcept { return error::sWarnOnError; }
 void c4log_enableFatalExceptionBacktrace() C4API {
     fleece::Backtrace::installTerminateHandler([](const string& backtrace) {
         c4log(kC4DefaultLog, kC4LogError,
-              "COUCHBASE LITE CORE FATAL ERROR (backtrace follows)\n"
+              "FATAL ERROR (backtrace follows)\n"
               "********************\n"
               "%s\n"
               "******************** NOW TERMINATING",

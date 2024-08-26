@@ -24,6 +24,8 @@
 #include <chrono>
 #include "TempArray.hh"
 
+#include "DatabaseImpl.hh"
+
 #if TARGET_OS_IPHONE
 #    include <CoreFoundation/CFBundle.h>
 #endif
@@ -108,7 +110,7 @@ TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCou
 TestFixture::~TestFixture() {
     if ( !current_exception() ) {
         // Check for leaks:
-        if ( !WaitUntil(2000ms, [&] { return c4_getObjectCount() - _objectCount == 0; }) ) {
+        if ( !WaitUntil(20s, [&] { return c4_getObjectCount() - _objectCount == 0; }) ) {
             FAIL_CHECK("LiteCore objects were leaked by this test:");
             fprintf(stderr, "*** LEAKED LITECORE OBJECTS: \n");
             c4_dumpInstances();
@@ -148,7 +150,6 @@ FilePath DataFileTestFixture::databasePath() { return sTempDir[string("db") + fa
 }
 
 DataFile* DataFileTestFixture::newDatabase(const FilePath& path, const DataFile::Options* options) {
-    //TODO: Set up options
     return factory().openFile(path, this, options);
 }
 

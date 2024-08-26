@@ -59,17 +59,27 @@ class QueryParserTest
     [[nodiscard]] bool tableExists(const string& tableName) const override {
         return ((string_view)tableName).substr(0, 4) == "all_" || tableNames.count(tableName) > 0;
     }
+
 #ifdef COUCHBASE_ENTERPRISE
     [[nodiscard]] std::string predictiveTableName(const string& onTable, const std::string& property) const override {
         return onTable + ":predict:" + property;
     }
 
-    [[nodiscard]] std::string vectorTableName(const string& onTable, const std::string& property) const override {
-        return onTable + ":vector:" + property;
+    [[nodiscard]] std::string vectorTableName(const string& onTable, const std::string& property,
+                                              string_view metricName) const override {
+        auto i = vectorIndexedProperties.find({onTable, property});
+        if ( i == vectorIndexedProperties.end() )
+            FAIL("there is no vector index of expression " + property + " on table " + onTable);
+        string tableName = i->second;
+        REQUIRE(tableExists(tableName));
+        if ( !metricName.empty() ) REQUIRE(metricName == vectorIndexMetric);
+        return tableName;
     }
 #endif
 
     std::set<string> tableNames{"kv_default", "kv_del_default"};
-
     std::set<string> usedTableNames;
+    std::map<std::pair<string, string>, string>
+                vectorIndexedProperties;  // maps {table name,expression JSON} -> vector-index table name
+    std::string vectorIndexMetric;
 };

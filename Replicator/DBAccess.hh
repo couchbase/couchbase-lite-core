@@ -158,6 +158,9 @@ namespace litecore::repl {
 
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
+      protected:
+        std::string loggingClassName() const override { return "DBAccess"; }
+
       private:
         void               markRevsSyncedLater();
         fleece::SharedKeys tempSharedKeys();

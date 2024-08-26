@@ -442,7 +442,15 @@ _c4error_return
 _c4_dumpInstances
 _gC4ExpectExceptions
 
+_c4_enableExtension
 _c4_setExtensionPath
+
+_c4index_getCollection
+_c4index_getName
+_c4index_getType
+_c4index_getQueryLanguage
+_c4index_getExpression
+_c4index_getOptions
 
 _c4index_getType
 _c4index_getQueryLanguage
@@ -491,6 +499,7 @@ _c4index_beginUpdate
 _c4indexupdater_count
 _c4indexupdater_valueAt
 _c4indexupdater_setVectorAt
+_c4indexupdater_skipVectorAt
 _c4indexupdater_finish
 
 # Apple specific
