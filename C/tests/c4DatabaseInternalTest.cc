@@ -18,6 +18,7 @@
 #include "c4Collection.h"
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
+#include "c4Database.hh"
 #include <cmath>
 #include <cerrno>
 #include <iostream>
@@ -25,8 +26,6 @@
 
 #include "catch.hpp"
 #include "sqlite3.h"
-
-#include <c4Database.hh>
 
 #ifdef _MSC_VER
 #    include <ctime>

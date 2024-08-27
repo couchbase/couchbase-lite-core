@@ -16,6 +16,7 @@
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
+#include "c4Database.hh"
 #include "c4Index.h"
 #include "c4Query.h"
 #include "c4Collection.h"
@@ -32,8 +33,6 @@
 #include <thread>
 
 #include "sqlite3.h"
-
-#include <c4Database.hh>
 
 using namespace std;
 
