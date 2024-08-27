@@ -31,7 +31,7 @@
 #ifdef _MSC_VER
 #    include <ctime>
 #    include "Windows.h"
-#    define sleep(sec) Sleep((sec) * 1000)
+#    define sleep(sec) Sleep((sec)*1000)
 #endif
 
 // For debugging

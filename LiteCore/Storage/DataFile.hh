@@ -230,7 +230,8 @@ namespace litecore {
         // the following function can be used to unescape the escaped separator.
         static string unescapeCollectionName(const string& unescaped);
 
-                  DataFile(const DataFile&)  = delete;
+        DataFile(const DataFile&) = delete;
+
         DataFile& operator=(const DataFile&) = delete;
 
       protected:

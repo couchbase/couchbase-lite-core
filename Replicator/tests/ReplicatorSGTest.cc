@@ -1565,7 +1565,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Remove Attachment in SGW", "[.SyncServer]") 
     }
 
     C4Error             error;
-    c4::ref<C4Document> doc = c4coll_getDoc(db->getDefaultCollection(), "att1"_sl, true, kDocGetCurrentRev, ERROR_INFO(error));
+    c4::ref<C4Document> doc =
+            c4coll_getDoc(db->getDefaultCollection(), "att1"_sl, true, kDocGetCurrentRev, ERROR_INFO(error));
     REQUIRE(doc);
     alloc_slice before = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
     CHECK(before);
@@ -1603,7 +1604,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Remove Attachment in SGW", "[.SyncServer]") 
     alloc_slice res = _sg.sendRemoteRequest("PUT", "/scratch/att1", rev1.toJSON(), false, HTTPStatus::Created);
 
     bool docDeleted = false;
-    SECTION("Remove attachment in SGW before rev1 is synced") {
+         SECTION("Remove attachment in SGW before rev1 is synced") {
         C4Log("-------- Deleting and re-creating database --------");
         // Simulate the case where attachment is deleted in SGW before the rev is synced.
         // Since the rev on which SGW modifed is not in local, we will not receive

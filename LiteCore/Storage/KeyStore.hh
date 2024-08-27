@@ -207,7 +207,8 @@ namespace litecore {
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore() = default;
 
-                  KeyStore(const KeyStore&)  = delete;  // not copyable
+        KeyStore(const KeyStore&) = delete;  // not copyable
+
         KeyStore& operator=(const KeyStore&) = delete;
 
       protected:

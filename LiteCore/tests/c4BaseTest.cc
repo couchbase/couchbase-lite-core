@@ -149,7 +149,7 @@ namespace {
 
     class Virt {
       public:
-        int64_t  foo{};
+        int64_t foo{};
         virtual ~Virt() = default;
     };
 
@@ -262,7 +262,8 @@ namespace {
     TEST_CASE("URL Transformation") {
         slice       withPort, unaffected;
         alloc_slice withoutPort;
-                    SECTION("Plain") {
+
+        SECTION("Plain") {
             withPort    = "ws://duckduckgo.com:80/search"_sl;
             withoutPort = "ws://duckduckgo.com/search"_sl;
             unaffected  = "ws://duckduckgo.com:4984/search"_sl;
