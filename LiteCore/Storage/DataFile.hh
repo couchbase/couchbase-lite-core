@@ -81,7 +81,7 @@ namespace litecore {
             static const Options   defaults;
         };
 
-         DataFile(const FilePath& path, Delegate* delegate NONNULL, const Options* = nullptr);
+        DataFile(const FilePath& path, Delegate* delegate NONNULL, const Options* = nullptr);
         ~DataFile() override;
 
         FilePath filePath() const noexcept { return _path; }
