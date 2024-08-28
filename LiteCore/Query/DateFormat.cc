@@ -35,11 +35,11 @@ namespace fleece {
      * ISO8601 can be represented as `%Y-%m-%dT%H:%M:%S%z` OR `%FT%T%z`
      * */
     std::optional<DateFormat> DateFormat::parseTokenFormat(slice_istream formatStream) {
-        if ( formatStream.size < 2 ) return {};
+        if ( formatStream.size < 2 ) return std::nullopt;
 
         // - YMD
 
-        auto ymd = std::optional<YMD>{};
+        std::optional<YMD> ymd;
 
         // Skip past initial '%'
         formatStream.skip(1);
@@ -57,19 +57,19 @@ namespace fleece {
                 ymd.value().separator = YMD::Separator::Slash;
             } else {
                 // If the first token is Y, we must have full valid YMD.
-                return {};
+                return std::nullopt;
             }
         }
 
         if ( formatStream.empty() ) {
             if ( ymd.has_value() ) return DateFormat{ymd.value()};
             else
-                return {};
+                return std::nullopt;
         }
 
         // - SEPARATOR
 
-        auto sep = std::optional<Separator>{};
+        std::optional<Separator> sep;
 
         if ( ymd.has_value() ) {
             switch ( formatStream.peekByte() ) {
@@ -82,22 +82,22 @@ namespace fleece {
                     formatStream.skip(1);
                     break;
                 default:
-                    sep = {};
+                    sep = std::nullopt;
             }
-            if ( formatStream.readByte() != '%' ) return {};
+            if ( formatStream.readByte() != '%' ) return std::nullopt;
         }
 
         if ( formatStream.size < 2 ) {
             if ( ymd.has_value() ) {
                 return DateFormat{ymd.value()};
             } else
-                return {};
+                return std::nullopt;
         }
 
 
         // - HMS
 
-        auto hms = std::optional<HMS>{};
+        std::optional<HMS> hms;
 
         // %T == %H:%M:%S
         if ( const auto firstToken = formatStream.readByte(); firstToken == 'T' ) {
@@ -107,7 +107,7 @@ namespace fleece {
             if ( const auto ms = formatStream.readAtMost(6); ms == ":%M:%S" ) {
                 hms = HMS::kISO8601;
             } else {
-                return {};
+                return std::nullopt;
             }
             // Set Millis to None until we parse it later
             hms->millis = false;
@@ -117,16 +117,16 @@ namespace fleece {
             if ( ymd.has_value() ) {
                 if ( hms.has_value() ) {
                     // If YMD + HMS, Separator is required.
-                    if ( !sep.has_value() ) { return {}; }
+                    if ( !sep.has_value() ) { return std::nullopt; }
                     return DateFormat{ymd.value(), sep.value(), hms.value()};
                 }
                 return DateFormat{ymd.value()};
             }
             if ( hms.has_value() ) { return DateFormat{hms.value()}; }
-            return {};
+            return std::nullopt;
         }
 
-        if ( formatStream.readByte() != '%' ) return {};
+        if ( formatStream.readByte() != '%' ) return std::nullopt;
 
         // Millis
         // %s OR %.s
@@ -144,13 +144,13 @@ namespace fleece {
             if ( ymd.has_value() ) {
                 if ( hms.has_value() ) {
                     // If YMD + HMS, Separator is required.
-                    if ( !sep.has_value() ) { return {}; }
+                    if ( !sep.has_value() ) { return std::nullopt; }
                     return DateFormat{ymd.value(), sep.value(), hms.value()};
                 }
                 return DateFormat{ymd.value()};
             }
             if ( hms.has_value() ) { return DateFormat{hms.value()}; }
-            return {};
+            return std::nullopt;
         }
 
         // - TIMEZONE
@@ -166,13 +166,13 @@ namespace fleece {
             tz.value() = Timezone::Colon;
         } else {
             // Format string contains additional invalid tokens
-            return {};
+            return std::nullopt;
         }
 
         if ( ymd.has_value() ) {
             if ( hms.has_value() ) {
                 // If YMD + HMS, Separator is required.
-                if ( !sep.has_value() ) { return {}; }
+                if ( !sep.has_value() ) { return std::nullopt; }
                 if ( tz.has_value() ) { return DateFormat{ymd.value(), sep.value(), hms.value(), tz.value()}; }
                 return DateFormat{ymd.value(), sep.value(), hms.value()};
             }
@@ -182,14 +182,14 @@ namespace fleece {
             if ( tz.has_value() ) return DateFormat{hms.value(), tz.value()};
             return DateFormat{hms.value()};
         }
-        return {};
+        return std::nullopt;
     }
 
     // 1111-11-11T11:11:11.111Z
     std::optional<DateFormat> DateFormat::parseDateFormat(slice formatString) {
         auto timezoneResult = parseTimezone(formatString);
 
-        std::optional<Timezone> tzResult{};
+        std::optional<Timezone> tzResult;
         if ( timezoneResult.has_value() ) {
             tzResult     = timezoneResult.value().first;
             formatString = timezoneResult.value().second;
@@ -199,7 +199,7 @@ namespace fleece {
 
         if ( hmsResult.has_value() ) formatString = hmsResult.value().second;
 
-        auto separator = std::optional<Separator>{};
+        std::optional<Separator> separator;
 
         if ( !formatString.empty() && hmsResult.has_value() ) {
             char sep = (char)formatString[formatString.size - 1];
@@ -209,7 +209,7 @@ namespace fleece {
                 separator = Separator::T;
             } else {
                 // Invalid YMD/HMS Separator
-                return {};
+                return std::nullopt;
             }
             formatString = formatString.upTo(formatString.size - 1);
         }
@@ -218,15 +218,15 @@ namespace fleece {
 
         if ( separator.has_value() ) {
             // We must have YMD and HMS if there is a separator.
-            if ( !ymdResult.has_value() || !hmsResult.has_value() ) { return {}; }
+            if ( !ymdResult.has_value() || !hmsResult.has_value() ) { return std::nullopt; }
         }
 
         // We must have HMS if we have timezone specifier.
-        if ( timezoneResult.has_value() && !hmsResult.has_value() ) { return {}; }
+        if ( timezoneResult.has_value() && !hmsResult.has_value() ) { return std::nullopt; }
 
         if ( ymdResult.has_value() ) {
             if ( hmsResult.has_value() ) {
-                if ( !separator.has_value() ) return {};
+                if ( !separator.has_value() ) return std::nullopt;
                 return {DateFormat{ymdResult.value(), separator.value(), hmsResult.value().first, tzResult}};
             }
             return {DateFormat{ymdResult.value()}};
@@ -234,7 +234,7 @@ namespace fleece {
             return {DateFormat{hmsResult.value().first, tzResult}};
         } else {
             // We must have _either_ YMD or HMS.
-            return {};
+            return std::nullopt;
         }
     }
 
@@ -242,7 +242,7 @@ namespace fleece {
         // Default to No Colon
         if ( *(formatString.end() - 1) == 'Z' ) return {{Timezone::NoColon, formatString.upTo(formatString.size - 1)}};
         // Minimum 5 `+0000`
-        if ( formatString.size < 5 ) return {};
+        if ( formatString.size < 5 ) return std::nullopt;
         const bool colon = *(formatString.end() - 3) == ':';
 
         const size_t start = colon ? formatString.size - 6 : formatString.size - 5;
@@ -255,7 +255,7 @@ namespace fleece {
             }
         }
 
-        return {};
+        return std::nullopt;
     }
 
     // Input some string which may or may not contain HMS but does NOT contain timezone. That should have already been
@@ -263,17 +263,17 @@ namespace fleece {
     // Returns the parsed HMS and the format string with HMS removed, or None if valid HMS was not found.
     std::optional<std::pair<DateFormat::HMS, slice>> DateFormat::parseHMS(slice formatString) {
         // Minimum 11:11:11
-        if ( formatString.size < 8 ) return {};
+        if ( formatString.size < 8 ) return std::nullopt;
         const bool millis = *(formatString.end() - 4) == '.';
 
         // If we have millis, we must have minimum 11:11:11.111 (12 chars)
-        if ( millis && formatString.size < 12 ) { return {}; }
+        if ( millis && formatString.size < 12 ) { return std::nullopt; }
 
         // Shorten to get rid of millis, input minimum is now 11:11:11
         if ( millis ) { formatString = formatString.upTo(formatString.size - 4); }
 
         // Check HMS is formatted correctly
-        if ( !(*(formatString.end() - 3) == ':' && *(formatString.end() - 6) == ':') ) { return {}; }
+        if ( !(*(formatString.end() - 3) == ':' && *(formatString.end() - 6) == ':') ) { return std::nullopt; }
 
         const size_t start = formatString.size - 8;
 
@@ -284,7 +284,7 @@ namespace fleece {
     // This should be called after already calling `parseTimezone` ,`parseHMS`, and removing the separator.
     std::optional<DateFormat::YMD> DateFormat::parseYMD(slice formatString) {
         // Minimum 1111-11-11
-        if ( formatString.size < 10 ) return {};
+        if ( formatString.size < 10 ) return std::nullopt;
 
         auto separator = YMD::Separator::Hyphen;
 
@@ -292,14 +292,14 @@ namespace fleece {
         } else if ( *(formatString.end() - 3) == '/' && *(formatString.end() - 6) == '/' ) {
             separator = YMD::Separator::Slash;
         } else {
-            return {};
+            return std::nullopt;
         }
 
         return {YMD{separator}};
     }
 
     std::optional<DateFormat> DateFormat::parse(const slice formatString) {
-        if ( formatString.empty() ) { return {}; }
+        if ( formatString.empty() ) { return std::nullopt; }
         if ( formatString[0] == '%' ) { return parseTokenFormat(formatString); }
         return parseDateFormat(formatString);
     }
@@ -323,7 +323,7 @@ namespace fleece {
             return nullslice;
         }
 
-        std::ostringstream stream{};
+        std::ostringstream stream;
 
         const milliseconds millis{milliseconds{timestamp} + duration_cast<milliseconds>(tzoffset)};
         const auto         tm = date::local_time<milliseconds>{millis};
@@ -372,7 +372,7 @@ namespace fleece {
     }
 
     DateFormat::operator std::string() const {
-        std::stringstream stream{};
+        std::stringstream stream;
         if ( ymd.has_value() ) {
             const char sep = (char)ymd.value().separator;
             stream << "Y" << sep << "M" << sep << "D";
