@@ -189,10 +189,11 @@ namespace fleece {
     std::optional<DateFormat> DateFormat::parseDateFormat(slice formatString) {
         auto timezoneResult = parseTimezone(formatString);
 
-        if ( timezoneResult.has_value() ) formatString = timezoneResult.value().second;
-
-        auto tzResult =
-                timezoneResult.has_value() ? std::optional(timezoneResult.value().first) : std::optional<Timezone>();
+        std::optional<Timezone> tzResult{};
+        if ( timezoneResult.has_value() ) {
+            tzResult     = timezoneResult.value().first;
+            formatString = timezoneResult.value().second;
+        }
 
         auto hmsResult = parseHMS(formatString);
 
@@ -226,7 +227,7 @@ namespace fleece {
         if ( ymdResult.has_value() ) {
             if ( hmsResult.has_value() ) {
                 if ( !separator.has_value() ) return {};
-                return {{ymdResult.value(), separator.value(), hmsResult.value().first, tzResult}};
+                return {DateFormat{ymdResult.value(), separator.value(), hmsResult.value().first, tzResult}};
             }
             return {DateFormat{ymdResult.value()}};
         } else if ( hmsResult.has_value() ) {
