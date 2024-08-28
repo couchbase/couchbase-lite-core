@@ -136,6 +136,12 @@ namespace litecore::REST {
                 return;
             }
         }
+
+        // Add standard headers:
+        auto tp = floor<seconds>(system_clock::now());
+        setHeader("Date", date::format("%a, %d %b %Y %H:%M:%S GMT", tp).c_str());
+        setHeader("Connection", "close");  // I don't support Keep-Alive yet
+        setHeader("Server", ("CouchbaseLite/" + string(c4_getVersion())).c_str());
     }
 
     void RequestResponse::setStatus(HTTPStatus status, const char* message) {
@@ -155,12 +161,6 @@ namespace litecore::REST {
         string statusLine = stringprintf("HTTP/1.1 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
         _responseHeaderWriter.write(statusLine);
         _sentStatus = true;
-
-        // Add standard headers:
-        auto tp = floor<seconds>(system_clock::now());
-        setHeader("Date", date::format("%a, %d %b %Y %H:%M:%S GMT", tp).c_str());
-        setHeader("Connection", "close");  // I don't support Keep-Alive yet
-        setHeader("Server", ("CouchbaseLite/" + string(c4_getVersion())).c_str());
     }
 
     void RequestResponse::writeStatusJSON(HTTPStatus status, const char* message) {
@@ -264,29 +264,21 @@ namespace litecore::REST {
 
 #pragma mark - RESPONSE HEADERS:
 
-    void RequestResponse::setHeader(const char* header, const char* value) {
-        sendStatus();
-        Assert(!_endedHeaders);
-        _responseHeaderWriter.write(slice(header));
-        _responseHeaderWriter.write(": "_sl);
-        _responseHeaderWriter.write(slice(value));
-        _responseHeaderWriter.write("\r\n"_sl);
+    void RequestResponse::setHeader(slice header, slice value) {
+        Assert(!_sentHeaders);
+        _responseHeaders.set(header, value);
     }
 
     void RequestResponse::addHeaders(const map<string, string>& headers) {
-        for ( auto& entry : headers ) setHeader(entry.first.c_str(), entry.second.c_str());
+        for ( auto& entry : headers ) setHeader(entry.first, entry.second);
     }
 
     void RequestResponse::setContentLength(uint64_t length) {
-        sendStatus();
         Assert(_contentLength < 0, "Content-Length has already been set");
         Assert(!_chunked);
         Log("Content-Length: %" PRIu64, length);
-        _contentLength           = (int64_t)length;
-        constexpr size_t bufSize = 20;
-        char             len[bufSize];
-        snprintf(len, bufSize, "%" PRIu64, length);
-        setHeader("Content-Length", len);
+        _contentLength = (int64_t)length;
+        setHeader("Content-Length", _contentLength);
     }
 
     void RequestResponse::setChunked() {
@@ -296,11 +288,17 @@ namespace litecore::REST {
     }
 
     void RequestResponse::sendHeaders() {
-        if ( _endedHeaders ) return;
-        if ( _jsonEncoder ) setHeader("Content-Type", "application/json");
+        sendStatus();
+        if ( _sentHeaders ) return;
+        _responseHeaders.forEach([&](slice header, slice value) {
+            _responseHeaderWriter.write(header);
+            _responseHeaderWriter.write(": "_sl);
+            _responseHeaderWriter.write(value);
+            _responseHeaderWriter.write("\r\n"_sl);
+        });
         _responseHeaderWriter.write("\r\n"_sl);
         writeToSocket(_responseHeaderWriter.finish());
-        _endedHeaders = true;
+        _sentHeaders = true;
     }
 
 #pragma mark - RESPONSE BODY:
@@ -339,6 +337,7 @@ namespace litecore::REST {
     }
 
     void RequestResponse::_flush() {
+        Assert(_sentHeaders);
         if ( _chunked ) {
             // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding
             auto chunkSize = _responseWriter.length();
@@ -352,7 +351,10 @@ namespace litecore::REST {
     }
 
     fleece::JSONEncoder& RequestResponse::jsonEncoder() {
-        if ( !_jsonEncoder ) _jsonEncoder = std::make_unique<fleece::JSONEncoder>();
+        if ( !_jsonEncoder ) {
+            _jsonEncoder = std::make_unique<fleece::JSONEncoder>();
+            setHeader("Content-Type", "application/json");
+        }
         return *_jsonEncoder;
     }
 

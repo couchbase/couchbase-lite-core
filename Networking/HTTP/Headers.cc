@@ -80,6 +80,12 @@ namespace litecore::websocket {
         if ( value ) _map.insert({store(name), store(value)});
     }
 
+    void Headers::set(slice name, slice value) {
+        assert(name);
+        _map.erase(name);
+        add(name, value);
+    }
+
     slice Headers::get(slice name) const {
         auto i = _map.find(name);
         if ( i == _map.end() ) return nullslice;

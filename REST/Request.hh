@@ -84,11 +84,9 @@ namespace litecore::REST {
 
         // Response headers:
 
-        void setHeader(const char* header, const char* value);
+        void setHeader(fleece::slice header, fleece::slice value);
 
-        void setHeader(const char* header, std::string const& value) { setHeader(header, value.c_str()); }
-
-        void setHeader(const char* header, int64_t value) { setHeader(header, std::to_string(value).c_str()); }
+        void setHeader(fleece::slice header, int64_t value) { setHeader(header, std::to_string(value)); }
 
         void addHeaders(const std::map<std::string, std::string>&);
 
@@ -159,11 +157,12 @@ namespace litecore::REST {
         std::string _statusMessage;           // Response custom status message
         bool        _sentStatus{false};       // Sent the response line yet?
 
-        fleece::Writer _responseHeaderWriter;
-        bool           _endedHeaders{false};  // True after headers are ended
-        int64_t        _contentLength{-1};    // Content-Length, once it's set
-        bool           _streaming{false};     // If true, content is being streamed, no Content-Length header
-        bool           _chunked{false};       // True if using chunked transfer encoding
+        fleece::Writer     _responseHeaderWriter;
+        websocket::Headers _responseHeaders;
+        bool               _sentHeaders{false};  // True after headers are ended
+        int64_t            _contentLength{-1};   // Content-Length, once it's set
+        bool               _streaming{false};    // If true, content is being streamed, no Content-Length header
+        bool               _chunked{false};      // True if using chunked transfer encoding
 
         fleece::Writer                       _responseWriter;   // Output stream for response body
         std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;      // Used for writing JSON to response

@@ -54,6 +54,9 @@ namespace litecore::websocket {
         /** Adds a header. If a header with that name already exists, it adds a second. */
         void add(slice name, slice value);
 
+        /** Sets the value of a header. If headers with that name exist, they're replaced. */
+        void set(slice name, slice value);
+
         /** Returns the value of a header with that name.*/
         [[nodiscard]] slice get(slice name) const;
 
