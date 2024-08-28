@@ -54,6 +54,7 @@ CBL_CORE_API void c4_setExtensionPath(C4String path) C4API;
  * of the extension and the path in which it is supposed to reside.  It makes an attempt
  * to only check things that have the possibility of being corrected by the user (i.e.
  * if there is a bug in the extension and it cannot load functionally that won't be caught)
+ * \note This function is not thread-safe.
  * @param name The name of the extension (corresponds to the filename
  *             without the extension or "lib" prefix)
  * @param extensionPath The path in which the extension should be found
@@ -74,13 +75,14 @@ CBL_CORE_API bool c4_enableExtension(C4String name, C4String extensionPath, C4Er
 CBL_CORE_API bool c4db_exists(C4String name, C4String inDirectory) C4API;
 
 
-/** Opens a database given its name (without the ".cblite2" extension) and directory. */
+/** Opens a database given its name (without the ".cblite2" extension) and directory.
+    \note This function is thread-safe. */
 NODISCARD CBL_CORE_API C4Database* c4db_openNamed(C4String name, const C4DatabaseConfig2* config,
                                                   C4Error* C4NULLABLE outError) C4API;
 
 /** Opens a new handle to the same database file as `db`.
         The new connection is completely independent and can be used on another thread. 
-    \note The caller must use a lock for Database when this function is called. */
+        \note This function is thread-safe. */
 NODISCARD CBL_CORE_API C4Database* c4db_openAgain(C4Database* db, C4Error* C4NULLABLE outError) C4API;
 
 /** Copies a prebuilt database from the given source path and places it in the destination
@@ -103,17 +105,20 @@ NODISCARD CBL_CORE_API bool c4db_close(C4Database* C4NULLABLE database, C4Error*
 
 /** Closes the database and deletes the file/bundle. Does not free the handle, although any
         operation other than c4db_release() will fail with an error. 
-        All C4Databases at that path must be closed first or an error will result.*/
+        All C4Databases at that path must be closed first or an error will result.
+        \note This function is thread-safe. */
 NODISCARD CBL_CORE_API bool c4db_delete(C4Database* database, C4Error* C4NULLABLE outError) C4API;
 
 /** Deletes the file(s) for the database with the given name in the given directory.
         All C4Databases at that path must be closed first or an error will result.
-        Returns false, with no error, if the database doesn't exist. */
+        Returns false, with no error, if the database doesn't exist.
+        \note This function is thread-safe. */
 NODISCARD CBL_CORE_API bool c4db_deleteNamed(C4String dbName, C4String inDirectory, C4Error* C4NULLABLE outError) C4API;
 
 
-/** Changes a database's encryption key (removing encryption if it's NULL.) 
-    All C4Databases at that path must be closed first or an error will result.*/
+/** Changes a database's encryption key (removing encryption if it's NULL.)
+    \note The caller must use a lock for Database when this function is called.
+    \note All other C4Databases at that path must be closed first or an error will result.*/
 NODISCARD CBL_CORE_API bool c4db_rekey(C4Database* database, const C4EncryptionKey* C4NULLABLE newKey,
                                        C4Error* C4NULLABLE outError) C4API;
 

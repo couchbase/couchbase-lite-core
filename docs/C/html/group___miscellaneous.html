@@ -279,8 +279,8 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Wiring call for platforms without discoverable temporary directories. </p>
-<p>Simply sets the SQLite temp directory so that it can write its temporary files without error. Several platforms need to do this, but not all need to use this API. <br  />
- </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Simply sets the SQLite temp directory so that it can write its temporary files without error. Several platforms need to do this, but not all need to use this API. </p><dl class="section note"><dt>Note</dt><dd>This function is not thread-safe. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">path</td><td>The path to a writable directory for temporary files for SQLite </td></tr>
     <tr><td class="paramname">err</td><td>If an error happens (e.g. it is an error to call this function twice), this parameter records it. </td></tr>

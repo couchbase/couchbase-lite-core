@@ -95,11 +95,13 @@ CBL_CORE_API C4StringResult c4query_fullTextMatched(C4Query* query, const C4Full
                                                     C4Error* C4NULLABLE outError) C4API;
 
 /** Advances a query enumerator to the next row, populating its fields.
-        Returns true on success, false at the end of enumeration or on error. */
+        \note The caller must use a lock for QueryEnumerator  when this function is called.
+        @return true on success, false at the end of enumeration or on error. */
 NODISCARD CBL_CORE_API bool c4queryenum_next(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the total number of rows in the query, if known.
         Not all query enumerators may support this (but the current implementation does.)
+        \note The caller must use a lock for QueryEnumerator  when this function is called.
         @param e  The query enumerator
         @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
         @return  The number of rows, or -1 on failure. */
@@ -107,6 +109,7 @@ NODISCARD CBL_CORE_API int64_t c4queryenum_getRowCount(C4QueryEnumerator* e, C4E
 
 /** Jumps to a specific row. Not all query enumerators may support this (but the current
         implementation does.)
+        \note The caller must use a lock for QueryEnumerator  when this function is called.
         @param e  The query enumerator
         @param rowIndex  The number of the row, starting at 0, or -1 to restart before first row
         @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
