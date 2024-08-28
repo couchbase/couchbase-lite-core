@@ -190,7 +190,7 @@ namespace fleece {
         auto timezoneResult = parseTimezone(formatString);
 
         std::optional<Timezone> tzResult{};
-        if ( timezoneResult.has_value() ) { 
+        if ( timezoneResult.has_value() ) {
             tzResult     = timezoneResult.value().first;
             formatString = timezoneResult.value().second;
         }
