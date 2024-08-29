@@ -114,7 +114,7 @@ namespace litecore {
     }
 
     static void setupEncoders() {
-        for ( int i = 0; i < 5; i++ ) { sLogEncoder[i] = new LogEncoder(*sFileOut[i], (LogLevel)i); }
+        for ( int i = 0; i < 5; i++ ) { sLogEncoder[i] = new LogEncoder(*sFileOut[i], LogEncoder::LogLevel(i)); }
     }
 
     static void teardownEncoders() {
@@ -196,12 +196,10 @@ namespace litecore {
 
         sRotateSerialNo[(int)level]++;
         if ( encoder ) {
-            auto newEncoder         = new LogEncoder(*sFileOut[(int)level], level);
+            auto newEncoder         = new LogEncoder(*sFileOut[(int)level], LogEncoder::LogLevel(level));
             sLogEncoder[(int)level] = newEncoder;
-            newEncoder->log("", {}, LogEncoder::None, "---- %s ----", fileLogHeader(level).c_str());
-            if ( !sInitialMessage.empty() ) {
-                newEncoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
-            }
+            newEncoder->log("", "---- %s ----", fileLogHeader(level).c_str());
+            if ( !sInitialMessage.empty() ) { newEncoder->log("", "---- %s ----", sInitialMessage.c_str()); }
             newEncoder->flush();  // Make sure at least the magic bytes are present
         } else {
             auto fout = sFileOut[(int)level];
@@ -264,10 +262,8 @@ namespace litecore {
             int8_t level = 0;
             if ( sLogEncoder[0] ) {
                 for ( auto& encoder : sLogEncoder ) {
-                    encoder->log("", {}, LogEncoder::None, "---- %s ----", fileLogHeader(LogLevel{level++}).c_str());
-                    if ( !sInitialMessage.empty() ) {
-                        encoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
-                    }
+                    encoder->log("", "---- %s ----", fileLogHeader(LogLevel{level++}).c_str());
+                    if ( !sInitialMessage.empty() ) { encoder->log("", "---- %s ----", sInitialMessage.c_str()); }
                     encoder->flush();  // Make sure at least the magic bytes are present
                 }
             } else {
@@ -290,9 +286,7 @@ namespace litecore {
                 atexit([] {
                     if ( sLogMutex.try_lock() ) {  // avoid deadlock on crash inside logging code
                         if ( sLogEncoder[0] ) {
-                            for ( auto& encoder : sLogEncoder ) {
-                                encoder->log("", {}, LogEncoder::None, "---- END ----");
-                            }
+                            for ( auto& encoder : sLogEncoder ) { encoder->log("", "---- END ----"); }
                         } else if ( sFileOut[0] ) {
                             int8_t level = 0;
                             for ( auto& fout : sFileOut ) {
@@ -493,8 +487,6 @@ namespace litecore {
         va_end(args);
     }
 
-    // Can't make this function static, it breaks the usage of __printflike.
-    // NOLINTBEGIN(readability-convert-member-functions-to-static)
     // Must have sLogMutex held
     void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix,
                           const char* fmt, va_list args) {
@@ -506,7 +498,10 @@ namespace litecore {
         const auto encoder = sLogEncoder[(int)level];
         const auto file    = sFileOut[(int)level];
         if ( encoder ) {
-            encoder->vlog(domain, sObjectMap, (LogEncoder::ObjectRef)objRef, prefix, fmt, args);
+            string path;
+            if ( objRef && encoder->isNewObject(LogEncoder::ObjectRef(objRef)) )
+                path = getObjectPath(objRef, sObjectMap);
+            encoder->vlog(domain, LogEncoder::ObjectRef(objRef), path, prefix, fmt, args);
             pos = encoder->tellp();
         } else if ( file ) {
             static char formatBuffer[2048];
@@ -514,17 +509,12 @@ namespace litecore {
             LogDecoder::writeTimestamp(LogDecoder::now(), *file, true);
             LogDecoder::writeHeader(kLevels[(int)level], domain, *file);
             if ( objRef ) n = addObjectPath(formatBuffer, sizeof(formatBuffer), objRef);
-            if ( prefix.empty() ) vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
-            else {
-                std::string prefixedFmt = stringprintf("%s %s", prefix.c_str(), fmt);
-                // we pass unchecked prefixedFmt to following function.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-
-                vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, prefixedFmt.c_str(), args);
-
-#pragma GCC diagnostic pop
+            if ( !prefix.empty() && n + prefix.size() + 1 < sizeof(formatBuffer) ) {
+                memcpy(&formatBuffer[n], prefix.data(), prefix.size());
+                n += prefix.size();
+                formatBuffer[n++] = ' ';
             }
+            vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
             *file << formatBuffer << endl;
             pos = file->tellp();
         } else {
@@ -538,8 +528,6 @@ namespace litecore {
         else if ( level == LogLevel::Error )
             sErrorCount++;
     }
-
-    // NOLINTEND(readability-convert-member-functions-to-static)
 
     __printflike(3, 4) static void invokeCallback(LogDomain& domain, LogLevel level, const char* fmt, ...) {
         va_list args;

@@ -151,8 +151,8 @@ namespace litecore {
         LogLevel        levelFromEnvironment() const noexcept;
         static void     _invalidateEffectiveLevels() noexcept;
 
-        void dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix, const char* fmt,
-                   va_list) __printflike(6, 0);
+        static void dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix,
+                          const char* fmt, va_list) __printflike(5, 0);
 
         std::atomic<LogLevel> _effectiveLevel{LogLevel::Uninitialized};
         std::atomic<LogLevel> _level;
