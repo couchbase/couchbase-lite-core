@@ -17,6 +17,7 @@
 #include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4Database.hh"
+#include "c4Query.hh"
 #include "c4DocEnumerator.hh"
 #include "fleece/Expert.hh"
 #include <functional>
@@ -365,6 +366,74 @@ namespace litecore::REST {
         json.endArray();
 
         t.commit();
+    }
+
+#pragma mark - FUNCTION/QUERY HANDLERS:
+
+    void RESTListener::handleFunction(RequestResponse& rq, C4Collection* coll) {
+        rq.respondWithStatus(HTTPStatus::NotImplemented);
+    }
+
+    void RESTListener::handleQuery(RequestResponse& rq, C4Collection* coll) {
+        Dict body = rq.bodyAsJSON().asDict();
+
+        // Compile the query:
+        auto queryStr = body["query"].asString();
+        if (!queryStr)
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "Request body must be a JSON object with a 'query' string");
+        Retained<C4Query> query;
+        int errPos;
+        try {
+            query = coll->newQuery(kC4N1QLQuery, queryStr, &errPos);
+        } catch (exception const& x) {
+            return rq.respondWithStatus(HTTPStatus::BadRequest, ("Invalid SQL++ query: "s + x.what()).c_str());
+        }
+
+        // Verify parameter values match query's parameters:
+        auto paramNames = query->parameterNames();
+        Dict params = body["params"].asDict();
+        for (Dict::iterator i(params); i; ++i) {
+            if (string name(i.keyString()); paramNames.contains(string(name))) {
+                paramNames.erase(name);
+            } else {
+                return rq.respondWithStatus(HTTPStatus::BadRequest,
+                                            ("Query has no parameter named " + name).c_str());
+            }
+        }
+        if (!paramNames.empty()) {
+            if (params)
+                return rq.respondWithStatus(HTTPStatus::BadRequest,
+                                            ("Missing value for parameter " + *paramNames.begin()).c_str());
+            else
+                return rq.respondWithStatus(HTTPStatus::BadRequest, "Request body must contain a 'params' object");
+        }
+
+        // Set the parameter values:
+        if (params) {
+            Encoder enc;
+            enc.writeValue(params);
+            query->setParameters(enc.finish());
+        }
+
+        // Run!
+        rq.setHeader("Content-Type", "application/json");
+        rq.setChunked();
+        rq.write("[\n");
+        JSONEncoder json;
+        unsigned nCols = query->columnCount();
+        auto e = query->run();
+        while (e.next()) {
+            json.beginDict(nCols);
+            for (unsigned col = 0; col < nCols; ++col) {
+                json.writeKey(query->columnTitle(col));
+                json.writeValue(e.column(col));
+            }
+            json.endDict();
+            rq.write(json.finish());
+            rq.write("\n");
+            rq.flush(32768);
+        }
+        rq.write("]\n");
     }
 
 }  // namespace litecore::REST

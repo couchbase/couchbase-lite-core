@@ -140,6 +140,8 @@ namespace litecore::REST {
         void handleModifyDoc(RequestResponse&, C4Collection*);
         void handleBulkDocs(RequestResponse&, C4Collection*);
         void handleChanges(RequestResponse&, C4Collection*);
+        void handleFunction(RequestResponse&, C4Collection*);
+        void handleQuery(RequestResponse&, C4Collection*);
 
         bool modifyDoc(fleece::Dict body, std::string docID, const std::string& revIDQuery, bool deleting,
                        bool newEdits, C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;

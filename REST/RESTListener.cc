@@ -78,6 +78,8 @@ namespace litecore::REST {
             addCollectionHandler(Method::GET, "/[^_][^/]*/_all_docs", &RESTListener::handleGetAllDocs);
             addCollectionHandler(Method::POST, "/[^_][^/]*/_bulk_docs", &RESTListener::handleBulkDocs);
             addCollectionHandler(Method::GET, "/[^_][^/]*/_changes", &RESTListener::handleChanges);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_function/[^/]+", &RESTListener::handleFunction);
+            addCollectionHandler(Method::POST, "/[^_][^/]*/_query", &RESTListener::handleQuery);
 
             // Document:
             addCollectionHandler(Method::GET, "/[^_][^/]*/[^_].*", &RESTListener::handleGetDoc);
