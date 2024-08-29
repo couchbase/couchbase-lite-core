@@ -47,7 +47,7 @@ namespace litecore {
     };
 
     // Stores CF collation parameters for fast lookup; callback context points to this
-    class CFCollationContext : public CollationContext {
+    class CFCollationContext final : public CollationContext {
       public:
         CFLocaleRef          localeRef{nullptr};
         CFStringCompareFlags flags;

@@ -115,7 +115,7 @@ namespace litecore::repl {
     void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {
         if ( callback ) {
             increment(_pendingResponseCount);
-            builder.onProgress = asynchronize("sendRequest callback", [=](MessageProgress progress) {
+            builder.onProgress = asynchronize("sendRequest callback", [this, callback](MessageProgress progress) {
                 if ( progress.state >= MessageProgress::kComplete ) decrement(_pendingResponseCount);
                 callback(progress);
             });
@@ -245,9 +245,9 @@ namespace litecore::repl {
 
         if ( reason ) {
             if ( level == kC4Busy ) {
-                if ( eventCount() > 1 ) *reason = format("pendingEvent/%d", eventCount());
+                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%d", eventCount());
                 else
-                    *reason = format("pendingResponse/%d", _pendingResponseCount);
+                    *reason = stringprintf("pendingResponse/%d", _pendingResponseCount);
             } else {
                 *reason = "noPendingEventOrResponse";
             }

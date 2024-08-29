@@ -516,7 +516,7 @@ namespace litecore {
             if ( objRef ) n = addObjectPath(formatBuffer, sizeof(formatBuffer), objRef);
             if ( prefix.empty() ) vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
             else {
-                std::string prefixedFmt = format("%s %s", prefix.c_str(), fmt);
+                std::string prefixedFmt = stringprintf("%s %s", prefix.c_str(), fmt);
                 // we pass unchecked prefixedFmt to following function.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
@@ -628,7 +628,7 @@ namespace litecore {
             auto               iter = sObjectMap.find(object);
             if ( iter == sObjectMap.end() ) {
                 warningCode = kNotRegistered;
-            } else if ( sObjectMap.find(parentObject) == sObjectMap.end() ) {
+            } else if ( !sObjectMap.contains(parentObject) ) {
                 warningCode = kParentNotRegistered;
             } else if ( iter->second.second != 0 ) {
                 warningCode = kAlreadyRegistered;
@@ -675,7 +675,9 @@ namespace litecore {
 #endif
     }
 
-    std::string Logging::loggingName() const { return format("%s#%u", loggingClassName().c_str(), getObjectRef()); }
+    std::string Logging::loggingName() const {
+        return stringprintf("%s#%u", loggingClassName().c_str(), getObjectRef());
+    }
 
     std::string Logging::loggingClassName() const {
         string name  = classNameOf(this);
@@ -684,7 +686,7 @@ namespace litecore {
         return name;
     }
 
-    std::string Logging::loggingIdentifier() const { return format("%p", this); }
+    std::string Logging::loggingIdentifier() const { return stringprintf("%p", this); }
 
     unsigned Logging::getObjectRef(LogLevel level) const {
         if ( _objectRef == 0 ) {

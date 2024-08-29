@@ -171,52 +171,27 @@ namespace litecore {
     extern LogDomain                  DBLog, QueryLog, SyncLog, &ActorLog;
 
 
-#ifdef _MSC_VER
-#    define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                           \
-        do {                                                                                                           \
-            if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                          \
-                (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                           \
-        } while ( 0 )
+#define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                               \
+    do {                                                                                                               \
+        if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                              \
+            (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                               \
+    } while ( 0 )
 
-#    define LogTo(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
-#    define LogVerbose(DOMAIN, FMT, ...) LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
-#    define LogWarn(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Warning, FMT, ##__VA_ARGS__)
-#    define LogError(DOMAIN, FMT, ...)   LogToAt(DOMAIN, Error, FMT, ##__VA_ARGS__)
+#define LogTo(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
+#define LogVerbose(DOMAIN, FMT, ...) LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
+#define LogWarn(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Warning, FMT, ##__VA_ARGS__)
+#define LogError(DOMAIN, FMT, ...)   LogToAt(DOMAIN, Error, FMT, ##__VA_ARGS__)
 
-#    define Log(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Info, FMT, ##__VA_ARGS__)
-#    define Warn(FMT, ...)      LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
-#    define WarnError(FMT, ...) LogToAt(litecore::kC4Cpp_DefaultLog, Error, FMT, ##__VA_ARGS__)
+#define Log(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Info, FMT, ##__VA_ARGS__)
+#define Warn(FMT, ...)      LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
+#define WarnError(FMT, ...) LogToAt(litecore::kC4Cpp_DefaultLog, Error, FMT, ##__VA_ARGS__)
 
-#    ifdef DEBUG
-#        define LogDebug(DOMAIN, FMT, ...) LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
-#        define WriteDebug(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Debug, FMT, ##__VA_ARGS__)
-#    else
-#        define LogDebug(DOMAIN, FMT, ...)
-#        define WriteDebug(FMT, ...)
-#    endif
+#ifdef DEBUG
+#    define LogDebug(DOMAIN, FMT, ...) LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
+#    define WriteDebug(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Debug, FMT, ##__VA_ARGS__)
 #else
-#    define LogToAt(DOMAIN, LEVEL, FMT, ARGS...)                                                                       \
-        ({                                                                                                             \
-            if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                          \
-                (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##ARGS);                                                  \
-        })
-
-#    define LogTo(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Info, FMT, ##ARGS)
-#    define LogVerbose(DOMAIN, FMT, ARGS...) LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
-#    define LogWarn(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Warning, FMT, ##ARGS)
-#    define LogError(DOMAIN, FMT, ARGS...)   LogToAt(DOMAIN, Error, FMT, ##ARGS)
-
-#    define Log(FMT, ARGS...)       LogToAt(litecore::kC4Cpp_DefaultLog, Info, FMT, ##ARGS)
-#    define Warn(FMT, ARGS...)      LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
-#    define WarnError(FMT, ARGS...) LogToAt(litecore::kC4Cpp_DefaultLog, Error, FMT, ##ARGS)
-
-#    ifdef DEBUG
-#        define WriteDebug(FMT, ARGS...)       LogToAt(litecore::kC4Cpp_DefaultLog, Debug, FMT, ##ARGS)
-#        define LogDebug(DOMAIN, FMT, ARGS...) LogToAt(DOMAIN, Debug, FMT, ##ARGS)
-#    else
-#        define WriteDebug(FMT...)             ({})
-#        define LogDebug(DOMAIN, FMT, ARGS...) ({})
-#    endif
+#    define LogDebug(DOMAIN, FMT, ...)
+#    define WriteDebug(FMT, ...)
 #endif
 
     static inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }

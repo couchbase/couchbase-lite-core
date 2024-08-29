@@ -27,6 +27,9 @@ C4API_BEGIN_DECLS
 /** \defgroup  Logging  Logging
     @{ */
 
+/*
+ * NOTE: All logging functions are thread-safe
+ */
 
 /** Logging levels. */
 typedef C4_ENUM(int8_t, C4LogLevel){

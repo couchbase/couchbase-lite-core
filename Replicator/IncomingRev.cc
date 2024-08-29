@@ -312,7 +312,7 @@ namespace litecore::repl {
 
         // Check for blobs, and queue up requests for any I don't have yet:
         if ( _mayContainBlobChanges ) {
-            _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey& key) {
+            _db->findBlobReferences(root, true, [this](FLDeepIterator i, Dict blob, const C4BlobKey& key) {
                 // Note: this flag is set here after we applied the delta above in this method.
                 // If _mayContainBlobs is false, we will apply the delta in deltaCB. The flag will
                 // updated inside the callback after the delta is applied.
@@ -471,7 +471,7 @@ namespace litecore::repl {
             if ( level == kC4Busy ) {
                 if ( workerLevel == kC4Busy ) *reason = std::move(parentReason);
                 else if ( _pendingCallbacks > 0 )
-                    *reason = format("pendingCallbacks/%d", _pendingCallbacks);
+                    *reason = stringprintf("pendingCallbacks/%d", _pendingCallbacks);
                 else
                     *reason = "pendingBlob";
             } else {

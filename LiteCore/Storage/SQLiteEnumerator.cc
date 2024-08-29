@@ -25,7 +25,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    class SQLiteEnumerator : public RecordEnumerator::Impl {
+    class SQLiteEnumerator final : public RecordEnumerator::Impl {
       public:
         SQLiteEnumerator(SQLite::Statement* stmt, ContentOption content) : _stmt(stmt), _content(content) {
             LogTo(SQL, "Enumerator: %s", _stmt->getQuery().c_str());

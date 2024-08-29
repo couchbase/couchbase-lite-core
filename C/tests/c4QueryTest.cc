@@ -24,6 +24,10 @@ static ostream& operator<<(ostream& o, C4FullTextMatch match) {
              << "bytes " << match.start << " + " << match.length << "}";
 }
 
+#ifdef __cpp_char8_t
+static auto json5(const char8_t* str) { return json5((const char*)str); }
+#endif
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Basic", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run()

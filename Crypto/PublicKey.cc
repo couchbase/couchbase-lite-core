@@ -43,8 +43,8 @@ namespace litecore::crypto {
     }
 
     string Key::description() {
-        return format("%zd-bit %s %s key", mbedtls_pk_get_bitlen(_pk), mbedtls_pk_get_name(_pk),
-                      (isPrivate() ? "private" : "public"));
+        return stringprintf("%zd-bit %s %s key", mbedtls_pk_get_bitlen(_pk), mbedtls_pk_get_name(_pk),
+                            (isPrivate() ? "private" : "public"));
     }
 
     alloc_slice Key::publicKeyDERData() {
@@ -107,7 +107,7 @@ namespace litecore::crypto {
                         return mbedtls_pk_write_key_der(context(), buf, size);
                     });
                     if ( format == KeyFormat::PEM ) {
-                        string msg = litecore::format("%s PRIVATE KEY", mbedtls_pk_get_name(context()));
+                        string msg = litecore::stringprintf("%s PRIVATE KEY", mbedtls_pk_get_name(context()));
                         result     = convertToPEM(result, msg.c_str());
                     }
                     return result;

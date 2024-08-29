@@ -670,7 +670,7 @@ namespace litecore {
     // Subclass of Doc that points back to the VectorRecord instance. That way when we use
     // Scope::containing to look up where a Fleece Value* is, we can track it back to the
     // VectorRecord that owns the Doc.
-    class VectorRecord::LinkedFleeceDoc : public fleece::impl::Doc {
+    class VectorRecord::LinkedFleeceDoc final : public fleece::impl::Doc {
       public:
         LinkedFleeceDoc(const alloc_slice& fleeceData, FLTrust trust, fleece::impl::SharedKeys* sk,
                         VectorRecord* document_)

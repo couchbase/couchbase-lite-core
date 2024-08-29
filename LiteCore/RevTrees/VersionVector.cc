@@ -279,9 +279,8 @@ namespace litecore {
     }
 
     bool VersionVector::isNewerIgnoring(SourceID ignoring, const VersionVector& other) const {
-        return std::any_of(_vers.begin(), _vers.end(), [&ignoring, other](auto& v) {
-            return v.author() != ignoring && v.time() > other[v.author()];
-        });
+        return ranges::any_of(
+                _vers, [&ignoring, other](auto& v) { return v.author() != ignoring && v.time() > other[v.author()]; });
     }
 
     vec::iterator VersionVector::findPeerIter(SourceID author) const {
@@ -376,7 +375,7 @@ namespace litecore {
 #pragma mark - MERGING:
 
     static vec& sortBy(VersionVector::vec& v, bool (*cmp)(Version const&, Version const&)) {
-        std::sort(v.begin(), v.end(), cmp);
+        ranges::sort(v, cmp);
         return v;
     }
 

@@ -48,10 +48,10 @@ namespace litecore {
     }
 
     /** Like sprintf(), but returns a std::string */
-    std::string format(const char* fmt NONNULL, ...) __printflike(1, 2);
+    std::string stringprintf(const char* fmt NONNULL, ...) __printflike(1, 2);
 
     /** Like vsprintf(), but returns a std::string */
-    std::string vformat(const char* fmt NONNULL, va_list) __printflike(1, 0);
+    std::string vstringprintf(const char* fmt NONNULL, va_list) __printflike(1, 0);
 
     void split(std::string_view str, std::string_view separator, fleece::function_ref<void(std::string_view)> callback);
 

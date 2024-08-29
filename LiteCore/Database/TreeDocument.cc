@@ -162,7 +162,7 @@ namespace litecore {
                 while ( gen < --lastGen && revsWritten < maxRevs ) {
                     // We don't have this revision (the history got deeper than the local db's
                     // maxRevTreeDepth), so make up a random revID. The server probably won't care.
-                    append(format("%u-faded000%.08x%.08x", lastGen, RandomNumber(), RandomNumber()));
+                    append(stringprintf("%u-faded000%.08x%.08x", lastGen, RandomNumber(), RandomNumber()));
                     historyGap++;
                 }
                 lastGen = gen;
@@ -290,7 +290,7 @@ namespace litecore {
         bool isRevRejected() override {
             mustLoadRevisions();
             std::vector<const Rev*> rejected = _revTree.getRejectedRevs();
-            return std::find(rejected.begin(), rejected.end(), _selectedRev) != rejected.end();
+            return ranges::find(rejected, _selectedRev) != rejected.end();
         }
 
         void revIsRejected(slice revID) override {

@@ -43,7 +43,6 @@ namespace litecore::crypto {
     using namespace std::chrono;
     using namespace std::chrono_literals;
     using namespace fleece;
-    using namespace date;
 
 
 #pragma mark - DISTINGUISHED NAME
@@ -344,8 +343,8 @@ namespace litecore::crypto {
     }
 
     static time_t x509_to_time_t(const mbedtls_x509_time& xtime) {
-        sys_days    date     = year{xtime.year} / xtime.mon / xtime.day;
-        sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
+        date::sys_days    date     = date::year{xtime.year} / xtime.mon / xtime.day;
+        date::sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
 
         // The limit of 32-bit time_t is approaching...
         auto result = datetime.time_since_epoch().count();

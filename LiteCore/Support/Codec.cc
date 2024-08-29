@@ -89,7 +89,7 @@ namespace litecore::blip {
         logDebug("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes", operation, inSize, outSize,
                  (int)mode, result, (long)(_z.next_in - (uint8_t*)input.buf),
                  (long)(_z.next_out - (uint8_t*)output.next()));
-        if ( !kZlibRawDeflate ) _checksum = (uint32_t)_z.adler;
+        if constexpr ( !kZlibRawDeflate ) _checksum = (uint32_t)_z.adler;
         input.setStart(_z.next_in);
         output.advanceTo(_z.next_out);
         check(result);

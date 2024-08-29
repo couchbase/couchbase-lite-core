@@ -512,8 +512,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
                                                                                  {tulips2, "tulips-docko"_sl}};
 
     SECTION("PUSH") {
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = std::thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = std::thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 CHECK(c4coll_getDocumentCount(roses2) == 2);
                 CHECK(c4coll_getDocumentCount(tulips2) == 2);
 
@@ -528,8 +528,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
     }
     SECTION("PULL") {
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = std::thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = std::thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 CHECK(c4coll_getDocumentCount(roses2) == 2);
                 CHECK(c4coll_getDocumentCount(tulips2) == 2);
 
@@ -549,8 +549,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         docsWithIncrementalRevisions.emplace_back(roses, "roses2-docko"_sl);
         docsWithIncrementalRevisions.emplace_back(tulips, "tulips2-docko"_sl);
 
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 // When first time it turns to Idle, we assume 2 documents from db are pushed to db2,
                 // and 2 documents from db2 are pulled to db.
                 CHECK(c4coll_getDocumentCount(roses) == 4);

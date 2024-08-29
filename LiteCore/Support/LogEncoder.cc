@@ -94,7 +94,7 @@ namespace litecore {
         // Write object path
         const auto objRef = (unsigned)object;
         _writeUVarInt(objRef);
-        if ( object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end() ) {
+        if ( object != ObjectRef::None && !_seenObjects.contains(objRef) ) {
             _seenObjects.insert(objRef);
             auto objPath = LogDomain::getObjectPath(objRef, objectMap);
             if ( objPath.empty() ) {
@@ -203,7 +203,7 @@ namespace litecore {
                     case 'p':
                         {
                             size_t param = va_arg(args, size_t);
-                            if ( sizeof(param) == 8 ) param = fleece::endian::encLittle64(param);
+                            if constexpr ( sizeof(param) == 8 ) param = fleece::endian::encLittle64(param);
                             else
                                 param = fleece::endian::encLittle32((uint32_t)param);
                             _writer.write(&param, sizeof(param));

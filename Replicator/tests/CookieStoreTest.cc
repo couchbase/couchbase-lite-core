@@ -185,7 +185,8 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
     };
     for ( const auto& badCookie : badCookies ) {
         INFO("Checking " << badCookie);
-        Cookie c(badCookie, "example.com", "/");
+        ExpectingExceptions x;
+        Cookie              c(badCookie, "example.com", "/");
         CHECK(!c);
     }
 }

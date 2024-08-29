@@ -1,9 +1,8 @@
 var searchData=
 [
-  ['data_20types_20and_20base_20functions_0',['Data Types and Base Functions',['../group___base.html',1,'']]],
-  ['database_20indexes_1',['Database Indexes',['../group___indexing.html',1,'']]],
-  ['database_2c_20document_2c_20query_20observers_2',['Database, Document, Query Observers',['../group___observer.html',1,'']]],
-  ['databases_3',['Databases',['../group___database.html',1,'']]],
-  ['document_20enumeration_4',['Document Enumeration',['../group___doc_enumerator.html',1,'']]],
-  ['documents_5',['Documents',['../group___documents.html',1,'']]]
+  ['c_20helpers_0',['Fleece CoreFoundation and Objective-C Helpers',['../group___c_f.html',1,'']]],
+  ['certificates_1',['Certificates',['../group__certificates.html',1,'']]],
+  ['codes_20and_20error_20handling_2',['Error Codes and Error Handling',['../group___errors.html',1,'']]],
+  ['collections_20and_20scopes_3',['Collections and Scopes',['../group___collection.html',1,'']]],
+  ['corefoundation_20and_20objective_20c_20helpers_4',['Fleece CoreFoundation and Objective-C Helpers',['../group___c_f.html',1,'']]]
 ];

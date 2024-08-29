@@ -1258,6 +1258,7 @@
 		2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LegacyAttachments.cc; sourceTree = "<group>"; };
 		2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LegacyAttachments.hh; sourceTree = "<group>"; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
+		277911D72C6EB9200044E660 /* SQLiteDateTimeHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteDateTimeHelpers.hh; sourceTree = "<group>"; };
 		277911B12C6187CD0044E660 /* Result.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Result.hh; sourceTree = "<group>"; };
 		277911B22C6188190044E660 /* Result.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Result.md; sourceTree = "<group>"; };
 		277911BC2C66DD610044E660 /* Arena.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Arena.hh; sourceTree = "<group>"; };

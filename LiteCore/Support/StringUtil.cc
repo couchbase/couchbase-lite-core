@@ -50,15 +50,15 @@ namespace litecore {
 #endif  // defined(__ANDROID__) || defined(__GLIBC__)
 
 
-    std::string format(const char* fmt, ...) {
+    std::string stringprintf(const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        std::string result = vformat(fmt, args);
+        std::string result = vstringprintf(fmt, args);
         va_end(args);
         return result;
     }
 
-    std::string vformat(const char* fmt, va_list args) {
+    std::string vstringprintf(const char* fmt, va_list args) {
         char* cstr = nullptr;
         if ( vasprintf(&cstr, fmt, args) < 0 ) throw bad_alloc();
         std::string result(cstr);

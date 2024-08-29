@@ -27,7 +27,6 @@
 using namespace fleece::impl;
 using namespace std;
 using namespace std::chrono;
-using namespace date;
 
 #define SKIP_ARRAY_INDEXES  // Array indexes aren't exposed in Couchbase Lite (yet?)
 
@@ -36,10 +35,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 
     IndexSpec::FTSOptions options{"en", true};
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
-                    [=] { store->createIndex(""_sl, R"([[".num"]])"); });
+                    [&] { store->createIndex(""_sl, R"([[".num"]])"); });
 
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
-                    [=] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, options); });
+                    [&] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, options); });
 
     auto allKeyStores = db->allKeyStoreNames();
 
@@ -1289,14 +1288,14 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
-    constexpr local_seconds localtime      = local_days{2018_y / 10 / 23};
-    tm                      tmpTime        = FromTimestamp(localtime.time_since_epoch());
-    const seconds           offset_seconds = GetLocalTZOffset(&tmpTime, false);
-    local_seconds           utc_time       = localtime - offset_seconds;
+    constexpr date::local_seconds localtime      = date::local_days{date::year(2018) / 10 / 23};
+    tm                            tmpTime        = FromTimestamp(localtime.time_since_epoch());
+    const seconds                 offset_seconds = GetLocalTZOffset(&tmpTime, false);
+    date::local_seconds           utc_time       = localtime - offset_seconds;
 
     // MILLIS_TO_STR() result should be in localtime.
-    stringstream            mil_to_str;
-    constexpr local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
+    stringstream                  mil_to_str;
+    constexpr date::local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
     mil_to_str << date::format("%FT%T", mil_to_str_time + offset_seconds);
     if ( offset_seconds.count() == 0 ) {
         mil_to_str << "Z";
@@ -1318,9 +1317,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     s3iso << date::format("%FT%TZ", utc_time);
     s5 << date::format("%FT%TZ", utc_time);
 
-    constexpr local_seconds localtime2 = local_days{1944_y / 6 / 6} + 6h + 30min;
-    tmpTime                            = FromTimestamp(localtime2.time_since_epoch());
-    utc_time                           = localtime2 - GetLocalTZOffset(&tmpTime, false);
+    constexpr date::local_seconds localtime2 = date::local_days{date::year(1944) / 6 / 6} + 6h + 30min;
+    tmpTime                                  = FromTimestamp(localtime2.time_since_epoch());
+    utc_time                                 = localtime2 - GetLocalTZOffset(&tmpTime, false);
     stringstream s4;
     s4 << date::format("%FT%TZ", utc_time);
 
@@ -2114,7 +2113,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         Retained<Query> query{store->compileQuery(
                 json5("{WHAT: ['._id'], WHERE: ['<=', ['._expiration'], ['$NOW']], ORDER_BY: [['._expiration']]}"))};
 
-        Query::Options options{alloc_slice(format("{\"NOW\": %lld}", (long long)now))};
+        Query::Options options{alloc_slice(stringprintf("{\"NOW\": %lld}", (long long)now))};
 
         Retained<QueryEnumerator> e(query->createEnumerator(&options));
         CHECK(e->next());
@@ -2509,7 +2508,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     const Value* dict = e->columns()[0];
     REQUIRE(dict->type() == kDict);
     string dictJson = dict->toJSON().asString();
-    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
+    ranges::transform(dictJson, dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
 
     string collectionAlias = collectionName;
@@ -2522,7 +2521,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     dict = e->columns()[0];
     REQUIRE(dict->type() == kDict);
     dictJson = dict->toJSON().asString();
-    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
+    ranges::transform(dictJson, dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
 
     query = store->compileQuery(string("SELECT meta().id FROM ") + collectionName, QueryLanguage::kN1QL);
@@ -2690,7 +2689,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
             {meta_default.c_str(), [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
             {"round_even(8.8343534, -1)",
              [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 10; }}};
-    size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
+    size_t testCaseCount = testCaseCount = std::size(testCases);
     string queryStr      = "select ";
     queryStr += std::get<0>(testCases[0]);
     for ( unsigned i = 1; i < testCaseCount; ++i ) { (queryStr += ", ") += std::get<0>(testCases[i]); }

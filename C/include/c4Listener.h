@@ -28,6 +28,7 @@ NODISCARD CBL_CORE_API C4Listener* C4NULLABLE c4listener_start(const C4ListenerC
                                                                C4Error* C4NULLABLE     error) C4API;
 
 /** Makes a database available from the network.
+        \note This function is thread-safe.
         @param listener  The listener that should share the database.
         @param name  The URI name to share it under, i.e. the path component in the URL.
                       If this is left null, a name will be chosen based as though you had called
@@ -38,21 +39,24 @@ NODISCARD CBL_CORE_API C4Listener* C4NULLABLE c4listener_start(const C4ListenerC
 NODISCARD CBL_CORE_API bool c4listener_shareDB(C4Listener* listener, C4String name, C4Database* db,
                                                C4Error* C4NULLABLE outError) C4API;
 
-/** Makes a previously-shared database unavailable. */
+/** Makes a previously-shared database unavailable. 
+    \note This function is thread-safe. */
 NODISCARD CBL_CORE_API bool c4listener_unshareDB(C4Listener* listener, C4Database* db,
                                                  C4Error* C4NULLABLE outError) C4API;
 
 /** Specifies a collection to be used in a P2P listener context.  NOTE: A database
         must have been previously shared under the same name, or this operation will fail.
+        \note This function is thread-safe.
         @param listener  The listener that should share the collection.
-        @param name  The URI name to share it under, this must match the name of an already 
+        @param name  The URI name to share it under, this must match the name of an already
                      shared DB.
         @param collection  The collection to share.
         @param outError On failure, the error info is stored here if non-NULL. */
 NODISCARD CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener, C4String name, C4Collection* collection,
                                                        C4Error* C4NULLABLE outError) C4API;
 
-/** Makes a previously-shared collection unavailable. */
+/** Makes a previously-shared collection unavailable.
+        \note This function is thread-safe. */
 NODISCARD CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String name, C4Collection* collection,
                                                          C4Error* C4NULLABLE outError) C4API;
 
@@ -65,6 +69,7 @@ NODISCARD CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C
         you will need to take care on the other side to also incorporate the scope of of the client network interface
         into the URL when connecting (in short, it's probably best to avoid these but they are there if
         you would like to try)
+        \note This function is thread-safe.
         @param listener  The active listener.
         @param db  A database being shared, or NULL to get the listener's root URL(s).
         @param api The API variant for which the URLs should be retrieved.  If the listener is not running in the given mode,
@@ -77,11 +82,13 @@ NODISCARD CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* liste
 
 /** Returns the port number the listener is accepting connections on.
         This is useful if you didn't specify a port in the config (`port`=0), so you can find out which
-        port the kernel picked. */
+        port the kernel picked.
+        \note This function is thread-safe. */
 CBL_CORE_API uint16_t c4listener_getPort(const C4Listener* listener) C4API;
 
 /** Returns the number of client connections, and how many of those are currently active.
-        Either parameter can be NULL if you don't care about it. */
+        Either parameter can be NULL if you don't care about it.
+        \note This function is thread-safe. */
 CBL_CORE_API void c4listener_getConnectionStatus(const C4Listener* listener, unsigned* C4NULLABLE connectionCount,
                                                  unsigned* C4NULLABLE activeConnectionCount) C4API;
 

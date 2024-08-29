@@ -75,10 +75,10 @@ namespace litecore {
         std::string loggingClassName() const override { return "Collection"; }
 
         std::string loggingIdentifier() const override {  // Logging API
-            if ( _usuallyFalse(!isValid()) ) { return format("Closed collection %.*s", SPLAT(_name)); }
+            if ( _usuallyFalse(!isValid()) ) { return stringprintf("Closed collection %.*s", SPLAT(_name)); }
 
             auto dbName = _database->getName();
-            return format("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
+            return stringprintf("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
         }
 
         KeyStore& keyStore() const {
