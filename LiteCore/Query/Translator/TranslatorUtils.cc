@@ -25,7 +25,7 @@ namespace litecore::qt {
     void fail(const char* format, ...) {
         va_list args;
         va_start(args, format);
-        string message = vformat(format, args);
+        string message = vstringprintf(format, args);
         va_end(args);
 
         Warn("Invalid LiteCore query: %s", message.c_str());

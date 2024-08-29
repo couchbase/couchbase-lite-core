@@ -2689,7 +2689,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
             {meta_default.c_str(), [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
             {"round_even(8.8343534, -1)",
              [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 10; }}};
-    size_t testCaseCount = testCaseCount = std::size(testCases);
+    size_t testCaseCount = std::size(testCases);
     string queryStr      = "select ";
     queryStr += std::get<0>(testCases[0]);
     for ( unsigned i = 1; i < testCaseCount; ++i ) { (queryStr += ", ") += std::get<0>(testCases[i]); }

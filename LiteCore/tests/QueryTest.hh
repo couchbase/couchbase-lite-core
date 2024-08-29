@@ -46,7 +46,7 @@ class QueryTest : public DataFileTestFixture {
     explicit QueryTest(int option) : option(option) {
         Assert(option < numberOfOptions, "Test option out of valid range");
         collectionName = kCollectionNameOptions[option];
-        logSection(format("Collection `%s`", collectionName.c_str()));
+        logSection(stringprintf("Collection `%s`", collectionName.c_str()));
         if ( slice keyStoreName = kKeyStoreNameOptions[option] ) store = &db->getKeyStore(keyStoreName);
     }
 

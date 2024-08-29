@@ -80,9 +80,9 @@ namespace litecore::qt {
                 unsigned count = 1;
                 string   name;
                 do {
-                    if ( curName.empty() ) name = format("$%u", count);
+                    if ( curName.empty() ) name = stringprintf("$%u", count);
                     else
-                        name = format("%s #%u", curName.c_str(), count + 1);
+                        name = stringprintf("%s #%u", curName.c_str(), count + 1);
                     ++count;
                 } while ( !columnNames.insert(name).second );
                 setColumnName(ctx.newString(name));

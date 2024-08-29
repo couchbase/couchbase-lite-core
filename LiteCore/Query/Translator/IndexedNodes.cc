@@ -257,7 +257,9 @@ namespace litecore::qt {
     string SelectNode::makeIndexAlias() const {
         int    n = 1;
         string alias;
-        do { alias = format("<idx%d>", n++); } while ( aliasExists(alias, _sources) || aliasExists(alias, _what) );
+        do {
+            alias = stringprintf("<idx%d>", n++);
+        } while ( aliasExists(alias, _sources) || aliasExists(alias, _what) );
         return alias;
         // (Searching ctx.aliases would be easier, but it doesn't contain index sources)
     }
