@@ -221,6 +221,10 @@ namespace litecore {
         static Factory*              factoryNamed(const char* name);
         static Factory*              factoryForFile(const FilePath&);
 
+        static bool isDefaultCollection(slice id) { return id == KeyStore::kDefaultCollectionName; }
+
+        static bool isDefaultScope(slice id) { return !id || isDefaultCollection(id); }
+
         // kScopeCollectionSeparator must not be escaped as it separates the scope from the
         // generalized collection name, a.k.a. collection path.
         // This function returns the position of unescaped separator starting from pos.
@@ -229,6 +233,8 @@ namespace litecore {
         // After separating out the scope from collection path by kScopeCollectionSeparator ('.'),
         // the following function can be used to unescape the escaped separator.
         static string unescapeCollectionName(const string& unescaped);
+
+        static std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath);
 
         DataFile(const DataFile&)            = delete;
         DataFile& operator=(const DataFile&) = delete;

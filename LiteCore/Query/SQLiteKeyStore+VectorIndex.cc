@@ -14,7 +14,7 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "SQLUtil.hh"
 #include "SQLite_Internal.hh"
 #include "StringUtil.hh"
@@ -42,11 +42,11 @@ namespace litecore {
         Assert(vectorOptions);
 
         // Generate a SQL expression to get the vector:
-        QueryParser qp(db(), collectionName(), tableName());
+        QueryTranslator qp(db(), collectionName(), tableName());
         qp.setBodyColumnName("new.body");
         string vectorExpr;
-        if ( auto what = spec.what(); what && what->count() == 1 ) {
-            vectorExpr = qp.vectorToIndexExpressionSQL(what->get(0), vectorOptions->dimensions);
+        if ( auto what = (const Array*)spec.what(); what && what->count() == 1 ) {
+            vectorExpr = qp.vectorToIndexExpressionSQL(FLValue(what->get(0)), vectorOptions->dimensions);
         } else {
             error::_throw(error::Unimplemented, "Vector index doesn't support multiple properties");
         }
@@ -73,8 +73,8 @@ namespace litecore {
         // Create an AFTER DELETE trigger to remove any vector from the index:
         auto where = spec.where();
         qp.setBodyColumnName("body");
-        string whereNewSQL  = qp.whereClauseSQL(where, "new");
-        string whereOldSQL  = qp.whereClauseSQL(where, "old");
+        string whereNewSQL  = qp.whereClauseSQL(FLValue(where), "new");
+        string whereOldSQL  = qp.whereClauseSQL(FLValue(where), "old");
         string deleteOldSQL = CONCAT("DELETE FROM " << sqlIdentifier(vectorTableName) << " WHERE docid = old.rowid");
 
         // Always delete obsolete vectors when a doc is updated or deleted:
@@ -117,7 +117,8 @@ namespace litecore {
     string SQLiteKeyStore::findVectorIndexNameFor(const string& expressionJSON) {
         for ( IndexSpec const& index : getIndexes() ) {
             if ( index.type == IndexSpec::kVector ) {
-                if ( index.what()->get(0)->toJSONString() == expressionJSON ) return index.name;
+                auto what = (const Array*)index.what();
+                if ( what->get(0)->toJSONString() == expressionJSON ) return index.name;
             }
         }
         return "";  // no index found

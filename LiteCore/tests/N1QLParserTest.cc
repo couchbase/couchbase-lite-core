@@ -10,8 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "QueryParserTest.hh"
-#include "catch.hpp"
+#include "QueryTranslatorTest.hh"
 #include "n1ql_parser.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
@@ -22,12 +21,13 @@ using namespace std;
 using namespace litecore;
 using namespace fleece;
 
-class N1QLParserTest : public QueryParserTest {
+class N1QLParserTest : public QueryTranslatorTest {
   protected:
     // Translates N1QL to JSON, with strings single-quoted to avoid tons of escapes in the tests.
     // On syntax error, returns "".
     string translate(const char* n1ql) {
         UNSCOPED_INFO("N1QL: " << n1ql);
+        Log("translating: %s", n1ql);
         int errorPos;
 
         FLValue dict = (FLValue)n1ql::parse(n1ql, &errorPos);
@@ -39,6 +39,7 @@ class N1QLParserTest : public QueryParserTest {
         string jsonResult = string(alloc_slice(FLValue_ToJSONX((FLValue)dict, false, true)));
         replace(jsonResult, '"', '\'');
         UNSCOPED_INFO(jsonResult);
+        Log("    ...JSON is: %s", jsonResult.c_str());
 
         string sql = parse(dict);
         UNSCOPED_INFO("-->  " << sql);
@@ -156,6 +157,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
     tableNames.insert("stuff");
+    tableNames.insert("kv_default::text");
 
     CHECK(translate("SELECT -x") == "{'WHAT':[['-',['.x']]]}");
     CHECK(translate("SELECT NOT x") == "{'WHAT':[['NOT',['.x']]]}");
@@ -338,7 +340,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT foo FROM _") == "{'FROM':[{'COLLECTION':'_'}],'WHAT':[['.foo']]}");
     CHECK(translate("SELECT foo FROM _default") == "{'FROM':[{'COLLECTION':'_default'}],'WHAT':[['.foo']]}");
 
-    // QueryParser does not support "IN SELECT" yet
+    // QueryTranslator does not support "IN SELECT" yet
     //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 
     tableNames.insert("kv_.product");
@@ -433,6 +435,8 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C]") {
     tableNames.emplace("kv_.coll");
     tableNames.emplace("kv_.scope.coll");
+    tableNames.emplace("kv_.coll::fts\\Index");
+    tableNames.emplace("kv_.scope.coll::fts\\Index");
 
     CHECK(translate("SELECT x FROM coll ORDER BY y")
           == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");

@@ -14,7 +14,7 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "Array.hh"
@@ -36,20 +36,20 @@ namespace litecore {
     bool SQLiteKeyStore::createFTSIndex(const IndexSpec& spec) {
         auto ftsTableName = db().FTSTableName(tableName(), spec.name);
         // Collect the name of each FTS column and the SQL expression that populates it:
-        QueryParser qp(db(), collectionName(), tableName());
+        QueryTranslator qp(db(), collectionName(), tableName());
         qp.setBodyColumnName("new.body");
         vector<string> colNames, colExprs;
-        for ( Array::iterator i(spec.what()); i; ++i ) {
-            colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
-            colExprs.push_back(qp.FTSExpressionSQL(i.value()));
+        for ( Array::iterator i((const Array*)spec.what()); i; ++i ) {
+            colNames.push_back(CONCAT('"' << QueryTranslator::FTSColumnName(FLValue(i.value())) << '"'));
+            colExprs.push_back(qp.FTSExpressionSQL(FLValue(i.value())));
         }
         string columns = join(colNames, ", ");
         string exprs   = join(colExprs, ", ");
 
-        auto where = spec.where();
+        auto where = (const Array*)spec.where();
         qp.setBodyColumnName("body");
-        string whereNewSQL = qp.whereClauseSQL(where, "new");
-        string whereOldSQL = qp.whereClauseSQL(where, "old");
+        string whereNewSQL = qp.whereClauseSQL(FLValue(where), "new");
+        string whereOldSQL = qp.whereClauseSQL(FLValue(where), "old");
 
         // Build the SQL that creates an FTS table, including the tokenizer options:
         {

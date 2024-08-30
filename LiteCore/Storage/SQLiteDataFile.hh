@@ -13,7 +13,7 @@
 #pragma once
 
 #include "DataFile.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
 #include <memory>
@@ -36,7 +36,7 @@ namespace litecore {
     /** SQLite implementation of DataFile. */
     class SQLiteDataFile final
         : public DataFile
-        , public QueryParser::Delegate {
+        , public QueryTranslator::Delegate {
       public:
         SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options*);
         ~SQLiteDataFile() override;
@@ -107,12 +107,12 @@ namespace litecore {
 
         static void enableExtension(const string& name, string path);
 
-        // QueryParser::delegate:
-        bool        tableExists(const std::string& tableName) const override;
-        string      collectionTableName(const string& collection, DeletionStatus) const override;
-        string      auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) const;
-        std::string FTSTableName(const string& collection, const std::string& property) const override;
-        std::string unnestedTableName(const string& collection, const std::string& property) const override;
+        // QueryTranslator::Delegate:
+        bool          tableExists(const std::string& tableName) const override;
+        string        collectionTableName(const string& collection, DeletionStatus) const override;
+        static string auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property);
+        std::string   FTSTableName(const string& collection, const std::string& property) const override;
+        std::string   unnestedTableName(const string& collection, const std::string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
         std::string predictiveTableName(const string& collection, const std::string& property) const override;
         std::string vectorTableName(const string& collection, const std::string& property,
