@@ -74,12 +74,12 @@ namespace litecore::REST {
         return result;
     }
 
-    bool iterateURLQueries(string_view queries, char delimiter, function_ref<bool(string_view,string_view)> callback) {
+    bool iterateURLQueries(string_view queries, char delimiter, function_ref<bool(string_view, string_view)> callback) {
         bool stop = false;
         split(queries, string_view{&delimiter, 1}, [&](string_view query) {
-            if (!stop) {
+            if ( !stop ) {
                 string value;
-                if (auto eq = query.find('='); eq != string::npos) {
+                if ( auto eq = query.find('='); eq != string::npos ) {
                     value = query.substr(eq + 1);
                     query = query.substr(0, eq);
                 }
@@ -92,9 +92,9 @@ namespace litecore::REST {
     string getURLQueryParam(slice queries, string_view name, char delimiter, size_t occurrence) {
         string value;
         iterateURLQueries(queries, delimiter, [&](string_view k, string_view v) -> bool {
-            if (name.size() == k.size() && 0 == strncasecmp(name.data(), k.data(), k.size()) && 0 == occurrence--) {
+            if ( name.size() == k.size() && 0 == strncasecmp(name.data(), k.data(), k.size()) && 0 == occurrence-- ) {
                 value = URLDecode(v);
-                return true; // stop iteration
+                return true;  // stop iteration
             }
             return false;
         });

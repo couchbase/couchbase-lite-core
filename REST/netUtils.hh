@@ -21,7 +21,8 @@ namespace litecore::REST {
     std::string URLEncode(fleece::slice str);
 
     /// Gets a URL query parameter by name. The returned value is URL-decoded.
-    std::string getURLQueryParam(fleece::slice queries, std::string_view name, char delimiter = '&', size_t occurrence = 0);
+    std::string getURLQueryParam(fleece::slice queries, std::string_view name, char delimiter = '&',
+                                 size_t occurrence = 0);
 
     /// Calls the callback with the name and (raw) value of each query parameter.
     /// @param queries  The query string (without the initial '?')
@@ -31,6 +32,6 @@ namespace litecore::REST {
     ///                  Return `false` to continue the iteration, `true` to stop.
     /// @returns  true if the callback stopped the iteration, else false.
     bool iterateURLQueries(std::string_view queries, char delimiter,
-                           fleece::function_ref<bool(std::string_view,std::string_view)> callback);
+                           fleece::function_ref<bool(std::string_view, std::string_view)> callback);
 
 }  // namespace litecore::REST
