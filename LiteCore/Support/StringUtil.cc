@@ -82,6 +82,15 @@ namespace litecore {
         return strings;
     }
 
+    std::pair<string_view,string_view> split2(std::string_view str, std::string_view separator) {
+        string_view rest;
+        if (auto pos = str.find(separator); pos != string::npos) {
+            rest = str.substr(pos + 1);
+            str = str.substr(0, pos);
+        }
+        return {str, rest};
+    }
+
     stringstream& join(stringstream& s, const std::vector<std::string>& strings, const char* separator) {
         int n = 0;
         for ( const string& str : strings ) {
