@@ -76,6 +76,7 @@ typedef struct C4ListenerConfig {
     bool     allowDeleteDBs;          ///< If true, "DELETE /db" is allowed
     bool     allowCreateCollections;  ///< If true, "PUT /db.scope.coll" is allowed
     bool     allowDeleteCollections;  ///< If true, "DELETE /db.scope.coll" is allowed
+    bool     allowQueries;            ///< If true, "POST /db/_query" is allowed (arbitrary N1QL queries)
 
     // For sync listeners only:
     bool allowPush;        ///< Allow peers to push changes to local db

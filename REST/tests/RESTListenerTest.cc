@@ -763,6 +763,28 @@ TEST_CASE_METHOD(C4RESTTest, "REST _changes continuous", "[REST][Listener][C]") 
     }
 }
 
+#    pragma mark - QUERIES:
+
+TEST_CASE_METHOD(C4RESTTest, "REST _query", "[REST][Listener][C]") {
+    createFleeceRev(db, "foo"_sl, "1-1111"_sl, R"({"year": 1964, "event":"Birthday"})"_sl);
+    createFleeceRev(db, "bar"_sl, "2-2222"_sl, R"({"year": 2001, "event":"First contact"})"_sl);
+
+    SECTION("Queries disabled") {
+        request("POST", "/db/_query", {{"Content-Type", "application/json"}},
+                R"({"query": "SELECT event FROM _ WHERE year >= $Y", "params":{"Y":2000}})", HTTPStatus::Forbidden);
+    }
+    SECTION("Queries enabled") {
+        config.allowQueries = true;
+        auto r              = request("POST", "/db/_query", {{"Content-Type", "application/json"}},
+                                      R"({"query": "SELECT event FROM _ WHERE year >= $Y", "params":{"Y":2000}})", HTTPStatus::OK);
+        auto results        = r->bodyAsJSON().asArray();
+        REQUIRE(results);
+        CHECK(results.count() == 1);
+        auto result = results[0].asDict();
+        CHECK(result["event"].asString() == "First contact");
+    }
+}
+
 #    pragma mark - HTTP AUTH:
 
 TEST_CASE_METHOD(C4RESTTest, "REST HTTP auth missing", "[REST][Listener][C]") {

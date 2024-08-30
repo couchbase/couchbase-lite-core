@@ -146,8 +146,8 @@ namespace litecore::REST {
         bool modifyDoc(fleece::Dict body, std::string docID, const std::string& revIDQuery, bool deleting,
                        bool newEdits, C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;
 
-        std::unique_ptr<FilePath>  _directory;
-        const bool                 _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection;
+        std::unique_ptr<FilePath> _directory;
+        const bool _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection, _allowQueries;
         Retained<crypto::Identity> _identity;
         Retained<Server>           _server;
         std::set<Retained<Task>>   _tasks;

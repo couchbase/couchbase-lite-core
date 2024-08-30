@@ -48,7 +48,8 @@ namespace litecore::REST {
         , _allowCreateDB(config.allowCreateDBs && _directory)
         , _allowDeleteDB(config.allowDeleteDBs)
         , _allowCreateCollection(config.allowCreateCollections)
-        , _allowDeleteCollection(config.allowDeleteCollections) {
+        , _allowDeleteCollection(config.allowDeleteCollections)
+        , _allowQueries(config.allowQueries) {
         _server = new Server();
         _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
 

@@ -375,6 +375,8 @@ namespace litecore::REST {
     }
 
     void RESTListener::handleQuery(RequestResponse& rq, C4Collection* coll) {
+        if ( !_allowQueries ) return rq.respondWithStatus(HTTPStatus::Forbidden);
+
         Dict body = rq.bodyAsJSON().asDict();
 
         // Compile the query:
