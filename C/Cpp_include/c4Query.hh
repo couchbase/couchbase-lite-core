@@ -50,8 +50,8 @@ struct C4Query final
     alloc_slice explain() const;
 
     const std::set<std::string>& parameterNames() const noexcept;
-    alloc_slice parameters() const noexcept;
-    void        setParameters(slice parameters);
+    alloc_slice                  parameters() const noexcept;
+    void                         setParameters(slice parameters);
 
     alloc_slice fullTextMatched(const C4FullTextMatch&);
 

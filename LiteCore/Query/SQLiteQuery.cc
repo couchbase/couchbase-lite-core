@@ -172,7 +172,7 @@ namespace litecore {
 
         const vector<string>& columnTitles() const noexcept override { return _columnTitles; }
 
-        const set<string>& parameterNames() const noexcept override {return _parameters;}
+        const set<string>& parameterNames() const noexcept override { return _parameters; }
 
         string explain() override {
             stringstream result;
