@@ -128,7 +128,7 @@ namespace litecore::REST {
         void writeChange(C4DocumentInfo const& info, slice bodyJSON) {
             DebugAssert(_limit > 0);
             --_limit;
-            if ( _sent > 0 ) _rq.write(_feed == continuous ? "\n" : ",\n");
+            if ( _sent > 0 && _feed != continuous) _rq.write(",\n");
             ++_sent;
             JSONEncoder json;
             json.writeDict([&] {
@@ -140,6 +140,7 @@ namespace litecore::REST {
                 }
             });
             _rq.write(json.finish());
+            if (_feed == continuous) _rq.write("\n");
             _rq.flush(kFlushAtSize);
         }
 
@@ -170,7 +171,7 @@ namespace litecore::REST {
             registerTask();
         }
 
-        // Called when the collection has changedd:
+        // Called when the collection has changed:
         void observeChange() {
             c4log(ListenerLog, kC4LogVerbose, "ChangesTask %p got changes!", this);
             bool doStop = false;
