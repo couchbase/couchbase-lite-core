@@ -70,7 +70,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     runPushReplication();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
+TEST_CASE("Fire Timer At Same Time", "[Push][Pull]") {
     atomic_int counter(0);
     Timer      t1([&counter] { counter++; });
 
@@ -80,6 +80,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull
     t2.fireAt(at);
 
     REQUIRE_BEFORE(2s, counter == 2);
+}
+
+TEST_CASE("Timer autoDelete", "[Push][Pull]") {
+    atomic_int counter(0);
+    auto       t1 = new Timer([&counter] { counter++; });
+    t1->autoDelete();
+    t1->fireAfter(500ms);
+
+    REQUIRE_BEFORE(2s, counter == 1);
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty DB", "[Push]") {

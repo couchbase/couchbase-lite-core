@@ -43,7 +43,8 @@ namespace litecore::actor {
             after the callback completes. */
         ~Timer() { manager().unschedule(this, true); }
 
-        /** Calling this causes the Timer to be deleted after it's fired. */
+        /** Calling this causes the Timer to be deleted after it's fired. Must have been allocated by `new Timer(...)`.
+            @warning  Do not manually delete it! */
         void autoDelete() { _autoDelete = true; }
 
         /** Schedules the timer to fire at the given time (or slightly later.)

@@ -11,6 +11,7 @@
 //
 
 #include "Timer.hh"
+#include "Error.hh"
 #include "ThreadUtil.hh"
 #include <vector>
 
@@ -49,8 +50,14 @@ namespace litecore::actor {
                 } catch ( ... ) {}
 
                 if ( _triggeredTimer ) {
-                    _triggeredTimer->_triggered = false;  // note: not holding any lock
-                    if ( _triggeredTimer->_autoDelete ) delete _triggeredTimer;
+                    // Note: not holding any lock! May run concurrently with unschedule(),
+                    // but that method will not delete the timer while its _triggered flag is true.
+                    bool autoDelete             = _triggeredTimer->_autoDelete;
+                    _triggeredTimer->_triggered = false;  // At this point, unschedule() may delete it on another thread
+                    if ( autoDelete ) {
+                        _triggeredTimer->_autoDelete = false;
+                        delete _triggeredTimer;
+                    }
                     _triggeredTimer = nullptr;
                 }
                 lock.lock();
@@ -85,6 +92,7 @@ namespace litecore::actor {
         if ( _unschedule(timer) ) _condition.notify_one();  // wakes up run() so it can recalculate its wait time
 
         if ( deleting ) {
+            Assert(!timer->_autoDelete);
             timer->_state = kDeleted;
             lock.unlock();
             if ( this_thread::get_id() != _thread.get_id() ) {
