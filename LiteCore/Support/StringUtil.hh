@@ -62,7 +62,7 @@ namespace litecore {
 
     /** Splits the string at the _first occurrence_ of `separator` and returns the pieces before and after.
         If the separator is not found, returns the original string and an empty string. */
-    std::pair<string_view,string_view> split2(std::string_view str, std::string_view separator);
+    std::pair<string_view, string_view> split2(std::string_view str, std::string_view separator);
 
     /** Returns the strings in the vector concatenated together,
         with the separator (if non-null) between them. */

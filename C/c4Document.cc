@@ -234,7 +234,7 @@ bool C4Document::checkNewRev(slice parentRevID, C4RevisionFlags rqFlags, bool al
         }
         return true;
     } catch ( ... ) {
-        if (outError) *outError = C4Error::fromCurrentException();
+        if ( outError ) *outError = C4Error::fromCurrentException();
         return false;
     }
 }

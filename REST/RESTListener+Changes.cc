@@ -128,7 +128,7 @@ namespace litecore::REST {
         void writeChange(C4DocumentInfo const& info, slice bodyJSON) {
             DebugAssert(_limit > 0);
             --_limit;
-            if ( _sent > 0 && _feed != continuous) _rq.write(",\n");
+            if ( _sent > 0 && _feed != continuous ) _rq.write(",\n");
             ++_sent;
             JSONEncoder json;
             json.writeDict([&] {
@@ -140,7 +140,7 @@ namespace litecore::REST {
                 }
             });
             _rq.write(json.finish());
-            if (_feed == continuous) _rq.write("\n");
+            if ( _feed == continuous ) _rq.write("\n");
             _rq.flush(kFlushAtSize);
         }
 

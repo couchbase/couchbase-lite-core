@@ -82,11 +82,11 @@ namespace litecore {
         return strings;
     }
 
-    std::pair<string_view,string_view> split2(std::string_view str, std::string_view separator) {
+    std::pair<string_view, string_view> split2(std::string_view str, std::string_view separator) {
         string_view rest;
-        if (auto pos = str.find(separator); pos != string::npos) {
+        if ( auto pos = str.find(separator); pos != string::npos ) {
             rest = str.substr(pos + 1);
-            str = str.substr(0, pos);
+            str  = str.substr(0, pos);
         }
         return {str, rest};
     }

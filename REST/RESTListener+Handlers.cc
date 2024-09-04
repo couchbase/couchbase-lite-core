@@ -277,7 +277,7 @@ namespace litecore::REST {
 
             if ( body["_deleted"_sl].asBool() ) deleting = true;
 
-            if (deleting && !revID) {
+            if ( deleting && !revID ) {
                 c4error_return(WebSocketDomain, (int)HTTPStatus::Conflict,
                                C4STR("\"_rev\" must be given when deleting a document"), outError);
                 return false;
