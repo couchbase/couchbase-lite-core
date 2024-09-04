@@ -129,6 +129,7 @@ namespace litecore::REST {
         void handleGetRoot(RequestResponse&);
         void handleGetAllDBs(RequestResponse&);
         void handleReplicate(RequestResponse&);
+        void cancelReplication(RequestResponse&, Value taskVal);
         void handleActiveTasks(RequestResponse&);
 
         void handleGetDatabase(RequestResponse&, C4Collection*);

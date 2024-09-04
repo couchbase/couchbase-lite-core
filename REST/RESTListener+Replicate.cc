@@ -31,89 +31,52 @@ namespace litecore::REST {
 
     class ReplicationTask : public RESTListener::Task {
       public:
-        ReplicationTask(RESTListener* listener, slice source, slice target, bool bidi, bool continuous)
-            : Task(listener), _source(source), _target(target), _bidi(bidi), _continuous(continuous) {}
+        ReplicationTask(RESTListener* listener, slice source, slice target)
+            : Task(listener), _source(source), _target(target) {}
 
-        void start(C4Database* localDB, C4String localDbName, const C4Address& remoteAddress, C4String remoteDbName,
-                   C4ReplicatorMode pushMode, C4ReplicatorMode pullMode,
-                   const std::vector<C4CollectionSpec>& collections = {kC4DefaultCollectionSpec}) {
-            if ( findMatchingTask() ) C4Error::raise(WebSocketDomain, 409, "Equivalent replication already running");
-
+        bool start(C4Database* localDB, C4String localDbName, const C4Address& remoteAddress, C4String remoteDbName,
+                   C4ReplicatorParameters& params) {
             unique_lock lock(_mutex);
-            _push = (pushMode >= kC4OneShot);
             registerTask();
-            try {
-                c4log(ListenerLog, kC4LogInfo,
-                      "Replicator task #%d starting: local=%.*s, mode=%s, scheme=%.*s, host=%.*s,"
-                      " port=%u, db=%.*s, bidi=%d, continuous=%d",
-                      taskID(), SPLAT(localDbName), (pushMode > kC4Disabled ? "push" : "pull"),
-                      SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
-                      SPLAT(remoteDbName), _bidi, _continuous);
 
-                std::vector<C4ReplicationCollection> replCollections{collections.size()};
-                for ( size_t i = 0; i < collections.size(); ++i ) {
-                    replCollections[i].collection = collections[i];
-                    replCollections[i].push       = pushMode;
-                    replCollections[i].pull       = pullMode;
-                }
-                C4ReplicatorParameters params{};
-                Doc                    options;
-                params.collectionCount = collections.size();
-                params.collections     = replCollections.data();
-                params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void* context) {
-                    ((ReplicationTask*)context)->onReplStateChanged(status);
-                };
-                params.callbackContext = this;
-                if ( _user ) {
-                    Encoder enc;
-                    enc.beginDict();
-                    enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
-                    enc.beginDict();
-                    enc[kC4ReplicatorAuthType]     = kC4AuthTypeBasic;
-                    enc[kC4ReplicatorAuthUserName] = _user;
-                    enc[kC4ReplicatorAuthPassword] = _password;
-                    enc.endDict();
-                    enc.endDict();
-                    options                  = enc.finishDoc();
-                    params.optionsDictFleece = options.data();
-                }
+            auto& coll  = params.collections[0];
+            _push       = coll.push >= kC4OneShot;
+            _bidi       = (_push && coll.push >= kC4OneShot);
+            _continuous = (coll.pull == kC4Continuous || coll.push == kC4Continuous);
+
+            params.callbackContext = this;
+            params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void* context) {
+                ((ReplicationTask*)context)->onReplStateChanged(status);
+            };
+
+            c4log(ListenerLog, kC4LogInfo,
+                  "Replicator task #%d starting: local=%.*s, mode=%s, scheme=%.*s, host=%.*s,"
+                  " port=%u, db=%.*s, bidi=%d, continuous=%d",
+                  taskID(), SPLAT(localDbName), (_push ? "push" : "pull"), SPLAT(remoteAddress.scheme),
+                  SPLAT(remoteAddress.hostname), remoteAddress.port, SPLAT(remoteDbName), _bidi, _continuous);
+
+            try {
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
                 _repl->start();
+                if ( _repl ) {  // it is possible that the replicator already stopped and I cleared the ref
+                    onReplStateChanged(_repl->getStatus());
+                }
             } catch ( ... ) {
                 c4log(ListenerLog, kC4LogInfo, "Replicator task #%d failed to start!", taskID());
                 unregisterTask();
-                throw;
+                _status = {
+                        .level = kC4Stopped,
+                        .error = C4Error::fromCurrentException(),
+                };
+                _message  = _status.error.message();
+                _finished = true;
             }
-            if (_repl) { // it is possible that the replicator already stopped and I cleared the ref
-                onReplStateChanged(_repl->getStatus());
-            }
-        }
-
-        ReplicationTask* findMatchingTask() {
-            for ( const auto& task : listener()->tasks() ) {
-                // Note that either direction is considered a match
-                auto* repl = dynamic_cast<ReplicationTask*>(task.get());
-                if ( repl
-                     && ((repl->_source == _source && repl->_target == _target)
-                         || (repl->_source == _target && repl->_target == _source)) ) {
-                    return repl;
-                }
-            }
-            return nullptr;
-        }
-
-        // Cancel any existing task with the same parameters as me:
-        bool cancelExisting() {
-            if ( auto task = findMatchingTask(); task ) {
-                task->stop();
-                return true;
-            }
-            return false;
+            return _status.error == kC4NoError;
         }
 
         bool finished() const override {
             unique_lock lock(_mutex);
-            return _finalResult != HTTPStatus::undefined;
+            return _finished;
         }
 
         C4ReplicatorStatus status() {
@@ -168,12 +131,6 @@ namespace litecore::REST {
                                 _status.error.domain, _status.error.code);
         }
 
-        HTTPStatus wait() {
-            unique_lock lock(_mutex);
-            _cv.wait(lock, [this] { return finished(); });
-            return _finalResult;
-        }
-
         void stop() override {
             unique_lock lock(_mutex);
             if ( _repl ) {
@@ -182,12 +139,6 @@ namespace litecore::REST {
             }
         }
 
-        void setAuth(slice user, slice psw) {
-            _user     = user;
-            _password = psw;
-        }
-
-
       private:
         void onReplStateChanged(const C4ReplicatorStatus& status) {
             {
@@ -195,26 +146,23 @@ namespace litecore::REST {
                 _status  = status;
                 _message = c4error_getMessage(status.error);
                 if ( status.level == kC4Stopped ) {
-                    _finalResult = status.error.code ? HTTPStatus::GatewayError : HTTPStatus::OK;
-                    _repl        = nullptr;
+                    _finished = true;
+                    _repl     = nullptr;
                 }
                 bumpTimeUpdated();
             }
             if ( finished() ) {
                 c4log(ListenerLog, kC4LogInfo, "Replicator task #%u finished", taskID());
-                _cv.notify_all();
+                //unregisterTask();  --no, leave it so a later call to _active_tasks can get its state
             }
-            //unregisterTask();  --no, leave it so a later call to _active_tasks can get its state
         }
 
         alloc_slice            _source, _target;
-        alloc_slice            _user, _password;
-        bool                   _bidi, _continuous, _push{};
-        condition_variable_any _cv;
+        bool                   _bidi = false, _continuous = false, _push = false;
         Retained<C4Replicator> _repl;
         C4ReplicatorStatus     _status{};
         alloc_slice            _message;
-        HTTPStatus             _finalResult{HTTPStatus::undefined};
+        bool                   _finished = false;
     };
 
 #pragma mark - HTTP HANDLER:
@@ -225,27 +173,22 @@ namespace litecore::REST {
         if ( !params )
             return rq.respondWithStatus(HTTPStatus::BadRequest,
                                         "Invalid JSON in request body (or body is not an object)");
-        slice source = params["source"].asString();
-        slice target = params["target"].asString();
-        if ( !source || !target )
-            return rq.respondWithStatus(HTTPStatus::BadRequest, "Missing source or target parameters");
+
+        if ( Value cancelVal = params["cancel"] ) {
+            // Hang on, stop the presses -- we're canceling, not starting
+            cancelReplication(rq, cancelVal);
+            return;
+        }
 
         bool             bidi       = params["bidi"].asBool();
         bool             continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
 
-        std::vector<C4CollectionSpec> collSpecs;
-        if ( Array collections = params["collections"].asArray() ) {
-            for ( Array::iterator iter(collections); iter; iter.next() ) {
-                slice collPath = iter.value().asString();
-                collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
-            }
-            if ( collSpecs.empty() )
-                return rq.respondWithStatus(HTTPStatus::BadRequest, "At least one collection must be replicated");
-        } else {
-            collSpecs.push_back({kC4DefaultScopeID, kC4DefaultCollectionName});
-        }
-
+        // Get the local DB and remote URL:
+        slice source = params["source"].asString();
+        slice target = params["target"].asString();
+        if ( !source || !target )
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "Missing source or target parameters");
         slice            localName;
         slice            remoteURL;
         C4ReplicatorMode pushMode, pullMode;
@@ -261,48 +204,106 @@ namespace litecore::REST {
         } else {
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Neither source nor target is a local database name");
         }
-
         Retained<C4Database> localDB = databaseNamed(localName.asString());
         if ( !localDB ) return rq.respondWithStatus(HTTPStatus::NotFound);
-
         C4Address remoteAddress;
         slice     remoteDbName;
         if ( !C4Address::fromURL(remoteURL, &remoteAddress, &remoteDbName) )
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database URL");
 
-        // Start the replication!
-        Retained<ReplicationTask> task = new ReplicationTask(this, source, target, bidi, continuous);
+        // Get the collection(s):
+        std::vector<C4CollectionSpec> collSpecs;
+        if ( Array collections = params["collections"].asArray() ) {
+            if ( collections.empty() )
+                return rq.respondWithStatus(HTTPStatus::BadRequest, "At least one collection must be replicated");
+            for ( Array::iterator iter(collections); iter; iter.next() ) {
+                slice collPath = iter.value().asString();
+                collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
+            }
+        } else {
+            // If no collections given, just use the default collection:
+            collSpecs.push_back({.name = kC4DefaultCollectionName, .scope = kC4DefaultScopeID});
+        }
 
-        if ( params["cancel"].asBool() ) {
-            // Hang on, stop the presses -- we're canceling, not starting
-            bool canceled = task->cancelExisting();
-            rq.setStatus(canceled ? HTTPStatus::OK : HTTPStatus::NotFound, canceled ? "Stopped" : "No matching task");
-            return;
-        }
-        // Auth:
-        slice user = params["user"].asString();
-        if ( user ) {
-            slice psw = params["password"].asString();
-            task->setAuth(user, psw);
-        }
-        task->start(localDB, localName, remoteAddress, remoteDbName, pushMode, pullMode, collSpecs);
+        // Create the array of C4ReplicationCollection:
+        vector<alloc_slice>                  collOptions;
+        std::vector<C4ReplicationCollection> replCollections;
+        for ( auto& collSpec : collSpecs ) {
+            // Per-collection options:
+            Encoder enc;
+            enc.beginDict();
+            if ( Array channels = params["channels"].asArray() )
+                enc[kC4ReplicatorOptionChannels] = channels;
+            if ( Array docIDs = params["docIDs"].asArray() )
+                enc[kC4ReplicatorOptionDocIDs] = docIDs;
+            enc.endDict();
+            alloc_slice options = enc.finish();
+            collOptions.push_back(options);
 
-        HTTPStatus statusCode = HTTPStatus::OK;
-        if ( !continuous ) {
-            statusCode = task->wait();
-            task->unregisterTask();
+            replCollections.push_back({
+                    .collection        = collSpec,
+                    .push              = pushMode,
+                    .pull              = pullMode,
+                    .optionsDictFleece = options,
+            });
         }
+
+        // Encode the Fleece-based options:
+        Encoder enc;
+        enc.beginDict();
+        if ( slice user = params["user"].asString() ) {
+            slice password = params["password"].asString();
+            enc.writeKey(kC4ReplicatorOptionAuthentication);
+            enc.beginDict();
+            enc[kC4ReplicatorAuthType]     = kC4AuthTypeBasic;
+            enc[kC4ReplicatorAuthUserName] = user;
+            enc[kC4ReplicatorAuthPassword] = password;
+            enc.endDict();
+        }
+        enc.endDict();
+        alloc_slice options = enc.finish();
+
+        // Start the replicator!
+        Retained<ReplicationTask> task = new ReplicationTask(this, source, target);
+        C4ReplicatorParameters    c4Params{
+                   .optionsDictFleece = options,
+                   .collectionCount   = replCollections.size(),
+                   .collections       = replCollections.data(),
+        };
+        bool ok = task->start(localDB, localName, remoteAddress, remoteDbName, c4Params);
 
         auto& json = rq.jsonEncoder();
-        if ( statusCode == HTTPStatus::OK ) {
+        if ( ok ) {
             json.writeFormatted("{ok: true, session_id: %u}", task->taskID());
+            rq.setStatus(HTTPStatus::Accepted, "Replication has started");
         } else {
             task->writeErrorInfo(json);
+            string     message    = task->message().asString();
+            HTTPStatus statusCode = rq.errorToStatus(task->status().error);
+            rq.setStatus(statusCode, message.c_str());
         }
+    }
 
-        string message = task->message().asString();
-        if ( statusCode == HTTPStatus::GatewayError ) message = "Replicator error: " + message;
-        rq.setStatus(statusCode, message.c_str());
+    void RESTListener::cancelReplication(litecore::REST::RequestResponse& rq, Value taskIDVal) {
+        if ( !taskIDVal.isUnsigned() )
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "'cancel' must be an integer session_id");
+        auto        cancelID = taskIDVal.asUnsigned();
+        auto        status   = HTTPStatus::NotFound;
+        const char* message  = "No active task with that session_id";
+        for ( auto& task : tasks() ) {
+            if ( task->taskID() == cancelID && !task->finished() ) {
+                if ( dynamic_cast<ReplicationTask*>(task.get()) ) {
+                    task->stop();
+                    status  = HTTPStatus::OK;
+                    message = "Stopped";
+                } else {
+                    status  = HTTPStatus::Forbidden;
+                    message = "Task is not a replicator";
+                }
+                break;
+            }
+        }
+        rq.respondWithStatus(status, message);
     }
 
     void RESTListener::handleSync(RequestResponse& rq, C4Database*) {

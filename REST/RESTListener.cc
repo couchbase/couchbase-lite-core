@@ -229,8 +229,8 @@ namespace litecore::REST {
     }
 
     vector<Retained<RESTListener::Task>> RESTListener::tasks() {
-        lock_guard<mutex> lock(_mutex);
-
+        lock_guard<mutex>                    lock(_mutex);
+        vector<Retained<RESTListener::Task>> result{_tasks.begin(), _tasks.end()};
         // Clean up old finished tasks:
         time_t now;
         time(&now);
@@ -239,8 +239,7 @@ namespace litecore::REST {
             else
                 ++i;
         }
-
-        return {_tasks.begin(), _tasks.end()};
+        return result;
     }
 
 #pragma mark - UTILITIES:
@@ -305,7 +304,7 @@ namespace litecore::REST {
         C4Collection* collection;
         try {
             collection = db->getCollection(spec);
-        } catch ( const std::exception& x ) {
+        } catch ( const std::exception& ) {
             rq.respondWithError(C4Error::fromCurrentException());
             return {};
         }
