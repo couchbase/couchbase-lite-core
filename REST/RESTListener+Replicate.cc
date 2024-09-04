@@ -84,7 +84,9 @@ namespace litecore::REST {
                 unregisterTask();
                 throw;
             }
-            onReplStateChanged(_repl->getStatus());
+            if (_repl) { // it is possible that the replicator already stopped and I cleared the ref
+                onReplStateChanged(_repl->getStatus());
+            }
         }
 
         ReplicationTask* findMatchingTask() {
