@@ -211,44 +211,57 @@ namespace litecore::REST {
         if ( !C4Address::fromURL(remoteURL, &remoteAddress, &remoteDbName) )
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database URL");
 
-        // Get the collection(s):
-        std::vector<C4CollectionSpec> collSpecs;
-        if ( Array collections = params["collections"].asArray() ) {
-            if ( collections.empty() )
-                return rq.respondWithStatus(HTTPStatus::BadRequest, "At least one collection must be replicated");
-            for ( Array::iterator iter(collections); iter; iter.next() ) {
-                slice collPath = iter.value().asString();
-                collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
-            }
-        } else {
-            // If no collections given, just use the default collection:
-            collSpecs.push_back({.name = kC4DefaultCollectionName, .scope = kC4DefaultScopeID});
-        }
-
-        // Create the array of C4ReplicationCollection:
-        vector<alloc_slice>                  collOptions;
+        // Subroutine that adds a C4ReplicationCollection:
+        vector<alloc_slice>                  collOptions;  // backing store for each optionsDictFleece
         std::vector<C4ReplicationCollection> replCollections;
-        for ( auto& collSpec : collSpecs ) {
-            // Per-collection options:
-            Encoder enc;
+        auto                                 addCollection = [&](slice collPath, Dict collParams) {
+            C4CollectionSpec collSpec = repl::Options::collectionPathToSpec(collPath);
+            Encoder          enc;
             enc.beginDict();
-            if ( Array channels = params["channels"].asArray() )
-                enc[kC4ReplicatorOptionChannels] = channels;
-            if ( Array docIDs = params["docIDs"].asArray() )
-                enc[kC4ReplicatorOptionDocIDs] = docIDs;
+            if ( Array channels = collParams["channels"].asArray() ) enc[kC4ReplicatorOptionChannels] = channels;
+            if ( Array docIDs = collParams["doc_ids"].asArray() ) enc[kC4ReplicatorOptionDocIDs] = docIDs;
             enc.endDict();
             alloc_slice options = enc.finish();
             collOptions.push_back(options);
-
             replCollections.push_back({
-                    .collection        = collSpec,
-                    .push              = pushMode,
-                    .pull              = pullMode,
-                    .optionsDictFleece = options,
+                                                    .collection        = collSpec,
+                                                    .push              = pushMode,
+                                                    .pull              = pullMode,
+                                                    .optionsDictFleece = options,
             });
+        };
+
+        // Get the collection(s):
+        if ( auto collectionsVal = params["collections"] ) {
+            if ( Array collectionNames = collectionsVal.asArray() ) {
+                // `collections` is an array of collection names:
+                for ( Array::iterator iter(collectionNames); iter; iter.next() ) {
+                    slice collPath = iter.value().asString();
+                    if ( !collPath ) return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid collections item");
+                    addCollection(collPath, params);
+                }
+            } else if ( Dict collections = collectionsVal.asDict() ) {
+                // 'collections' is a dictionary mapping collection names to options:
+                for ( Dict::iterator iter(collections); iter; iter.next() ) {
+                    addCollection(iter.keyString(), iter.value().asDict());
+                }
+            } else {
+                return rq.respondWithStatus(HTTPStatus::BadRequest, "'collections' must be an array or object");
+            }
+        } else {
+            // 'collections' is missing; just use the default collection:
+            addCollection(kC4DefaultCollectionName, params);
+        }
+        if ( replCollections.empty() )
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "At least one collection must be replicated");
+        for ( size_t i = 0; i < replCollections.size(); i++ ) {
+            for ( size_t j = 0; j < i; j++ ) {
+                if ( replCollections[j].collection == replCollections[i].collection )
+                    return rq.respondWithStatus(HTTPStatus::BadRequest, "Duplicate collection");
+            }
         }
 
-        // Encode the Fleece-based options:
+        // Encode the outer Fleece-based options:
         Encoder enc;
         enc.beginDict();
         if ( slice user = params["user"].asString() ) {
