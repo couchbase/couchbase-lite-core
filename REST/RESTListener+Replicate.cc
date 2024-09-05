@@ -299,8 +299,8 @@ namespace litecore::REST {
         Retained<ReplicationTask> task = new ReplicationTask(this, source, target);
         C4ReplicatorParameters    c4Params{
                    .optionsDictFleece = options,
-                   .collectionCount   = replCollections.size(),
                    .collections       = replCollections.data(),
+                   .collectionCount   = replCollections.size(),
         };
         bool ok = task->start(localDB, localName, remoteAddress, remoteDbName, c4Params);
         if ( ok ) {
