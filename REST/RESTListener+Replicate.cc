@@ -17,7 +17,7 @@
 #include "fleece/RefCounted.hh"
 #include "ReplicatorOptions.hh"
 #include "StringUtil.hh"
-#include "fleece/Expert.hh"  // for AllocedDict
+#include "fleece/Mutable.hh"
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -29,7 +29,7 @@ using namespace fleece;
 namespace litecore::REST {
     using namespace net;
 
-    class ReplicationTask : public RESTListener::Task {
+    class RESTListener::ReplicationTask : public RESTListener::Task {
       public:
         ReplicationTask(RESTListener* listener, slice source, slice target)
             : Task(listener), _source(source), _target(target) {}
@@ -56,6 +56,7 @@ namespace litecore::REST {
                   SPLAT(remoteAddress.hostname), remoteAddress.port, SPLAT(remoteDbName), _bidi, _continuous);
 
             try {
+                C4Database::WithClientMutex with(localDB);
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
                 _repl->start();
                 if ( _repl ) {  // it is possible that the replicator already stopped and I cleared the ref
@@ -168,18 +169,37 @@ namespace litecore::REST {
 #pragma mark - HTTP HANDLER:
 
     void RESTListener::handleReplicate(litecore::REST::RequestResponse& rq) {
-        // Parse the JSON body:
         auto params = rq.bodyAsJSON().asDict();
-        if ( !params )
+        if ( !params ) {
             return rq.respondWithStatus(HTTPStatus::BadRequest,
                                         "Invalid JSON in request body (or body is not an object)");
-
-        if ( Value cancelVal = params["cancel"] ) {
+        } else if ( Value cancelVal = params["cancel"] ) {
             // Hang on, stop the presses -- we're canceling, not starting
             cancelReplication(rq, cancelVal);
-            return;
+        } else {
+            auto [status, message, task] = _handleReplicate(params);
+            if ( task ) {
+                if ( task->status().error == kC4NoError )
+                    rq.jsonEncoder().writeFormatted("{ok: true, session_id: %u}", task->taskID());
+                else
+                    task->writeErrorInfo(rq.jsonEncoder());
+                rq.setStatus(status, message.c_str());
+            } else {
+                rq.respondWithStatus(status, message.c_str());
+            }
         }
+    }
 
+    unsigned RESTListener::startReplication(Dict params) {
+        auto [status, message, task] = _handleReplicate(params);
+        if ( int(status) < 300 ) {
+            return task->taskID();
+        } else {
+            error(error::WebSocket, int(status), message)._throw();
+        }
+    }
+
+    tuple<HTTPStatus, string, RESTListener::ReplicationTask*> RESTListener::_handleReplicate(Dict params) {
         bool             bidi       = params["bidi"].asBool();
         bool             continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
@@ -187,8 +207,7 @@ namespace litecore::REST {
         // Get the local DB and remote URL:
         slice source = params["source"].asString();
         slice target = params["target"].asString();
-        if ( !source || !target )
-            return rq.respondWithStatus(HTTPStatus::BadRequest, "Missing source or target parameters");
+        if ( !source || !target ) return {HTTPStatus::BadRequest, "Missing source or target parameters", nullptr};
         slice            localName;
         slice            remoteURL;
         C4ReplicatorMode pushMode, pullMode;
@@ -202,14 +221,14 @@ namespace litecore::REST {
             pullMode  = activeMode;
             remoteURL = source;
         } else {
-            return rq.respondWithStatus(HTTPStatus::BadRequest, "Neither source nor target is a local database name");
+            return {HTTPStatus::BadRequest, "Neither source nor target is a local database name", nullptr};
         }
         Retained<C4Database> localDB = databaseNamed(localName.asString());
-        if ( !localDB ) return rq.respondWithStatus(HTTPStatus::NotFound);
+        if ( !localDB ) return {HTTPStatus::NotFound, "", nullptr};
         C4Address remoteAddress;
         slice     remoteDbName;
         if ( !C4Address::fromURL(remoteURL, &remoteAddress, &remoteDbName) )
-            return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database URL");
+            return {HTTPStatus::BadRequest, "Invalid database URL", nullptr};
 
         // Subroutine that adds a C4ReplicationCollection:
         vector<alloc_slice>                  collOptions;  // backing store for each optionsDictFleece
@@ -237,7 +256,7 @@ namespace litecore::REST {
                 // `collections` is an array of collection names:
                 for ( Array::iterator iter(collectionNames); iter; iter.next() ) {
                     slice collPath = iter.value().asString();
-                    if ( !collPath ) return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid collections item");
+                    if ( !collPath ) return {HTTPStatus::BadRequest, "Invalid collections item", nullptr};
                     addCollection(collPath, params);
                 }
             } else if ( Dict collections = collectionsVal.asDict() ) {
@@ -246,18 +265,18 @@ namespace litecore::REST {
                     addCollection(iter.keyString(), iter.value().asDict());
                 }
             } else {
-                return rq.respondWithStatus(HTTPStatus::BadRequest, "'collections' must be an array or object");
+                return {HTTPStatus::BadRequest, "'collections' must be an array or object", nullptr};
             }
         } else {
             // 'collections' is missing; just use the default collection:
             addCollection(kC4DefaultCollectionName, params);
         }
         if ( replCollections.empty() )
-            return rq.respondWithStatus(HTTPStatus::BadRequest, "At least one collection must be replicated");
+            return {HTTPStatus::BadRequest, "At least one collection must be replicated", nullptr};
         for ( size_t i = 0; i < replCollections.size(); i++ ) {
             for ( size_t j = 0; j < i; j++ ) {
                 if ( replCollections[j].collection == replCollections[i].collection )
-                    return rq.respondWithStatus(HTTPStatus::BadRequest, "Duplicate collection");
+                    return {HTTPStatus::BadRequest, "Duplicate collection", nullptr};
             }
         }
 
@@ -284,16 +303,12 @@ namespace litecore::REST {
                    .collections       = replCollections.data(),
         };
         bool ok = task->start(localDB, localName, remoteAddress, remoteDbName, c4Params);
-
-        auto& json = rq.jsonEncoder();
         if ( ok ) {
-            json.writeFormatted("{ok: true, session_id: %u}", task->taskID());
-            rq.setStatus(HTTPStatus::Accepted, "Replication has started");
+            return {HTTPStatus::Accepted, "Replication has started", task};
         } else {
-            task->writeErrorInfo(json);
             string     message    = task->message().asString();
-            HTTPStatus statusCode = rq.errorToStatus(task->status().error);
-            rq.setStatus(statusCode, message.c_str());
+            HTTPStatus statusCode = RequestResponse::errorToStatus(task->status().error);
+            return {statusCode, message, task};
         }
     }
 

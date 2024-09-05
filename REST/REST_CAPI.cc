@@ -75,6 +75,14 @@ CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String na
     return false;
 }
 
+CBL_CORE_API unsigned c4listener_startReplication(C4Listener* listener, FLDict parameters, C4Error* outError) noexcept {
+    try {
+        return listener->startReplication(parameters);
+    }
+    catchError(outError);
+    return 0;
+}
+
 CBL_CORE_API uint16_t c4listener_getPort(const C4Listener* listener) noexcept {
     try {
         return listener->port();

@@ -60,6 +60,14 @@ NODISCARD CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener, C4S
 NODISCARD CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String name, C4Collection* collection,
                                                          C4Error* C4NULLABLE outError) C4API;
 
+/** Starts a replication task, just like a POST to `/_replicate`.
+    @param listener  The running C4Listener instance.
+    @param parameters  The same parameters as the request body to `/_replicate`.
+    @param outError On failure, the error info is stored here if non-NULL.
+    @returns The "session_id" identifying the replication task, or 0 on failure. */
+NODISCARD CBL_CORE_API unsigned c4listener_startReplication(C4Listener* listener, FLDict parameters,
+                                                            C4Error* C4NULLABLE outError) C4API;
+
 /** Returns the URL(s) of a database being shared, or of the root, separated by "\n" bytes.
         The URLs will differ only in their hostname -- there will be one for each IP address or known
         hostname of the computer, or of the network interface.

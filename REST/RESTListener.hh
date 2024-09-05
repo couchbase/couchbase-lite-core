@@ -49,6 +49,12 @@ namespace litecore::REST {
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
 
+        /// Starts a replication, just like a POST to `/_replicate`.
+        /// On failure, throws a litecore::error with domain WebSocketDomain.
+        /// @param params  The same parameters as the request body to `/_replicate`.
+        /// @returns  The task ID.
+        unsigned startReplication(Dict params);
+
         /** An asynchronous task (like a replication). */
         class Task
             : public RefCounted
@@ -89,7 +95,7 @@ namespace litecore::REST {
             time_t              _timeUpdated{0};
         };
 
-        /** The currently-running tasks. */
+        /// The currently-running tasks.
         std::vector<Retained<Task>> tasks();
 
       protected:
@@ -124,6 +130,8 @@ namespace litecore::REST {
         static std::string kServerName;
 
       private:
+        class ReplicationTask;
+
         static std::pair<std::string, C4CollectionSpec> parseKeySpace(slice keySpace);
         static bool                                     collectionGiven(RequestResponse&);
 
@@ -147,6 +155,7 @@ namespace litecore::REST {
 
         bool modifyDoc(fleece::Dict body, std::string docID, const std::string& revIDQuery, bool deleting,
                        bool newEdits, C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;
+        std::tuple<net::HTTPStatus, std::string, ReplicationTask*> _handleReplicate(Dict params);
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection, _allowQueries;

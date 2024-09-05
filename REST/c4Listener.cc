@@ -68,7 +68,8 @@ namespace {
         if ( config.apis == kC4RESTAPI ) {
             ss << "allowCreateDBs: " << config.allowCreateDBs << ", allowDeleteDBs: " << config.allowDeleteDBs
                << ", allowCreateCollections: " << config.allowCreateCollections
-               << ", allowDeleteCollections: " << config.allowDeleteCollections;
+               << ", allowDeleteCollections: " << config.allowDeleteCollections
+               << ", allowQueries: " << config.allowQueries;
         } else {
             ss << "allowPush: " << config.allowPush << ", "
                << "allowPull: " << config.allowPull << ", "
@@ -101,7 +102,7 @@ C4Listener::C4Listener(C4ListenerConfig config)
     }
 }
 
-C4Listener::C4Listener(C4Listener&&) = default;
+C4Listener::C4Listener(C4Listener&&) noexcept = default;
 
 C4Listener::~C4Listener() {
     if ( _impl ) _impl->stop();
@@ -119,15 +120,14 @@ bool C4Listener::shareCollection(slice name, C4Collection* coll) {
     if ( _usuallyFalse(!coll || !coll->isValid()) ) {
         C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen, "Invalid collection: either deleted, or db closed");
     }
-
-    optional<string> nameStr;
-    if ( name.buf ) nameStr = name;
     return _impl->registerCollection((string)name, coll->getSpec());
 }
 
 bool C4Listener::unshareCollection(slice name, C4Collection* coll) {
     return _impl->unregisterCollection((string)name, coll->getSpec());
 }
+
+unsigned C4Listener::startReplication(FLDict parameters) { return _impl->startReplication(parameters); }
 
 std::vector<std::string> C4Listener::URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api) const {
     AssertParam(api == kC4RESTAPI || api == kC4SyncAPI, "The provided API must be one of the following:  REST, Sync.");
