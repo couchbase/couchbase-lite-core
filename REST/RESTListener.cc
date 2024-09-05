@@ -60,35 +60,37 @@ namespace litecore::REST {
             });
         }
 
+        const APIVersion v1{1, 0};
+
         if ( config.apis & kC4RESTAPI ) {
             // Root:
-            addHandler(Method::GET, "/", &RESTListener::handleGetRoot);
+            addHandler(Method::GET, "/", v1, &RESTListener::handleGetRoot);
 
             // Top-level special handlers:
-            addHandler(Method::GET, "/_all_dbs", &RESTListener::handleGetAllDBs);
-            addHandler(Method::GET, "/_active_tasks", &RESTListener::handleActiveTasks);
-            addHandler(Method::POST, "/_replicate", &RESTListener::handleReplicate);
+            addHandler(Method::GET, "/_all_dbs", v1, &RESTListener::handleGetAllDBs);
+            addHandler(Method::GET, "/_active_tasks", v1, &RESTListener::handleActiveTasks);
+            addHandler(Method::POST, "/_replicate", v1, &RESTListener::handleReplicate);
 
             // Database:
-            addCollectionHandler(Method::GET, "/[^_][^/]*|/[^_][^/]*/", &RESTListener::handleGetDatabase);
-            addHandler(Method::PUT, "/[^_][^/]*|/[^_][^/]*/", &RESTListener::handleCreateDatabase);
-            addCollectionHandler(Method::DELETE, "/[^_][^/]*|/[^_][^/]*/", &RESTListener::handleDeleteDatabase);
-            addCollectionHandler(Method::POST, "/[^_][^/]*|/[^_][^/]*/", &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::GET, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleGetDatabase);
+            addHandler(Method::PUT, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleCreateDatabase);
+            addCollectionHandler(Method::DELETE, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleDeleteDatabase);
+            addCollectionHandler(Method::POST, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_all_docs", &RESTListener::handleGetAllDocs);
-            addCollectionHandler(Method::POST, "/[^_][^/]*/_bulk_docs", &RESTListener::handleBulkDocs);
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_changes", &RESTListener::handleChanges);
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_function/[^/]+", &RESTListener::handleFunction);
-            addCollectionHandler(Method::POST, "/[^_][^/]*/_query", &RESTListener::handleQuery);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_all_docs", v1, &RESTListener::handleGetAllDocs);
+            addCollectionHandler(Method::POST, "/[^_][^/]*/_bulk_docs", v1, &RESTListener::handleBulkDocs);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_changes", v1, &RESTListener::handleChanges);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_function/[^/]+", v1, &RESTListener::handleFunction);
+            addCollectionHandler(Method::POST, "/[^_][^/]*/_query", v1, &RESTListener::handleQuery);
 
             // Document:
-            addCollectionHandler(Method::GET, "/[^_][^/]*/[^_].*", &RESTListener::handleGetDoc);
-            addCollectionHandler(Method::PUT, "/[^_][^/]*/[^_].*", &RESTListener::handleModifyDoc);
-            addCollectionHandler(Method::DELETE, "/[^_][^/]*/[^_].*", &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/[^_].*", v1, &RESTListener::handleGetDoc);
+            addCollectionHandler(Method::PUT, "/[^_][^/]*/[^_].*", v1, &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::DELETE, "/[^_][^/]*/[^_].*", v1, &RESTListener::handleModifyDoc);
         }
         if ( config.apis & kC4SyncAPI ) {
-            addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", &RESTListener::handleSync);
+            addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", v1, &RESTListener::handleSync);
         }
 
         _server->start(config.port, config.networkInterface, createTLSContext(config.tlsConfig).get());
@@ -244,13 +246,13 @@ namespace litecore::REST {
 
 #pragma mark - UTILITIES:
 
-    void RESTListener::addHandler(Method method, const char* uri, HandlerMethod handler) {
+    void RESTListener::addHandler(Method method, const char* uri, APIVersion vers, HandlerMethod handler) {
         using namespace std::placeholders;
-        _server->addHandler(method, uri, bind(handler, this, _1));
+        _server->addHandler(method, uri, vers, bind(handler, this, _1));
     }
 
-    void RESTListener::addDBHandler(Method method, const char* uri, DBHandlerMethod handler) {
-        _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
+    void RESTListener::addDBHandler(Method method, const char* uri, APIVersion vers, DBHandlerMethod handler) {
+        _server->addHandler(method, uri, vers, [this, handler](RequestResponse& rq) {
             Retained<C4Database> db = getDatabase(rq, rq.path(0));
             if ( db ) {
                 C4Database::WithClientMutex with(db);
@@ -259,8 +261,9 @@ namespace litecore::REST {
         });
     }
 
-    void RESTListener::addCollectionHandler(Method method, const char* uri, CollectionHandlerMethod handler) {
-        _server->addHandler(method, uri, [this, handler](RequestResponse& rq) {
+    void RESTListener::addCollectionHandler(Method method, const char* uri, APIVersion vers,
+                                            CollectionHandlerMethod handler) {
+        _server->addHandler(method, uri, vers, [this, handler](RequestResponse& rq) {
             auto [db, collection] = collectionFor(rq);
             if ( db ) {
                 C4Database::WithClientMutex with(db);

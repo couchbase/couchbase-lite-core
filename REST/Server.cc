@@ -193,10 +193,14 @@ namespace litecore::REST {
         _extraHeaders = headers;
     }
 
-    void Server::addHandler(Methods methods, const string& patterns, const Handler& handler) {
+    void Server::addHandler(Methods methods, string_view patterns, APIVersion version, Handler handler) {
         lock_guard<mutex> lock(_mutex);
         split(patterns, "|", [&](string_view pattern) {
-            _rules.push_back({methods, string(pattern), regex(pattern.data(), pattern.size()), handler});
+            _rules.push_back({.methods = methods,
+                              .pattern = string(pattern),
+                              .regex   = regex(pattern.data(), pattern.size()),
+                              .version = version,
+                              .handler = std::move(handler)});
         });
     }
 
@@ -224,13 +228,22 @@ namespace litecore::REST {
                 string pathStr(rq->path());
                 auto   rule = findRule(method, pathStr);
                 if ( rule ) {
+                    // Found a rule; check the version:
                     c4log(ListenerLog, kC4LogVerbose, "Matched rule %s for path %s", rule->pattern.c_str(),
                           pathStr.c_str());
-                    rule->handler(*rq);  // Dispatch request to handler method!
+                    APIVersion rqVers = APIVersion::parse(rq->header("API-Version"));
+                    if ( rqVers.major < rule->version.major )
+                        rq->respondWithStatus(HTTPStatus::BadRequest, "Version too old");
+                    else if ( rqVers.major > rule->version.major )
+                        rq->respondWithStatus(HTTPStatus::BadRequest, "Version too new");
+                    else
+                        rule->handler(*rq);  // Dispatch request to handler method!
                 } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
+                    // No such rule:
                     c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
                     rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
                 } else {
+                    // Wrong HTTP method:
                     c4log(ListenerLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(),
                           pathStr.c_str());
                     if ( method == Method::UPGRADE )
@@ -249,6 +262,12 @@ namespace litecore::REST {
         }
 
         c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(), rq->status());
+    }
+
+    Server::APIVersion Server::APIVersion::parse(string_view str) {
+        APIVersion vers{1, 0};
+        if ( !str.empty() ) { (void)sscanf(string(str).c_str(), "%hhu.%hhu", &vers.major, &vers.minor); }
+        return vers;
     }
 
 }  // namespace litecore::REST

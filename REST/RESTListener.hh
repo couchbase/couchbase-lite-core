@@ -107,13 +107,14 @@ namespace litecore::REST {
         unsigned                                       registerTask(Task*);
         void                                           unregisterTask(Task*);
 
+        using APIVersion              = Server::APIVersion;
         using HandlerMethod           = void (RESTListener::*)(RequestResponse&);
         using DBHandlerMethod         = void (RESTListener::*)(RequestResponse&, C4Database*);
         using CollectionHandlerMethod = void (RESTListener::*)(RequestResponse&, C4Collection*);
 
-        void addHandler(net::Method, const char* uri, HandlerMethod);
-        void addDBHandler(net::Method, const char* uri, DBHandlerMethod);
-        void addCollectionHandler(net::Method, const char* uri, CollectionHandlerMethod);
+        void addHandler(net::Method, const char* uri, APIVersion, HandlerMethod);
+        void addDBHandler(net::Method, const char* uri, APIVersion, DBHandlerMethod);
+        void addCollectionHandler(net::Method, const char* uri, APIVersion, CollectionHandlerMethod);
 
         std::vector<net::Address> _addresses(C4Database* dbOrNull = nullptr, C4ListenerAPIs api = kC4RESTAPI) const;
 

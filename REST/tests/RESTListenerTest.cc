@@ -317,6 +317,15 @@ TEST_CASE_METHOD(C4RESTTest, "No Listeners on Same Port", "[Listener][C]") {
 
 TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][Listener][C]") { testRootLevel(); }
 
+TEST_CASE_METHOD(C4RESTTest, "REST versioning", "[REST][Listener][C]") {
+    request("GET", "/", {}, "", HTTPStatus::OK);
+    request("GET", "/", {{"API-Version", "1"}}, "", HTTPStatus::OK);
+    request("GET", "/", {{"API-Version", "1.0"}}, "", HTTPStatus::OK);
+    request("GET", "/", {{"API-Version", "1.5"}}, "", HTTPStatus::OK);
+    request("GET", "/", {{"API-Version", "3.0"}}, "", HTTPStatus::BadRequest);
+    request("GET", "/", {{"API-Version", "0"}}, "", HTTPStatus::BadRequest);
+}
+
 TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][Listener][C]") {
     auto r    = request("GET", "/_all_dbs", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asArray();
