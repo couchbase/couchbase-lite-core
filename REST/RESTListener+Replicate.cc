@@ -80,12 +80,12 @@ namespace litecore::REST {
             return _finished;
         }
 
-        C4ReplicatorStatus status() {
+        C4ReplicatorStatus status() const {
             unique_lock lock(_mutex);
             return _status;
         }
 
-        alloc_slice message() {
+        alloc_slice message() const {
             unique_lock lock(_mutex);
             return _message;
         }
@@ -126,7 +126,7 @@ namespace litecore::REST {
             }
         }
 
-        void writeErrorInfo(JSONEncoder& json) {
+        void writeErrorInfo(JSONEncoder& json) const {
             unique_lock lock(_mutex);
             json.writeFormatted("{error: %.*s, 'x-litecore-domain': %d, 'x-litecore-code': %d}", SPLAT(_message),
                                 _status.error.domain, _status.error.code);
@@ -199,7 +199,22 @@ namespace litecore::REST {
         }
     }
 
+    static string validateKeys(const char* what, Dict dict, unordered_set<string_view> const& keys) {
+        if ( !dict ) return stringprintf("%s must be a JSON object", what);
+        for ( Dict::iterator i(dict); i; ++i ) {
+            if ( slice key = i.keyString(); !keys.contains(key) ) [[unlikely]]
+                return stringprintf("Unknown key '%.*s' in %s", FMTSLICE(key), what);
+        }
+        return "";
+    }
+
     tuple<HTTPStatus, string, RESTListener::ReplicationTask*> RESTListener::_handleReplicate(Dict params) {
+        static const unordered_set<string_view> allowedKeys{"source",   "target",  "bidi", "continuous", "collections",
+                                                            "channels", "doc_ids", "user", "password"};
+        static const unordered_set<string_view> allowedCollKeys{"channels", "doc_ids"};
+        if ( string msg = validateKeys("replication parameters", params, allowedKeys); !msg.empty() )
+            return {HTTPStatus::BadRequest, std::move(msg), nullptr};
+
         bool             bidi       = params["bidi"].asBool();
         bool             continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
@@ -262,7 +277,10 @@ namespace litecore::REST {
             } else if ( Dict collections = collectionsVal.asDict() ) {
                 // 'collections' is a dictionary mapping collection names to options:
                 for ( Dict::iterator iter(collections); iter; iter.next() ) {
-                    addCollection(iter.keyString(), iter.value().asDict());
+                    Dict collParams = iter.value().asDict();
+                    if ( string msg = validateKeys("collection parameters", collParams, allowedCollKeys); !msg.empty() )
+                        return {HTTPStatus::BadRequest, std::move(msg), nullptr};
+                    addCollection(iter.keyString(), collParams);
                 }
             } else {
                 return {HTTPStatus::BadRequest, "'collections' must be an array or object", nullptr};
@@ -280,7 +298,7 @@ namespace litecore::REST {
             }
         }
 
-        // Encode the outer Fleece-based options:
+        // Encode the outer Fleece-based C4Replicator options:
         Encoder enc;
         enc.beginDict();
         if ( slice user = params["user"].asString() ) {
