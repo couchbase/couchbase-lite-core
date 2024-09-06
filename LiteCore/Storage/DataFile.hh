@@ -305,6 +305,7 @@ namespace litecore {
         std::mutex                                            _queriesMutex;          // Thread-safe access to _queries
         bool                                                  _inTransaction{false};  // Am I in a Transaction?
         std::atomic_bool                                      _closeSignaled{false};  // Have I been asked to close?
+        mutable std::once_flag                                _documentKeysOnce{};  // Thread-safe init of documentKeys
     };
 
     /** Grants exclusive write access to a DataFile while in scope.
