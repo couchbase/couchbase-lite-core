@@ -83,7 +83,7 @@ namespace litecore::REST {
             Patterns use C++ regex syntax.
             Multiple patterns can be joined with a "|".
             Patterns are tested in the order the handlers are added, and the first match is used.*/
-        void addHandler(net::Methods, string_view pattern, APIVersion, Handler);
+        void addHandler(net::Methods, string_view pattern, APIVersion, Handler const&);
 
         int connectionCount() { return _connectionCount; }
 

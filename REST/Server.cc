@@ -193,14 +193,15 @@ namespace litecore::REST {
         _extraHeaders = headers;
     }
 
-    void Server::addHandler(Methods methods, string_view patterns, APIVersion version, Handler handler) {
+    void Server::addHandler(Methods methods, string_view patterns, APIVersion version, Handler const& handler) {
+        precondition(handler);
         lock_guard<mutex> lock(_mutex);
         split(patterns, "|", [&](string_view pattern) {
             _rules.push_back({.methods = methods,
                               .pattern = string(pattern),
                               .regex   = regex(pattern.data(), pattern.size()),
                               .version = version,
-                              .handler = std::move(handler)});
+                              .handler = handler});
         });
     }
 
@@ -251,8 +252,9 @@ namespace litecore::REST {
                     else
                         rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
                 }
-            } catch ( const std::exception& x ) {
-                c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
+            } catch ( const std::exception& ) {
+                c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s",
+                      C4Error::fromCurrentException().description().c_str());
                 if ( !rq->finished() ) rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
             }
         } else {
