@@ -313,11 +313,11 @@ namespace litecore::REST {
     }
 
     void RESTListener::cancelReplication(litecore::REST::RequestResponse& rq, Value taskIDVal) {
-        if ( !taskIDVal.isUnsigned() )
-            return rq.respondWithStatus(HTTPStatus::BadRequest, "'cancel' must be an integer session_id");
-        auto        cancelID = taskIDVal.asUnsigned();
-        auto        status   = HTTPStatus::NotFound;
-        const char* message  = "No active task with that session_id";
+        auto cancelID = taskIDVal.asInt();
+        if ( cancelID <= 0 )
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "'cancel' must be a positive integer session_id");
+        auto        status  = HTTPStatus::NotFound;
+        const char* message = "No active task with that session_id";
         for ( auto& task : tasks() ) {
             if ( task->taskID() == cancelID && !task->finished() ) {
                 if ( dynamic_cast<ReplicationTask*>(task.get()) ) {
