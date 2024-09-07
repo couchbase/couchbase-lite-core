@@ -75,7 +75,9 @@ selectResult =
 
 from =
     FROM d:dataSource                   { d = arrayWith(d);}
-        (_ j:join                       { appendAny(d, j);}
+        (_ (j:join                      { appendAny(d, j);}
+          | u:unnest                    { appendAny(d, u);}
+           )
          )*                             { $$ = d;}
 
 dataSource =
@@ -97,6 +99,15 @@ joinOperator =
     <( LEFT (OUTER)? | INNER | CROSS )?> JOIN
                                         { string join = trim(yytext);
                                           $$ = join.empty() ? string("INNER") : join;}
+
+unnest =
+    UNNEST _ p:propertyPath ( _ AS? ca:columnAlias )?
+                                        {
+                                          MutableDict dict = MutableDict::newDict();
+                                          setAny(dict, "UNNEST", op(p));
+                                          if (!ca.isNull()) setAny(dict, "AS", ca);
+                                          $$ = dict;
+                                        }
 
 groupBy =
     GROUP BY x:expression               { x = arrayWith(x);}
@@ -375,13 +386,13 @@ parenExprs =
 
 # In N1QL, unlike SQL, `"` delimits a string, while "`" is used to quote identifiers.
 IDENTIFIER =
-  <[a-zA-Z_] [a-zA-Z0-9_$]*>           &{!isReservedWord(yytext)}
+  !reservedWord <[a-zA-Z_] [a-zA-Z0-9_$]*>
         _                               { $$ = string(yytext);}
   | "`"  <( [^`] | "``"   )*> "`"  _    { $$ = unquote(yytext, '`');}
 
-
 # Note: the 'i' suffix on strings makes them case-insensitive.
 # This feature is not in the stock peg-1.1.8 distribution, but is in the one on Github.
+
 
 ALL       = "ALL"i         WB
 AND       = "AND"i         WB
@@ -423,10 +434,12 @@ SELECT    = "SELECT"i      WB
 SOME      = "SOME"i        WB
 THEN      = "THEN"i        WB
 TRUE      = "TRUE"i        WB
+UNNEST    = "UNNEST"i      WB
 VALUED    = "VALUED"i      WB
 WHEN      = "WHEN"i        WB
 WHERE     = "WHERE"i       WB
 
+reservedWord = ALL | AND | ANY | AS | ASC | BETWEEN | BY | CASE | COLLATE | CROSS | DESC | DISTINCT | ELSE | END | EVERY | EXISTS | FALSE | FROM | GROUP | HAVING | IN | INNER | IS | JOIN | LEFT | LIKE | LIMIT | MISSING | NOT | NULL | OFFSET | ON | OR | ORDER | OUTER | SATISFIES | SELECT | SOME | THEN | TRUE | UNNEST | VALUED | WHEN | WHERE
 
 ######## COMPOUND LITERALS:
 

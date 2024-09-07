@@ -414,6 +414,52 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
              "'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
 }
 
+TEST_CASE_METHOD(N1QLParserTest, "N1QL UNNEST", "[Query][N1QL][C]") {
+    tableNames.insert("kv_.store.customers");
+    tableNames.insert("kv_.store2.customers");
+
+    // UNNEST is a keyword
+    CHECK(translate("SELECT * FROM _ WHERE unnest = true").empty());
+    CHECK(translate("SELECT * FROM _ WHERE `unnest` = true")
+          == "{'FROM':[{'COLLECTION':'_'}],'WHAT':[['.']],'WHERE':['=',['.unnest'],true]}");
+
+    // This example is used in c4QueryTest
+    CHECK(translate("SELECT META(person).id, `like` FROM _default AS person "
+                    "UNNEST person.`like` AS `like` "
+                    "WHERE `like` > \"snowboarding\" ORDER BY `like`, META(person).id")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'AS':'like','UNNEST':['.person.like']}],"
+             "'ORDER_BY':[['.like'],['_.',['meta()','person'],'.id']],"
+             "'WHAT':[['_.',['meta()','person'],'.id'],['.like']],'WHERE':['>',['.like'],'snowboarding']}");
+
+    // Unnest expression with collection name as data source
+    CHECK(translate("SELECT store.customers.name, notes FROM store.customers UNNEST customers.notes")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+             "{'UNNEST':['.customers.notes']}],'WHAT':[['.store.customers.name'],['.notes']]}");
+
+    // Unnest in conjunction with join
+    CHECK(translate("SELECT notes.date, complaints FROM store.customers "
+                    "JOIN store2.customers ON store.customers.name = store2.customers.name "
+                    "UNNEST store.customers.notes UNNEST notes.complaints")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+             "{'COLLECTION':'customers','JOIN':'INNER',"
+             "'ON':['=',['.store.customers.name'],['.store2.customers.name']],'SCOPE':'store2'},"
+             "{'UNNEST':['.store.customers.notes']},"
+             "{'UNNEST':['.notes.complaints']}],'WHAT':[['.notes.date'],['.complaints']]}");
+
+    CHECK(translate("SELECT META(person).id FROM _default AS person "
+                    "UNNEST person.`interests.music`")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'UNNEST':['.person.interests\\\\.music']}],'WHAT':[['_.',['meta()','person'],'.id']]}");
+
+    // Unnest property includes escaped dot.
+    CHECK(translate("SELECT META(person).id FROM _default AS person "
+                    "UNNEST person.`interests.music` music_interest")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'AS':'music_interest','UNNEST':['.person.interests\\\\.music']}],'WHAT':[['_.',['meta()','person'],'.id'"
+             "]]}");
+}
+
 TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT isarray(x),  isatom(x),  isboolean(x),  isnumber(x),  isobject(x),  isstring(x),  type(x)")
           == "{'WHAT':[['isarray()',['.x']],['isatom()',['.x']],['isboolean()',['.x']],['isnumber()',['.x']],"
