@@ -11,6 +11,7 @@
 //
 
 #include "RESTListener.hh"
+#include "DatabasePool.hh"
 #include "c4Certificate.hh"
 #include "c4Database.hh"
 #include "c4ListenerInternal.hh"
@@ -72,25 +73,26 @@ namespace litecore::REST {
             addHandler(Method::POST, "/_replicate", v1, &RESTListener::handleReplicate);
 
             // Database:
-            addCollectionHandler(Method::GET, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleGetDatabase);
+            addCollectionHandler(Method::GET, "/[^_][^/]*|/[^_][^/]*/", false, v1, &RESTListener::handleGetDatabase);
             addHandler(Method::PUT, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleCreateDatabase);
-            addCollectionHandler(Method::DELETE, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleDeleteDatabase);
-            addCollectionHandler(Method::POST, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::DELETE, "/[^_][^/]*|/[^_][^/]*/", true, v1,
+                                 &RESTListener::handleDeleteDatabase);
+            addCollectionHandler(Method::POST, "/[^_][^/]*|/[^_][^/]*/", true, v1, &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_all_docs", v1, &RESTListener::handleGetAllDocs);
-            addCollectionHandler(Method::POST, "/[^_][^/]*/_bulk_docs", v1, &RESTListener::handleBulkDocs);
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_changes", v1, &RESTListener::handleChanges);
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_function/[^/]+", v1, &RESTListener::handleFunction);
-            addCollectionHandler(Method::POST, "/[^_][^/]*/_query", v1, &RESTListener::handleQuery);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_all_docs", false, v1, &RESTListener::handleGetAllDocs);
+            addCollectionHandler(Method::POST, "/[^_][^/]*/_bulk_docs", true, v1, &RESTListener::handleBulkDocs);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_changes", false, v1, &RESTListener::handleChanges);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/_function/[^/]+", false, v1, &RESTListener::handleFunction);
+            addCollectionHandler(Method::POST, "/[^_][^/]*/_query", false, v1, &RESTListener::handleQuery);
 
             // Document:
-            addCollectionHandler(Method::GET, "/[^_][^/]*/[^_].*", v1, &RESTListener::handleGetDoc);
-            addCollectionHandler(Method::PUT, "/[^_][^/]*/[^_].*", v1, &RESTListener::handleModifyDoc);
-            addCollectionHandler(Method::DELETE, "/[^_][^/]*/[^_].*", v1, &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::GET, "/[^_][^/]*/[^_].*", false, v1, &RESTListener::handleGetDoc);
+            addCollectionHandler(Method::PUT, "/[^_][^/]*/[^_].*", true, v1, &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::DELETE, "/[^_][^/]*/[^_].*", true, v1, &RESTListener::handleModifyDoc);
         }
         if ( config.apis & kC4SyncAPI ) {
-            addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", v1, &RESTListener::handleSync);
+            addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", false, v1, &RESTListener::handleSync);
         }
 
         _server->start(config.port, config.networkInterface, createTLSContext(config.tlsConfig).get());
@@ -251,24 +253,19 @@ namespace litecore::REST {
         _server->addHandler(method, uri, vers, bind(handler, this, _1));
     }
 
-    void RESTListener::addDBHandler(Method method, const char* uri, APIVersion vers, DBHandlerMethod handler) {
-        _server->addHandler(method, uri, vers, [this, handler](RequestResponse& rq) {
-            Retained<C4Database> db = getDatabase(rq, rq.path(0));
-            if ( db ) {
-                C4Database::WithClientMutex with(db);
-                (this->*handler)(rq, db);
-            }
+    void RESTListener::addDBHandler(Method method, const char* uri, bool writeable, APIVersion vers,
+                                    DBHandlerMethod handler) {
+        _server->addHandler(method, uri, vers, [=, this](RequestResponse& rq) {
+            BorrowedDatabase db = getDatabase(rq, rq.path(0), writeable);
+            if ( db ) (this->*handler)(rq, db);
         });
     }
 
-    void RESTListener::addCollectionHandler(Method method, const char* uri, APIVersion vers,
+    void RESTListener::addCollectionHandler(Method method, const char* uri, bool writeable, APIVersion vers,
                                             CollectionHandlerMethod handler) {
-        _server->addHandler(method, uri, vers, [this, handler](RequestResponse& rq) {
-            auto [db, collection] = collectionFor(rq);
-            if ( db ) {
-                C4Database::WithClientMutex with(db);
-                (this->*handler)(rq, collection);
-            }
+        _server->addHandler(method, uri, vers, [=, this](RequestResponse& rq) {
+            auto [db, collection] = collectionFor(rq, writeable);
+            if ( db ) (this->*handler)(rq, collection);
         });
     }
 
@@ -287,21 +284,21 @@ namespace litecore::REST {
 
     bool RESTListener::collectionGiven(RequestResponse& rq) { return !!slice(rq.path(0)).findByte('.'); }
 
-    Retained<C4Database> RESTListener::getDatabase(RequestResponse& rq, const string& dbName) {
-        Retained<C4Database> db = databaseNamed(dbName);
+    BorrowedDatabase RESTListener::getDatabase(RequestResponse& rq, const string& dbName, bool writeable) {
+        BorrowedDatabase db = databaseNamed(dbName, writeable);
         if ( !db ) {
             if ( isValidDatabaseName(dbName) ) rq.respondWithStatus(HTTPStatus::NotFound, "No such database");
             else
-                rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid databasename");
+                rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
         }
         return db;
     }
 
     // returning the retained db is necessary because retaining a collection does not retain its db!
-    pair<Retained<C4Database>, C4Collection*> RESTListener::collectionFor(RequestResponse& rq) {
+    pair<BorrowedDatabase, C4Collection*> RESTListener::collectionFor(RequestResponse& rq, bool writeable) {
         string keySpace     = rq.path(0);
         auto [dbName, spec] = parseKeySpace(keySpace);
-        auto db             = getDatabase(rq, dbName);
+        BorrowedDatabase db = getDatabase(rq, dbName, writeable);
         if ( !db ) return {};
         if ( !spec.name.buf ) spec.name = kC4DefaultCollectionName;
         C4Collection* collection;
@@ -315,7 +312,7 @@ namespace litecore::REST {
             rq.respondWithStatus(HTTPStatus::NotFound, "No such collection");
             return {};
         }
-        return {db, collection};
+        return {std::move(db), collection};
     }
 
 }  // namespace litecore::REST

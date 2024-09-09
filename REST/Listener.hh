@@ -22,6 +22,8 @@
 #include <vector>
 
 namespace litecore::REST {
+    class DatabasePool;
+    class BorrowedDatabase;
 
     /** Abstract superclass of network listeners that can serve access to databases.
         Subclassed by RESTListener. */
@@ -66,7 +68,7 @@ namespace litecore::REST {
         bool unregisterCollection(const std::string& name, CollectionSpec collection);
 
         /** Returns the database registered under the given name. */
-        fleece::Retained<C4Database> databaseNamed(const std::string& name) const;
+        BorrowedDatabase databaseNamed(const std::string& name, bool writeable) const;
 
         /** Returns the name a database is registered under. */
         std::optional<std::string> nameOfDatabase(C4Database* NONNULL) const;
@@ -81,10 +83,10 @@ namespace litecore::REST {
         virtual int activeConnectionCount() = 0;
 
       protected:
-        mutable std::mutex                                  _mutex;
-        Config                                              _config;
-        std::map<std::string, fleece::Retained<C4Database>> _databases;
-        std::map<std::string, std::vector<CollectionSpec>>  _allowedCollections;
+        mutable std::mutex                                 _mutex;
+        Config                                             _config;
+        std::map<std::string, DatabasePool>                _databases;
+        std::map<std::string, std::vector<CollectionSpec>> _allowedCollections;
     };
 
 }  // namespace litecore::REST

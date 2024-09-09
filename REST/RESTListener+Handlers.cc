@@ -13,6 +13,7 @@
 // Reference: <https://docs.couchbase.com/sync-gateway/current/rest-api.html>
 
 #include "RESTListener.hh"
+#include "DatabasePool.hh"
 #include "c4Private.h"
 #include "c4Collection.hh"
 #include "c4Document.hh"
@@ -100,16 +101,16 @@ namespace litecore::REST {
     void RESTListener::handleCreateDatabase(RequestResponse& rq) {
         string keySpace     = rq.path(0);
         auto [dbName, spec] = parseKeySpace(keySpace);
-        auto db             = databaseNamed(dbName);
         if ( !collectionGiven(rq) ) {
             // No collection given: create database:
             if ( !_allowCreateDB ) return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create databases");
-            if ( db ) return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
+            if ( databaseNamed(dbName, false) )
+                return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
             FilePath path;
             if ( !pathFromDatabaseName(dbName, path) )
                 return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
 
-            db = C4Database::openNamed(dbName, {slice(path.dirName()), kC4DB_Create});
+            auto db = C4Database::openNamed(dbName, {slice(path.dirName()), kC4DB_Create});
             _c4db_setDatabaseTag(db, DatabaseTag_RESTListener);
             registerDatabase(db, dbName);
 
@@ -119,6 +120,7 @@ namespace litecore::REST {
             // Create collection in database:
             if ( !_allowCreateCollection )
                 return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create collections");
+            auto db = databaseNamed(dbName, true);
             if ( !db ) return rq.respondWithStatus(HTTPStatus::NotFound, "No such database");
             if ( db->getCollection(spec) )
                 return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Collection exists");

@@ -11,6 +11,7 @@
 //
 
 #include "Listener.hh"
+#include "DatabasePool.hh"
 #include "c4Database.hh"
 #include "c4ListenerInternal.hh"
 #include "Error.hh"
@@ -77,7 +78,7 @@ namespace litecore::REST {
     bool Listener::unregisterDatabase(C4Database* db) {
         lock_guard<mutex> lock(_mutex);
         for ( auto i = _databases.begin(); i != _databases.end(); ++i ) {
-            if ( i->second == db ) {
+            if ( i->second.sameAs(db) ) {
                 _databases.erase(i);
                 return true;
             }
@@ -116,19 +117,17 @@ namespace litecore::REST {
         return false;
     }
 
-    Retained<C4Database> Listener::databaseNamed(const string& name) const {
+    BorrowedDatabase Listener::databaseNamed(const string& name, bool writeable) const {
         lock_guard<mutex> lock(_mutex);
         auto              i = _databases.find(name);
-        if ( i == _databases.end() ) return nullptr;
-        // Retain the database to avoid a race condition if it gets unregistered while this
-        // thread's handler is still using it.
-        return i->second;
+        if ( i == _databases.end() ) return {};
+        return const_cast<DatabasePool&>(i->second).borrow();
     }
 
     optional<string> Listener::nameOfDatabase(C4Database* db) const {
         lock_guard<mutex> lock(_mutex);
-        for ( auto& [aName, aDB] : _databases )
-            if ( aDB == db ) return aName;
+        for ( auto& [aName, aPool] : _databases )
+            if ( aPool.sameAs(db) ) return aName;
         return nullopt;
     }
 

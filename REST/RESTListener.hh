@@ -49,6 +49,9 @@ namespace litecore::REST {
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
 
+      /** Returns the collection for this request, or null on error */
+      std::pair<BorrowedDatabase, C4Collection*> collectionFor(RequestResponse&, bool writeable);
+
         /// Starts a replication, just like a POST to `/_replicate`.
         /// On failure, throws a litecore::error with domain WebSocketDomain.
         /// @param params  The same parameters as the request body to `/_replicate`.
@@ -106,12 +109,10 @@ namespace litecore::REST {
 
         Server* server() const { return _server.get(); }
 
-        Retained<C4Database> getDatabase(RequestResponse& rq, const std::string& dbName);
+        BorrowedDatabase getDatabase(RequestResponse& rq, const std::string& dbName, bool writeable);
 
-        /** Returns the collection for this request, or null on error */
-        std::pair<Retained<C4Database>, C4Collection*> collectionFor(RequestResponse&);
-        unsigned                                       registerTask(Task*);
-        void                                           unregisterTask(Task*);
+        unsigned                                   registerTask(Task*);
+        void                                       unregisterTask(Task*);
 
         using APIVersion              = Server::APIVersion;
         using HandlerMethod           = void (RESTListener::*)(RequestResponse&);
@@ -119,8 +120,8 @@ namespace litecore::REST {
         using CollectionHandlerMethod = void (RESTListener::*)(RequestResponse&, C4Collection*);
 
         void addHandler(net::Method, const char* uri, APIVersion, HandlerMethod);
-        void addDBHandler(net::Method, const char* uri, APIVersion, DBHandlerMethod);
-        void addCollectionHandler(net::Method, const char* uri, APIVersion, CollectionHandlerMethod);
+        void addDBHandler(net::Method, const char* uri, bool writeable, APIVersion, DBHandlerMethod);
+        void addCollectionHandler(net::Method, const char* uri, bool writeable, APIVersion, CollectionHandlerMethod);
 
         std::vector<net::Address> _addresses(C4Database* dbOrNull = nullptr, C4ListenerAPIs api = kC4RESTAPI) const;
 

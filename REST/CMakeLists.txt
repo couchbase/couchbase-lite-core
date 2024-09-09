@@ -24,6 +24,9 @@ set(
     ALL_SRC_FILES
     c4Listener+RESTFactory.cc
     c4Listener.cc
+    CertRequest.cc
+    DatabasePool.cc
+    DatabasePool.hh
     Listener.cc
     netUtils.cc
     Request.cc
@@ -35,7 +38,6 @@ set(
     REST_CAPI.cc
     Server.cc
     EE/RESTSyncListener_stub.cc
-    CertRequest.cc
 )
 
 ### STATIC LIBRARY:

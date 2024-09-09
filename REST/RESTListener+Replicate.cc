@@ -11,6 +11,7 @@
 //
 
 #include "RESTListener.hh"
+#include "DatabasePool.hh"
 #include "c4Database.hh"
 #include "c4Replicator.hh"
 #include "c4ListenerInternal.hh"
@@ -238,7 +239,7 @@ namespace litecore::REST {
         } else {
             return {HTTPStatus::BadRequest, "Neither source nor target is a local database name", nullptr};
         }
-        Retained<C4Database> localDB = databaseNamed(localName.asString());
+        BorrowedDatabase localDB = databaseNamed(localName.asString(), pullMode >= kC4OneShot);
         if ( !localDB ) return {HTTPStatus::NotFound, "", nullptr};
         C4Address remoteAddress;
         slice     remoteDbName;
