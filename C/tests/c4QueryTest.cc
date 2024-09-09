@@ -779,7 +779,22 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
             auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
             REQUIRE(c4coll_createIndex(defaultColl, C4STR("likes"), C4STR("[[\".likes\"]]"), kC4JSONQuery,
                                        kC4ArrayIndex, nullptr, nullptr));
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("phone"), C4STR("contact.phone"), kC4N1QLQuery, kC4ArrayIndex,
+                                       nullptr, nullptr));
         }
+
+        // Two UNNESTs for two array properties.
+        compileSelect(json5("{WHAT: ['.person._id', '.phone'],\
+                              FROM: [{as: 'person'}, \
+                                     {as: 'like', unnest: ['.person.likes']},\
+                                     {as: 'phone', unnest: ['.person.contact.phone']}],\
+                             WHERE: ['=', ['.like'], 'climbing'],\
+                          ORDER_BY: [['.person.name.first']]}"));
+        checkExplanation(withIndex);
+        CHECK(run2()
+              == (vector<string>{"0000021, 802-4827967", "0000017, 315-7142142", "0000017, 315-0405535",
+                                 "0000045, 501-7977106", "0000045, 501-7138486"}));
+
         compileSelect(json5("{WHAT: ['.person._id'],\
                               FROM: [{as: 'person'}, \
                                      {as: 'like', unnest: ['.person.likes']}],\
@@ -819,6 +834,8 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
             C4Log("-------- Repeating with index --------");
             REQUIRE(c4db_createIndex(db, C4STR("shapes"), C4STR("[[\".shapes\"], [\".color\"]]"), kC4ArrayIndex,
                                      nullptr, nullptr));
+            REQUIRE(c4db_createIndex2(db, C4STR("shapes2"), C4STR("shapes, concat(color, to_string(size))"),
+                                      kC4N1QLQuery, kC4ArrayIndex, nullptr, nullptr));
         }
         compileSelect(json5("{WHAT: ['.shape.color'],\
                           DISTINCT: true,\
@@ -840,7 +857,46 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
                              WHERE: ['=', ['.shape.color'], 'red']}"));
         checkExplanation(withIndex);
         CHECK(run() == (vector<string>{"11"}));
+
+        compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}],\
+                             WHERE: ['=', ['concat()', ['.shape.color'], ['to_string()',['.shape.size']]], 'red3']}"));
+        checkExplanation(withIndex);
+        CHECK(run() == (vector<string>{"3"}));
     }
+}
+
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
+    deleteDatabase();
+    db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    importJSONLines(sFixturesDir + "students.json");
+
+    compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'], ['.student.id'], ['.student.class'], ['.interest']],"
+                        " FROM: [{as: 'doc'},"
+                        "        {as: 'student', unnest: ['.doc.students']},"
+                        "        {as: 'interest', unnest: ['.student.interests']}]"
+                        "}"));
+    vector<string> results{
+            "Univ of Michigan, student_112, 3, violin",     "Univ of Michigan, student_112, 3, baseball",
+            "Univ of Michigan, student_189, 2, violin",     "Univ of Michigan, student_189, 2, tennis",
+            "Univ of Michigan, student_1209, 3, art",       "Univ of Michigan, student_1209, 3, writing",
+            "Univ of Pennsylvania, student_112, 3, piano",  "Univ of Pennsylvania, student_112, 3, swimming",
+            "Univ of Pennsylvania, student_189, 2, violin", "Univ of Pennsylvania, student_189, 2, movies"};
+
+    CHECK(run2(nullptr, 4) == results);
+
+    deleteDatabase();
+    db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    // The only difference from "students.json" is that there is an extra property from student to interests.
+    importJSONLines(sFixturesDir + "students2.json");
+
+    compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'], ['.student.id'], ['.student.class'], ['.interest']],"
+                        " FROM: [{as: 'doc'},"
+                        "        {as: 'student', unnest: ['.doc.students']},"
+                        "        {as: 'interest', unnest: ['.student.extra.interests']}]"
+                        "}"));
+    CHECK(run2(nullptr, 4) == results);
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {

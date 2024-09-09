@@ -89,15 +89,21 @@ class C4QueryTest : public C4Test {
         });
     }
 
-    // Runs query, returning vector of doc IDs
-    std::vector<std::string> run2(const char* bindings = nullptr) {
+    // Runs query, returning vector of rows. Columns are comma separated.
+    std::vector<std::string> run2(const char* bindings = nullptr, unsigned colnCount = 2) {
+        REQUIRE(colnCount >= 2);
         return runCollecting<std::string>(bindings, [&](C4QueryEnumerator* e) {
-            REQUIRE(FLArrayIterator_GetCount(&e->columns) >= 2);
-            fleece::alloc_slice c1 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 0));
-            fleece::alloc_slice c2 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 1));
-            if ( e->missingColumns & 1 ) c1 = "MISSING"_sl;
-            if ( e->missingColumns & 2 ) c2 = "MISSING"_sl;
-            return c1.asString() + ", " + c2.asString();
+            REQUIRE(FLArrayIterator_GetCount(&e->columns) >= colnCount);
+            std::string res;
+            for ( unsigned c = 0; c < colnCount; ++c ) {
+                if ( c > 0 ) res = res + ", ";
+                if ( e->missingColumns & (1 << c) ) res += "MISSING";
+                else {
+                    fleece::alloc_slice c1 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, c));
+                    res += c1.asString();
+                }
+            }
+            return res;
         });
     }
 
