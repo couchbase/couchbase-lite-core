@@ -153,7 +153,6 @@ namespace litecore::REST {
 
     void RequestResponse::sendStatus() {
         if ( _sentStatus ) return;
-        Log("Response status: %d", static_cast<int>(_status));
         if ( _statusMessage.empty() ) {
             const char* defaultMessage = StatusMessage(_status);
             if ( defaultMessage ) _statusMessage = defaultMessage;
@@ -276,7 +275,6 @@ namespace litecore::REST {
     void RequestResponse::setContentLength(uint64_t length) {
         Assert(_contentLength < 0, "Content-Length has already been set");
         Assert(!_chunked);
-        Log("Content-Length: %" PRIu64, length);
         _contentLength = (int64_t)length;
         setHeader("Content-Length", _contentLength);
     }

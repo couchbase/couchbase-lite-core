@@ -184,7 +184,6 @@ namespace litecore::REST {
         RequestResponse rq(this, std::move(responder));
         if ( rq.isValid() && !rq.socketError() ) {
             dispatchRequest(&rq);
-            rq.finish();
         }
     }
 
@@ -263,6 +262,7 @@ namespace litecore::REST {
             rq->setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
         }
 
+        rq->finish();
         c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(), rq->status());
     }
 
