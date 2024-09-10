@@ -12,6 +12,7 @@
 
 #include "DatabasePool.hh"
 #include "Error.hh"
+#include "FilePath.hh"
 
 namespace litecore::REST {
     using namespace std;
@@ -31,7 +32,12 @@ namespace litecore::REST {
         }
     }
 
-    DatabasePool::~DatabasePool() { closeAll(); }
+    DatabasePool::~DatabasePool() {
+        closeAll();
+        if ( _readwrite ) _readwrite->close();
+    }
+
+    FilePath DatabasePool::databasePath() const { return FilePath{_dbDir, _dbName + kC4DatabaseFilenameExtension}; }
 
     unsigned DatabasePool::capacity() const noexcept {
         unique_lock lock(_mutex);
@@ -85,8 +91,11 @@ namespace litecore::REST {
     }
 
     void DatabasePool::_closeUnused() {
-        _roTotal -= _readonly.size();
-        _readonly.clear();
+        for ( auto i = _readonly.begin(); i != _readonly.end(); ) {
+            (*i)->close();
+            i = _readonly.erase(i);
+            --_roTotal;
+        }
     }
 
     // Allocates a new C4Database.
@@ -166,5 +175,14 @@ namespace litecore::REST {
         std::swap(_db, b._db);
         return *this;
     }
+
+    void BorrowedDatabase::reset() {
+        if ( _pool ) {
+            _pool->returnDatabase(_db);
+            _pool = nullptr;
+            _db   = nullptr;
+        }
+    }
+
 
 }  // namespace litecore::REST

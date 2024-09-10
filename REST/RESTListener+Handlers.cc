@@ -12,6 +12,8 @@
 
 // Reference: <https://docs.couchbase.com/sync-gateway/current/rest-api.html>
 
+#include <c4ListenerInternal.hh>
+
 #include "RESTListener.hh"
 #include "DatabasePool.hh"
 #include "c4Private.h"
@@ -129,25 +131,20 @@ namespace litecore::REST {
         }
     }
 
-    void RESTListener::handleDeleteDatabase(RequestResponse& rq, C4Collection* coll) {
-        auto db = coll->getDatabase();
+    void RESTListener::handleDeleteDatabase(RequestResponse& rq) {
         if ( !collectionGiven(rq) ) {
             // No collection given; delete database:
             if ( !_allowDeleteDB ) return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete databases");
-            optional<string> dbName = nameOfDatabase(db);
-            if ( !dbName ) return rq.respondWithStatus(HTTPStatus::NotFound);
-            if ( !unregisterDatabase(*dbName) ) return rq.respondWithStatus(HTTPStatus::NotFound);
-            try {
-                db->closeAndDeleteFile();
-            } catch ( ... ) {
-                registerDatabase(db, *dbName);
-                rq.respondWithError(C4Error::fromCurrentException());
-            }
-
+            string             dbName = rq.path(0);
+            optional<FilePath> path   = pathOfDatabaseNamed(dbName);
+            if ( !path || !unregisterDatabase(dbName) ) return rq.respondWithStatus(HTTPStatus::NotFound);
+            if ( string pathStr(*path); !C4Database::deleteAtPath(pathStr) )
+                c4log(ListenerLog, kC4LogWarning, "Unable to delete db at %s", pathStr.c_str());
         } else {
             // Delete scope/collection:
             if ( !_allowDeleteCollection )
                 return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete collections");
+            auto [db, coll] = collectionFor(rq, true);
             db->deleteCollection(coll->getSpec());
         }
     }

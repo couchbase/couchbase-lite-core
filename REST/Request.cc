@@ -127,7 +127,7 @@ namespace litecore::REST {
 #pragma mark - REQUESTRESPONSE:
 
     RequestResponse::RequestResponse(RequestResponse&&) noexcept = default;
-    RequestResponse::~RequestResponse()                 = default;
+    RequestResponse::~RequestResponse()                          = default;
 
     RequestResponse::RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket> socket)
         : _server(server), _socket(std::move(socket)) {

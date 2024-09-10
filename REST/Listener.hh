@@ -50,6 +50,9 @@ namespace litecore::REST {
             be valid according to isValidDatabaseName(). */
         static std::string databaseNameFromPath(const FilePath&);
 
+        /** Returns the filesystem path of the database registered under the given name. */
+        std::optional<FilePath> pathOfDatabaseNamed(const std::string& name);
+
         /** Makes a database visible via the REST API.
             Retains the C4Database; the caller does not need to keep a reference to it. */
         bool registerDatabase(C4Database* NONNULL, std::optional<std::string> name = std::nullopt);
@@ -83,6 +86,8 @@ namespace litecore::REST {
         virtual int activeConnectionCount() = 0;
 
       protected:
+        DatabasePool* _databasePoolNamed(const std::string& name) const;
+
         mutable std::mutex                                 _mutex;
         Config                                             _config;
         std::map<std::string, DatabasePool>                _databases;

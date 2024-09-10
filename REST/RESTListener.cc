@@ -75,7 +75,7 @@ namespace litecore::REST {
             // Database:
             addCollectionHandler(Method::GET, "/*", false, v1, &RESTListener::handleGetDatabase);
             addHandler(Method::PUT, "/*", v1, &RESTListener::handleCreateDatabase);
-            addCollectionHandler(Method::DELETE, "/*", true, v1, &RESTListener::handleDeleteDatabase);
+            addHandler(Method::DELETE, "/*", v1, &RESTListener::handleDeleteDatabase);
             addCollectionHandler(Method::POST, "/*", true, v1, &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:

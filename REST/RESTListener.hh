@@ -144,7 +144,7 @@ namespace litecore::REST {
 
         void handleGetDatabase(RequestResponse&, C4Collection*);
         void handleCreateDatabase(RequestResponse&);
-        void handleDeleteDatabase(RequestResponse&, C4Collection*);
+        void handleDeleteDatabase(RequestResponse&);
 
         void handleGetAllDocs(RequestResponse&, C4Collection*);
         void handleGetDoc(RequestResponse&, C4Collection*);

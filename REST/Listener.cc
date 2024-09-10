@@ -117,12 +117,24 @@ namespace litecore::REST {
         return false;
     }
 
+    DatabasePool* Listener::_databasePoolNamed(const std::string& name) const {
+        auto i = _databases.find(name);
+        if ( i == _databases.end() ) return nullptr;
+        return const_cast<DatabasePool*>(&i->second);
+    }
+
+    optional<FilePath> Listener::pathOfDatabaseNamed(const std::string& name) {
+        lock_guard<mutex> lock(_mutex);
+        if ( auto pool = _databasePoolNamed(name) ) return pool->databasePath();
+        else
+            return nullopt;
+    }
+
     BorrowedDatabase Listener::databaseNamed(const string& name, bool writeable) const {
         lock_guard<mutex> lock(_mutex);
-        auto              i = _databases.find(name);
-        if ( i == _databases.end() ) return {};
-        auto& pool = const_cast<DatabasePool&>(i->second);
-        return writeable ? pool.borrowWriteable() : pool.borrow();
+        if ( auto pool = _databasePoolNamed(name) ) return writeable ? pool->borrowWriteable() : pool->borrow();
+        else
+            return {};
     }
 
     optional<string> Listener::nameOfDatabase(C4Database* db) const {

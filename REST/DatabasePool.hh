@@ -16,6 +16,10 @@
 #include <functional>
 #include <mutex>
 
+namespace litecore {
+    class FilePath;
+}
+
 namespace litecore::REST {
     class BorrowedDatabase;
 
@@ -29,6 +33,9 @@ namespace litecore::REST {
 
         /// The destructor waits until all borrowed databases have been returned.
         ~DatabasePool();
+
+        /// The filesystem path of the database.
+        FilePath databasePath() const;
 
         /// The maximum number of databases the pool will create, including one writeable one.
         /// Defaults to 5. Minimum value is 2 (otherwise why are you using a pool at all?)
@@ -132,9 +139,12 @@ namespace litecore::REST {
 
         C4Database* get() & noexcept { return _db; }
 
-        C4Database* operator->() & noexcept { return _db; }
+        C4Database* operator->() noexcept { return _db; }
 
         operator C4Database*() & noexcept { return _db; }
+
+        /// Returns the database to the pool.
+        void reset();
 
       protected:
         friend class DatabasePool;
