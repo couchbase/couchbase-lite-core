@@ -315,13 +315,15 @@ namespace litecore {
     }
 
     fleece::impl::SharedKeys* DataFile::documentKeys() const {
-        auto keys = _documentKeys.get();
-        if ( !keys && _options.useDocumentKeys ) {
-            auto mutableThis = const_cast<DataFile*>(this);
-            keys             = new DocumentKeys(*mutableThis);
-            _documentKeys    = keys;
-        }
-        return keys;
+        std::call_once(_documentKeysOnce, [this] {
+            auto keys = _documentKeys.get();
+            if ( !keys && _options.useDocumentKeys ) {
+                auto mutableThis = const_cast<DataFile*>(this);
+                keys             = new DocumentKeys(*mutableThis);
+                _documentKeys    = keys;
+            }
+        });
+        return _documentKeys.get();
     }
 
 #pragma mark - QUERIES:
