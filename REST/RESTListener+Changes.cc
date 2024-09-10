@@ -66,7 +66,7 @@ namespace litecore::REST {
 
         void runImmediate(C4Collection* coll) {
             _rq.uncacheable();
-            _rq.setHeader("Connection", "close"); // request is disconnected from Server
+            _rq.setHeader("Connection", "close");  // request is disconnected from Server
             if ( _feed == unknown ) {
                 _rq.respondWithStatus(HTTPStatus::BadRequest, "unsupported feed type");
                 _rq.finish();
@@ -80,7 +80,8 @@ namespace litecore::REST {
             }
 
             _lastSequence = coll->getLastSequence();
-            C4SequenceNumber since = _rq.query("since") == "now" ? _lastSequence : C4SequenceNumber(_rq.uintQuery("since"));
+            C4SequenceNumber since =
+                    _rq.query("since") == "now" ? _lastSequence : C4SequenceNumber(_rq.uintQuery("since"));
             if ( since < _lastSequence ) {
                 C4DocEnumerator e(coll, since, {_enumFlags});
                 while ( _limit > 0 && e.next() ) {
@@ -181,10 +182,10 @@ namespace litecore::REST {
                 if ( _rq.finished() ) return;
                 bumpTimeUpdated();
 
-                BorrowedDatabase db;
-                C4Collection* coll = nullptr;
-                C4DatabaseObserver::Change  c4changes[100];
-                auto                        prevLastSequence = _lastSequence;
+                BorrowedDatabase           db;
+                C4Collection*              coll = nullptr;
+                C4DatabaseObserver::Change c4changes[100];
+                auto                       prevLastSequence = _lastSequence;
                 while ( _limit > 0 ) {
                     auto                    maxChanges = std::min(size_t(_limit), std::size(c4changes));
                     C4CollectionObservation o          = _observer->getChanges(c4changes, uint32_t(maxChanges));
@@ -203,16 +204,15 @@ namespace litecore::REST {
                         if ( _enumFlags & kC4IncludeBodies ) {
                             if ( info.flags & kDocDeleted ) body = R"({"_deleted":true})";
                             else {
-                                if (!coll) {
+                                if ( !coll ) {
                                     tie(db, coll) = listener()->collectionFor(_rq, false);
-                                    if (!coll) {
+                                    if ( !coll ) {
                                         stop();
                                         return;
                                     }
                                 }
                                 auto doc = coll->getDocument(info.docID, false);
-                                if (doc && doc->revID() == info.revID )
-                                    body = doc->bodyAsJSON();
+                                if ( doc && doc->revID() == info.revID ) body = doc->bodyAsJSON();
                                 else
                                     continue;  // skip this rev since doc was apparently deleted/updated
                             }
@@ -250,8 +250,8 @@ namespace litecore::REST {
         }
 
         RequestResponse                  _rq;              // The HTTP request+response
-        string _keyspace; // Scope.collection
-        C4SequenceNumber                 _lastSequence {}; // Collection's last sequence number
+        string                           _keyspace;        // Scope.collection
+        C4SequenceNumber                 _lastSequence{};  // Collection's last sequence number
         uint64_t                         _limit;           // The ?limit param: Max number of changes to return
         C4EnumeratorFlags                _enumFlags;       // Based on ?descending, ?active_only, ?include_docs
         FeedType                         _feed = unknown;  // The ?feed parameter

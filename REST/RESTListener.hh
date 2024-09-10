@@ -49,8 +49,8 @@ namespace litecore::REST {
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
 
-      /** Returns the collection for this request, or null on error */
-      std::pair<BorrowedDatabase, C4Collection*> collectionFor(RequestResponse&, bool writeable);
+        /** Returns the collection for this request, or null on error */
+        std::pair<BorrowedDatabase, C4Collection*> collectionFor(RequestResponse&, bool writeable);
 
         /// Starts a replication, just like a POST to `/_replicate`.
         /// On failure, throws a litecore::error with domain WebSocketDomain.
@@ -111,8 +111,8 @@ namespace litecore::REST {
 
         BorrowedDatabase getDatabase(RequestResponse& rq, const std::string& dbName, bool writeable);
 
-        unsigned                                   registerTask(Task*);
-        void                                       unregisterTask(Task*);
+        unsigned registerTask(Task*);
+        void     unregisterTask(Task*);
 
         using APIVersion              = Server::APIVersion;
         using HandlerMethod           = void (RESTListener::*)(RequestResponse&);

@@ -12,7 +12,7 @@
 
 #include "Request.hh"
 #include "HTTPLogic.hh"
-#include "c4ListenerInternal.hh" // for ListenerLog
+#include "c4ListenerInternal.hh"  // for ListenerLog
 #include "Error.hh"
 #include "netUtils.hh"
 #include "Server.hh"
@@ -379,8 +379,8 @@ namespace litecore::REST {
         if ( _jsonEncoder ) {
             alloc_slice json = _jsonEncoder->finish();
             if ( !json ) {
-                c4log(ListenerLog, kC4LogError, "HTTP handler failed to encode JSON response: %s (%d)", _jsonEncoder->errorMessage(),
-                          _jsonEncoder->error());
+                c4log(ListenerLog, kC4LogError, "HTTP handler failed to encode JSON response: %s (%d)",
+                      _jsonEncoder->errorMessage(), _jsonEncoder->error());
                 respondWithStatus(HTTPStatus::ServerError, "Internal error");
                 return;
             }
