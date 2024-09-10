@@ -59,8 +59,6 @@ namespace litecore::REST {
         bool keepAlive() const;
 
       protected:
-        friend class Server;
-
         Request(Method, std::string path, std::string queries, websocket::Headers headers, fleece::alloc_slice body);
         Request() = default;
 
@@ -75,7 +73,8 @@ namespace litecore::REST {
     /** Incoming HTTP request (inherited from Request), plus setters for the response. */
     class RequestResponse : public Request {
       public:
-        RequestResponse(RequestResponse&&);
+        RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket>);
+        RequestResponse(RequestResponse&&) noexcept;
         ~RequestResponse();
 
         // Response status:
@@ -146,7 +145,6 @@ namespace litecore::REST {
         std::string peerAddress();
 
       protected:
-        RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket>);
         void sendStatus();
         void sendHeaders();
         void writeToSocket(fleece::slice);
@@ -154,8 +152,6 @@ namespace litecore::REST {
         void handleSocketError();
 
       private:
-        friend class Server;
-
         fleece::Retained<Server>              _server;
         std::unique_ptr<net::ResponderSocket> _socket;
         C4Error                               _error{};
