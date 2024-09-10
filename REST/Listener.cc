@@ -121,7 +121,8 @@ namespace litecore::REST {
         lock_guard<mutex> lock(_mutex);
         auto              i = _databases.find(name);
         if ( i == _databases.end() ) return {};
-        return const_cast<DatabasePool&>(i->second).borrow();
+        auto& pool = const_cast<DatabasePool&>(i->second);
+        return writeable ? pool.borrowWriteable() : pool.borrow();
     }
 
     optional<string> Listener::nameOfDatabase(C4Database* db) const {

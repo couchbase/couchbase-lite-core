@@ -20,6 +20,7 @@ namespace litecore::REST {
     DatabasePool::DatabasePool(C4Database* main)
         : _dbName(main->getName()), _dbConfig(main->getConfiguration()), _dbDir(_dbConfig.parentDirectory) {
         _dbConfig.parentDirectory = _dbDir;
+        _dbConfig.flags &= ~kC4DB_Create;
         if ( _dbConfig.flags & kC4DB_ReadOnly ) {
             _readonly.push_back(main);
             _roTotal = 1;
