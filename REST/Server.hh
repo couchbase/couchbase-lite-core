@@ -22,7 +22,6 @@
 #include <memory>
 #include <thread>
 #include <vector>
-#include <regex>
 
 namespace sockpp {
     class acceptor;
@@ -80,10 +79,10 @@ namespace litecore::REST {
         using Handler = std::function<void(RequestResponse&)>;
 
         /** Registers a handler function for a URI pattern.
-            Patterns use C++ regex syntax.
-            Multiple patterns can be joined with a "|".
+            A pattern looks like a path, where "*" can be used as a path component to denote any
+            name that doesn't start with "_".
             Patterns are tested in the order the handlers are added, and the first match is used.*/
-        void addHandler(net::Methods, string_view pattern, APIVersion, Handler const&);
+        void addHandler(net::Methods, string_view pattern, APIVersion, Handler);
 
         int connectionCount() { return _connectionCount; }
 
@@ -91,7 +90,6 @@ namespace litecore::REST {
         struct URIRule {
             net::Methods methods;
             std::string  pattern;
-            std::regex   regex;
             APIVersion   version;
             Handler      handler;
         };

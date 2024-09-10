@@ -53,7 +53,7 @@ namespace litecore::REST {
         slice  uri     = in.readToDelimiter(" "_sl);
         slice  http    = in.readToDelimiter("/"_sl);
         slice  version = in.readToDelimiter("\r\n"_sl);
-        if ( method == Method::None || uri.size == 0 || http != "HTTP"_sl ) return false;
+        if ( method == Method::None || !uri.hasPrefix('/') || http != "HTTP"_sl ) return false;
 
         if ( version == "1.1" ) _version = HTTP1_1;
         else if ( version == "1.0" )

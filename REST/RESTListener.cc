@@ -73,26 +73,25 @@ namespace litecore::REST {
             addHandler(Method::POST, "/_replicate", v1, &RESTListener::handleReplicate);
 
             // Database:
-            addCollectionHandler(Method::GET, "/[^_][^/]*|/[^_][^/]*/", false, v1, &RESTListener::handleGetDatabase);
-            addHandler(Method::PUT, "/[^_][^/]*|/[^_][^/]*/", v1, &RESTListener::handleCreateDatabase);
-            addCollectionHandler(Method::DELETE, "/[^_][^/]*|/[^_][^/]*/", true, v1,
-                                 &RESTListener::handleDeleteDatabase);
-            addCollectionHandler(Method::POST, "/[^_][^/]*|/[^_][^/]*/", true, v1, &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::GET, "/*", false, v1, &RESTListener::handleGetDatabase);
+            addHandler(Method::PUT, "/*", v1, &RESTListener::handleCreateDatabase);
+            addCollectionHandler(Method::DELETE, "/*", true, v1, &RESTListener::handleDeleteDatabase);
+            addCollectionHandler(Method::POST, "/*", true, v1, &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_all_docs", false, v1, &RESTListener::handleGetAllDocs);
-            addCollectionHandler(Method::POST, "/[^_][^/]*/_bulk_docs", true, v1, &RESTListener::handleBulkDocs);
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_changes", false, v1, &RESTListener::handleChanges);
-            addCollectionHandler(Method::GET, "/[^_][^/]*/_function/[^/]+", false, v1, &RESTListener::handleFunction);
-            addCollectionHandler(Method::POST, "/[^_][^/]*/_query", false, v1, &RESTListener::handleQuery);
+            addCollectionHandler(Method::GET, "/*/_all_docs", false, v1, &RESTListener::handleGetAllDocs);
+            addCollectionHandler(Method::POST, "/*/_bulk_docs", true, v1, &RESTListener::handleBulkDocs);
+            addCollectionHandler(Method::GET, "/*/_changes", false, v1, &RESTListener::handleChanges);
+            addCollectionHandler(Method::GET, "/*/_function/*", false, v1, &RESTListener::handleFunction);
+            addCollectionHandler(Method::POST, "/*/_query", false, v1, &RESTListener::handleQuery);
 
             // Document:
-            addCollectionHandler(Method::GET, "/[^_][^/]*/[^_].*", false, v1, &RESTListener::handleGetDoc);
-            addCollectionHandler(Method::PUT, "/[^_][^/]*/[^_].*", true, v1, &RESTListener::handleModifyDoc);
-            addCollectionHandler(Method::DELETE, "/[^_][^/]*/[^_].*", true, v1, &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::GET, "/*/*", false, v1, &RESTListener::handleGetDoc);
+            addCollectionHandler(Method::PUT, "/*/*", true, v1, &RESTListener::handleModifyDoc);
+            addCollectionHandler(Method::DELETE, "/*/*", true, v1, &RESTListener::handleModifyDoc);
         }
         if ( config.apis & kC4SyncAPI ) {
-            addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", false, v1, &RESTListener::handleSync);
+            addDBHandler(Method::UPGRADE, "/*/_blipsync", false, v1, &RESTListener::handleSync);
         }
 
         _server->start(config.port, config.networkInterface, createTLSContext(config.tlsConfig).get());

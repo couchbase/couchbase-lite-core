@@ -218,30 +218,36 @@ namespace litecore::REST {
         _extraHeaders = headers;
     }
 
-    void Server::addHandler(Methods methods, string_view patterns, APIVersion version, Handler const& handler) {
+    void Server::addHandler(Methods methods, string_view pattern, APIVersion version, Handler handler) {
         precondition(handler);
         lock_guard<mutex> lock(_mutex);
-        split(patterns, "|", [&](string_view pattern) {
-            _rules.push_back({.methods = methods,
-                              .pattern = string(pattern),
-                              .regex   = regex(pattern.data(), pattern.size()),
-                              .version = version,
-                              .handler = handler});
-        });
+        _rules.push_back(
+                {.methods = methods, .pattern = string(pattern), .version = version, .handler = std::move(handler)});
     }
 
     Server::URIRule* Server::findRule(Method method, const string& path) {
+        string pattern = "";
+        split(path, "/", [&](string_view component) {
+            if ( !component.empty() ) {
+                pattern += '/';
+                if ( component[0] == '_' ) pattern += component;
+                else
+                    pattern += '*';
+            }
+        });
+        if ( pattern.empty() ) pattern = "/";
+
         lock_guard<mutex> lock(_mutex);
         for ( auto& rule : _rules ) {
-            if ( (rule.methods & method) && regex_match(path.c_str(), rule.regex) ) return &rule;
+            if ( (rule.methods & method) && rule.pattern == pattern ) return &rule;
         }
         return nullptr;
     }
 
     void Server::dispatchRequest(RequestResponse& rq) {
         Method method = rq.method();
-        string uri  = rq.uri();
-        string peer = rq.peerAddress();
+        string uri    = rq.uri();
+        string peer   = rq.peerAddress();
 
         try {
             if ( method == Method::GET && rq.header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
@@ -291,8 +297,7 @@ namespace litecore::REST {
         rq.finish();
 
         if ( auto c = peer.rfind(':'); c != string::npos ) peer.resize(c);
-        c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(),
-              rq.status());
+        c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(), rq.status());
     }
 
     Server::APIVersion Server::APIVersion::parse(string_view str) {
