@@ -18,7 +18,6 @@
 #include "Server.hh"
 #include "TCPSocket.hh"
 #include "Writer.hh"
-#include "date/date.h"
 #include "slice_stream.hh"
 #include <chrono>
 #include <cinttypes>
@@ -156,8 +155,10 @@ namespace litecore::REST {
         }
 
         // Add standard headers:
-        auto tp = floor<seconds>(system_clock::now());
-        setHeader("Date", date::format("%a, %d %b %Y %H:%M:%S GMT", tp).c_str());
+        char   dateStr[100];
+        time_t t = time(nullptr);
+        strftime(dateStr, sizeof(dateStr), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&t));  // faster than date::format()
+        setHeader("Date", dateStr);
         setHeader("Server", ("CouchbaseLite/" + string(c4_getVersion())).c_str());
     }
 
