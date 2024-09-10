@@ -173,13 +173,17 @@ namespace litecore::REST {
                   responder->error().description().c_str());
             return;
         }
+
+        string peer = responder->peerAddress();
+        if ( auto c = peer.rfind(':'); c != string::npos ) peer.resize(c);  // suppress port #
+
         if ( c4log_willLog(ListenerLog, kC4LogVerbose) ) {
             auto cert = responder->peerTLSCertificate();
             if ( cert )
                 c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
                       responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
             else
-                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s", responder->peerAddress().c_str());
+                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s", peer.c_str());
         }
 
         // Now read one or more requests and write responses:
@@ -192,11 +196,15 @@ namespace litecore::REST {
                 c4log(ListenerLog, kC4LogWarning, "Closing socket due to invalid HTTP request");
                 break;
             }
-            bool keepAlive = rq.keepAlive();
+            auto   method    = rq.method();
+            string uri       = rq.uri();  // save it now, as it may be cleared if rq gets moved
+            bool   keepAlive = rq.keepAlive();
             if ( keepAlive && rq.httpVersion() == Request::HTTP1_0 ) rq.setHeader("Connection", "keep-alive");
 
             // Handle it!
             dispatchRequest(rq);
+            c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(),
+                  rq.status());
 
             // Either close, or take back the socket:
             if ( !keepAlive || rq.responseHeaders()["Connection"] == "close" ) {
@@ -205,8 +213,7 @@ namespace litecore::REST {
             }
             responder = rq.extractSocket();  // Get the socket back, unless it's been given to a WebSocket
             if ( !responder ) {
-                c4log(ListenerLog, kC4LogVerbose,
-                      "Exiting Server::handleConnection since a WebSocket has taken the socket");
+                c4log(ListenerLog, kC4LogVerbose, "Exiting Server::handleConnection since socket has been taken over");
                 break;
             }
         }
@@ -246,8 +253,6 @@ namespace litecore::REST {
 
     void Server::dispatchRequest(RequestResponse& rq) {
         Method method = rq.method();
-        string uri    = rq.uri();
-        string peer   = rq.peerAddress();
 
         try {
             if ( method == Method::GET && rq.header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
@@ -295,9 +300,6 @@ namespace litecore::REST {
         }
 
         rq.finish();
-
-        if ( auto c = peer.rfind(':'); c != string::npos ) peer.resize(c);
-        c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(), rq.status());
     }
 
     Server::APIVersion Server::APIVersion::parse(string_view str) {
