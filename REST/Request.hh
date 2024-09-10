@@ -52,6 +52,12 @@ namespace litecore::REST {
 
         std::string uri() const;
 
+        enum HTTPVersion { HTTP1_0, HTTP1_1 };
+
+        HTTPVersion httpVersion() const { return _version; }
+
+        bool keepAlive() const;
+
       protected:
         friend class Server;
 
@@ -63,6 +69,7 @@ namespace litecore::REST {
         Method      _method{Method::None};
         std::string _path;
         std::string _queries;
+        HTTPVersion _version;
     };
 
     /** Incoming HTTP request (inherited from Request), plus setters for the response. */
@@ -89,6 +96,8 @@ namespace litecore::REST {
         void setHeader(fleece::slice header, int64_t value) { setHeader(header, std::to_string(value)); }
 
         void addHeaders(const std::map<std::string, std::string>&);
+
+        websocket::Headers const& responseHeaders() const { return _responseHeaders; }
 
         /// Enables HTTP 'chunked' transfer encoding.
         void setChunked();
@@ -150,21 +159,17 @@ namespace litecore::REST {
         fleece::Retained<Server>              _server;
         std::unique_ptr<net::ResponderSocket> _socket;
         C4Error                               _error{};
-
-        std::vector<fleece::alloc_slice> _requestBody;
-
-        HTTPStatus  _status{HTTPStatus::OK};  // Response status code
-        std::string _statusMessage;           // Response custom status message
-        bool        _sentStatus{false};       // Sent the response line yet?
-
-        fleece::Writer     _responseHeaderWriter;
-        websocket::Headers _responseHeaders;
-        bool               _sentHeaders{false};  // True after headers are ended
-        int64_t            _contentLength{-1};   // Content-Length, once it's set
-        bool               _streaming{false};    // If true, content is being streamed, no Content-Length header
-        bool               _chunked{false};      // True if using chunked transfer encoding
-
-        fleece::Writer                       _responseWriter;   // Output stream for response body
+        std::vector<fleece::alloc_slice>      _requestBody;
+        HTTPStatus                            _status{HTTPStatus::OK};  // Response status code
+        std::string                           _statusMessage;           // Response custom status message
+        bool                                  _sentStatus{false};       // Sent the response line yet?
+        fleece::Writer                        _responseHeaderWriter;
+        websocket::Headers                    _responseHeaders;
+        bool                                  _sentHeaders{false};  // True after headers are ended
+        int64_t                               _contentLength{-1};   // Content-Length, once it's set
+        bool           _streaming{false};  // If true, content is being streamed, no Content-Length header
+        bool           _chunked{false};    // True if using chunked transfer encoding
+        fleece::Writer _responseWriter;    // Output stream for response body
         std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;      // Used for writing JSON to response
         fleece::alloc_slice                  _responseBody;     // Finished response body
         fleece::slice                        _unsentBody;       // Unsent portion of _responseBody

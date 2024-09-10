@@ -14,6 +14,7 @@
 // https://docs.couchdb.org/en/stable/api/database/changes.html
 
 #include "RESTListener.hh"
+#include "DatabasePool.hh"
 #include "Error.hh"
 #include "Timer.hh"
 #include "c4ListenerInternal.hh"
@@ -25,6 +26,7 @@
 #include "c4Observer.hh"
 #include "fleece/Expert.hh"
 #include <functional>
+#include <sys/socket.h>
 
 using namespace std;
 using namespace fleece;
@@ -44,13 +46,10 @@ namespace litecore::REST {
       public:
         enum FeedType { normal, longpoll, continuous, unknown };
 
-        explicit ChangesTask(RESTListener* listener, RequestResponse&& rq, C4Collection* coll)
+        explicit ChangesTask(RESTListener* listener, RequestResponse&& rq)
             : Task(listener)
             , _rq(std::move(rq))
-            , _coll(coll)
-            , _lastSequence{coll->getLastSequence()}
             , _limit{_rq.uintQuery("limit", INT64_MAX)}
-            , _since{_rq.query("since") == "now" ? _lastSequence : C4SequenceNumber(_rq.uintQuery("since"))}
             , _enumFlags{kC4IncludeNonConflicted | kC4IncludeDeleted} {
             if ( string feed = _rq.query("feed"); feed.empty() || feed == "normal" ) _feed = normal;
             else if ( feed == "longpoll" )
@@ -65,14 +64,14 @@ namespace litecore::REST {
 
         ~ChangesTask() { c4log(ListenerLog, kC4LogVerbose, "ChangesTask %p deleted", this); }
 
-        void runImmediate() {
+        void runImmediate(C4Collection* coll) {
             _rq.uncacheable();
+            _rq.setHeader("Connection", "close"); // request is disconnected from Server
             if ( _feed == unknown ) {
                 _rq.respondWithStatus(HTTPStatus::BadRequest, "unsupported feed type");
                 _rq.finish();
                 return;
-            }
-            if ( _feed == continuous ) {
+            } else if ( _feed == continuous ) {
                 _rq.setHeader("Content-Type", "text/plain; charset=utf-8");  // JSON-per-line is not technically JSON
                 _rq.setChunked();
             } else {
@@ -80,8 +79,10 @@ namespace litecore::REST {
                 _rq.write("{\"results\": [\n");
             }
 
-            if ( _since < _lastSequence ) {
-                C4DocEnumerator e(_coll, _since, {_enumFlags});
+            _lastSequence = coll->getLastSequence();
+            C4SequenceNumber since = _rq.query("since") == "now" ? _lastSequence : C4SequenceNumber(_rq.uintQuery("since"));
+            if ( since < _lastSequence ) {
+                C4DocEnumerator e(coll, since, {_enumFlags});
                 while ( _limit > 0 && e.next() ) {
                     alloc_slice body;
                     if ( _enumFlags & kC4IncludeBodies ) body = e.getDocument()->bodyAsJSON();
@@ -93,7 +94,7 @@ namespace litecore::REST {
                 // In continuous mode, we always wait for more changes.
                 // In longpoll mode, we wait if there are no changes yet.
                 _rq.flush();
-                wait();
+                wait(coll);
             } else {
                 _rq.printf("], \"last_seq\":%llu}", uint64_t(_lastSequence));
                 _rq.finish();
@@ -103,8 +104,8 @@ namespace litecore::REST {
         void writeDescription(fleece::JSONEncoder& json) override {
             Task::writeDescription(json);
             unique_lock lock(_mutex);
-            string_view queries = _rq.queries();
-            json.writeFormatted("type:'changes', queries:%.*s", int(queries.size()), queries.data());
+            string_view args = _rq.queries();
+            json.writeFormatted("type:'changes', args:%.*s", int(args.size()), args.data());
         }
 
         bool finished() const override {
@@ -145,8 +146,8 @@ namespace litecore::REST {
         }
 
         // Go into asynchronous mode, waiting for changes or timeout, possibly sending heartbeats.
-        void wait() {
-            _observer = C4CollectionObserver::create(_coll, [this](auto) { this->observeChange(); });
+        void wait(C4Collection* coll) {
+            _observer = C4CollectionObserver::create(coll, [this](auto) { this->observeChange(); });
             if ( string hb = _rq.query("heartbeat"); !hb.empty() ) {
                 // Set a heartbeat timer that sends a newline periodically:
                 uint64_t intervalMS = kDefaultHeartbeatMS;
@@ -171,7 +172,7 @@ namespace litecore::REST {
             registerTask();
         }
 
-        // Called when the collection has changed:
+        // Called (on some unknown thread) when the collection has changed.
         void observeChange() {
             c4log(ListenerLog, kC4LogVerbose, "ChangesTask %p got changes!", this);
             bool doStop = false;
@@ -180,7 +181,8 @@ namespace litecore::REST {
                 if ( _rq.finished() ) return;
                 bumpTimeUpdated();
 
-                C4Database::WithClientMutex with(_coll->getDatabase());
+                BorrowedDatabase db;
+                C4Collection* coll = nullptr;
                 C4DatabaseObserver::Change  c4changes[100];
                 auto                        prevLastSequence = _lastSequence;
                 while ( _limit > 0 ) {
@@ -200,11 +202,20 @@ namespace litecore::REST {
                         alloc_slice body;
                         if ( _enumFlags & kC4IncludeBodies ) {
                             if ( info.flags & kDocDeleted ) body = R"({"_deleted":true})";
-                            else if ( auto doc = _coll->getDocument(info.docID, false);
-                                      doc && doc->revID() == info.revID )
-                                body = doc->bodyAsJSON();
-                            else
-                                continue;  // skip this rev since doc was apparently deleted/updated
+                            else {
+                                if (!coll) {
+                                    tie(db, coll) = listener()->collectionFor(_rq, false);
+                                    if (!coll) {
+                                        stop();
+                                        return;
+                                    }
+                                }
+                                auto doc = coll->getDocument(info.docID, false);
+                                if (doc && doc->revID() == info.revID )
+                                    body = doc->bodyAsJSON();
+                                else
+                                    continue;  // skip this rev since doc was apparently deleted/updated
+                            }
                         }
                         writeChange(info, body);
                     }
@@ -239,9 +250,8 @@ namespace litecore::REST {
         }
 
         RequestResponse                  _rq;              // The HTTP request+response
-        Retained<C4Collection>           _coll;            // The collection
-        C4SequenceNumber                 _lastSequence;    // Collection's last sequence number
-        C4SequenceNumber const           _since;           // The ?since param: send sequences > this
+        string _keyspace; // Scope.collection
+        C4SequenceNumber                 _lastSequence {}; // Collection's last sequence number
         uint64_t                         _limit;           // The ?limit param: Max number of changes to return
         C4EnumeratorFlags                _enumFlags;       // Based on ?descending, ?active_only, ?include_docs
         FeedType                         _feed = unknown;  // The ?feed parameter
@@ -252,7 +262,9 @@ namespace litecore::REST {
     };
 
     void RESTListener::handleChanges(RequestResponse& rq, C4Collection* coll) {
-        auto task = make_retained<ChangesTask>(this, std::move(rq), coll);
-        task->runImmediate();
+        // Note: This moves the RequestResponse from `rq` to the ChangesTask's `_rq`.
+        // That means the Changestask takes ownership of the socket from the calling Server.
+        auto task = make_retained<ChangesTask>(this, std::move(rq));
+        task->runImmediate(coll);
     }
 }  // namespace litecore::REST

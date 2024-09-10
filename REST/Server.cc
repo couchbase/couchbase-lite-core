@@ -181,10 +181,36 @@ namespace litecore::REST {
             else
                 c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s", responder->peerAddress().c_str());
         }
-        RequestResponse rq(this, std::move(responder));
-        if ( rq.isValid() && !rq.socketError() ) {
-            dispatchRequest(&rq);
+
+        // Now read one or more requests and write responses:
+        c4log(ListenerLog, kC4LogVerbose, "Server handling socket connection...");
+        while ( true ) {
+            // Read HTTP request from socket:
+            RequestResponse rq(this, std::move(responder));
+            if ( rq.socketError() ) break;  // rq has already logged about it
+            if ( !rq.isValid() ) {
+                c4log(ListenerLog, kC4LogWarning, "Closing socket due to invalid HTTP request");
+                break;
+            }
+            bool keepAlive = rq.keepAlive();
+            if ( keepAlive && rq.httpVersion() == Request::HTTP1_0 ) rq.setHeader("Connection", "keep-alive");
+
+            // Handle it!
+            dispatchRequest(rq);
+
+            // Either close, or take back the socket:
+            if ( !keepAlive || rq.responseHeaders()["Connection"] == "close" ) {
+                c4log(ListenerLog, kC4LogVerbose, "No keep-alive; closing socket");
+                break;
+            }
+            responder = rq.extractSocket();  // Get the socket back, unless it's been given to a WebSocket
+            if ( !responder ) {
+                c4log(ListenerLog, kC4LogVerbose,
+                      "Exiting Server::handleConnection since a WebSocket has taken the socket");
+                break;
+            }
         }
+        c4log(ListenerLog, kC4LogVerbose, "Server finished with socket connection");
     }
 
     void Server::setExtraHeaders(const std::map<std::string, std::string>& headers) {
@@ -212,58 +238,61 @@ namespace litecore::REST {
         return nullptr;
     }
 
-    void Server::dispatchRequest(RequestResponse* rq) {
-        Method method = rq->method();
-        if ( method == Method::GET && rq->header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
-        string uri  = rq->uri();
-        string peer = rq->peerAddress();
-        if ( auto c = peer.rfind(':'); c != string::npos ) peer.resize(c);
+    void Server::dispatchRequest(RequestResponse& rq) {
+        Method method = rq.method();
+        string uri  = rq.uri();
+        string peer = rq.peerAddress();
 
-        if ( !_authenticator || _authenticator(rq->header("Authorization")) ) {
-            ++_connectionCount;
-            Retained<Server> retainedSelf = this;
-            rq->onClose([=] { --retainedSelf->_connectionCount; });
+        try {
+            if ( method == Method::GET && rq.header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
 
-            try {
-                string pathStr(rq->path());
+            if ( !_authenticator || _authenticator(rq.header("Authorization")) ) {
+                ++_connectionCount;
+                Retained<Server> retainedSelf = this;
+                rq.onClose([=] { --retainedSelf->_connectionCount; });
+
+                string pathStr(rq.path());
                 auto   rule = findRule(method, pathStr);
                 if ( rule ) {
                     // Found a rule; check the version:
                     c4log(ListenerLog, kC4LogVerbose, "Matched rule %s for path %s", rule->pattern.c_str(),
                           pathStr.c_str());
-                    APIVersion rqVers = APIVersion::parse(rq->header("API-Version"));
+                    APIVersion rqVers = APIVersion::parse(rq.header("API-Version"));
                     if ( rqVers.major < rule->version.major )
-                        rq->respondWithStatus(HTTPStatus::BadRequest, "Version too old");
+                        rq.respondWithStatus(HTTPStatus::BadRequest, "Version too old");
                     else if ( rqVers.major > rule->version.major )
-                        rq->respondWithStatus(HTTPStatus::BadRequest, "Version too new");
+                        rq.respondWithStatus(HTTPStatus::BadRequest, "Version too new");
                     else
-                        rule->handler(*rq);  // Dispatch request to handler method!
+                        rule->handler(rq);  // Dispatch request to handler method!
                 } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
                     // No such rule:
                     c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
-                    rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
+                    rq.respondWithStatus(HTTPStatus::NotFound, "Not found");
                 } else {
                     // Wrong HTTP method:
                     c4log(ListenerLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(),
                           pathStr.c_str());
                     if ( method == Method::UPGRADE )
-                        rq->respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
+                        rq.respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
                     else
-                        rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
+                        rq.respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
                 }
-            } catch ( const std::exception& ) {
-                c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s",
-                      C4Error::fromCurrentException().description().c_str());
-                if ( !rq->finished() ) rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
+            } else {
+                c4log(ListenerLog, kC4LogInfo, "Authentication failed");
+                rq.setStatus(HTTPStatus::Unauthorized, "Unauthorized");
+                rq.setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
             }
-        } else {
-            c4log(ListenerLog, kC4LogInfo, "Authentication failed");
-            rq->setStatus(HTTPStatus::Unauthorized, "Unauthorized");
-            rq->setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
+        } catch ( const std::exception& ) {
+            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s",
+                  C4Error::fromCurrentException().description().c_str());
+            if ( !rq.finished() ) rq.respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }
 
-        rq->finish();
-        c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(), rq->status());
+        rq.finish();
+
+        if ( auto c = peer.rfind(':'); c != string::npos ) peer.resize(c);
+        c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(),
+              rq.status());
     }
 
     Server::APIVersion Server::APIVersion::parse(string_view str) {

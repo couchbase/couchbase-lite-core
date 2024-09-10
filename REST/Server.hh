@@ -99,7 +99,7 @@ namespace litecore::REST {
         URIRule* findRule(net::Method method, const std::string& path);
         ~Server() override;
 
-        void dispatchRequest(RequestResponse*);
+        void dispatchRequest(RequestResponse&);
 
       private:
         void awaitConnection();

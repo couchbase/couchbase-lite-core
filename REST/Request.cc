@@ -12,19 +12,18 @@
 
 #include "Request.hh"
 #include "HTTPLogic.hh"
-#include "Server.hh"
-#include "Writer.hh"
+#include "c4ListenerInternal.hh" // for ListenerLog
 #include "Error.hh"
-#include "Logging.hh"
 #include "netUtils.hh"
+#include "Server.hh"
 #include "TCPSocket.hh"
+#include "Writer.hh"
 #include "date/date.h"
 #include "slice_stream.hh"
 #include <chrono>
-#include <cstdarg>
 #include <cinttypes>
+#include <cstdarg>
 #include <memory>
-#include <utility>
 #include <utility>
 
 #ifdef _MSC_VER
@@ -52,8 +51,17 @@ namespace litecore::REST {
         _method        = Method::None;
         Method method  = MethodNamed(in.readToDelimiter(" "_sl));
         slice  uri     = in.readToDelimiter(" "_sl);
+        slice  http    = in.readToDelimiter("/"_sl);
         slice  version = in.readToDelimiter("\r\n"_sl);
-        if ( method == Method::None || uri.size == 0 || !version.hasPrefix("HTTP/"_sl) ) return false;
+        if ( method == Method::None || uri.size == 0 || http != "HTTP"_sl ) return false;
+
+        if ( version == "1.1" ) _version = HTTP1_1;
+        else if ( version == "1.0" )
+            _version = HTTP1_0;
+        else
+            return false;
+
+        if ( !HTTPLogic::parseHeaders(in, _headers) ) return false;
 
         const uint8_t* q = uri.findByte('?');
         if ( q ) {
@@ -63,8 +71,6 @@ namespace litecore::REST {
             _queries.clear();
         }
         _path = string(uri);
-
-        if ( !HTTPLogic::parseHeaders(in, _headers) ) return false;
 
         _method = method;
         return true;
@@ -114,6 +120,11 @@ namespace litecore::REST {
         return val != "false" && val != "0";  // same behavior as Obj-C CBL 1.x
     }
 
+    bool Request::keepAlive() const {
+        auto connection = header("Connection");
+        return (_version == Request::HTTP1_1) ? (connection != "close") : (connection == "keep-alive");
+    }
+
 #pragma mark - REQUESTRESPONSE:
 
     RequestResponse::RequestResponse(RequestResponse&&) = default;
@@ -123,7 +134,13 @@ namespace litecore::REST {
         : _server(server), _socket(std::move(socket)) {
         auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
         if ( !request ) {
-            handleSocketError();
+            _error = _socket->error();
+            if ( _error == C4Error{WebSocketDomain, 400} ) {
+                c4log(ListenerLog, kC4LogVerbose, "EOF reading request");
+                _error = C4Error{NetworkDomain, kC4NetErrConnectionReset};
+            } else {
+                c4log(ListenerLog, kC4LogError, "Socket error reading HTTP request: %s", _error.description().c_str());
+            }
             return;
         }
         if ( !readFromHTTP(request) ) {
@@ -132,7 +149,8 @@ namespace litecore::REST {
         }
         if ( _method == Method::POST || _method == Method::PUT ) {
             if ( !_socket->readHTTPBody(_headers, _body) ) {
-                handleSocketError();
+                _error = _socket->error();
+                c4log(ListenerLog, kC4LogError, "Socket error reading HTTP request: %s", _error.description().c_str());
                 return;
             }
         }
@@ -140,7 +158,6 @@ namespace litecore::REST {
         // Add standard headers:
         auto tp = floor<seconds>(system_clock::now());
         setHeader("Date", date::format("%a, %d %b %Y %H:%M:%S GMT", tp).c_str());
-        setHeader("Connection", "close");  // I don't support Keep-Alive yet
         setHeader("Server", ("CouchbaseLite/" + string(c4_getVersion())).c_str());
     }
 
@@ -252,7 +269,7 @@ namespace litecore::REST {
 
     void RequestResponse::handleSocketError() {
         if ( C4Error err = _socket->error(); err != _error ) {
-            WarnError("Socket error sending HTTP response: %s", err.description().c_str());
+            c4log(ListenerLog, kC4LogError, "Socket error sending HTTP response: %s", err.description().c_str());
             if ( !_error ) _error = err;
         }
     }
@@ -328,7 +345,7 @@ namespace litecore::REST {
         Assert(!_jsonEncoder);
         if ( !_streaming ) {
             _streaming = true;
-            if ( _contentLength < 0 ) setHeader("Connection", "close");
+            if ( _contentLength < 0 ) setChunked();
         }
         sendHeaders();
         _flush();
@@ -362,7 +379,7 @@ namespace litecore::REST {
         if ( _jsonEncoder ) {
             alloc_slice json = _jsonEncoder->finish();
             if ( !json ) {
-                WarnError("HTTP handler failed to encode JSON response: %s (%d)", _jsonEncoder->errorMessage(),
+                c4log(ListenerLog, kC4LogError, "HTTP handler failed to encode JSON response: %s (%d)", _jsonEncoder->errorMessage(),
                           _jsonEncoder->error());
                 respondWithStatus(HTTPStatus::ServerError, "Internal error");
                 return;
