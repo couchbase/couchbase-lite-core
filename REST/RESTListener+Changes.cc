@@ -104,7 +104,7 @@ namespace litecore::REST {
             }
         }
 
-        RequestResponse&& extractRequest() && {return std::move(_rq);}
+        RequestResponse&& extractRequest() && { return std::move(_rq); }
 
         void writeDescription(fleece::JSONEncoder& json) override {
             Task::writeDescription(json);
@@ -127,7 +127,7 @@ namespace litecore::REST {
                     _rq.finish();
                 }
                 c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (%s)", _rq.peerAddress().c_str(),
-                    (_stopMessage ? _stopMessage : ""));
+                      (_stopMessage ? _stopMessage : ""));
             }
             unregisterTask();  // this will probably delete me
         }
@@ -231,9 +231,8 @@ namespace litecore::REST {
                     }
                 }
                 if ( _feed == continuous ) _rq.flush();
-                if (_feed == longpoll && _sent > 0)
-                    _stopMessage = "longpoll done";
-                else if (_rq.socketError())
+                if ( _feed == longpoll && _sent > 0 ) _stopMessage = "longpoll done";
+                else if ( _rq.socketError() )
                     _stopMessage = "peer closed";
             }
             if ( _stopMessage ) { stop(); }
@@ -247,8 +246,7 @@ namespace litecore::REST {
                 _rq.write("\n");
                 _rq.flush();
                 _heartbeatTimer->fireAfter(interval);
-                if (_rq.socketError())
-                    _stopMessage = "peer closed";
+                if ( _rq.socketError() ) _stopMessage = "peer closed";
             }
             if ( _stopMessage ) { stop(); }
         }
@@ -271,14 +269,13 @@ namespace litecore::REST {
         unique_ptr<C4CollectionObserver> _observer;        // Observer, used in async modes
         optional<actor::Timer>           _heartbeatTimer;  // Timer for sending regular newlines
         optional<actor::Timer>           _timeoutTimer;    // Timer for closing connection
-        const char* _stopMessage = nullptr;
+        const char*                      _stopMessage = nullptr;
     };
 
     void RESTListener::handleChanges(RequestResponse& rq, C4Collection* coll) {
         // Note: This moves the RequestResponse from `rq` to the ChangesTask's `_rq`.
         // That means the Changestask takes ownership of the socket from the calling Server.
         auto task = make_retained<ChangesTask>(this, std::move(rq));
-        if (task->runImmediate(coll))
-            rq = std::move(*task).extractRequest();
+        if ( task->runImmediate(coll) ) rq = std::move(*task).extractRequest();
     }
 }  // namespace litecore::REST

@@ -126,17 +126,16 @@ namespace litecore::REST {
 
 #pragma mark - REQUESTRESPONSE:
 
-    RequestResponse::RequestResponse(RequestResponse&&) noexcept = default;
+    RequestResponse::RequestResponse(RequestResponse&&) noexcept            = default;
     RequestResponse& RequestResponse::operator=(RequestResponse&&) noexcept = default;
-    RequestResponse::~RequestResponse()                          = default;
+    RequestResponse::~RequestResponse()                                     = default;
 
     RequestResponse::RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket> socket)
         : _server(server), _socket(std::move(socket)) {
         auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
         if ( !request ) {
             _error = _socket->error();
-            if ( _error == C4Error{WebSocketDomain, 400} )
-                _error = C4Error{NetworkDomain, kC4NetErrConnectionReset};
+            if ( _error == C4Error{WebSocketDomain, 400} ) _error = C4Error{NetworkDomain, kC4NetErrConnectionReset};
             return;
         }
         if ( !readFromHTTP(request) ) {

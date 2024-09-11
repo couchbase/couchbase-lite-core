@@ -28,7 +28,7 @@ namespace litecore::websocket {
 
     Headers::Headers(Dict dict) { readFrom(dict); }
 
-    Headers::Headers(Headers&& other) noexcept = default;
+    Headers::Headers(Headers&& other) noexcept            = default;
     Headers& Headers::operator=(Headers&& other) noexcept = default;
 
     Headers::Headers(const Headers& other) { *this = other; }

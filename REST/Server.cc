@@ -174,27 +174,27 @@ namespace litecore::REST {
             return;
         }
 
-        string peer = responder->peerAddress();
-        bool loggedConnection = false;
+        string peer             = responder->peerAddress();
+        bool   loggedConnection = false;
         if ( c4log_willLog(ListenerLog, kC4LogVerbose) ) {
-            if (auto cert = responder->peerTLSCertificate()) {
+            if ( auto cert = responder->peerTLSCertificate() ) {
                 c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
                       responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
                 loggedConnection = true;
             }
         }
-        if ( !loggedConnection )
-            c4log(ListenerLog, kC4LogInfo, "Accepted connection from %s", peer.c_str());
+        if ( !loggedConnection ) c4log(ListenerLog, kC4LogInfo, "Accepted connection from %s", peer.c_str());
 
         // Now read one or more requests and write responses:
         while ( true ) {
             // Read HTTP request from socket:
             RequestResponse rq(this, std::move(responder));
             if ( C4Error err = rq.socketError() ) {
-                if (err == C4Error{NetworkDomain, kC4NetErrConnectionReset}) {
-            c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (closed by peer)", peer.c_str());
+                if ( err == C4Error{NetworkDomain, kC4NetErrConnectionReset} ) {
+                    c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (closed by peer)", peer.c_str());
                 } else {
-                    c4log(ListenerLog, kC4LogError, "Error reading HTTP request from %s: %s", peer.c_str(), err.description().c_str());
+                    c4log(ListenerLog, kC4LogError, "Error reading HTTP request from %s: %s", peer.c_str(),
+                          err.description().c_str());
                 }
                 break;
             }
@@ -206,18 +206,15 @@ namespace litecore::REST {
 
             // Handle it!
             dispatchRequest(rq);
-            c4log(RESTLog, kC4LogInfo, "%s\t%s\t%s\t-> %d", peer.c_str(), MethodName(method), uri.c_str(),
-                  rq.status());
+            c4log(RESTLog, kC4LogInfo, "%s\t%s\t%s\t-> %d", peer.c_str(), MethodName(method), uri.c_str(), rq.status());
 
             // Either close, or take back the socket:
             if ( !keepAlive || rq.responseHeaders()["Connection"] == "close" ) {
-            c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (Connection:close)", peer.c_str());
+                c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (Connection:close)", peer.c_str());
                 break;
             }
             responder = rq.extractSocket();  // Get the socket back, unless it's been given to a WebSocket
-            if ( !responder ) {
-                break;
-            }
+            if ( !responder ) { break; }
         }
     }
 
