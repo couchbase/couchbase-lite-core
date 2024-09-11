@@ -689,13 +689,6 @@ namespace litecore {
         Assert(_domain.registerParentObject(getObjectRef(), parentObjRef));
     }
 
-    void Logging::_log(LogLevel level, const char* format, ...) const {
-        va_list args;
-        va_start(args, format);
-        _logv(level, format, args);
-        va_end(args);
-    }
-
     void Logging::_logv(LogLevel level, const char* format, va_list args) const {
         _domain.computeLevel();
         if ( _domain.willLog(level) ) _domain.vlog(level, this, true, format, args);

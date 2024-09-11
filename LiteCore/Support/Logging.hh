@@ -215,11 +215,12 @@ namespace litecore {
         virtual std::string loggingIdentifier() const;
         virtual std::string loggingClassName() const;
 
-#define LOGBODY(LEVEL)                                                                                                 \
+#define LOGBODY_(LEVEL)                                                                                                \
     va_list args;                                                                                                      \
     va_start(args, format);                                                                                            \
-    _logv(LogLevel::LEVEL, format, args);                                                                              \
+    _logv(LEVEL, format, args);                                                                                        \
     va_end(args);
+#define LOGBODY(LEVEL) LOGBODY_(LogLevel::LEVEL)
 
         void warn(const char* format, ...) const __printflike(2, 3) { LOGBODY(Warning) }
 
@@ -234,7 +235,8 @@ namespace litecore {
 
         bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
-        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
+        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4) { LOGBODY_(level) }
+
         void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
 
         // Add key=value pairs to the output. They are space separated. If output is not empty
