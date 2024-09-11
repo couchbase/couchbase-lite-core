@@ -175,25 +175,27 @@ namespace litecore::REST {
         }
 
         string peer = responder->peerAddress();
-        if ( auto c = peer.rfind(':'); c != string::npos ) peer.resize(c);  // suppress port #
-
+        bool loggedConnection = false;
         if ( c4log_willLog(ListenerLog, kC4LogVerbose) ) {
-            auto cert = responder->peerTLSCertificate();
-            if ( cert )
+            if (auto cert = responder->peerTLSCertificate()) {
                 c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
                       responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
-            else
-                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s", peer.c_str());
+                loggedConnection = true;
+            }
         }
+        if ( !loggedConnection )
+            c4log(ListenerLog, kC4LogInfo, "Accepted connection from %s", peer.c_str());
 
         // Now read one or more requests and write responses:
-        c4log(ListenerLog, kC4LogVerbose, "Server handling socket connection...");
         while ( true ) {
             // Read HTTP request from socket:
             RequestResponse rq(this, std::move(responder));
-            if ( rq.socketError() ) break;  // rq has already logged about it
-            if ( !rq.isValid() ) {
-                c4log(ListenerLog, kC4LogWarning, "Closing socket due to invalid HTTP request");
+            if ( C4Error err = rq.socketError() ) {
+                if (err == C4Error{NetworkDomain, kC4NetErrConnectionReset}) {
+            c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (closed by peer)", peer.c_str());
+                } else {
+                    c4log(ListenerLog, kC4LogError, "Error reading HTTP request from %s: %s", peer.c_str(), err.description().c_str());
+                }
                 break;
             }
             rq.addHeaders(_extraHeaders);
@@ -204,21 +206,19 @@ namespace litecore::REST {
 
             // Handle it!
             dispatchRequest(rq);
-            c4log(RESTLog, kC4LogInfo, "%s   %s %s   -> %d", peer.c_str(), MethodName(method), uri.c_str(),
+            c4log(RESTLog, kC4LogInfo, "%s\t%s\t%s\t-> %d", peer.c_str(), MethodName(method), uri.c_str(),
                   rq.status());
 
             // Either close, or take back the socket:
             if ( !keepAlive || rq.responseHeaders()["Connection"] == "close" ) {
-                c4log(ListenerLog, kC4LogVerbose, "No keep-alive; closing socket");
+            c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (Connection:close)", peer.c_str());
                 break;
             }
             responder = rq.extractSocket();  // Get the socket back, unless it's been given to a WebSocket
             if ( !responder ) {
-                c4log(ListenerLog, kC4LogVerbose, "Exiting Server::handleConnection since socket has been taken over");
                 break;
             }
         }
-        c4log(ListenerLog, kC4LogVerbose, "Server finished with socket connection");
     }
 
     void Server::setExtraHeaders(const std::map<std::string, std::string>& headers) {
@@ -234,6 +234,7 @@ namespace litecore::REST {
     }
 
     Server::URIRule* Server::findRule(Method method, const string& path) {
+        // Convert the request path to a pattern:
         string pattern = "";
         split(path, "/", [&](string_view component) {
             if ( !component.empty() ) {
@@ -245,6 +246,7 @@ namespace litecore::REST {
         });
         if ( pattern.empty() ) pattern = "/";
 
+        // Now look up the pattern:
         lock_guard<mutex> lock(_mutex);
         for ( auto& rule : _rules ) {
             if ( (rule.methods & method) && rule.pattern == pattern ) return &rule;
@@ -253,9 +255,8 @@ namespace litecore::REST {
     }
 
     void Server::dispatchRequest(RequestResponse& rq) {
-        Method method = rq.method();
-
         try {
+            Method method = rq.method();
             if ( method == Method::GET && rq.header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
 
             if ( !_authenticator || _authenticator(rq.header("Authorization")) ) {
@@ -299,7 +300,6 @@ namespace litecore::REST {
                   C4Error::fromCurrentException().description().c_str());
             if ( !rq.finished() ) rq.respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }
-
         rq.finish();
     }
 

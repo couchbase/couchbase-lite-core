@@ -40,8 +40,9 @@ namespace litecore::websocket {
         explicit Headers(fleece::Dict);
 
         Headers(const Headers&);
-        Headers(Headers&&) noexcept;
         Headers& operator=(const Headers&);
+        Headers(Headers&&) noexcept;
+        Headers& operator=(Headers&&) noexcept;
 
         void clear();
 

@@ -75,6 +75,7 @@ namespace litecore::REST {
       public:
         RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket>);
         RequestResponse(RequestResponse&&) noexcept;
+        RequestResponse& operator=(RequestResponse&&) noexcept;
         ~RequestResponse();
 
         // Response status:

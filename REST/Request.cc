@@ -127,6 +127,7 @@ namespace litecore::REST {
 #pragma mark - REQUESTRESPONSE:
 
     RequestResponse::RequestResponse(RequestResponse&&) noexcept = default;
+    RequestResponse& RequestResponse::operator=(RequestResponse&&) noexcept = default;
     RequestResponse::~RequestResponse()                          = default;
 
     RequestResponse::RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket> socket)
@@ -134,12 +135,8 @@ namespace litecore::REST {
         auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
         if ( !request ) {
             _error = _socket->error();
-            if ( _error == C4Error{WebSocketDomain, 400} ) {
-                c4log(ListenerLog, kC4LogVerbose, "EOF reading request");
+            if ( _error == C4Error{WebSocketDomain, 400} )
                 _error = C4Error{NetworkDomain, kC4NetErrConnectionReset};
-            } else {
-                c4log(ListenerLog, kC4LogError, "Socket error reading HTTP request: %s", _error.description().c_str());
-            }
             return;
         }
         if ( !readFromHTTP(request) ) {
@@ -149,7 +146,6 @@ namespace litecore::REST {
         if ( _method == Method::POST || _method == Method::PUT ) {
             if ( !_socket->readHTTPBody(_headers, _body) ) {
                 _error = _socket->error();
-                c4log(ListenerLog, kC4LogError, "Socket error reading HTTP request: %s", _error.description().c_str());
                 return;
             }
         }

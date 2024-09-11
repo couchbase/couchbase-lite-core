@@ -64,13 +64,13 @@ namespace litecore::REST {
 
         ~ChangesTask() { c4log(ListenerLog, kC4LogVerbose, "ChangesTask %p deleted", this); }
 
-        void runImmediate(C4Collection* coll) {
+        bool runImmediate(C4Collection* coll) {
             _rq.uncacheable();
             _rq.setHeader("Connection", "close");  // request is disconnected from Server
             if ( _feed == unknown ) {
                 _rq.respondWithStatus(HTTPStatus::BadRequest, "unsupported feed type");
                 _rq.finish();
-                return;
+                return true;
             } else if ( _feed == continuous ) {
                 _rq.setHeader("Content-Type", "text/plain; charset=utf-8");  // JSON-per-line is not technically JSON
                 _rq.setChunked();
@@ -96,11 +96,15 @@ namespace litecore::REST {
                 // In longpoll mode, we wait if there are no changes yet.
                 _rq.flush();
                 wait(coll);
+                return false;
             } else {
                 _rq.printf("], \"last_seq\":%llu}", uint64_t(_lastSequence));
                 _rq.finish();
+                return true;
             }
         }
+
+        RequestResponse&& extractRequest() && {return std::move(_rq);}
 
         void writeDescription(fleece::JSONEncoder& json) override {
             Task::writeDescription(json);
@@ -122,8 +126,15 @@ namespace litecore::REST {
                         _rq.printf("\n], \"last_seq\":%llu}", uint64_t(_lastSequence));
                     _rq.finish();
                 }
+                c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (%s)", _rq.peerAddress().c_str(),
+                    (_stopMessage ? _stopMessage : ""));
             }
             unregisterTask();  // this will probably delete me
+        }
+
+        void stop(const char* message) {
+            _stopMessage = message;
+            stop();
         }
 
       private:
@@ -176,7 +187,6 @@ namespace litecore::REST {
         // Called (on some unknown thread) when the collection has changed.
         void observeChange() {
             c4log(ListenerLog, kC4LogVerbose, "ChangesTask %p got changes!", this);
-            bool doStop = false;
             {
                 unique_lock lock(_mutex);
                 if ( _rq.finished() ) return;
@@ -207,7 +217,7 @@ namespace litecore::REST {
                                 if ( !coll ) {
                                     tie(db, coll) = listener()->collectionFor(_rq, false);
                                     if ( !coll ) {
-                                        stop();
+                                        stop("collection/database deleted");
                                         return;
                                     }
                                 }
@@ -221,32 +231,34 @@ namespace litecore::REST {
                     }
                 }
                 if ( _feed == continuous ) _rq.flush();
-                doStop = (_feed == longpoll && _sent > 0) || _rq.socketError() != kC4NoError;
+                if (_feed == longpoll && _sent > 0)
+                    _stopMessage = "longpoll done";
+                else if (_rq.socketError())
+                    _stopMessage = "peer closed";
             }
-            if ( doStop ) { stop(); }
+            if ( _stopMessage ) { stop(); }
         }
 
         void heartbeat(chrono::milliseconds interval) {
             c4log(ListenerLog, kC4LogVerbose, "ChangesTask %p heartbeat", this);
-            bool doStop = false;
             {
                 unique_lock lock(_mutex);
                 if ( _rq.finished() ) return;
                 _rq.write("\n");
                 _rq.flush();
                 _heartbeatTimer->fireAfter(interval);
-                doStop = _rq.socketError() != kC4NoError;
+                if (_rq.socketError())
+                    _stopMessage = "peer closed";
             }
-            if ( doStop ) { stop(); }
+            if ( _stopMessage ) { stop(); }
         }
 
         void timeout() {
-            c4log(ListenerLog, kC4LogVerbose, "ChangesTask %p timed out", this);
             {
                 unique_lock lock(_mutex);
                 if ( _rq.finished() ) return;
             }
-            stop();
+            stop("timed out");
         }
 
         RequestResponse                  _rq;              // The HTTP request+response
@@ -259,12 +271,14 @@ namespace litecore::REST {
         unique_ptr<C4CollectionObserver> _observer;        // Observer, used in async modes
         optional<actor::Timer>           _heartbeatTimer;  // Timer for sending regular newlines
         optional<actor::Timer>           _timeoutTimer;    // Timer for closing connection
+        const char* _stopMessage = nullptr;
     };
 
     void RESTListener::handleChanges(RequestResponse& rq, C4Collection* coll) {
         // Note: This moves the RequestResponse from `rq` to the ChangesTask's `_rq`.
         // That means the Changestask takes ownership of the socket from the calling Server.
         auto task = make_retained<ChangesTask>(this, std::move(rq));
-        task->runImmediate(coll);
+        if (task->runImmediate(coll))
+            rq = std::move(*task).extractRequest();
     }
 }  // namespace litecore::REST
