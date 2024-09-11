@@ -58,9 +58,13 @@ namespace litecore::REST {
         return db->getName() == _dbName && db->getConfiguration().parentDirectory == _dbConfig.parentDirectory;
     }
 
-    void DatabasePool::onOpen(std::function<void(C4Database*)> init) noexcept {
+    void DatabasePool::onOpen(std::function<void(C4Database*)> init, bool callNow) noexcept {
         unique_lock lock(_mutex);
         _initializer = std::move(init);
+        if ( callNow && _initializer ) {
+            if ( _readwrite ) _initializer(_readwrite);
+            for ( auto& db : _readonly ) _initializer(db);
+        }
     }
 
     unsigned DatabasePool::openCount() const noexcept {

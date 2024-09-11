@@ -14,8 +14,8 @@
 #include "DatabasePool.hh"
 #include "c4Database.hh"
 #include "c4ListenerInternal.hh"
+#include "c4Private.h"  // for _c4db_setDatabaseTag
 #include "Error.hh"
-#include <vector>
 
 using namespace std;
 using namespace fleece;
@@ -59,7 +59,8 @@ namespace litecore::REST {
         }
         lock_guard<mutex> lock(_mutex);
         if ( _databases.contains(*name) ) return false;
-        _databases.emplace(*name, db);
+        auto [i, added] = _databases.emplace(*name, db);
+        i->second.onOpen([](C4Database* db) { _c4db_setDatabaseTag(db, DatabaseTag_RESTListener); });
         return true;
     }
 

@@ -51,13 +51,11 @@ namespace litecore::REST {
         /// True if this pool manages the same file as this database.
         bool sameAs(C4Database* db) const noexcept;
 
-        /// Registers a function that will be called just after a `database` is opened,
-        /// and can make connection-level changes; for example, calling `setup_connection`
-        /// or registering functions.
-        ///
-        /// This callback should not be used for file-level initialization, like creating tables,
-        /// since it will be called multiple times.
-        void onOpen(std::function<void(C4Database*)>) noexcept;
+        /// Registers a function that will be called just after a `C4Database` is opened,
+        /// and can make connection-level changes.
+        /// If `callNow` is true, the function will be called on the already-open databases
+        /// (except for ones currently borrowed.)
+        void onOpen(std::function<void(C4Database*)>, bool callNow = true) noexcept;
 
         /// The number of databases open, both borrowed and available.
         unsigned openCount() const noexcept;
