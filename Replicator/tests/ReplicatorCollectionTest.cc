@@ -579,8 +579,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
     for ( const auto& coll_doc : docsWithIncrementalRevisions ) {
         c4::ref<C4Document> doc = c4coll_getDoc(coll_doc.first, coll_doc.second, true, kDocGetMetadata, ERROR_INFO());
         CHECK(doc);
-        alloc_slice hist = c4doc_getRevisionHistory(doc, 1, nullptr, 0);
-        if ( isRevTrees() ) CHECK(3 == c4rev_getGeneration(hist));
+        if ( doc && isRevTrees() ) CHECK(c4rev_getGeneration(doc->revID) == 3);
     }
 }
 
