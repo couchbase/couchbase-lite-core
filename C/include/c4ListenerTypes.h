@@ -66,6 +66,8 @@ typedef struct C4ListenerConfig {
     C4String                networkInterface;  ///< name or address of interface to listen on; else all
     C4ListenerAPIs          apis;              ///< Which API(s) to enable
     C4TLSConfig* C4NULLABLE tlsConfig;         ///< TLS configuration, or NULL for no TLS
+    C4String                serverName;        ///< Name for "Server:" response header (optional)
+    C4String                serverVersion;     ///< Version for "Server:" response header (optional)
 
     C4ListenerHTTPAuthCallback C4NULLABLE httpAuthCallback;  ///< Callback for HTTP auth
     void* C4NULLABLE                      callbackContext;   ///< Client value passed to HTTP auth callback

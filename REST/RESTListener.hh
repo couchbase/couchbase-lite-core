@@ -127,9 +127,6 @@ namespace litecore::REST {
 
         virtual void handleSync(RequestResponse&, C4Database*);
 
-        static std::string serverNameAndVersion();
-        static std::string kServerName;
-
       private:
         class ReplicationTask;
 
@@ -162,6 +159,7 @@ namespace litecore::REST {
         const bool _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection, _allowQueries;
         Retained<crypto::Identity> _identity;
         Retained<Server>           _server;
+        std::string                _serverName, _serverVersion;
         std::set<Retained<Task>>   _tasks;
         unsigned                   _nextTaskID{1};
     };

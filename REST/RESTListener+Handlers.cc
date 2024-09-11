@@ -12,7 +12,6 @@
 
 // Reference: <https://docs.couchbase.com/sync-gateway/current/rest-api.html>
 
-#include <c4ListenerInternal.hh>
 
 #include "RESTListener.hh"
 #include "DatabasePool.hh"
@@ -20,6 +19,7 @@
 #include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4Database.hh"
+#include "c4ListenerInternal.hh"
 #include "c4Query.hh"
 #include "c4DocEnumerator.hh"
 #include "fleece/Expert.hh"
@@ -34,10 +34,9 @@ namespace litecore::REST {
 #pragma mark - ROOT HANDLERS:
 
     void RESTListener::handleGetRoot(RequestResponse& rq) {
-        alloc_slice version(c4_getVersion());
-        alloc_slice nameAndVersion(serverNameAndVersion());
-        rq.jsonEncoder().writeFormatted("{couchdb:'Welcome', vendor: {name: %s, version: %.*s}, version: %.*s}",
-                                        kServerName.c_str(), FMTSLICE(version), FMTSLICE(nameAndVersion));
+        rq.jsonEncoder().writeFormatted("{couchdb:'Welcome', vendor: {name: %s, version: %s}, version: %s}",
+                                        _serverName.c_str(), _serverVersion.c_str(),
+                                        (_serverName + "/" + _serverVersion).c_str());
     }
 
     void RESTListener::handleGetAllDBs(RequestResponse& rq) {

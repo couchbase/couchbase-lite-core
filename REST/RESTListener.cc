@@ -35,14 +35,6 @@ namespace litecore::REST {
 
     static int kTaskExpirationTime = 10;
 
-
-    string RESTListener::kServerName = "CouchbaseLite";
-
-    string RESTListener::serverNameAndVersion() {
-        alloc_slice version(c4_getVersion());
-        return stringprintf("%s/%.*s", kServerName.c_str(), SPLAT(version));
-    }
-
     RESTListener::RESTListener(const Config& config)
         : Listener(config)
         , _directory(config.directory.buf ? new FilePath(slice(config.directory).asString(), "") : nullptr)
@@ -51,8 +43,10 @@ namespace litecore::REST {
         , _allowCreateCollection(config.allowCreateCollections)
         , _allowDeleteCollection(config.allowDeleteCollections)
         , _allowQueries(config.allowQueries) {
-        _server = new Server();
-        _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
+        _server        = new Server();
+        _serverName    = config.serverName ? slice(config.serverName) : "CouchbaseLite"_sl;
+        _serverVersion = config.serverVersion ? slice(config.serverVersion) : alloc_slice(c4_getVersion());
+        _server->setExtraHeaders({{"Server", _serverName + "/" + _serverVersion}});
 
         if ( auto callback = config.httpAuthCallback; callback ) {
             void* context = config.callbackContext;

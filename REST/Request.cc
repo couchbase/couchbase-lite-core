@@ -159,7 +159,6 @@ namespace litecore::REST {
         time_t t = time(nullptr);
         strftime(dateStr, sizeof(dateStr), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&t));  // faster than date::format()
         setHeader("Date", dateStr);
-        setHeader("Server", ("CouchbaseLite/" + string(c4_getVersion())).c_str());
     }
 
     void RequestResponse::setStatus(HTTPStatus status, const char* message) {

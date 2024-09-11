@@ -196,6 +196,7 @@ namespace litecore::REST {
                 c4log(ListenerLog, kC4LogWarning, "Closing socket due to invalid HTTP request");
                 break;
             }
+            rq.addHeaders(_extraHeaders);
             auto   method    = rq.method();
             string uri       = rq.uri();  // save it now, as it may be cleared if rq gets moved
             bool   keepAlive = rq.keepAlive();
