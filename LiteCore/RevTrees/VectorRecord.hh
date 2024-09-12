@@ -269,7 +269,8 @@ namespace litecore {
         alloc_slice                  _revID;                // Current revision ID backing store
         Revision                     _current;              // Current revision
         fleece::RetainedValue        _currentProperties;    // Retains local properties
-        fleece::Doc                  _bodyDoc;              // If saved, a Doc of the Fleece body
+        fleece::Doc                  _bodyDoc;              // If saved, a Doc of the `body` column
+        slice                        _bodyDocRange;         // Fleece data within _bodyDoc
         fleece::Doc                  _extraDoc;             // Fleece Doc holding record `extra`
         fleece::Array                _revisions;            // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
