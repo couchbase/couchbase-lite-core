@@ -194,7 +194,7 @@ namespace litecore {
 #    define WriteDebug(FMT, ...)
 #endif
 
-    static inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }
+    inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }
 
     /** Mixin that adds log(), warn(), etc. methods. The messages these write will be prefixed
         with a description of the object; by default this is just the class and address, but

@@ -50,13 +50,13 @@ std::string sliceToHex(fleece::pure_slice);
 std::string sliceToHexDump(fleece::pure_slice, size_t width = 16);
 
 // Converts a C4Slice or C4SliceResult to a C++ string.
-static inline std::string toString(fleece::slice s) { return std::string(s); }
+inline std::string toString(fleece::slice s) { return std::string(s); }
 
-static inline std::string toString(FLSlice s) { return std::string(fleece::slice(s)); }
+inline std::string toString(FLSlice s) { return std::string(fleece::slice(s)); }
 
-static inline std::string toString(const FLSliceResult& s) { return {(char*)s.buf, s.size}; }
+inline std::string toString(const FLSliceResult& s) { return {(char*)s.buf, s.size}; }
 
-static inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(s)); }
+inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(s)); }
 
 // Converts JSON5 to JSON; helps make JSON test input more readable!
 std::string         json5(std::string_view);
@@ -76,9 +76,9 @@ namespace fleece {
     std::ostream& operator<<(std::ostream& o, pure_slice s);
 }
 
-static inline std::ostream& operator<<(std::ostream& o, FLSlice s) { return o << fleece::slice(s); }
+inline std::ostream& operator<<(std::ostream& o, FLSlice s) { return o << fleece::slice(s); }
 
-static inline std::ostream& operator<<(std::ostream& o, FLSliceResult s) { return o << fleece::slice(s); }
+inline std::ostream& operator<<(std::ostream& o, FLSliceResult s) { return o << fleece::slice(s); }
 
 // Logging std::set instances to cerr or Catch.
 // This lets you test functions returning sets in CHECK or REQUIRE.

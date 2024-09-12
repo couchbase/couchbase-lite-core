@@ -27,19 +27,19 @@ namespace litecore {
         kRejected = 0x80  ///< Revision rejected by server (used only by VectorRecord)
     };
 
-    static inline bool operator&(DocumentFlags a, DocumentFlags b) { return ((uint8_t)a & (uint8_t)b) != 0; }
+    inline bool operator&(DocumentFlags a, DocumentFlags b) { return ((uint8_t)a & (uint8_t)b) != 0; }
 
-    static inline DocumentFlags operator|(DocumentFlags a, DocumentFlags b) {
+    inline DocumentFlags operator|(DocumentFlags a, DocumentFlags b) {
         return (DocumentFlags)((uint8_t)a | (uint8_t)b);
     }
 
-    static inline DocumentFlags& operator|=(DocumentFlags& a, DocumentFlags b) { return (a = a | b); }
+    inline DocumentFlags& operator|=(DocumentFlags& a, DocumentFlags b) { return (a = a | b); }
 
-    static inline DocumentFlags operator-(DocumentFlags a, DocumentFlags b) {
+    inline DocumentFlags operator-(DocumentFlags a, DocumentFlags b) {
         return (DocumentFlags)((uint8_t)a & ~(uint8_t)b);
     }
 
-    static inline DocumentFlags operator-=(DocumentFlags& a, DocumentFlags b) { return (a = a - b); }
+    inline DocumentFlags operator-=(DocumentFlags& a, DocumentFlags b) { return (a = a - b); }
 
     /** Record's expiration timestamp: milliseconds since Unix epoch (Jan 1 1970).
         A zero value means no expiration. */

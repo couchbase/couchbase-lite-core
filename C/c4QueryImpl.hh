@@ -98,7 +98,7 @@ namespace litecore {
         bool                      _hasFullText;
     };
 
-    static inline C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator* e) { return (C4QueryEnumeratorImpl*)e; }
+    inline C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator* e) { return (C4QueryEnumeratorImpl*)e; }
 
     // Internal implementation of C4QueryObserver
     class C4QueryObserverImpl : public C4QueryObserver {
@@ -145,7 +145,7 @@ namespace litecore {
         Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     };
 
-    static inline C4QueryObserverImpl* asInternal(C4QueryObserver* obs) { return (C4QueryObserverImpl*)obs; }
+    inline C4QueryObserverImpl* asInternal(C4QueryObserver* obs) { return (C4QueryObserverImpl*)obs; }
 
 }  // namespace litecore
 

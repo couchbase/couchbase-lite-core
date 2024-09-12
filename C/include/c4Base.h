@@ -58,9 +58,9 @@ static C4INLINE C4Slice c4str(const char* C4NULLABLE str) { return FLStr(str); }
 #define C4STR(STR)   FLSTR(STR)
 #define kC4SliceNull kFLSliceNull
 
-static inline bool c4SliceEqual(C4Slice a, C4Slice b) { return FLSlice_Equal(a, b); }
+inline bool c4SliceEqual(C4Slice a, C4Slice b) { return FLSlice_Equal(a, b); }
 
-static inline void c4slice_free(C4SliceResult s) { FLSliceResult_Release(s); }
+inline void c4slice_free(C4SliceResult s) { FLSliceResult_Release(s); }
 
 #pragma mark - COMMON TYPES:
 
@@ -192,48 +192,44 @@ CBL_CORE_API void* c4base_retain(void* C4NULLABLE obj) C4API;
 CBL_CORE_API void  c4base_release(void* C4NULLABLE obj) C4API;
 
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
-static inline C4Cert* C4NULLABLE c4cert_retain(C4Cert* C4NULLABLE r) C4API { return (C4Cert*)c4base_retain(r); }
+inline C4Cert* C4NULLABLE c4cert_retain(C4Cert* C4NULLABLE r) C4API { return (C4Cert*)c4base_retain(r); }
 
-static inline C4Collection* C4NULLABLE c4coll_retain(C4Collection* C4NULLABLE r) C4API {
+inline C4Collection* C4NULLABLE c4coll_retain(C4Collection* C4NULLABLE r) C4API {
     return (C4Collection*)c4base_retain(r);
 }
 
-static inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API {
-    return (C4Database*)c4base_retain(r);
-}
+inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API { return (C4Database*)c4base_retain(r); }
 
-static inline C4Index* C4NULLABLE c4index_retain(C4Index* C4NULLABLE r) C4API { return (C4Index*)c4base_retain(r); }
+inline C4Index* C4NULLABLE c4index_retain(C4Index* C4NULLABLE r) C4API { return (C4Index*)c4base_retain(r); }
 
-static inline C4IndexUpdater* C4NULLABLE c4indexupdater_retain(C4IndexUpdater* C4NULLABLE r) C4API {
+inline C4IndexUpdater* C4NULLABLE c4indexupdater_retain(C4IndexUpdater* C4NULLABLE r) C4API {
     return (C4IndexUpdater*)c4base_retain(r);
 }
 
-static inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {
-    return (C4KeyPair*)c4base_retain(r);
-}
+inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API { return (C4KeyPair*)c4base_retain(r); }
 
-static inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API { return (C4Query*)c4base_retain(r); }
+inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API { return (C4Query*)c4base_retain(r); }
 
 CBL_CORE_API C4Document* C4NULLABLE        c4doc_retain(C4Document* C4NULLABLE) C4API;
 CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_retain(C4QueryEnumerator* C4NULLABLE) C4API;
 CBL_CORE_API C4Socket* C4NULLABLE          c4socket_retain(C4Socket* C4NULLABLE) C4API;
 
-static inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r); }
+inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r); }
 
 /** \note This function is thread-safe. */
-static inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
+inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
 
 /** \note This function is thread-safe. */
-static inline void c4db_release(C4Database* C4NULLABLE r) C4API { c4base_release(r); }
+inline void c4db_release(C4Database* C4NULLABLE r) C4API { c4base_release(r); }
 
-static inline void c4index_release(C4Index* C4NULLABLE i) C4API { c4base_release(i); }
+inline void c4index_release(C4Index* C4NULLABLE i) C4API { c4base_release(i); }
 
-static inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { c4base_release(u); }
+inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { c4base_release(u); }
 
-static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
+inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
 
 /** \note This function is thread-safe. */
-static inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
+inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
 
 /** \note This function is thread-safe. */
 CBL_CORE_API void c4doc_release(C4Document* C4NULLABLE) C4API;
