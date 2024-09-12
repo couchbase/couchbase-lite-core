@@ -50,6 +50,35 @@ function(setup_litecore_build_unix)
         )
     endif()
 
+
+    if (LITECORE_SANITIZE AND NOT CODE_COVERAGE_ENABLED AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
+        set(LITECORE_SAN_FLAGS "-fstack-protector -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=undefined -fno-sanitize-recover=all")
+        # "-fno-sanitize-recover=all" : Always exit after UBSan warning
+        # Note: _FORTIFY_SOURCE is incompatible with ASan; defining it will cause build errors
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(LITECORE_SAN_FLAGS "${LITECORE_SAN_FLAGS} -fsanitize=nullability -fsanitize-address-use-after-return=always")
+        endif ()
+        # Enable sanitizers for ALL targets. It's especially important to set them for all C++
+        # targets, because otherwise the container overflow check can produce false positives:
+        # https://github.com/google/sanitizers/wiki/AddressSanitizerContainerOverflow#false-positives
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LITECORE_SAN_FLAGS}" CACHE INTERNAL "")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_SAN_FLAGS}" CACHE INTERNAL "")
+
+        # The linker also needs to be told, so it can link the appropriate sanitizer runtime libs:
+        foreach(target LiteCore CppTests C4Tests)
+            target_link_options(${target} PRIVATE
+                -fsanitize=address
+                -fsanitize=undefined
+            )
+        endforeach ()
+    else()
+        set(LITECORE_COMPILE_OPTIONS
+            -fstack-protector
+            -D_FORTIFY_SOURCE=2
+        )
+    endif()
+
+
     set(LITECORE_WARNINGS
         -Werror=missing-braces
         -Werror=parentheses
@@ -60,6 +89,7 @@ function(setup_litecore_build_unix)
         -Werror=unused-value
         -Werror=uninitialized
         -Werror=float-conversion
+        -Wformat=2
         #-Wshadow
         #-Weffc++
     )
@@ -67,6 +97,8 @@ function(setup_litecore_build_unix)
     set(LITECORE_CXX_WARNINGS
         -Wnon-virtual-dtor
         #-Werror=overloaded-virtual
+        -Wno-psabi
+        -Wno-odr
     )
 
     set(LITECORE_C_WARNINGS
@@ -75,27 +107,64 @@ function(setup_litecore_build_unix)
         -Werror=strict-prototypes
     )
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-        target_compile_options(${liteCoreVariant} PRIVATE 
+    if(LITECORE_WARNINGS_HARDCORE)
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(LITECORE_CXX_WARNINGS
+                -Werror
+                -Weverything            # "WARN ALL THE THINGS!!!"
+                -Wformat=2
+                # Disabled C++ warnings:
+                -Wno-cast-qual  # TODO: "cast drops const qualifier"
+                -Wno-nullable-to-nonnull-conversion # TODO: "implicit conversion from nullable pointer to non-nullable pointer type"
+                -Wno-sign-compare # TODO "comparison of integers of different signs"
+                -Wno-sign-conversion # TODO "implicit conversion changes signedness"
+                -Wno-switch-enum # TODO: "enumeration values not explicitly handled in switch"
+                -Wno-alloca
+                -Wno-atomic-implicit-seq-cst # "implicit use of sequentially-consistent atomic may incur stronger memory barriers than necessary"
+                -Wno-c++98-compat
+                -Wno-c++98-compat-pedantic
+                -Wno-cast-align # "cast from X* to Y* increases required alignment"
+                -Wno-cast-function-type # "cast from X* to Y* converts to incompatible function type"
+                -Wno-covered-switch-default # "default label in switch which covers all enumeration values"
+                -Wno-c99-extensions
+                -Wno-date-time # "expansion of date or time macro is not reproducible"
+                -Wno-deprecated-copy-with-user-provided-dtor # "definition of implicit copy constructor is deprecated because it has a user-provided destructor"
+                -Wno-exit-time-destructors # "declaration requires an exit-time destructor"
+                -Wno-extra-semi # "extra ';' after member function definition"
+                -Wno-float-equal
+                -Wno-format-pedantic # "format specifies type 'void *' but the argument has type 'C4Document *'"
+                -Wno-global-constructors
+                -Wno-gnu-anonymous-struct # "anonymous structs are a GNU extension"
+                -Wno-gnu-zero-variadic-macro-arguments # "token pasting of ',' and __VA_ARGS__ is a GNU extension"
+                -Wno-inconsistent-missing-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
+                -Wno-missing-field-initializers # "missing field 'x' initializer"
+                -Wno-missing-noreturn # "function could be declared with attribute 'noreturn'"
+                -Wno-nested-anon-types # "anonymous types declared in an anonymous union are an extension"
+                -Wno-nullability-extension
+                -Wno-old-style-cast
+                -Wno-padded
+                -Wno-shadow-field # "parameter shadows member inherited from type"
+                -Wno-shadow-uncaptured-local # "declaration [of a lambda parameter] shadows a local variable"
+                -Wno-suggest-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
+                -Wno-undef      # `#if X` where X isn't defined
+                -Wno-unused-macros
+                -Wno-unused-exception-parameter
+                -Wno-unused-parameter # Unused fn parameter
+                -Wno-weak-vtables # "Class has no out-of-line virtual method definitions; its vtable will be emitted in every translation unit"
+                -Wno-zero-as-null-pointer-constant # Using 0 instead of nullptr. Some of our dependencies do this in headers.
+                -Wno-documentation-deprecated-sync # "declaration is marked with '\deprecated' command but does not have a deprecation attribute" --mbedTLS does this
+            )
+        endif()
+    endif()
+
+    foreach(target  LiteCoreObjects LiteCoreUnitTesting BLIPObjects LiteCoreWebSocket LiteCoreREST_Objects)
+        target_compile_options(${target} PRIVATE
+            ${LITECORE_COMPILE_OPTIONS}
             ${LITECORE_WARNINGS} 
-            -Wformat=2
-            -fstack-protector
-            -D_FORTIFY_SOURCE=2
-            $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
             $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
             $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
         )
     endforeach()
-
-    target_compile_options(BLIPObjects PRIVATE 
-        ${LITECORE_WARNINGS} 
-        -Wformat=2
-        -fstack-protector
-        -D_FORTIFY_SOURCE=2
-        $<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>
-        $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
-        $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
 
     set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
     check_type_size(socklen_t SOCKLEN_T)

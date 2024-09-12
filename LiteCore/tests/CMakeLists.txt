@@ -79,14 +79,12 @@ add_executable(
     ${TOP}vendor/fleece/Tests/DeltaTests.cc
     ${TOP}vendor/fleece/Tests/EncoderTests.cc
     ${TOP}vendor/fleece/Tests/FleeceTests.cc
-    ${TOP}vendor/fleece/Tests/HashTreeTests.cc
     ${TOP}vendor/fleece/Tests/JSON5Tests.cc
     ${TOP}vendor/fleece/Tests/MutableTests.cc
     ${TOP}vendor/fleece/Tests/PerfTests.cc
     ${TOP}vendor/fleece/Tests/SharedKeysTests.cc
     ${TOP}vendor/fleece/Tests/SupportTests.cc
     ${TOP}vendor/fleece/Tests/ValueTests.cc
-    ${TOP}vendor/fleece/Experimental/KeyTree.cc
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
