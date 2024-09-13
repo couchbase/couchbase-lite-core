@@ -31,7 +31,7 @@ namespace litecore {
     class C4QueryEnumeratorImpl
         : public RefCounted
         , public C4QueryEnumerator
-        , public fleece::InstanceCountedIn<C4QueryEnumerator>
+        , public fleece::InstanceCountedIn<C4QueryEnumeratorImpl>
         , C4Base {
       public:
         // clearPublicFields() sets C4QueryEnumerator's fields to 0, so we can ignore this warning

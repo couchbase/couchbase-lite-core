@@ -30,6 +30,10 @@ namespace date {
 }  // namespace date
 
 namespace litecore {
+    // A timestamp with greater range, but lower precision, than the `system_clock`'s default nanosecond
+    // resolution. This gives us a range of 300 million years(!) instead of only 300 years.
+    using date_time_point = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
+
     // A number of functions in this file are borrowed directly from the Server N1QL code, with slight modifications.
     // The origials can be found here: https://github.com/couchbase/query/blob/master/expression/func_date.go.
     // This is important, because it means we get the same results as Server N1QL for our date manipulation functions.
@@ -57,7 +61,7 @@ namespace litecore {
     }
 
     // The Day Of Year for the given time_point. This is the number of days since the start of the year.
-    inline int64_t doy(const std::chrono::system_clock::time_point& t) {
+    inline int64_t doy(const date_time_point& t) {
         const auto daypoint = floor<date::days>(t);
         const auto ymd      = date::year_month_day{daypoint};
         const auto year     = ymd.year();
@@ -65,9 +69,9 @@ namespace litecore {
         return year_day.count();
     }
 
-    inline std::chrono::system_clock::time_point to_time_point(DateTime& dt, bool no_tz = false) {
+    inline date_time_point to_time_point(DateTime& dt, bool no_tz = false) {
         const auto millis = ToMillis(dt, no_tz);
-        return std::chrono::system_clock::time_point(std::chrono::milliseconds(millis));
+        return date_time_point(std::chrono::milliseconds(millis));
     }
 
     inline bool parseDateArg(sqlite3_value* arg, int64_t* outTime) {
