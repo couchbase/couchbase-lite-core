@@ -14,7 +14,7 @@
 #include "c4Base.h"
 
 
-#define LOCK(MUTEX) std::unique_lock<decltype(MUTEX)> _lock(MUTEX)
+#define LOCK(MUTEX) std::unique_lock _lock(MUTEX)
 #define UNLOCK()    _lock.unlock();
 
 #if defined(__clang__)

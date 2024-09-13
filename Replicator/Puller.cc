@@ -36,14 +36,14 @@ using namespace litecore::blip;
 namespace litecore::repl {
     Puller::Puller(Replicator* replicator, CollectionIndex coll)
         : Delegate(replicator, "Pull", coll)
+        , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
+        , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
+        , _returningRevs(this, "returningRevs", &Puller::_revsFinished)
 #if __APPLE__
         , _revMailbox(nullptr, "Puller revisions")
 #endif
         , _inserter(new Inserter(replicator, coll))
-        , _revFinder(new RevFinder(replicator, this, coll))
-        , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
-        , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
-        , _returningRevs(this, "returningRevs", &Puller::_revsFinished) {
+        , _revFinder(new RevFinder(replicator, this, coll)) {
         setParentObjectRef(replicator->getObjectRef());
         replicator->registerWorkerHandler(this, "rev", &Puller::handleRev);
         replicator->registerWorkerHandler(this, "norev", &Puller::handleNoRev);

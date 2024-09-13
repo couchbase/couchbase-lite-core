@@ -31,7 +31,7 @@ namespace litecore {
     }
 
     void BackgroundDB::close() {
-        _dataFile.useLocked([this](DataFile*& df) {
+        _dataFile.useLocked([](DataFile*& df) {
             delete df;
             df = nullptr;
         });

@@ -83,11 +83,11 @@ namespace litecore::repl {
             constructorCheck();
         }
 
-        Options(const Options& opt)  // copy ctor, required because std::atomic doesn't have one
-            : propertyEncryptor(opt.propertyEncryptor)
+        Options(const Options& opt)                     // copy ctor, required because std::atomic doesn't have one
+            : properties(slice(opt.properties.data()))  // copy data, bc dtor wipes it
+            , propertyEncryptor(opt.propertyEncryptor)
             , propertyDecryptor(opt.propertyDecryptor)
             , callbackContext(opt.callbackContext)
-            , properties(slice(opt.properties.data()))  // copy data, bc dtor wipes it
             , progressLevel(opt.progressLevel.load())
 #ifdef LITECORE_CPPTEST
             , _delayChangesResponse(opt._delayChangesResponse)

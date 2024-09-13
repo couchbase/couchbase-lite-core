@@ -74,7 +74,7 @@ C4API_END_DECLS  // GCC doesn't like this stuff inside `extern "C" {}`
             Max  = UINT64_MAX
         };
 
-static inline C4SequenceNumber operator"" _seq(unsigned long long n) { return C4SequenceNumber(n); }
+inline C4SequenceNumber operator""_seq(unsigned long long n) { return C4SequenceNumber(n); }
 DEFINE_ENUM_INC_DEC(C4SequenceNumber)
 DEFINE_ENUM_ADD_SUB_INT(C4SequenceNumber)
 

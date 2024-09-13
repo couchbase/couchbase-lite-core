@@ -33,7 +33,7 @@ namespace litecore {
     RevTree::RevTree(slice body, slice extra, sequence_t seq) { decode(body, extra, seq); }
 
     RevTree::RevTree(const RevTree& other)
-        : _sorted(other._sorted), _changed(other._changed), _unknown(other._unknown), _pruneDepth(other._pruneDepth) {
+        : _changed(other._changed), _unknown(other._unknown), _sorted(other._sorted), _pruneDepth(other._pruneDepth) {
         // It's important to have _revs in the same order as other._revs.
         // That means we can't just copy other._revsStorage to _revsStorage;
         // we have to copy _revs in order:

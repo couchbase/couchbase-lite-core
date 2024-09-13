@@ -113,7 +113,7 @@ namespace litecore {
 
     void LogStatement(const SQLite::Statement& st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
 
-    static void sqlite3_log_callback(C4UNUSED void* pArg, int errCode, const char* msg) {
+    static void sqlite3_log_callback(void* /*pArg*/, int errCode, const char* msg) {
         switch ( errCode & 0xFF ) {
             case SQLITE_OK:
             case SQLITE_NOTICE:
@@ -180,8 +180,8 @@ namespace litecore {
 
     bool SQLiteDataFile::Factory::_deleteFile(const FilePath& path, const Options*) {
         LogTo(DBLog, "Deleting database file %s (with -wal and -shm)", path.path().c_str());
-        bool ok = path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
-        // Note the non-short-circuiting 'or'! All 3 paths will be deleted.
+        bool ok = (path.del() + path.appendingToName("-shm").del() + path.appendingToName("-wal").del()) != 0;
+        // Note the use of '+' instead of '||'! All 3 paths will be deleted.
         LogDebug(DBLog, "...finished deleting database file %s (with -wal and -shm)", path.path().c_str());
         return ok;
     }

@@ -117,7 +117,7 @@ namespace litecore::blip {
 
     MessageIn::MessageIn(Connection* connection, FrameFlags flags, MessageNo n, MessageProgressCallback onProgress,
                          MessageSize outgoingSize)
-        : Message(flags, n), _connection(connection), _outgoingSize(outgoingSize), _propertiesRemaining(nullptr, 0) {
+        : Message(flags, n), _connection(connection), _propertiesRemaining(nullptr, 0), _outgoingSize(outgoingSize) {
         _onProgress = std::move(onProgress);
     }
 
@@ -248,7 +248,7 @@ namespace litecore::blip {
         }
     }
 
-    void MessageIn::readFrame(Codec& codec, int mode, slice_istream& frame, C4UNUSED bool finalFrame) {
+    void MessageIn::readFrame(Codec& codec, int mode, slice_istream& frame, bool /*finalFrame*/) {
         uint8_t buffer[4096];
         while ( frame.size > 0 ) {
             slice_ostream output(buffer, sizeof(buffer));

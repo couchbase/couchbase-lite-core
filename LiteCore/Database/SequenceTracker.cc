@@ -82,12 +82,12 @@ namespace litecore {
         // Placeholder entry (when docID == nullslice):
         CollectionChangeNotifier* const databaseObserver{nullptr};
 
-        Entry(alloc_slice d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags)
+        Entry(alloc_slice d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags_)
             : docID(std::move(d))
-            , revID(std::move(r))
             , sequence(s)
+            , revID(std::move(r))
             , bodySize(bs)
-            , flags(flags)
+            , flags(flags_)
             , idle(false)
             , external(false) {
             DebugAssert(docID != nullslice);
@@ -430,7 +430,7 @@ namespace litecore {
 #pragma mark - DOC CHANGE NOTIFIER:
 
     DocChangeNotifier::DocChangeNotifier(SequenceTracker* t, slice docID, Callback cb)
-        : tracker(t), _docEntry(tracker->addDocChangeNotifier(docID, this)), callback(std::move(cb)) {
+        : tracker(t), callback(std::move(cb)), _docEntry(tracker->addDocChangeNotifier(docID, this)) {
         t->_logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
     }
 

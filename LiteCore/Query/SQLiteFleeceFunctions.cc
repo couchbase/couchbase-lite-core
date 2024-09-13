@@ -36,7 +36,7 @@ namespace litecore {
     /// fl_root(body) -> fleeceData
     ///
     /// Gets the root of the current document given the SQLite row's `body` column.
-    static void fl_root(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_root(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         if ( sqlite3_value_type(argv[0]) == SQLITE_BLOB ) {
             // Pull the Fleece data out of a raw document body:
             bool  copied{false};
@@ -58,7 +58,7 @@ namespace litecore {
     /// fl_value(body, propertyPath) -> propertyValue
     ///
     /// The most common property accessor. Gets a property of the document given its path.
-    __hot static void fl_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    __hot static void fl_value(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             setResultFromValue(ctx, scope.root);
@@ -68,7 +68,7 @@ namespace litecore {
     /// fl_version(version) -> string
     ///
     /// Decodes a binary revid (the SQLite row's `version` column) to a string.
-    static void fl_version(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_version(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             slice version = valueAsSlice(argv[0]);
             setResultTextFromSlice(ctx, revid(version).expanded());
@@ -78,7 +78,7 @@ namespace litecore {
     /// fl_blob(body, propertyPath) -> blob data
     ///
     /// Fetches a blob from a document, given the `body` column and the path to the blob metadata dict.
-    static void fl_blob(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_blob(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( !scope.root ) return;
@@ -100,7 +100,7 @@ namespace litecore {
     /// fl_nested_value(fleeceData, propertyPath) -> propertyValue
     ///
     /// This function is used by the JSON `"._"` operator to extract a nested property out of a runtime value.
-    static void fl_nested_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_nested_value(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceParam val{ctx, argv[0], false};
             if ( !val ) {
@@ -140,7 +140,7 @@ namespace litecore {
     ///
     /// Converts a document property to a string, for indexing by FTS.
     /// Recurses into arrays and dicts, concatenating all the scalars found therein.
-    static void fl_fts_value(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_fts_value(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( scope.root == nullptr ) { return; }
@@ -178,7 +178,7 @@ namespace litecore {
     /// fl_exists(body, propertyPath) -> 0/1
     ///
     /// Returns true if the given property path exists in the document.
-    static void fl_exists(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_exists(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             sqlite3_result_int(ctx, (scope.root ? 1 : 0));
@@ -189,7 +189,7 @@ namespace litecore {
     /// fl_count(body, propertyPath) -> int
     ///
     /// Implements the N1QL `COUNT` function on a property of a document.
-    static void fl_count(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_count(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             if ( !scope.root ) {
@@ -225,7 +225,7 @@ namespace litecore {
     /// This function is wrapped around SQLite result (projection) expressions, to ensure they're returned from the
     /// SQLite statement in a form that's readable by `SQLiteQueryRunner::encodeColumn()`.
     /// It converts the various custom `sqlite3_value` subtypes into Fleece containers.
-    __hot static void fl_result(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    __hot static void fl_result(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             auto arg = argv[0];
             switch ( sqlite3_value_type(arg) ) {
@@ -294,7 +294,8 @@ namespace litecore {
     /// fl_null() -> value
     ///
     /// Simply creates & returns a value of Fleece/N1QL `null` type (not SQLite NULL, which is unknown/MISSING).
-    static void fl_null(sqlite3_context* ctx, C4UNUSED int argc, C4UNUSED sqlite3_value** argv) noexcept {
+    static void fl_null(sqlite3_context* ctx, [[maybe_unused]] int argc,
+                        [[maybe_unused]] sqlite3_value** argv) noexcept {
         sqlite3_result_zeroblob(ctx, 0);
         sqlite3_result_subtype(ctx, kFleeceNullSubtype);
     }
@@ -302,7 +303,7 @@ namespace litecore {
     /// fl_bool(i) -> true/false
     ///
     /// Creates a Fleece boolean value from a SQLite value. Anything that coerces to a non-zero int is `true`.
-    static void fl_bool(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_bool(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         sqlite3_result_int(ctx, sqlite3_value_int(argv[0]) != 0);
         sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
@@ -324,7 +325,7 @@ namespace litecore {
 
     /// fl_contains(body, propertyPath, value) -> 0/1
     ///
-    static void fl_contains(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_contains(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
             collectionContainsImpl(ctx, scope.root, argv[2]);
@@ -397,9 +398,9 @@ namespace litecore {
         // of compatible types. We require they have identical valueTypes except for kBoolean, in which case they
         // are to be compared as integer. Whether the target is a kNumber or kBoolean, its type appears here as kNumber.
         // We only need to convert the type of the array element.
-        auto comparable = [](valueType vtype1, valueType targetType) {
+        auto comparable = [](valueType vtype1, valueType targetTyp) {
             // pre-condition: targetType != kBoolean
-            return vtype1 == targetType ? true : targetType == kNumber ? vtype1 == kBoolean : false;
+            return vtype1 == targetTyp ? true : (targetTyp == kNumber ? vtype1 == kBoolean : false);
         };
 
         // Now iterate the array/dict:
@@ -525,7 +526,7 @@ namespace litecore {
     /// current document.
     /// Not used in N1QL queries! This is an optimization invoked by the `SQLiteKeyStore::withDocBodies()` method
     /// so it can read documents as quickly as possible.
-    static void fl_callback(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_callback(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         RecordUpdate rec(valueAsSlice(argv[0]), valueAsSlice(argv[2]));
         rec.version   = valueAsSlice(argv[1]);
         rec.extra     = valueAsSlice(argv[3]);
@@ -617,7 +618,7 @@ namespace litecore {
     /// Gets a vector value -- from a document property or given directly -- and converts it into a blob of float32s.
     /// @note This is used when indexing docs for a vector index, so invalid vector data will produce
     ///       a SQLite NULL result instead of an error.
-    static void fl_vector_to_index(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_vector_to_index(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         int dim = sqlite3_value_int(argv[argc - 1]);
         if ( dim <= 0 ) {
             // Invalid number of dimensions is an internal error, so it should fail.
@@ -654,7 +655,7 @@ namespace litecore {
     ///
     /// Converts a vector value to its raw form, a blob of packed float32s.
     /// Unlike `fl_vector_to_index` this does return an error given invalid input.
-    static void encode_vector(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void encode_vector(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         const char* errorMsg = encodeVector(ctx, argv[0]);
         if ( errorMsg ) sqlite3_result_error(ctx, errorMsg, -1);
     }

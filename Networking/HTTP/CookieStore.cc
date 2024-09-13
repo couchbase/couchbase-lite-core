@@ -120,7 +120,7 @@ namespace litecore::net {
                         return;
                     }
                     expires = created + maxAge;
-                } catch ( std::exception& e ) {
+                } catch ( std::exception& ) {
                     Warn("Couldn't parse Max-Age in cookie");
                     return;
                 }

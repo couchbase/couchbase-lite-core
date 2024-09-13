@@ -78,24 +78,12 @@ namespace litecore {
             return i / 0x8000;
     }
 
-    // CBL-4956 :
-    // GCC Warns about maybe using unitialized value i when calling this decompress(int64_t i)
-    // function from readBinary(slice data) with the unchecked dereferenced value (* operator)
-    // This warning is benign as the code in decompress() already checked if 'g'
-    // contains the value or not. However, this causes an error when the code is built
-    // with some GCC, so need suppress it.
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-
     static int64_t decompress(int64_t i) {
         if ( i & 1 ) i >>= 1;  // If LSB is set, just remove it
         else
             i *= 0x8000;  // else add 15 more 0 bits
         return i;
     }
-
-#pragma GCC diagnostic pop
 
     slice_istream VersionVector::openBinary(slice data) {
         slice_istream in(data);
@@ -117,12 +105,14 @@ namespace litecore {
                 // First timestamp is encoded as-is:
                 optional<uint64_t> g = in.readUVarInt();
                 if ( !g ) Version::throwBadBinary();
-                time = uint64_t(decompress(*g));
+                else
+                    time = uint64_t(decompress(*g));
             } else {
                 // The rest are signed deltas:
                 optional<int64_t> g = in.readUVarInt();
                 if ( !g ) Version::throwBadBinary();
-                time -= decompress(*g);
+                else
+                    time -= decompress(*g);
             }
             // Then the SourceID:
             SourceID id;

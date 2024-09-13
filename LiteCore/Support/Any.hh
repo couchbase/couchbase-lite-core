@@ -147,7 +147,7 @@ namespace litecore {
 
             //jpa: Changed `is_nothrow_copy_constructible` to `is_copy_constructible` since otherwise
             // the Any class doesn't work with common types like std::string.
-            [[nodiscard]] Base* clone() const {
+            [[nodiscard]] Base* clone() const override {
                 if constexpr ( std::is_copy_constructible_v<T> ) return new Derived<T>(value);
                 else
                     return nullptr;

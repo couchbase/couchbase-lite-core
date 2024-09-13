@@ -54,8 +54,8 @@ namespace litecore {
 
     HybridClock::HybridClock(uint64_t state)
         : _source(std::make_unique<RealClockSource>())
-        , _lastTime(logicalTime{state})
-        , _minValid(logicalTime(_source->minValid())) {}
+        , _minValid(logicalTime(_source->minValid()))
+        , _lastTime(logicalTime{state}) {}
 
     void HybridClock::setSource(std::unique_ptr<ClockSource> src) {
         _source   = std::move(src);

@@ -18,20 +18,20 @@
 
 /// Declares `++` and `--` functions for an `enum class`.
 #define DEFINE_ENUM_INC_DEC(E)                                                                                         \
-    C4UNUSED static inline E operator++(E& e) {                                                                        \
+    inline E operator++(E& e) {                                                                                        \
         ++(std::underlying_type_t<E>&)e;                                                                               \
         return e;                                                                                                      \
     }                                                                                                                  \
-    C4UNUSED static inline E operator--(E& e) {                                                                        \
+    inline E operator--(E& e) {                                                                                        \
         --(std::underlying_type_t<E>&)e;                                                                               \
         return e;                                                                                                      \
     }                                                                                                                  \
-    C4UNUSED static inline E operator++(E& e, int) {                                                                   \
+    inline E operator++(E& e, int) {                                                                                   \
         auto oldS = e;                                                                                                 \
         ++e;                                                                                                           \
         return oldS;                                                                                                   \
     }                                                                                                                  \
-    C4UNUSED static inline E operator--(E& e, int) {                                                                   \
+    inline E operator--(E& e, int) {                                                                                   \
         auto oldS = e;                                                                                                 \
         --e;                                                                                                           \
         return oldS;                                                                                                   \
@@ -42,15 +42,11 @@
 /// which allow its underlying integer type to be added to / subtracted from it,
 /// and allows subtracting two enum values producing the underlying integer type.
 #define DEFINE_ENUM_ADD_SUB_INT(E)                                                                                     \
-    C4UNUSED static inline E& operator+=(E& e, std::underlying_type_t<E> i) {                                          \
-        return e = E(std::underlying_type_t<E>(e) + i);                                                                \
-    }                                                                                                                  \
-    C4UNUSED static inline E& operator-=(E& e, std::underlying_type_t<E> i) {                                          \
-        return e = E(std::underlying_type_t<E>(e) - i);                                                                \
-    }                                                                                                                  \
-    C4UNUSED static inline E                         operator+(E e, std::underlying_type_t<E> i) { return e += i; }    \
-    C4UNUSED static inline E                         operator-(E e, std::underlying_type_t<E> i) { return e -= i; }    \
-    C4UNUSED static inline std::underlying_type_t<E> operator-(E e1, E e2) {                                           \
+    inline E& operator+=(E& e, std::underlying_type_t<E> i) { return e = E(std::underlying_type_t<E>(e) + i); }        \
+    inline E& operator-=(E& e, std::underlying_type_t<E> i) { return e = E(std::underlying_type_t<E>(e) - i); }        \
+    inline E  operator+(E e, std::underlying_type_t<E> i) { return e += i; }                                           \
+    inline E  operator-(E e, std::underlying_type_t<E> i) { return e -= i; }                                           \
+    inline std::underlying_type_t<E> operator-(E e1, E e2) {                                                           \
         return std::underlying_type_t<E>(e1) - std::underlying_type_t<E>(e2);                                          \
     }
 

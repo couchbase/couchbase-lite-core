@@ -33,7 +33,7 @@ namespace litecore::qt {
 
     /// Returns the input `val`, but throws an exception if it's not "truthy".
     template <class T>
-    static T required(T val, const char* name, const char* message = "is missing") {
+    T required(T val, const char* name, const char* message = "is missing") {
         require(val, "%s %s", name, message);
         return val;
     }

@@ -60,38 +60,38 @@ namespace litecore { namespace crypto {
 
     --Jens */
 
-    [[noreturn]] __unused
+    [[noreturn]] [[maybe_unused]] 
     static void throwOSStatus(OSStatus err, const char *fnName, const char *what) {
         LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, int(err));
         error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, int(err));
     }
 
-    __unused static inline void checkOSStatus(OSStatus err, const char *fnName, const char *what) {
+    [[maybe_unused]] static inline void checkOSStatus(OSStatus err, const char *fnName, const char *what) {
         if (_usuallyFalse(err != noErr))
             throwOSStatus(err, fnName, what);
     }
 
-    __unused
+    [[maybe_unused]]
     static inline void warnOSStatusError(OSStatus err, const char *fnName, const char *what) {
         if (_usuallyFalse(err != noErr)) {
             LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, int(err));
         }
     }
 
-    __unused static inline void warnCFError(CFErrorRef cfError, const char *fnName) {
+    static inline void warnCFError(CFErrorRef cfError, const char *fnName) {
         auto error = (__bridge NSError*)cfError;
         auto message = error.description;
         LogError(TLSLogDomain, "%s failed: %s", fnName, message.UTF8String);
     }
 
 
-    __unused static NSData* publicKeyHash(PublicKey *key NONNULL) {
+    [[maybe_unused]] static NSData* publicKeyHash(PublicKey *key NONNULL) {
         SHA1 digest(key->data(KeyFormat::Raw));
         return [NSData dataWithBytes: &digest length: sizeof(digest)];
     }
 
 
-    __unused static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params NONNULL) {
+    [[maybe_unused]] static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params NONNULL) {
         CFTypeRef result = NULL;
         OSStatus err = SecItemCopyMatching((__bridge CFDictionaryRef)params, &result);
         if (err == errSecItemNotFound)
@@ -102,7 +102,7 @@ namespace litecore { namespace crypto {
     }
 
 
-    __unused static unsigned long getChildCertCount(SecCertificateRef parentCertRef) {
+    [[maybe_unused]] static unsigned long getChildCertCount(SecCertificateRef parentCertRef) {
         NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
             (id)kSecClass:              (id)kSecClassCertificate,
             (id)kSecValueRef:           (__bridge id)parentCertRef,
@@ -123,7 +123,7 @@ namespace litecore { namespace crypto {
 
 
     // Creates an autoreleased SecCertificateRef from a Cert object
-    __unused static SecCertificateRef toSecCert(Cert *cert) {
+    [[maybe_unused]] static SecCertificateRef toSecCert(Cert *cert) {
         SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
                                                             (CFDataRef)cert->data().copiedNSData());
         if (!certRef)
@@ -134,7 +134,7 @@ namespace litecore { namespace crypto {
 
 
     // Returns description of a CF object, same as "%@" formatting
-    __unused static string describe(CFTypeRef ref) {
+    [[maybe_unused]] static string describe(CFTypeRef ref) {
         CFStringRef desc = CFCopyDescription(ref);
         fleece::nsstring_slice s(desc);
         return string(s);

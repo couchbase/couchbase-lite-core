@@ -125,7 +125,6 @@ namespace litecore {
 #pragma mark - BLOBS:
 
         void findBlobReferences(const fleece::function_ref<bool(FLDict)>& blobCallback) override {
-            uint64_t                  numRevisions = 0;
             RecordEnumerator::Options options;
             options.onlyBlobs  = true;
             options.sortOption = kUnsorted;
@@ -138,7 +137,6 @@ namespace litecore {
                         FLDict body = doc->getProperties();
                         C4Blob::findBlobReferences(body, blobCallback);
                         C4Blob::findAttachmentReferences(body, blobCallback);
-                        ++numRevisions;
                     }
                 } while ( doc->selectNextRevision() );
             }

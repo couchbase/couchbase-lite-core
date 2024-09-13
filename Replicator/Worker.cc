@@ -89,12 +89,12 @@ namespace litecore::repl {
     Worker::Worker(blip::Connection* connection, Worker* parent, const Options* options,
                    std::shared_ptr<DBAccess> dbAccess, const char* namePrefix, CollectionIndex coll)
         : Actor(SyncLog, string(namePrefix) + connection->name(), (parent ? parent->mailboxForChildren() : nullptr))
-        , _connection(connection)
-        , _parent(parent)
         , _options(options)
+        , _parent(parent)
         , _db(std::move(dbAccess))
-        , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
         , _loggingID(parent ? parent->replicator()->loggingName() : connection->name())
+        , _connection(connection)
+        , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
         , _collectionIndex(coll) {
         static std::once_flag f_once;
         std::call_once(f_once, [] {

@@ -168,7 +168,7 @@ namespace litecore {
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
-    extern LogDomain                  DBLog, QueryLog, SyncLog, &ActorLog;
+    extern LogDomain                  BlobLog, DBLog, QueryLog, SyncLog, &ActorLog;
 
 
 #define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                               \

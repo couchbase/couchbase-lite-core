@@ -39,8 +39,8 @@ namespace litecore::n1ql {
 
 #define YYSTYPE Any  // The data type returned by grammar-rule actions
 
-#define YY_LOCAL(T) LITECORE_UNUSED static T
-#define YY_RULE(T)  LITECORE_UNUSED static T
+#define YY_LOCAL(T) [[maybe_unused]] static T
+#define YY_RULE(T)  [[maybe_unused]] static T
 #define YY_PARSE(T) static T
 
 #define YYPARSE     parse
@@ -362,3 +362,7 @@ namespace litecore::n1ql {
     }
 
 }  // namespace litecore::n1ql
+
+// The code generator produces some unreachable code; keep Clang from warning about it:
+#pragma clang diagnostic ignored "-Wunreachable-code"
+#pragma clang diagnostic ignored "-Wused-but-marked-unused"

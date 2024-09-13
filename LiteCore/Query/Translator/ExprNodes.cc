@@ -371,12 +371,12 @@ namespace litecore::qt {
         Collation savedCollation        = ctx.collation;
         bool      savedCollationApplied = ctx.collationApplied;
 
-        auto setFlagFromOption = [](bool& flag, Dict options, slice key) {
+        auto setFlagFromOption = [&](bool& flag, slice key) {
             if ( Value val = getCaseInsensitive(options, key) ) flag = val.asBool();
         };
-        setFlagFromOption(ctx.collation.caseSensitive, options, "CASE");
-        setFlagFromOption(ctx.collation.diacriticSensitive, options, "DIAC");
-        setFlagFromOption(ctx.collation.unicodeAware, options, "UNICODE");
+        setFlagFromOption(ctx.collation.caseSensitive, "CASE");
+        setFlagFromOption(ctx.collation.diacriticSensitive, "DIAC");
+        setFlagFromOption(ctx.collation.unicodeAware, "UNICODE");
         if ( Value localeName = getCaseInsensitive(options, "LOCALE") )
             ctx.collation.localeName = localeName.asString();
         ctx.collationApplied = false;

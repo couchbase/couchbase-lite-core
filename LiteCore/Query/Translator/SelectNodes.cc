@@ -115,7 +115,7 @@ namespace litecore::qt {
     }
 
     SourceNode::SourceNode(SourceType type, string_view scope, string_view collection, JoinType join)
-        : _type(type), _scope(scope), _collection(collection), _join(join) {}
+        : _scope(scope), _collection(collection), _join(join), _type(type) {}
 
     SourceNode::SourceNode(Dict dict, ParseContext& ctx) : SourceNode(SourceType::collection) {
         // Parse the SCOPE and COLLECTION properties:

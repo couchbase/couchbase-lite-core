@@ -85,7 +85,7 @@ namespace litecore {
 
 
       private:
-        static int compareRevIDs(C4UNUSED void* context, int len1, const void* chars1, int len2, const void* chars2) {
+        static int compareRevIDs(void* /*context*/, int len1, const void* chars1, int len2, const void* chars2) {
             revidBuffer rev1, rev2;
             rev1.parse({chars1, size_t(len1)});
             rev2.parse({chars2, size_t(len2)});

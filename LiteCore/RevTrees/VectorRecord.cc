@@ -102,9 +102,9 @@ namespace litecore {
         , _docID(rec.key())
         , _sequence(rec.sequence())
         , _subsequence(rec.subsequence())
+        , _docFlags(rec.flags())
         , _savedRevID(rec.version())
         , _revID(_savedRevID)
-        , _docFlags(rec.flags())
         , _whichContent(rec.contentLoaded()) {
         _current.revID = revid(_revID);
         _current.flags = _docFlags - (DocumentFlags::kConflicted | DocumentFlags::kSynced);

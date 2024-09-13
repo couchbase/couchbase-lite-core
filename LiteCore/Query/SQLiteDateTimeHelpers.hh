@@ -9,10 +9,9 @@
 #include "SQLiteFleeceUtil.hh"
 #include "DateFormat.hh"
 
-using namespace std::chrono;
-using namespace fleece;
-
 namespace date {
+
+    using namespace std::chrono;
 
     using quarters    = duration<int, detail::ratio_multiply<std::ratio<3>, months::period>>;
     using decades     = duration<int, detail::ratio_multiply<std::ratio<10>, years::period>>;
@@ -58,7 +57,7 @@ namespace litecore {
     }
 
     // The Day Of Year for the given time_point. This is the number of days since the start of the year.
-    inline int64_t doy(const system_clock::time_point& t) {
+    inline int64_t doy(const std::chrono::system_clock::time_point& t) {
         const auto daypoint = floor<date::days>(t);
         const auto ymd      = date::year_month_day{daypoint};
         const auto year     = ymd.year();
@@ -66,9 +65,9 @@ namespace litecore {
         return year_day.count();
     }
 
-    inline system_clock::time_point to_time_point(DateTime& dt, bool no_tz = false) {
+    inline std::chrono::system_clock::time_point to_time_point(DateTime& dt, bool no_tz = false) {
         const auto millis = ToMillis(dt, no_tz);
-        return system_clock::time_point(milliseconds(millis));
+        return std::chrono::system_clock::time_point(std::chrono::milliseconds(millis));
     }
 
     inline bool parseDateArg(sqlite3_value* arg, int64_t* outTime) {
@@ -93,7 +92,7 @@ namespace litecore {
         return outTime->validYMD || outTime->validHMS;
     }
 
-    inline void setResultDateString(sqlite3_context* ctx, const int64_t millis, const minutes tz_offset,
+    inline void setResultDateString(sqlite3_context* ctx, const int64_t millis, const std::chrono::minutes tz_offset,
                                     const std::optional<DateFormat>& format) {
         char buf[kFormattedISO8601DateMaxSize];
         setResultTextFromSlice(ctx, DateFormat::format(buf, millis, tz_offset, format));
@@ -196,22 +195,22 @@ namespace litecore {
         DateComponent date_component;
         if ( !part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid ) { return -1; }
 
-        date::year_month_day ymd = date::year(start.Y) / start.M / start.D;
-        milliseconds         tod =
-                hours(start.h) + minutes(start.m - start.tz) + milliseconds(static_cast<int64_t>(start.s * 1000));
+        date::year_month_day      ymd = date::year(start.Y) / start.M / start.D;
+        std::chrono::milliseconds tod = std::chrono::hours(start.h) + std::chrono::minutes(start.m - start.tz)
+                                        + std::chrono::milliseconds(static_cast<int64_t>(start.s * 1000));
 
         switch ( date_component ) {
             case kDateComponentMillisecond:
-                tod += milliseconds(amount);
+                tod += std::chrono::milliseconds(amount);
                 break;
             case kDateComponentSecond:
-                tod += seconds(amount);
+                tod += std::chrono::seconds(amount);
                 break;
             case kDateComponentMinute:
-                tod += minutes(amount);
+                tod += std::chrono::minutes(amount);
                 break;
             case kDateComponentHour:
-                tod += hours(amount);
+                tod += std::chrono::hours(amount);
                 break;
             case kDateComponentDay:
                 tod += date::days(amount);

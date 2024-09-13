@@ -153,7 +153,6 @@ namespace litecore::repl {
           private:
             AccessLockedDB::access<Retained<C4Database>&> _dba;
             C4Database::Transaction                       _t;
-            bool                                          _active{false};
         };
 
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
