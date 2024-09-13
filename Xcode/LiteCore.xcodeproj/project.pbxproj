@@ -1422,6 +1422,7 @@
 		27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VectorQueryTest.cc; sourceTree = "<group>"; };
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
+		27C3BD0C2AFEB1C800976E89 /* VersionVectorWithLegacy.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VersionVectorWithLegacy.hh; sourceTree = "<group>"; };
 		27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "c4PredictiveQueryTest+CoreML.mm"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
 		27CCC7D71E52613C00CE1989 /* Replicator.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Replicator.hh; sourceTree = "<group>"; };
@@ -2522,6 +2523,7 @@
 				274B36D025B271F7001FC28D /* Version.hh */,
 				27027CD1255F4A9B00A96D7D /* VersionVector.cc */,
 				27027CCD255F4A9B00A96D7D /* VersionVector.hh */,
+				27C3BD0C2AFEB1C800976E89 /* VersionVectorWithLegacy.hh */,
 				276993E525390C3300FDF699 /* VectorRecord.cc */,
 				276993E125390C3300FDF699 /* VectorRecord.hh */,
 			);
