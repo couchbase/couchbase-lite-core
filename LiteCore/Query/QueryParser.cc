@@ -436,7 +436,7 @@ namespace litecore {
             require(_delegate.tableExists(from.tableName), "no such collection \"%s\"", from.collection.c_str());
         } else if ( scope ) {
             fail("SCOPE in FROM item requires a COLLECTION too");
-        } else {
+        } else if ( !from.unnest ) {
             from.collection = _defaultCollectionName;
             from.tableName  = _defaultTableName;
             DebugAssert(_delegate.tableExists(from.tableName));
@@ -444,9 +444,10 @@ namespace litecore {
         if ( from.alias.empty() ) {
             if ( collection ) {
                 from.alias = from.collection;
-            } else {
+            } else if ( !from.unnest ) {
                 from.alias = _defaultCollectionName;
             }
+            // If this is an unnest, the default alias will be assigned in parseFromClause
         }
         from.alias = DataFile::unescapeCollectionName(from.alias);
         return from;
@@ -476,6 +477,23 @@ namespace litecore {
                     else
                         entry.type = kUnnestVirtualTableAlias;
                     entry.tableName = "";
+                    if ( entry.alias.empty() ) {
+                        // unnestTable looks like, kv_default:unnest:students[].interests
+                        // KeyStore::kUnnestSeparator == ":unnest:"
+                        auto pos = unnestTable.find(KeyStore::kUnnestSeparator);
+                        Assert(pos != std::string::npos);
+                        std::string_view path(unnestTable.c_str() + pos + KeyStore::kUnnestSeparator.size);
+                        // find the last unescaped dot and use the last property name as default alias.
+                        int dot = -1;
+                        for ( int d = 0; d < path.length(); ++d ) {
+                            if ( path[d] == '\\' ) ++d;
+                            else if ( path[d] == '.' )
+                                dot = d;
+                        }
+                        if ( dot < 0 ) entry.alias = path;
+                        else
+                            entry.alias = path.substr(dot + 1);
+                    }
                 }
                 addAlias(std::move(entry));
                 first = false;
@@ -488,31 +506,17 @@ namespace litecore {
         }
     }
 
-    static string aliasOfFromEntry(const Value* value, const string& defaultAlias) {
-        // c.f. QueryParser::parseFromEntry
-        auto   dict = requiredDict(value, "FROM item");
-        string ret{optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")};
-        if ( ret.empty() ) {
-            ret = string{optionalString(getCaseInsensitive(dict, "COLLECTION"_sl), "COLLECTION in FROM item")};
-            if ( ret.empty() ) {
-                ret = defaultAlias;
-            } else {
-                if ( auto scope = optionalString(getCaseInsensitive(dict, "SCOPE"_sl), "SCOPE in FROM item");
-                     !scope.empty() ) {
-                    ret = string(scope) + "." + ret;
-                }
-            }
-        }
-        return DataFile::unescapeCollectionName(ret);
-    }
-
     void QueryParser::writeFromClause(const Value* from) {
         auto fromArray = (const Array*)from;  // already type-checked by parseFromClause
 
         if ( fromArray && !fromArray->empty() ) {
             for ( Array::iterator i(fromArray); i; ++i ) {
-                auto       fromAlias = aliasOfFromEntry(i.value(), _defaultCollectionName);
-                aliasInfo& entry     = _aliases.find(fromAlias)->second;
+                // We already parsed "from" in parseFromEntry. We just find the entry in _aliases
+                auto it =
+                        find_if(_aliases.begin(), _aliases.end(), [&](auto& e) { return e.second.dict == i.value(); });
+                Assert(it != _aliases.end());
+                aliasInfo& entry = it->second;
+
                 switch ( entry.type ) {
                     case kDBAlias:
                         {
