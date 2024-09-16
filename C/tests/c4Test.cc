@@ -248,10 +248,15 @@ void C4Test::closeDB() {
     db = nullptr;
 }
 
-void C4Test::reopenDB() {
-    // Update _dbConfig in case db was reopened with different flags or encryption:
+void C4Test::syncDBConfig() {
+    REQUIRE(db);
     _dbConfig.flags         = c4db_getConfig2(db)->flags;
     _dbConfig.encryptionKey = c4db_getConfig2(db)->encryptionKey;
+}
+
+void C4Test::reopenDB() {
+    // Update _dbConfig in case db was reopened with different flags or encryption:
+    syncDBConfig();
 
     closeDB();
     db = c4db_openNamed(kDatabaseName, &_dbConfig, ERROR_INFO());

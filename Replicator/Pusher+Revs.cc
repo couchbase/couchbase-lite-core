@@ -52,7 +52,7 @@ namespace litecore::repl {
         Dict                 root;
         auto                 collection       = getCollection();
         slice                replacementRevID = nullslice;
-        Retained<C4Document> doc = _db->useCollection(collection)->getDocument(request->docID, true, kDocGetUpgraded);
+        Retained<C4Document> doc = _db->useCollection(collection)->getDocument(request->docID, true, kDocGetAll);
         if ( doc ) {
             if ( doc->selectRevision(request->revID, true) ) root = doc->getProperties();
             if ( root ) request->flags = doc->selectedRev().flags;

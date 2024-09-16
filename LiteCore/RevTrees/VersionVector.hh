@@ -75,14 +75,6 @@ namespace litecore {
             form, with no "*" allowed. mySourceID in the string will be changed to kMeSourceID (0). */
         void readASCII(slice asciiString, SourceID mySourceID = kMeSourceID);
 
-        /** Assembles a version vector from its history, as a list of ASCII versions/vectors.
-            This can take a few forms:
-            - ["new version vector"]
-            - ["new version", "parent version vector"]
-            - ["new version", "parent version", "grandparent version" ...]
-            Throws BadRevisionID if the history isn't in a form it understands. */
-        void readHistory(const slice history[], size_t historyCount, SourceID mySourceID = kMeSourceID);
-
         /** Reads binary form.  Overwrites any existing state.
             Throws BadRevisionID if the data's not valid.*/
         void readBinary(slice binaryData);
@@ -179,7 +171,7 @@ namespace litecore {
         [[nodiscard]] fleece::alloc_slice asASCII(SourceID myID = kMeSourceID) const;
 
         /// Same as \ref asASCII but returns a `std::string`, for convenience.
-        [[nodiscard]] std::string asString() const;
+        [[nodiscard]] std::string asString(SourceID myID = kMeSourceID) const;
 
         /// Writes vector in ASCII form to a slice-stream.
         /// If `myID` is given, occurrences of kMeSourceID will be written as that ID.
@@ -281,8 +273,9 @@ namespace litecore {
         void                        validate() const;
         vec                         versionsBySource() const;
 
-        vec    _vers;          // versions, in order from latest to oldest.
-        size_t _nCurrent = 0;  // Number of current/merged versions including the first
+        vec         _vers;          // versions, in order from latest to oldest.
+        size_t      _nCurrent = 0;  // Number of current/merged versions including the first
+        alloc_slice _revID;         // legacy (tree-based) revision ID, if any
     };
 
 }  // namespace litecore
