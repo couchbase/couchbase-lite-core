@@ -1115,13 +1115,18 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
     for ( unsigned i = 1; i <= 100; i++ ) {
         snprintf(docID, bufSize, "doc-%03u", i);
         INFO("Checking docID " << docID);
-        auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
-        C4Document* doc         = c4coll_getDoc(defaultColl, slice(docID), true, kDocGetCurrentRev, ERROR_INFO());
+        auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, slice(docID), true, kDocGetCurrentRev, ERROR_INFO());
         REQUIRE(doc);
         CHECK(((doc->flags & kDocDeleted) != 0) == (i > 50));
-        Dict body = c4doc_getProperties(doc);
-        CHECK(body["n"].asInt() == i);
-        c4doc_release(doc);
+        Dict root = c4doc_getProperties(doc);
+        CHECK(root["n"].asInt() == i);
+        // Test getting doc body from data [CBL-6239]:
+        slice body = c4doc_getRevisionBody(doc);
+        REQUIRE(body);
+        FLValue rootVal = FLValue_FromData(body, kFLUntrusted);
+        CHECK(rootVal);
+        CHECK(FLValue_GetType(rootVal) == kFLDict);
     }
 
     // Verify enumerating documents:
