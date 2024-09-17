@@ -55,17 +55,19 @@ add_executable(
     c4DocumentTest_Internal.cc
     DataFileTest.cc
     DocumentKeysTest.cc
-    FTSTest.cc
     LiteCoreTest.cc
     LogEncoderTest.cc
     N1QLParserTest.cc
+    QueryTranslatorTest.cc
+    QueryTest.cc
+    FTSTest.cc
+    ArrayQueryTest.cc
+    VectorQueryTest.cc
     PredictiveQueryTest.cc
     PredictiveVectorQueryTest.cc
-    QueryParserTest.cc
-    QueryTest.cc
     SequenceSetTest.cc
-    SequenceTrackerTest.cc
     SQLiteFunctionsTest.cc
+    SequenceTrackerTest.cc
     UpgraderTest.cc
     VectorQueryTest.cc
     LazyVectorQueryTest.cc
@@ -144,6 +146,7 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
     ${TOP}LiteCore/Query/N1QL_Parser
+    ${TOP}LiteCore/Query/Translator
     ${TOP}LiteCore/tests
     ${TOP}Replicator
     ${TOP}Replicator/tests

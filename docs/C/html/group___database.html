@@ -177,7 +177,7 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:ga29567950a7095c0f43f45f8e0c467eda"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes the file(s) for the database with the given name in the given directory.  <br /></td></tr>
 <tr class="separator:ga29567950a7095c0f43f45f8e0c467eda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf0c27e6962efc1ee4f18ef490184bbff" id="r_gaf0c27e6962efc1ee4f18ef490184bbff"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#gaf0c27e6962efc1ee4f18ef490184bbff">c4db_rekey</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, const <a class="el" href="struct_c4_encryption_key.html">C4EncryptionKey</a> *newKey, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gaf0c27e6962efc1ee4f18ef490184bbff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes a database's encryption key (removing encryption if it's NULL.) All C4Databases at that path must be closed first or an error will result.  <br /></td></tr>
+<tr class="memdesc:gaf0c27e6962efc1ee4f18ef490184bbff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes a database's encryption key (removing encryption if it's NULL.)  <br /></td></tr>
 <tr class="separator:gaf0c27e6962efc1ee4f18ef490184bbff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga70a3c93b0bdab75673dbd9e50fb75215" id="r_ga70a3c93b0bdab75673dbd9e50fb75215"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga70a3c93b0bdab75673dbd9e50fb75215">c4_shutdown</a> (<a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga70a3c93b0bdab75673dbd9e50fb75215"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes down the storage engines.  <br /></td></tr>
@@ -408,7 +408,8 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Asks LiteCore to look for and validate the presence of an extension given the name of the extension and the path in which it is supposed to reside. </p>
-<p>It makes an attempt to only check things that have the possibility of being corrected by the user (i.e. if there is a bug in the extension and it cannot load functionally that won't be caught) </p><dl class="params"><dt>Parameters</dt><dd>
+<p>It makes an attempt to only check things that have the possibility of being corrected by the user (i.e. if there is a bug in the extension and it cannot load functionally that won't be caught) </p><dl class="section note"><dt>Note</dt><dd>This function is not thread-safe. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">name</td><td>The name of the extension (corresponds to the filename without the extension or "lib" prefix) </td></tr>
     <tr><td class="paramname">extensionPath</td><td>The path in which the extension should be found </td></tr>
@@ -569,7 +570,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Closes the database and deletes the file/bundle. </p>
-<p>Does not free the handle, although any operation other than <a class="el" href="group___base.html#ga140327445ff91ebb34a8cc594b8dd686">c4db_release()</a> will fail with an error. All C4Databases at that path must be closed first or an error will result. </p>
+<p>Does not free the handle, although any operation other than <a class="el" href="group___base.html#ga140327445ff91ebb34a8cc594b8dd686">c4db_release()</a> will fail with an error. All C4Databases at that path must be closed first or an error will result. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 </div>
 </div>
@@ -598,7 +599,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Deletes the file(s) for the database with the given name in the given directory. </p>
-<p>All C4Databases at that path must be closed first or an error will result. Returns false, with no error, if the database doesn't exist. </p>
+<p>All C4Databases at that path must be closed first or an error will result. Returns false, with no error, if the database doesn't exist. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 </div>
 </div>
@@ -897,7 +898,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Opens a new handle to the same database file as <code>db</code>. </p>
-<p>The new connection is completely independent and can be used on another thread. </p><dl class="section note"><dt>Note</dt><dd>The caller must use a lock for Database when this function is called. </dd></dl>
+<p>The new connection is completely independent and can be used on another thread. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 </div>
 </div>
@@ -926,6 +927,7 @@ Data Structures</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Opens a database given its name (without the ".cblite2" extension) and directory. </p>
+<dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
 
 </div>
 </div>
@@ -979,7 +981,10 @@ Data Structures</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Changes a database's encryption key (removing encryption if it's NULL.) All C4Databases at that path must be closed first or an error will result. </p>
+<p>Changes a database's encryption key (removing encryption if it's NULL.) </p>
+<dl class="section note"><dt>Note</dt><dd>The caller must use a lock for Database when this function is called. </dd>
+<dd>
+All other C4Databases at that path must be closed first or an error will result. </dd></dl>
 
 </div>
 </div>

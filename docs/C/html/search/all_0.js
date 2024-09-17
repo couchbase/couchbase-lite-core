@@ -7,7 +7,7 @@ var searchData=
   ['_5f_5fhas_5ffeature_4',['__has_feature',['../_compiler_support_8h.html#af989845e24678c452b9222afdac95e7f',1,'CompilerSupport.h']]],
   ['_5f_5fhot_5',['__hot',['../_compiler_support_8h.html#aaa92ffc2c0cb30e9b5fda4c16a4bdd37',1,'CompilerSupport.h']]],
   ['_5f_5foptimize_6',['__optimize',['../_compiler_support_8h.html#ab659c24719edbfc237c6ce57e4591b0e',1,'CompilerSupport.h']]],
-  ['_5f_5fprintflike_7',['__printflike',['../c4_compat_8h.html#ab302334d9a77a6925be4e5b45397e4a3',1,'c4Compat.h']]],
+  ['_5f_5fprintflike_7',['__printflike',['../c4_compat_8h.html#ab302334d9a77a6925be4e5b45397e4a3',1,'__printflike:&#160;c4Compat.h'],['../_compiler_support_8h.html#ab302334d9a77a6925be4e5b45397e4a3',1,'__printflike:&#160;CompilerSupport.h']]],
   ['_5fflbase_5fh_8',['_FLBASE_H',['../_f_l_base_8h.html#a005a8238159e5f919def90c7693cff66',1,'FLBase.h']]],
   ['_5fflbuf_5frelease_9',['_FLBuf_Release',['../group___f_l_slice.html#ga03abaa1ce23dca35368f44afccc95e6c',1,'FLSlice.h']]],
   ['_5fflbuf_5fretain_10',['_FLBuf_Retain',['../group___f_l_slice.html#ga4b8e6e287b69b81573dd2c54c9f1ab9f',1,'FLSlice.h']]],

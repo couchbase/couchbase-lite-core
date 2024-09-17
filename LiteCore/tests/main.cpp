@@ -13,7 +13,7 @@
 // This defines the main entry point of a target that runs 'Catch' unit tests.
 
 
-#define CATCH_CONFIG_CONSOLE_WIDTH 120
+#define CATCH_CONFIG_CONSOLE_WIDTH 200
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 
 #include "QuietReporter.hh"  // Includes catch.hpp

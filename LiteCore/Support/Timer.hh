@@ -43,7 +43,8 @@ namespace litecore::actor {
             after the callback completes. */
         ~Timer() { manager().unschedule(this, true); }
 
-        /** Calling this causes the Timer to be deleted after it's fired. */
+        /** Calling this causes the Timer to be deleted after it's fired. Must have been allocated by `new Timer(...)`.
+            @warning  Do not manually delete it! */
         void autoDelete() { _autoDelete = true; }
 
         /** Schedules the timer to fire at the given time (or slightly later.)
@@ -104,6 +105,7 @@ namespace litecore::actor {
             std::mutex              _mutex;      // Thread-safety for _schedule
             std::condition_variable _condition;  // Used to signal that _schedule has changed
             std::thread             _thread;     // Bg thread that waits & fires Timers
+            Timer*                  _triggeredTimer{nullptr};
         };
 
         friend class Manager;

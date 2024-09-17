@@ -125,11 +125,8 @@ NODISCARD CBL_CORE_API bool c4blob_delete(C4BlobStore*, C4BlobKey, C4Error* C4NU
 /** \name Streamed Reads
         @{ */
 
-/* NOTE: These functions are thread-safe in the same manner as described in the previous
-       section, with the additional restriction that a stream cannot be called concurrently on
-       multiple threads. */
-
-/** Opens a blob for reading, as a random-access byte stream. */
+/** Opens a blob for reading, as a random-access byte stream.
+    \note This function is thread-safe. */
 NODISCARD CBL_CORE_API C4ReadStream* c4blob_openReadStream(C4BlobStore*, C4BlobKey, C4Error* C4NULLABLE) C4API;
 
 /** Reads from an open stream.
@@ -142,7 +139,8 @@ NODISCARD CBL_CORE_API C4ReadStream* c4blob_openReadStream(C4BlobStore*, C4BlobK
 NODISCARD CBL_CORE_API size_t c4stream_read(C4ReadStream* stream, void* buffer, size_t maxBytesToRead,
                                             C4Error* C4NULLABLE error) C4API;
 
-/** Returns the exact length in bytes of the stream. */
+/** Returns the exact length in bytes of the stream. 
+    \note This function is thread-safe. */
 CBL_CORE_API int64_t c4stream_getLength(C4ReadStream*, C4Error* C4NULLABLE) C4API;
 
 /** Moves to a random location in the stream; the next c4stream_read call will read from that
@@ -156,13 +154,10 @@ NODISCARD CBL_CORE_API bool c4stream_seek(C4ReadStream*, uint64_t position, C4Er
 /** \name Streamed Writes
         @{ */
 
-/* NOTE: These functions are thread-safe in the same manner as described in the previous
-       section, with the additional restriction that a stream cannot be called concurrently on
-       multiple threads. */
-
 /** Opens a write stream for creating a new blob. You should then call c4stream_write to
         write the data, ending with c4stream_install to compute the blob's key and add it to
-        the store, and then c4stream_closeWriter. */
+        the store, and then c4stream_closeWriter. 
+        \note This function is thread-safe. */
 NODISCARD CBL_CORE_API C4WriteStream* c4blob_openWriteStream(C4BlobStore*, C4Error* C4NULLABLE) C4API;
 
 /** Writes data to a stream. 

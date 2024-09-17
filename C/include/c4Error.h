@@ -195,7 +195,8 @@ static constexpr C4Error kC4NoError = {};
 // C4Error C API:
 
 
-/** Returns an error message describing a C4Error. Remember to free the result. */
+/** Returns an error message describing a C4Error. Remember to free the result. 
+    \note This function is thread-safe. */
 CBL_CORE_API FLStringResult c4error_getMessage(C4Error error) C4API;
 
 /** Returns a description of an error, including the domain and code as well as the message.

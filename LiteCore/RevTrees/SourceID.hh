@@ -81,9 +81,6 @@ namespace litecore {
         replication. */
     constexpr SourceID kMeSourceID;
 
-    /** A `SourceID` used to represent a version created during upgrade of a database. */
-    constexpr SourceID kLegacyRevSourceID{0x1e /*... rest is 00 */};
-
     /** The possible orderings of two Versions or VersionVectors.
         (Can be interpreted as two 1-bit flags.) */
     enum versionOrder {
@@ -92,5 +89,9 @@ namespace litecore {
         kNewer       = 2,               // This one is newer
         kConflicting = kOlder | kNewer  // The vectors conflict
     };
+
+    static inline versionOrder mkOrder(bool newer, bool older) {
+        return versionOrder((newer ? kNewer : kSame) | (older ? kOlder : kSame));
+    }
 
 }  // namespace litecore

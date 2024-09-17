@@ -106,12 +106,16 @@ namespace litecore {
             if ( c == oldChar ) c = newChar;
     }
 
-    void replace(std::string& str, string_view oldStr, string_view newStr) {
+    bool replace(std::string& str, string_view oldStr, string_view newStr) {
+        bool replaced = false;
+        ;
         string::size_type pos = 0;
         while ( string::npos != (pos = str.find(oldStr, pos)) ) {
             str.replace(pos, oldStr.size(), newStr);
             pos += newStr.size();
+            replaced = true;
         }
+        return replaced;
     }
 
     bool hasPrefix(string_view str, string_view prefix) noexcept {

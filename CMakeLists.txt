@@ -233,6 +233,7 @@ set(
     LiteCore/Database
     LiteCore/Query
     LiteCore/Query/N1QL_Parser
+    LiteCore/Query/Translator
     LiteCore/RevTrees
     LiteCore/Storage
     LiteCore/Support

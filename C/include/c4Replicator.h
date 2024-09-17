@@ -30,6 +30,7 @@ NODISCARD CBL_CORE_API bool c4repl_isValidRemote(C4Address remoteAddress, C4Stri
 
 /** A simple URL parser that populates a C4Address from a URL string.
         The fields of the address will point inside the url string.
+        \note This function is thread-safe.
         @param url  The URL to be parsed.
         @param address  On sucess, the fields of the struct this points to will be populated with
                         the address components. This that are slices will point into the

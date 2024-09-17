@@ -76,6 +76,15 @@ function(setup_litecore_build)
             ${target} PRIVATE
             "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
         )
+
+        # Enough is enough, we keep bumping the compiler to get newer C++ stuff
+        # and then suffering the consequences of that stuff not being available
+        # everywhere that we need.  Just build it into the product directly
+        target_link_options(
+            ${target} PRIVATE
+            "-static-libstdc++"
+            "-static-libgcc"
+        )
     endforeach()
 
     foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)

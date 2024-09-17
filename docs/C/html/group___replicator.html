@@ -1341,7 +1341,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>A simple URL parser that populates a <a class="el" href="struct_c4_address.html" title="A simple parsed-URL type.">C4Address</a> from a URL string. </p>
-<p>The fields of the address will point inside the url string. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>The fields of the address will point inside the url string. </p><dl class="section note"><dt>Note</dt><dd>This function is thread-safe. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">url</td><td>The URL to be parsed. </td></tr>
     <tr><td class="paramname">address</td><td>On sucess, the fields of the struct this points to will be populated with the address components. This that are slices will point into the appropriate substrings of <code>url</code>. </td></tr>

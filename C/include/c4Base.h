@@ -220,8 +220,10 @@ CBL_CORE_API C4Socket* C4NULLABLE          c4socket_retain(C4Socket* C4NULLABLE)
 
 static inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r); }
 
+/** \note This function is thread-safe. */
 static inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
 
+/** \note This function is thread-safe. */
 static inline void c4db_release(C4Database* C4NULLABLE r) C4API { c4base_release(r); }
 
 static inline void c4index_release(C4Index* C4NULLABLE i) C4API { c4base_release(i); }
@@ -230,18 +232,25 @@ static inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { 
 
 static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
 
+/** \note This function is thread-safe. */
 static inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
 
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4doc_release(C4Document* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
 CBL_CORE_API void c4socket_release(C4Socket* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted, but must be freed after use:
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4dbobs_free(C4CollectionObserver* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4docobs_free(C4DocumentObserver* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4enum_free(C4DocEnumerator* C4NULLABLE) C4API;
 /** Closes and disposes a listener. */
 CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
 /** Frees the storage occupied by a raw document. */
 CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE) C4API;
@@ -250,11 +259,13 @@ CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE) C4API;
         it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
         \note This function is thread-safe. */
 CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE) C4API;
-/** Closes a read-stream. (A NULL parameter is allowed.) */
+/** Closes a read-stream. (A NULL parameter is allowed.) 
+    \note After close, the ReadStream is deleted. */
 CBL_CORE_API void c4stream_close(C4ReadStream* C4NULLABLE) C4API;
 /** Closes a blob write-stream. If c4stream_install was not already called (or was called but
         failed), the temporary file will be deleted without adding the blob to the store.
-        (A NULL parameter is allowed, and is a no-op.) */
+        (A NULL parameter is allowed, and is a no-op.) 
+        \note After close, the WriteStream is deleted. */
 CBL_CORE_API void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
 
 
@@ -305,7 +316,8 @@ CBL_CORE_API C4Timestamp c4_now(void) C4API;
 
 /** Wiring call for platforms without discoverable temporary directories.  Simply sets the SQLite
     temp directory so that it can write its temporary files without error.  Several platforms need
-    to do this, but not all need to use this API.  
+    to do this, but not all need to use this API.
+    \note This function is not thread-safe. 
     @param path The path to a writable directory for temporary files for SQLite
     @param err  If an error happens (e.g. it is an error to call this function twice), this parameter
                 records it.

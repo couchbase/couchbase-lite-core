@@ -436,7 +436,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the total number of rows in the query, if known. </p>
-<p>Not all query enumerators may support this (but the current implementation does.) </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Not all query enumerators may support this (but the current implementation does.) </p><dl class="section note"><dt>Note</dt><dd>The caller must use a lock for QueryEnumerator when this function is called. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">e</td><td>The query enumerator </td></tr>
     <tr><td class="paramname">outError</td><td>On failure, an error will be stored here (probably kC4ErrorUnsupported.) </td></tr>
@@ -467,7 +468,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Advances a query enumerator to the next row, populating its fields. </p>
-<p>Returns true on success, false at the end of enumeration or on error. </p>
+<dl class="section note"><dt>Note</dt><dd>The caller must use a lock for QueryEnumerator when this function is called. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>true on success, false at the end of enumeration or on error. </dd></dl>
 
 </div>
 </div>
@@ -552,7 +554,8 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Jumps to a specific row. </p>
-<p>Not all query enumerators may support this (but the current implementation does.) </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Not all query enumerators may support this (but the current implementation does.) </p><dl class="section note"><dt>Note</dt><dd>The caller must use a lock for QueryEnumerator when this function is called. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">e</td><td>The query enumerator </td></tr>
     <tr><td class="paramname">rowIndex</td><td>The number of the row, starting at 0, or -1 to restart before first row </td></tr>

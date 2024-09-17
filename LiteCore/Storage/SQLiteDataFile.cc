@@ -303,11 +303,12 @@ namespace litecore {
             _exec(stringprintf(
                     "PRAGMA cache_size=%d; "             // Memory cache
                     "PRAGMA mmap_size=%d; "              // Memory-mapped reads
-                    "PRAGMA synchronous=normal; "        // Speeds up commits
+                    "PRAGMA synchronous=%s; "            // Speeds up commits
                     "PRAGMA journal_size_limit=%lld; "   // Limit WAL disk usage
                     "PRAGMA case_sensitive_like=true; "  // Case sensitive LIKE, for N1QL compat
                     "PRAGMA fullfsync=ON",  // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
-                    -(int)kCacheSize / 1024, kMMapSize, (long long)kJournalSize));
+                    -(int)kCacheSize / 1024, kMMapSize, getOptions().diskSyncFull ? "full" : "normal",
+                    (long long)kJournalSize));
 
             (void)upgradeSchema(SchemaVersion::WithPurgeCount, "Adding purgeCnt column", [&] {
                 // Schema upgrade: Add the `purgeCnt` column to the kvmeta table.
@@ -795,25 +796,6 @@ namespace litecore {
         return ksName == kDefaultKeyStoreName || ksName.hasPrefix(KeyStore::kCollectionPrefix);
     }
 
-    namespace {
-        std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath) {
-            auto        dot = DataFile::findCollectionPathSeparator(collectionPath);
-            alloc_slice scope;
-            alloc_slice collection;
-            if ( dot == string::npos ) {
-                collection = DataFile::unescapeCollectionName(collectionPath);
-            } else {
-                scope      = DataFile::unescapeCollectionName(collectionPath.substr(0, dot));
-                collection = DataFile::unescapeCollectionName(collectionPath.substr(dot + 1));
-            }
-            return std::make_pair(scope, collection);
-        }
-
-        inline bool isDefaultCollection(slice id) { return id == KeyStore::kDefaultCollectionName; }
-
-        inline bool isDefaultScope(slice id) { return !id || isDefaultCollection(id); }
-    }  // namespace
-
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
     // (The name might be of the form "scope.collection", which is fine because that's the same
     // encoding as used in table names.)
@@ -827,11 +809,11 @@ namespace litecore {
         DebugAssert(!hasPrefix(collection, "kv_"));
 
         string name;
-        if ( type == QueryParser::kLiveAndDeletedDocs ) {
+        if ( type == QueryTranslator::kLiveAndDeletedDocs ) {
             name = "all_";
         } else {
             name = "kv_";
-            if ( type == QueryParser::kDeletedDocs ) name += kDeletedKeyStorePrefix;
+            if ( type == QueryTranslator::kDeletedDocs ) name += kDeletedKeyStorePrefix;
         }
 
         auto [scope, coll] = splitCollectionPath(collection);
@@ -864,8 +846,7 @@ namespace litecore {
         return name;
     }
 
-    string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator,
-                                              const string& property) const {
+    string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) {
         return onTable + string(typeSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
