@@ -872,7 +872,7 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
         checkExplanation(false);  // even with index, this must do a scan
         if ( withIndex )
             CHECK(run2() == (vector<string>{"blue, 10", "cyan, 3", "green, 2", "red, 3", "white, 1", "yellow, 5"}));
-        else
+        else  // Unnest without index is not working yet with group_by.
             CHECK(run2()
                   == (vector<string>{"MISSING, MISSING", "MISSING, MISSING", "MISSING, MISSING", "MISSING, MISSING",
                                      "MISSING, MISSING", "MISSING, MISSING"}));

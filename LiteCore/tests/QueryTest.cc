@@ -2993,115 +2993,52 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
 }
 
 namespace {
-    void AddUnnestDoc(KeyStore* store, slice docID, slice fname, slice lname) {
-        ExclusiveTransaction t(store->dataFile());
-        DataFileTestFixture::writeDoc(*store, docID, DocumentFlags::kNone, t, [=](Encoder& enc) {
-            enc.writeKey("name");
-            enc.beginDictionary();
-            enc.writeKey("first");
-            enc.writeString(fname);
-            enc.writeKey("last");
-            enc.writeString(lname);
-            enc.endDictionary();
-
-            enc.writeKey("contacts");
-            enc.beginArray();
-
-            // contacts[0]
-            enc.beginDictionary();
-            enc.writeKey("type");
-            enc.writeString("primary");
-            enc.writeKey("address");
-            enc.beginDictionary();
-            enc.writeKey("street");
-            enc.writeString("1 St");
-            enc.writeKey("city");
-            enc.writeString("San Pedro");
-            enc.writeKey("state");
-            enc.writeString("CA");
-            enc.endDictionary();
-            enc.writeKey("phones");
-            enc.beginArray();
-            enc.beginDictionary();
-            enc.writeKey("type");
-            enc.writeString("home");
-            enc.writeKey("numbers");
-            enc.beginArray();
-            enc.writeString("310-123-4567");
-            enc.writeString("310-123-4568");
-            enc.endArray();       // numbers
-            enc.endDictionary();  //phones[0]
-            enc.beginDictionary();
-            enc.writeKey("type");
-            enc.writeString("mobile");
-            enc.writeKey("numbers");
-            enc.beginArray();
-            enc.writeString("310-123-6789");
-            enc.writeString("310-222-1234");
-            enc.endArray();
-            enc.endDictionary();  // phones[1]
-            enc.endArray();       // phones
-            enc.writeKey("emails");
-            enc.beginArray();
-            enc.writeString("lue@email.com");
-            enc.writeString("laserna@email.com");
-            enc.endArray();       // emails
-            enc.endDictionary();  // contacts[0]
-
-            // contacts[1]
-            enc.beginDictionary();
-            enc.writeKey("type");
-            enc.writeString("secondary");
-            enc.writeKey("address");
-            enc.beginDictionary();
-            enc.writeKey("street");
-            enc.writeString("5 St");
-            enc.writeKey("city");
-            enc.writeString("Santa Clara");
-            enc.writeKey("state");
-            enc.writeString("CA");
-            enc.endDictionary();  // address
-            enc.writeKey("phones");
-            enc.beginArray();
-            enc.beginDictionary();
-            enc.writeKey("type");
-            enc.writeString("home");
-            enc.writeKey("numbers");
-            enc.beginArray();
-            enc.writeString("650-123-4567");
-            enc.writeString("650-123-2120");
-            enc.endArray();         // numbers
-            enc.endDictionary();    //phones[0]
-            enc.beginDictionary();  //phones[1]
-            enc.writeKey("type");
-            enc.writeString("mobile");
-            enc.writeKey("numbers");
-            enc.beginArray();
-            enc.writeString("650-123-6789");
-            enc.endArray();
-            enc.endDictionary();  // phones[1]
-            enc.endArray();       // phones
-            enc.writeKey("emails");
-            enc.beginArray();
-            enc.writeString("eul@email.com");
-            enc.writeString("laser@email.com");
-            enc.endArray();       // emails
-            enc.endDictionary();  // contacts[1]
-
-            enc.endArray();  // contacts
-
-            enc.writeKey("likes");
-            enc.beginArray();
-            enc.writeString("Soccer");
-            enc.writeString("Cat");
-            enc.endArray();
-        });
+    void AddDocWithJSON(KeyStore* store, slice docID, ExclusiveTransaction& t, const char* jsonBody) {
+        DataFileTestFixture::writeDoc(
+                *store, docID, DocumentFlags::kNone, t,
+                [=](Encoder& enc) {
+                    impl::JSONConverter jc(enc);
+                    if ( !jc.encodeJSON(slice(jsonBody)) ) {
+                        enc.reset();
+                        error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
+                    }
+                },
+                false);
         t.commit();
     }
 }  // anonymous namespace
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
-    AddUnnestDoc(store, "doc01"_sl, "Lue"_sl, "Laserna"_sl);
+    const char* json = R"==(
+{
+   "name":{"first":"Lue","last":"Laserna"},
+   "contacts":[
+     {
+       "type":"primary",
+       "address":{"street":"1 St","city":"San Pedro","state":"CA"},
+       "phones":[
+         {"type":"home","numbers":["310-123-4567","310-123-4568"]},
+         {"type":"mobile","numbers":["310-123-6789","310-222-1234"]}
+       ],
+       "emails":["lue@email.com","laserna@email.com"]
+     },
+     {
+       "type":"secondary",
+       "address":{"street":"5 St","city":"Santa Clara","state":"CA"},
+       "phones":[
+         {"type":"home","numbers":["650-123-4567","650-123-2120"]},
+         {"type":"mobile","numbers":["650-123-6789"]}
+       ],
+       "emails":["eul@email.com","laser@email.com"]
+     }
+   ],
+   "likes":["Soccer","Cat"]
+}
+)==";
+    {
+        ExclusiveTransaction t(store->dataFile());
+        AddDocWithJSON(store, "doc01"_sl, t, json);
+    }
 
     // Case 1, Single level UNNEST
     // ---------------------------
@@ -3269,5 +3206,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
     //    UNNEST contacts AS c
     //    GROUP BY c.address.state, c.address.city
     //
-    // "Group By" does not work with pure virtual table, fl_each. c.f. test "C4Query UNNEST objects" in C4QueryTest.cc
+    // "Group By" does not work yet with pure virtual table, fl_each.
+    // c.f. test "C4Query UNNEST objects" in C4QueryTest.cc
 }
