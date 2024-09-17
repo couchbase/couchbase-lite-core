@@ -33,6 +33,7 @@
 #include "NumConversion.hh"
 #include "CollectionImpl.hh"
 #include "StringUtil.hh"
+#include "fleece/Mutable.hh"
 #include <sstream>
 
 using namespace std;
@@ -224,17 +225,17 @@ bool c4db_deleteCollection(C4Database* db, C4CollectionSpec spec, C4Error* C4NUL
 
 FLMutableArray c4db_collectionNames(C4Database* db, C4String inScope, C4Error* C4NULLABLE outError) noexcept {
     return tryCatch<FLMutableArray>(outError, [&] {
-        auto names = FLMutableArray_New();
-        db->forEachCollection(inScope, [&](C4CollectionSpec spec) { FLMutableArray_AppendString(names, spec.name); });
-        return names;
+        auto names = fleece::MutableArray::newArray();
+        db->forEachCollection(inScope, [&](C4CollectionSpec spec) { names.append(spec.name); });
+        return FLMutableArray(FLValue_Retain(names));
     });
 }
 
 FLMutableArray c4db_scopeNames(C4Database* db, C4Error* C4NULLABLE outError) noexcept {
     return tryCatch<FLMutableArray>(outError, [&] {
-        auto names = FLMutableArray_New();
-        db->forEachScope([&](slice scope) { FLMutableArray_AppendString(names, scope); });
-        return names;
+        auto names = fleece::MutableArray::newArray();
+        db->forEachScope([&](slice scope) { names.append(scope); });
+        return FLMutableArray(FLValue_Retain(names));
     });
 }
 

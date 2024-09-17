@@ -396,12 +396,22 @@ namespace litecore::qt {
         return node;
     }
 
-    CollateNode::CollateNode(ExprNode* child, ParseContext& ctx) : _collation(ctx.collation) {
+    CollateNode::CollateNode(ExprNode* child, ParseContext& ctx)
+        : localeName(ctx.newString(ctx.collation.localeName))
+        , unicodeAware{ctx.collation.unicodeAware}
+        , caseSensitive{ctx.collation.caseSensitive}
+        , diacriticSensitive{ctx.collation.diacriticSensitive} {
         initChild(_child, child);
         ctx.collationApplied = true;
     }
 
-    bool CollateNode::isBinary() const { return _collation.caseSensitive && !_collation.unicodeAware; }
+    Collation CollateNode::collation() const {
+        Collation c(caseSensitive, diacriticSensitive, localeName);
+        c.unicodeAware = unicodeAware;
+        return c;
+    }
+
+    bool CollateNode::isBinary() const { return caseSensitive && !unicodeAware; }
 
     void CollateNode::visitChildren(ChildVisitor const& visitor) { visitor(_child); }
 

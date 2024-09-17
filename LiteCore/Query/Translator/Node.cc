@@ -18,7 +18,7 @@ namespace litecore::qt {
     const char* ParseContext::newString(string_view sv) {
         auto len = sv.size();
         auto str = (char*)arena.alloc(len + 1, 1);
-        if (len > 0) memcpy(str, sv.data(), len);
+        if ( len > 0 ) memcpy(str, sv.data(), len);
         str[len] = '\0';
         return str;
     }

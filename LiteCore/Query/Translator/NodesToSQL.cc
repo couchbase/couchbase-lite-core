@@ -264,7 +264,7 @@ namespace litecore::qt {
 
     void CollateNode::writeSQL(SQLWriter& ctx) const {
         Parenthesize p(ctx, kCollatePrecedence);
-        ctx << _child << " COLLATE " << sqlIdentifier(_collation.sqliteName());
+        ctx << _child << " COLLATE " << sqlIdentifier(collation().sqliteName());
     }
 
     void AnyEveryNode::writeSQL(SQLWriter& ctx) const {
