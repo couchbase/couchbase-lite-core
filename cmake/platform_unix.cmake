@@ -89,7 +89,7 @@ function(setup_litecore_build_unix)
         -Werror=unused-value
         -Werror=uninitialized
         -Werror=float-conversion
-        -Wformat=2
+        #-Wformat=2
         #-Wshadow
         #-Weffc++
     )

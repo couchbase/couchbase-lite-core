@@ -51,6 +51,9 @@ namespace litecore::qt {
                     return result;
                 }
         }
+#ifdef __GNUC__
+        __builtin_unreachable();  // suppress GCC warning "control reaches end of non-void function"
+#endif
     }
 
     ExprNode* ExprNode::parseArray(Array array, ParseContext& ctx) {

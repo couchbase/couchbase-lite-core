@@ -241,8 +241,8 @@ namespace litecore::blip {
             MessageType          msgType = isResponse() ? kAckResponseType : kAckRequestType;
             uint8_t              buf[kMaxVarintLen64];
             alloc_slice          payload(buf, PutUVarInt(buf, _rawBytesReceived));
-            Retained<MessageOut> ack =
-                    new MessageOut(_connection, (FrameFlags)(msgType | kUrgent | kNoReply), payload, nullptr, _number);
+            Retained<MessageOut> ack = new MessageOut(
+                    _connection, (FrameFlags)(FrameFlags(msgType) | kUrgent | kNoReply), payload, nullptr, _number);
             _connection->send(ack);
             _unackedBytes = 0;
         }
