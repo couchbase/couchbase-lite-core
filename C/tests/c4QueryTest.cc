@@ -1039,9 +1039,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer with changing query parame
     auto params = enc.finish();
     c4query_setParameters(query, params);
 
-    auto explain = c4query_explain(query);
+    auto explain = alloc_slice(c4query_explain(query));
     CHECK(explain);
-    C4Log("Explain = %.*s", (int)explain.size, (char*)explain.buf);
+    C4Log("Explain = %.*s", FMTSLICE(explain));
 
     State state;
     state.query = query;

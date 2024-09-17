@@ -56,7 +56,7 @@ inline std::string toString(FLSlice s) { return std::string(fleece::slice(s)); }
 
 inline std::string toString(const FLSliceResult& s) { return {(char*)s.buf, s.size}; }
 
-inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(s)); }
+inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(std::move(s))); }
 
 // Converts JSON5 to JSON; helps make JSON test input more readable!
 std::string         json5(std::string_view);
