@@ -40,7 +40,7 @@ struct QuietReporter : public CaseListReporter {
 
     explicit QuietReporter(Catch::ReporterConfig const& config) : CaseListReporter(config) {
         InitTestLogging();
-        litecore::error::setNotableExceptionHook([=]() { dumpBinaryLogs(); });
+        litecore::error::setNotableExceptionHook([this]() { dumpBinaryLogs(); });
         sInstance = this;
     }
 

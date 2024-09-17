@@ -22,7 +22,6 @@
 #    include "BothKeyStore.hh"
 #    include "Error.hh"
 #    include "Query.hh"
-#    include "QueryParser.hh"
 #    include "SequenceSet.hh"
 #    include "SQLiteDataFile.hh"
 #    include "SQLite_Internal.hh"

@@ -38,7 +38,7 @@ namespace litecore::REST {
 
     string RESTListener::serverNameAndVersion() {
         alloc_slice version(c4_getVersion());
-        return format("%s/%.*s", kServerName.c_str(), SPLAT(version));
+        return stringprintf("%s/%.*s", kServerName.c_str(), SPLAT(version));
     }
 
     RESTListener::RESTListener(const Config& config)
@@ -53,7 +53,7 @@ namespace litecore::REST {
 
         if ( auto callback = config.httpAuthCallback; callback ) {
             void* context = config.callbackContext;
-            _server->setAuthenticator([=](slice authorizationHeader) {
+            _server->setAuthenticator([this, callback, context](slice authorizationHeader) {
                 return callback((C4Listener*)this, authorizationHeader, context);
             });
         }
@@ -163,8 +163,9 @@ namespace litecore::REST {
         if ( tlsConfig->rootClientCerts ) tlsContext->setRootCerts(tlsConfig->rootClientCerts->assertSignedCert());
         if ( auto callback = tlsConfig->certAuthCallback; callback ) {
             auto context = tlsConfig->tlsCallbackContext;
-            tlsContext->setCertAuthCallback(
-                    [=](slice certData) { return callback((C4Listener*)this, certData, context); });
+            tlsContext->setCertAuthCallback([callback, this, context](slice certData) {
+                return callback((C4Listener*)this, certData, context);
+            });
         }
         return tlsContext;
 #else

@@ -33,7 +33,6 @@
 
 using namespace std;
 using namespace std::chrono;
-using namespace date;
 using namespace fleece;
 
 namespace litecore::REST {
@@ -136,7 +135,7 @@ namespace litecore::REST {
             const char* defaultMessage = StatusMessage(_status);
             if ( defaultMessage ) _statusMessage = defaultMessage;
         }
-        string statusLine = format("HTTP/1.1 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
+        string statusLine = stringprintf("HTTP/1.1 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
         _responseHeaderWriter.write(statusLine);
         _sentStatus = true;
 

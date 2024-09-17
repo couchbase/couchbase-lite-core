@@ -24,6 +24,10 @@ static ostream& operator<<(ostream& o, C4FullTextMatch match) {
              << "bytes " << match.start << " + " << match.length << "}";
 }
 
+#ifdef __cpp_char8_t
+static auto json5(const char8_t* str) { return json5((const char*)str); }
+#endif
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Basic", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run()
@@ -772,7 +776,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
     c4queryenum_release(e);
 }
 
-N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C][Unnest]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
@@ -813,7 +817,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C][Unnest]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
@@ -888,9 +892,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
 
     string explanationString = toString(c4query_explain(query));
     INFO("Explanation = " << explanationString);
-    CHECK(litecore::hasPrefix(explanationString,
-                              "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, "
-                              "'contact.address.state') = 'CA') AND (_doc.flags & 1 = 0)"));
+    CHECK(litecore::hasPrefix(explanationString, "SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, "
+                                                 "'contact.address.state') = 'CA' AND (_doc.flags & 1 = 0)"));
 
     auto e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
@@ -1231,7 +1234,7 @@ TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
     checkColumnTitles({"Widgets"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'}]}"));
     checkColumnTitles({"nested"});
-    compileSelect(json5("{WHAT: ['.'], FROM: [{COLLECTION:'nested', SCOPE: 'small'},"
+    compileSelect(json5("{WHAT: ['.small.nested'], FROM: [{COLLECTION:'nested', SCOPE: 'small'},"
                         "{COLLECTION:'nested', JOIN:'INNER', ON: ['=', 1, 1]}]}"));
     checkColumnTitles({"small.nested"});
     compileSelect(json5("{WHAT: ['.'], FROM: [{AS: 'alias', COLLECTION:'nested', SCOPE: 'small'}]}"));

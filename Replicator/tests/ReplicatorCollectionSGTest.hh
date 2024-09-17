@@ -134,8 +134,9 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         }
         if ( propertyEncryption == 1 ) {
             replParams.setOption(kC4ReplicatorOptionDisablePropertyDecryption, true);
-            std::for_each(decContextMap->begin(), decContextMap->end(),
-                          [=](auto& p) { p.second.collection = c4db_getCollection(verifyDb, p.first, ERROR_INFO()); });
+            std::for_each(decContextMap->begin(), decContextMap->end(), [this](auto& p) {
+                p.second.collection = c4db_getCollection(verifyDb, p.first, ERROR_INFO());
+            });
         }
 #else
         (void)propertyEncryption;

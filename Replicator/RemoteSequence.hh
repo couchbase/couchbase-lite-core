@@ -64,7 +64,7 @@ namespace litecore::repl {
         }
 
         [[nodiscard]] std::string toJSONString() const {
-            if ( isInt() ) return format("%" PRIu64, intValue());
+            if ( isInt() ) return stringprintf("%" PRIu64, intValue());
             else
                 return std::string(sliceValue());
         }

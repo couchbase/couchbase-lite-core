@@ -132,6 +132,7 @@ namespace litecore {
         options.create              = (_config.flags & kC4DB_Create) != 0;
         options.writeable           = (_config.flags & kC4DB_ReadOnly) == 0;
         options.upgradeable         = (_config.flags & kC4DB_NoUpgrade) == 0;
+        options.diskSyncFull        = (_config.flags & kC4DB_DiskSyncFull) != 0;
         options.useDocumentKeys     = true;
         options.encryptionAlgorithm = (EncryptionAlgorithm)_config.encryptionKey.algorithm;
         if ( options.encryptionAlgorithm != kNoEncryption ) {
@@ -525,7 +526,7 @@ namespace litecore {
         // CBL-3298: Final fallback to detect scopes added in another handle
         auto allStores = _dataFile->allKeyStoreNames();
 
-        return std::any_of(allStores.begin(), allStores.end(), [&name](const std::string& store) {
+        return ranges::any_of(allStores, [&name](const std::string& store) {
             auto spec = keyStoreNameToCollectionSpec(slice(store));
             return spec.scope == name;
         });

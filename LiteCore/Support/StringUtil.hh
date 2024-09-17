@@ -48,10 +48,10 @@ namespace litecore {
     }
 
     /** Like sprintf(), but returns a std::string */
-    std::string format(const char* fmt NONNULL, ...) __printflike(1, 2);
+    std::string stringprintf(const char* fmt NONNULL, ...) __printflike(1, 2);
 
     /** Like vsprintf(), but returns a std::string */
-    std::string vformat(const char* fmt NONNULL, va_list) __printflike(1, 0);
+    std::string vstringprintf(const char* fmt NONNULL, va_list) __printflike(1, 0);
 
     void split(std::string_view str, std::string_view separator, fleece::function_ref<void(std::string_view)> callback);
 
@@ -72,8 +72,8 @@ namespace litecore {
     /** Replaces all occurrences of `oldChar` with `newChar`. */
     void replace(std::string& str, char oldChar, char newChar);
 
-    /** Replaces all occurrences of `oldStr` with `newStr`. */
-    void replace(std::string& str, std::string_view oldStr, std::string_view newStr);
+    /** Replaces all occurrences of `oldStr` with `newStr`. Returns true if anything was replaced. */
+    bool replace(std::string& str, std::string_view oldStr, std::string_view newStr);
 
     /** Returns true if `str` begins with the string `prefix`. */
     bool hasPrefix(std::string_view str, std::string_view prefix) noexcept;

@@ -533,10 +533,10 @@ class ReplicatorLoopbackTest
             TransactionHelper t(db);
             string            revID;
             if ( useFakeRevIDs ) {
-                revID = isRevTrees(db) ? format("%d-ffff", revNo) : format("%d@*", revNo);
+                revID = isRevTrees(db) ? stringprintf("%d-ffff", revNo) : stringprintf("%d@*", revNo);
                 createRev(collection, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
-                string json = format(R"({"db":"%p","i":%d})", db, revNo);
+                string json = stringprintf(R"({"db":"%p","i":%d})", db, revNo);
                 revID       = createFleeceRev(collection, docID, nullslice, slice(json));
             }
             Log("-------- %s %d: Created rev '%.*s' #%s --------", logName, revNo, SPLAT(docID), revID.c_str());
@@ -549,7 +549,7 @@ class ReplicatorLoopbackTest
     }
 
     void addDocsInParallel(duration interval, int total) {
-        _parallelThread.reset(runInParallel([=]() {
+        _parallelThread.reset(runInParallel([this, interval, total]() {
             _expectedDocumentCount = addDocs(_collDB1, interval, total);
             sleepFor(1s);  // give replicator a moment to detect the latest revs
             stopWhenIdle();
@@ -558,7 +558,7 @@ class ReplicatorLoopbackTest
 
     void addRevsInParallel(duration interval, const alloc_slice& docID, int firstRev, int totalRevs,
                            bool useFakeRevIDs = true) {
-        _parallelThread.reset(runInParallel([=]() {
+        _parallelThread.reset(runInParallel([this, interval, docID, firstRev, totalRevs, useFakeRevIDs]() {
             addRevs(_collDB1, interval, docID, firstRev, totalRevs, useFakeRevIDs, "db");
             sleepFor(1s);  // give replicator a moment to detect the latest revs
             stopWhenIdle();

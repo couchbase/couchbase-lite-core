@@ -30,7 +30,7 @@ using namespace fleece::impl;
 
 class QueryTest : public DataFileTestFixture {
   public:
-    static const int numberOfOptions = 3;
+    static const int numberOfOptions = 5;
 
     string collectionName;
     int    option{0};
@@ -38,29 +38,16 @@ class QueryTest : public DataFileTestFixture {
   protected:
     QueryTest() : QueryTest(0) {}
 
-    static unsigned alter2;
-    static unsigned alter3;
+    static constexpr slice kCollectionNameOptions[numberOfOptions] = {
+            KeyStore::kDefaultCollectionName, "_", "Secondary", "_default.Secondary", "scopey.subsidiary"};
+    static constexpr slice kKeyStoreNameOptions[numberOfOptions] = {nullslice, nullslice, ".Secondary", ".Secondary",
+                                                                    ".scopey.subsidiary"};
 
     explicit QueryTest(int option) : option(option) {
-        static const char* kSectionNames[3] = {"default collection", "other collection", "collection in other scope"};
-        logSection(kSectionNames[option]);
-        unsigned jump;
-        switch ( option ) {
-            case 0:
-                jump           = alter3++ % 3;
-                collectionName = (jump == 0) ? KeyStore::kDefaultCollectionName : (jump == 1) ? "_" : "db";
-                break;
-            case 1:
-                collectionName = (alter2++ % 2 == 0) ? "Secondary" : "_default.Secondary";
-                store          = &db->getKeyStore(".Secondary");
-                break;
-            case 2:
-                collectionName = "scopey.subsidiary";
-                store          = &db->getKeyStore(".scopey.subsidiary");
-                break;
-            default:
-                Assert(false, "Test option out of valid range");
-        }
+        Assert(option < numberOfOptions, "Test option out of valid range");
+        collectionName = kCollectionNameOptions[option];
+        logSection(stringprintf("Collection `%s`", collectionName.c_str()));
+        if ( slice keyStoreName = kKeyStoreNameOptions[option] ) store = &db->getKeyStore(keyStoreName);
     }
 
     static void logSection(const string& name, int level = 0) {

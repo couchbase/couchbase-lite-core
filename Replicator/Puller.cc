@@ -109,7 +109,7 @@ namespace litecore::repl {
             enc.endDict();
         }
 
-        sendRequest(msg, [=](const blip::MessageProgress& progress) {
+        sendRequest(msg, [this](const blip::MessageProgress& progress) {
             //... After request is sent:
             if ( progress.reply && progress.reply->isError() ) {
                 gotError(progress.reply);
@@ -427,7 +427,7 @@ namespace litecore::repl {
             *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
             for ( const auto& counter : counters ) {
                 if ( counter.first == rc ) {
-                    *reason = format("%s/%d", reason->c_str(), counter.second);
+                    *reason = stringprintf("%s/%d", reason->c_str(), counter.second);
                     break;
                 }
             }

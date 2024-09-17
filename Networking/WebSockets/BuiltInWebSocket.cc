@@ -346,7 +346,7 @@ namespace litecore::websocket {
 
     void BuiltInWebSocket::awaitReadable() {
         logDebug("**** socket read RESUMED");
-        _socket->onReadable([=] { readFromSocket(); });
+        _socket->onReadable([this] { readFromSocket(); });
     }
 
     void BuiltInWebSocket::readFromSocket() {
@@ -397,7 +397,7 @@ namespace litecore::websocket {
     void BuiltInWebSocket::awaitWriteable() {
         logDebug("**** Waiting to write to socket");
         //DebugAssert(!_outbox.empty());            // can't do this safely (data race)
-        _socket->onWriteable([=] { writeToSocket(); });
+        _socket->onWriteable([this] { writeToSocket(); });
     }
 
     void BuiltInWebSocket::writeToSocket() {

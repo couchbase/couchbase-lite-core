@@ -414,7 +414,7 @@ namespace litecore::repl {
     bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend* rev, slice receivedRevID) {
         if ( !_proposeChanges ) return false;
         try {
-            Retained<C4Document> doc = _db->getDoc(getCollection(), rev->docID, kDocGetUpgraded);
+            Retained<C4Document> doc = _db->getDoc(getCollection(), rev->docID, kDocGetAll);
             if ( doc && C4Document::equalRevIDs(doc->revID(), rev->revID) ) {
                 if ( receivedRevID && receivedRevID != rev->remoteAncestorRevID ) {
                     // Remote ancestor received in proposeChanges response, so try with
@@ -535,17 +535,17 @@ namespace litecore::repl {
             else if ( _started && (!_caughtUp || !_continuousCaughtUp) )
                 *reason = "notCaughtUp";
             else if ( _changeListsInFlight > 0 )
-                *reason = format("changeListsInFlight/%d", _changeListsInFlight);
+                *reason = stringprintf("changeListsInFlight/%d", _changeListsInFlight);
             else if ( _revisionsInFlight > 0 )
-                *reason = format("revisionsInFlight/%d", _revisionsInFlight);
+                *reason = stringprintf("revisionsInFlight/%d", _revisionsInFlight);
             else if ( _blobsInFlight > 0 )
-                *reason = format("blobsInFlight/%d", _blobsInFlight);
+                *reason = stringprintf("blobsInFlight/%d", _blobsInFlight);
             else if ( !_revQueue.empty() )
-                *reason = format("revQueue/%zu", _revQueue.size());
+                *reason = stringprintf("revQueue/%zu", _revQueue.size());
             else if ( !_pushingDocs.empty() )
-                *reason = format("pushingDocs/%zu", _pushingDocs.size());
+                *reason = stringprintf("pushingDocs/%zu", _pushingDocs.size());
             else
-                *reason = format("revisionBytesAwaitingReply/%llu", _revisionBytesAwaitingReply);
+                *reason = stringprintf("revisionBytesAwaitingReply/%llu", _revisionBytesAwaitingReply);
         }
         return ret;
     }
@@ -595,7 +595,7 @@ namespace litecore::repl {
             *reason = reasonTable[rc] ? reasonTable[rc] : delegateReason;
             for ( const auto& counter : counters ) {
                 if ( counter.first == rc ) {
-                    *reason = format("%s/%zu", reason->c_str(), counter.second);
+                    *reason = stringprintf("%s/%zu", reason->c_str(), counter.second);
                     break;
                 }
             }

@@ -532,8 +532,8 @@ namespace litecore::blip {
                     logInfo("REQ #%" PRIu64 " has more frames coming", msgNo);
                 }
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming REQ #%" PRIu64 " (%s)", msgNo,
-                                           (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
+                throw runtime_error(stringprintf("BLIP protocol error: Bad incoming REQ #%" PRIu64 " (%s)", msgNo,
+                                                 (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
             }
             return msg;
         }
@@ -549,8 +549,8 @@ namespace litecore::blip {
                     _pendingResponses.erase(i);
                 }
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming RES #%" PRIu64 " (%s)", msgNo,
-                                           (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
+                throw runtime_error(stringprintf("BLIP protocol error: Bad incoming RES #%" PRIu64 " (%s)", msgNo,
+                                                 (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
             }
             return msg;
         }

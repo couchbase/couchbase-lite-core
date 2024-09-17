@@ -15,6 +15,7 @@
 #include "c4ExceptionUtils.hh"
 #include "fleece/InstanceCounted.hh"
 #include "catch.hpp"
+#include "DatabaseImpl.hh"
 #include "NumConversion.hh"
 #include "Actor.hh"
 #include "URLTransformer.hh"
@@ -25,6 +26,7 @@
 #    include "Error.hh"
 #    include <winerror.h>
 #endif
+#include <sstream>
 
 using namespace fleece;
 using namespace std;
@@ -136,6 +138,29 @@ TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
     C4DatabaseConfig2 config = {"/ddddd"_sl, kC4DB_ReadOnly};
     CHECK(c4db_openNamed("xxxxx"_sl, &config, WITH_ERROR()));
 #endif
+}
+
+TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {
+    // Ensure that, by default, diskSyncFull is false.
+    CHECK(!litecore::asInternal(db)->dataFile()->options().diskSyncFull);
+
+    C4DatabaseConfig2 config = *c4db_getConfig2(db);
+    config.flags |= kC4DB_DiskSyncFull;
+
+    std::stringstream ss;
+    ss << std::string(c4db_getName(db)) << "_" << c4_now();
+    c4::ref<C4Database> dbWithFullSync = c4db_openNamed(slice(ss.str().c_str()), &config, ERROR_INFO());
+    // The flag in config is passed to DataFile options.
+    CHECK(litecore::asInternal(dbWithFullSync)->dataFile()->options().diskSyncFull);
+
+    config.flags &= ~kC4DB_DiskSyncFull;
+    c4::ref<C4Database> otherConnection = c4db_openNamed(c4db_getName(dbWithFullSync), &config, ERROR_INFO());
+    // The flag applies per connection opened with the config.
+    CHECK(!litecore::asInternal(otherConnection)->dataFile()->options().diskSyncFull);
+
+    c4::ref<C4Database> againConnection = c4db_openAgain(dbWithFullSync, ERROR_INFO());
+    // The flag is passed to database opened by openAgain.
+    CHECK(litecore::asInternal(againConnection)->dataFile()->options().diskSyncFull);
 }
 
 #pragma mark - INSTANCECOUNTED:

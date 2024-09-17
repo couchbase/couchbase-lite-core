@@ -53,20 +53,21 @@ bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; }  // LCOV_EXCL_L
 static string getBuildInfo() {
     static string commit;
 #ifdef COUCHBASE_ENTERPRISE
-    if ( commit.empty() ) { commit = format("%.16s+%.16s", GitCommitEE, GitCommit); }
+    if ( commit.empty() ) { commit = stringprintf("%.16s+%.16s", GitCommitEE, GitCommit); }
     static const char* ee = "EE ";
 #else
-    if ( commit.empty() ) { commit = format("%.16s", GitCommit); }
+    if ( commit.empty() ) { commit = stringprintf("%.16s", GitCommit); }
     static const char* ee = "";
 #endif
 #if LiteCoreOfficial
-    return format("%sbuild number %s, ID %.8s, from commit %s", ee, LiteCoreBuildNum, LiteCoreBuildID, commit.c_str());
+    return stringprintf("%sbuild number %s, ID %.8s, from commit %s", ee, LiteCoreBuildNum, LiteCoreBuildID,
+                        commit.c_str());
 #else
     if ( strcmp(GitBranch, "HEAD") == (0) )
-        return format("%sbuilt from commit %s%s on %s %s", ee, commit.c_str(), GitDirty, __DATE__, __TIME__);
+        return stringprintf("%sbuilt from commit %s%s on %s %s", ee, commit.c_str(), GitDirty, __DATE__, __TIME__);
     else
-        return format("%sbuilt from %s branch, commit %s%s on %s %s", ee, GitBranch, commit.c_str(), GitDirty, __DATE__,
-                      __TIME__);
+        return stringprintf("%sbuilt from %s branch, commit %s%s on %s %s", ee, GitBranch, commit.c_str(), GitDirty,
+                            __DATE__, __TIME__);
 #endif
 }
 
@@ -75,19 +76,19 @@ C4StringResult c4_getBuildInfo() C4API { return toSliceResult(getBuildInfo()); }
 C4StringResult c4_getVersion() C4API {
     string vers;
 #if LiteCoreOfficial
-    vers = format("%s (%s)", LiteCoreVersion, LiteCoreBuildNum);
+    vers = stringprintf("%s (%s)", LiteCoreVersion, LiteCoreBuildNum);
 #else
 #    ifdef COUCHBASE_ENTERPRISE
     static const char* ee     = "-EE";
-    string             commit = format("%.16s+%.16s", GitCommitEE, GitCommit);
+    string             commit = stringprintf("%.16s+%.16s", GitCommitEE, GitCommit);
 #    else
     static const char* ee     = "";
-    string             commit = format("%.16s", GitCommit);
+    string             commit = stringprintf("%.16s", GitCommit);
 #    endif
     if ( strcmp(GitBranch, "master") == (0) || strcmp(GitBranch, "HEAD") == (0) )
-        vers = format("%s%s (%s%.1s)", LiteCoreVersion, ee, commit.c_str(), GitDirty);
+        vers = stringprintf("%s%s (%s%.1s)", LiteCoreVersion, ee, commit.c_str(), GitDirty);
     else
-        vers = format("%s%s (%s:%s%.1s)", LiteCoreVersion, ee, GitBranch, commit.c_str(), GitDirty);
+        vers = stringprintf("%s%s (%s:%s%.1s)", LiteCoreVersion, ee, GitBranch, commit.c_str(), GitDirty);
 #endif
     return toSliceResult(vers);
 }

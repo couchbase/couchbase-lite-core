@@ -130,7 +130,7 @@ namespace litecore::REST {
         lock_guard<mutex> lock(_mutex);
         if ( !_acceptor ) return;
 
-        Poller::instance().addListener(_acceptor->handle(), Poller::kReadable, [=] {
+        Poller::instance().addListener(_acceptor->handle(), Poller::kReadable, [this] {
             Retained<Server> selfRetain = this;
             acceptConnection();
         });

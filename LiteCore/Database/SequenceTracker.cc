@@ -387,7 +387,7 @@ namespace litecore {
 
     void SequenceTracker::removeDocChangeNotifier(const_iterator entry, DocChangeNotifier* notifier) {
         auto& observers = entry->documentObservers;
-        auto  i         = find(observers.begin(), observers.end(), notifier);
+        auto  i         = ranges::find(observers, notifier);
         Assert(i != observers.end(), "unknown DocChangeNotifier");
         observers.erase(i);
         --_numDocObservers;

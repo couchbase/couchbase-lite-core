@@ -99,6 +99,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ga728b378fc59dfbd9eacb20d2a55f6bcc" id="r_ga728b378fc59dfbd9eacb20d2a55f6bcc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> CFTypeRef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga728b378fc59dfbd9eacb20d2a55f6bcc">FLValue_CopyCFObject</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>)</td></tr>
 <tr class="memdesc:ga728b378fc59dfbd9eacb20d2a55f6bcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a Value as a corresponding CoreFoundation object.  <br /></td></tr>
 <tr class="separator:ga728b378fc59dfbd9eacb20d2a55f6bcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3a67e435c5dedb949146352c10c1ca3d" id="r_ga3a67e435c5dedb949146352c10c1ca3d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga3a67e435c5dedb949146352c10c1ca3d">FLValue_FromCFValue</a> (CFTypeRef)</td></tr>
+<tr class="memdesc:ga3a67e435c5dedb949146352c10c1ca3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies a CoreFoundation object to a standalone Fleece object, if possible.  <br /></td></tr>
+<tr class="separator:ga3a67e435c5dedb949146352c10c1ca3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga387eec74b86ab522065f28ec4c5a38a1" id="r_ga387eec74b86ab522065f28ec4c5a38a1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ga387eec74b86ab522065f28ec4c5a38a1">FLSlot_SetCFValue</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> slot, CFTypeRef value)</td></tr>
+<tr class="memdesc:ga387eec74b86ab522065f28ec4c5a38a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a CoreFoundation object into a slot in a Fleece dict/array, if possible.  <br /></td></tr>
+<tr class="separator:ga387eec74b86ab522065f28ec4c5a38a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa28398443d76efb974244e2b18ebc0ca" id="r_gaa28398443d76efb974244e2b18ebc0ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_compiler_support_8h.html#abf13e44576a768044e199191d4f26f7e">NODISCARD</a> <a class="el" href="_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a">FLEECE_PUBLIC</a> <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#gaa28398443d76efb974244e2b18ebc0ca">FLDict_GetWithCFString</a> (<a class="el" href="group__types.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> <a class="el" href="_compiler_support_8h.html#a2ab3323a966b8ab8e332979351402a19">FL_NULLABLE</a>, CFStringRef)</td></tr>
 <tr class="memdesc:gaa28398443d76efb974244e2b18ebc0ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as FLDictGet, but takes the key as a CFStringRef.  <br /></td></tr>
 <tr class="separator:gaa28398443d76efb974244e2b18ebc0ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -152,6 +158,30 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ga387eec74b86ab522065f28ec4c5a38a1" name="ga387eec74b86ab522065f28ec4c5a38a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga387eec74b86ab522065f28ec4c5a38a1">&#9670;&#160;</a></span>FLSlot_SetCFValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void FLSlot_SetCFValue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a></td>          <td class="paramname"><span class="paramname"><em>slot</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">CFTypeRef</td>          <td class="paramname"><span class="paramname"><em>value</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Stores a CoreFoundation object into a slot in a Fleece dict/array, if possible. </p>
+<p>This is supported for the CF/NS equivalents of Fleece types: CFString, CFNumber, CFData, CFArray, CFDictionary. </p>
+
+</div>
+</div>
 <a id="ga728b378fc59dfbd9eacb20d2a55f6bcc" name="ga728b378fc59dfbd9eacb20d2a55f6bcc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga728b378fc59dfbd9eacb20d2a55f6bcc">&#9670;&#160;</a></span>FLValue_CopyCFObject()</h2>
 
@@ -169,6 +199,32 @@ Functions</h2></td></tr>
 
 <p>Returns a Value as a corresponding CoreFoundation object. </p>
 <p>Caller must CFRelease the result. </p>
+
+</div>
+</div>
+<a id="ga3a67e435c5dedb949146352c10c1ca3d" name="ga3a67e435c5dedb949146352c10c1ca3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3a67e435c5dedb949146352c10c1ca3d">&#9670;&#160;</a></span>FLValue_FromCFValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> FLValue_FromCFValue </td>
+          <td>(</td>
+          <td class="paramtype">CFTypeRef</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Copies a CoreFoundation object to a standalone Fleece object, if possible. </p>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">an</td><td>NSException if the object is not of a class that can be converted, or if it contains such an object. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>You must call <a class="el" href="group___f_l_value.html#ga03049f2db617faa8d5839453f848e526">FLValue_Release</a> when finished with the result. </dd></dl>
 
 </div>
 </div>

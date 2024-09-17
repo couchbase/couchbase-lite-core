@@ -18,10 +18,12 @@
 #include "fleece/RefCounted.hh"
 #include "Stopwatch.hh"
 #include "Instrumentation.hh"
+#include <algorithm>
 #include <cerrno>
 #include <dirent.h>
-#include <algorithm>
+#include <exception>
 #include <iomanip>
+#include <sstream>
 #include <thread>
 
 #include "SQLiteDataFile.hh"
@@ -104,15 +106,26 @@ namespace litecore {
         return ret;
     }
 
+    std::pair<alloc_slice, alloc_slice> DataFile::splitCollectionPath(const string& collectionPath) {
+        auto        dot = DataFile::findCollectionPathSeparator(collectionPath);
+        alloc_slice scope;
+        alloc_slice collection;
+        if ( dot == string::npos ) {
+            collection = DataFile::unescapeCollectionName(collectionPath);
+        } else {
+            scope      = DataFile::unescapeCollectionName(collectionPath.substr(0, dot));
+            collection = DataFile::unescapeCollectionName(collectionPath.substr(dot + 1));
+        }
+        return std::make_pair(scope, collection);
+    }
+
 #pragma mark - DATAFILE:
 
 
     const DataFile::Options DataFile::Options::defaults = {
-            {true},  // sequences
-            true,
-            true,
-            true,
-            true  // create, writeable, useDocumentKeys, upgradeable
+            {true},                    // sequences
+            true,   true, true, true,  // create, writeable, useDocumentKeys, upgradeable
+            false                      // diskSyncFull
     };
 
     DataFile::DataFile(const FilePath& path, Delegate* delegate, const DataFile::Options* options)
@@ -300,13 +313,15 @@ namespace litecore {
     }
 
     fleece::impl::SharedKeys* DataFile::documentKeys() const {
-        auto keys = _documentKeys.get();
-        if ( !keys && _options.useDocumentKeys ) {
-            auto mutableThis = const_cast<DataFile*>(this);
-            keys             = new DocumentKeys(*mutableThis);
-            _documentKeys    = keys;
-        }
-        return keys;
+        std::call_once(_documentKeysOnce, [this] {
+            auto keys = _documentKeys.get();
+            if ( !keys && _options.useDocumentKeys ) {
+                auto mutableThis = const_cast<DataFile*>(this);
+                keys             = new DocumentKeys(*mutableThis);
+                _documentKeys    = keys;
+            }
+        });
+        return _documentKeys.get();
     }
 
 #pragma mark - QUERIES:
@@ -414,7 +429,7 @@ namespace litecore {
 
     ExclusiveTransaction::~ExclusiveTransaction() {
         if ( _active ) {
-            if ( !std::uncaught_exception() )
+            if ( !std::uncaught_exceptions() )
                 _db._logInfo("Transaction exiting scope without explicit commit; aborting");
             abort();
         }

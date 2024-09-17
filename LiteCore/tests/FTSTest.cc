@@ -44,7 +44,7 @@ class FTSTest : public DataFileTestFixture {
 
     FTSTest() : DataFileTestFixture(0, dbOptions()) {
         ExclusiveTransaction t(store->dataFile());
-        for ( int i = 0; i < sizeof(kStrings) / sizeof(kStrings[0]); i++ ) createDoc(t, i, kStrings[i]);
+        for ( int i = 0; i < std::size(kStrings); i++ ) createDoc(t, i, kStrings[i]);
         t.commit();
     }
 

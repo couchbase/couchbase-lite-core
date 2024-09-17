@@ -27,20 +27,18 @@
 using namespace fleece::impl;
 using namespace std;
 using namespace std::chrono;
-using namespace date;
 
-unsigned QueryTest::alter2 = 0;
-unsigned QueryTest::alter3 = 0;
+#define SKIP_ARRAY_INDEXES  // Array indexes aren't exposed in Couchbase Lite (yet?)
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
     IndexSpec::FTSOptions options{"en", true};
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
-                    [=] { store->createIndex(""_sl, R"([[".num"]])"); });
+                    [&] { store->createIndex(""_sl, R"([[".num"]])"); });
 
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter,
-                    [=] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, options); });
+                    [&] { store->createIndex(R"("num")", R"([[".num"]])", IndexSpec::kFullText, options); });
 
     auto allKeyStores = db->allKeyStoreNames();
 
@@ -65,11 +63,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
+#ifndef SKIP_ARRAY_INDEXES
     CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
     CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
     CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
+#endif
 
     store->deleteIndex("num_second"_sl);
     store->deleteIndex("num_second"_sl);  // Duplicate should be no-op
@@ -80,11 +80,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(extractIndexes(store->getIndexes()).empty());
 }
 
+#ifndef SKIP_ARRAY_INDEXES
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
     store->createIndex("nums"_sl, R"([[".numbers"]])", IndexSpec::kArray);
     store->deleteIndex("nums"_sl);
 }
+#endif
 
 TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);
@@ -446,6 +448,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
     };
 
     for ( const auto& query : queries ) {
+        INFO("Query is " << query);
         Retained<Query>           q = store->compileQuery(query);
         Retained<QueryEnumerator> e = q->createEnumerator();
         REQUIRE(e->getRowCount() == 1);
@@ -610,6 +613,7 @@ TEST_CASE_METHOD(QueryTest, "Column Title of unqualified star", "[Query]") {
     constexpr size_t sqlCount  = sizeof(sqls) / sizeof(string) / 2;
     Retained<Query>  query;
     for ( size_t i = 0; i < sqlCount; ++i ) {
+        INFO("Query is " << sqls[i][0]);
         query = store->compileQuery(sqls[i][0], litecore::QueryLanguage::kN1QL);
         CHECK(query->columnTitles()[0] == sqls[i][1]);
     }
@@ -1284,14 +1288,14 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
-    constexpr local_seconds localtime      = local_days{2018_y / 10 / 23};
-    tm                      tmpTime        = FromTimestamp(localtime.time_since_epoch());
-    const seconds           offset_seconds = GetLocalTZOffset(&tmpTime, false);
-    local_seconds           utc_time       = localtime - offset_seconds;
+    constexpr date::local_seconds localtime      = date::local_days{date::year(2018) / 10 / 23};
+    tm                            tmpTime        = FromTimestamp(localtime.time_since_epoch());
+    const seconds                 offset_seconds = GetLocalTZOffset(&tmpTime, false);
+    date::local_seconds           utc_time       = localtime - offset_seconds;
 
     // MILLIS_TO_STR() result should be in localtime.
-    stringstream            mil_to_str;
-    constexpr local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
+    stringstream                  mil_to_str;
+    constexpr date::local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
     mil_to_str << date::format("%FT%T", mil_to_str_time + offset_seconds);
     if ( offset_seconds.count() == 0 ) {
         mil_to_str << "Z";
@@ -1313,9 +1317,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
     s3iso << date::format("%FT%TZ", utc_time);
     s5 << date::format("%FT%TZ", utc_time);
 
-    constexpr local_seconds localtime2 = local_days{1944_y / 6 / 6} + 6h + 30min;
-    tmpTime                            = FromTimestamp(localtime2.time_since_epoch());
-    utc_time                           = localtime2 - GetLocalTZOffset(&tmpTime, false);
+    constexpr date::local_seconds localtime2 = date::local_days{date::year(1944) / 6 / 6} + 6h + 30min;
+    tmpTime                                  = FromTimestamp(localtime2.time_since_epoch());
+    utc_time                                 = localtime2 - GetLocalTZOffset(&tmpTime, false);
     stringstream s4;
     s4 << date::format("%FT%TZ", utc_time);
 
@@ -1920,112 +1924,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
     }*/
 }
 
-class ArrayQueryTest : public QueryTest {
-  protected:
-    Retained<Query> query;
-
-    explicit ArrayQueryTest(int option) : QueryTest(option) {}
-
-    void checkQuery(int docNo, int expectedRowCount) {
-        Retained<QueryEnumerator> e(query->createEnumerator());
-        CHECK(e->getRowCount() == expectedRowCount);
-        while ( e->next() ) {
-            auto   cols          = e->columns();
-            slice  docID         = cols[0]->asString();
-            string expectedDocID = stringWithFormat("rec-%03d", docNo);
-            CHECK(docID == slice(expectedDocID));
-            ++docNo;
-        }
-    }
-
-    void testArrayQuery(const string& json, bool checkOptimization) {
-        addArrayDocs(1, 90);
-
-        query              = store->compileQuery(json);
-        string explanation = query->explain();
-        Log("%s", explanation.c_str());
-        checkQuery(88, 3);
-
-        Log("-------- Creating index --------");
-        store->createIndex("numbersIndex"_sl, R"([[".numbers"]])", IndexSpec::kArray);
-        Log("-------- Recompiling query with index --------");
-        query = store->compileQuery(json);
-        checkOptimized(query, checkOptimization);
-        checkQuery(88, 3);
-
-        Log("-------- Adding a doc --------");
-        addArrayDocs(91, 1);
-        checkQuery(88, 4);
-
-        Log("-------- Purging a doc --------");
-        deleteDoc("rec-091"_sl, true);
-        checkQuery(88, 3);
-
-        Log("-------- Soft-deleting a doc --------");
-        deleteDoc("rec-090"_sl, false);
-        checkQuery(88, 2);
-
-        Log("-------- Un-deleting a doc --------");
-        undeleteDoc("rec-090"_sl);
-        checkQuery(88, 3);
-    }
-};
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
-    testArrayQuery(json5("['SELECT', {\
-                             WHERE: ['ANY', 'num', ['.numbers'],\
-                                            ['=', ['?num'], 'eight-eight']]}]"),
-                   false);
-}
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
-    testArrayQuery(json5("['SELECT', {\
-                              FROM: [{as: 'doc'}, \
-                                     {as: 'num', 'unnest': ['.doc.numbers']}],\
-                              WHERE: ['=', ['.num'], 'eight-eight']}]"),
-                   true);
-}
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
-    addArrayDocs(1, 90);
-
-    auto json          = json5("['SELECT', {\
-                          WHERE: ['ANY', 'num', ['[]', ['.numbers[0]'], ['.numbers[1]']],\
-                                         ['=', ['?num'], 'eight']]}]");
-    query              = store->compileQuery(json);
-    string explanation = query->explain();
-    Log("%s", explanation.c_str());
-
-    checkQuery(12, 2);
-}
-
-N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
-    addArrayDocs(1, 90);
-
-    auto json          = json5("['SELECT', {\
-                              FROM: [{as: 'doc'}, \
-                                     {as: 'num', 'unnest': ['[]', ['.doc.numbers[0]'], ['.doc.numbers[1]']]}],\
-                              WHERE: ['=', ['.num'], 'one-eight']}]");
-    query              = store->compileQuery(json);
-    string explanation = query->explain();
-    Log("%s", explanation.c_str());
-
-    checkQuery(22, 2);
-
-    if ( GENERATE(0, 1) ) {
-        Log("-------- Creating JSON index --------");
-        store->createIndex("numbersIndex"_sl, json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"), IndexSpec::kArray);
-    } else {
-        Log("-------- Creating N1QL index --------");
-        store->createIndex("numbersIndex"_sl, "[numbers[0], numbers[1]]", QueryLanguage::kN1QL, IndexSpec::kArray);
-    }
-    Log("-------- Recompiling query with index --------");
-    query = store->compileQuery(json);
-    checkOptimized(query);
-
-    checkQuery(22, 2);
-}
-
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {  // CBL-1248
     ExclusiveTransaction t(store->dataFile());
 
@@ -2215,7 +2113,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         Retained<Query> query{store->compileQuery(
                 json5("{WHAT: ['._id'], WHERE: ['<=', ['._expiration'], ['$NOW']], ORDER_BY: [['._expiration']]}"))};
 
-        Query::Options options{alloc_slice(format("{\"NOW\": %lld}", (long long)now))};
+        Query::Options options{alloc_slice(stringprintf("{\"NOW\": %lld}", (long long)now))};
 
         Retained<QueryEnumerator> e(query->createEnumerator(&options));
         CHECK(e->next());
@@ -2610,7 +2508,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     const Value* dict = e->columns()[0];
     REQUIRE(dict->type() == kDict);
     string dictJson = dict->toJSON().asString();
-    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
+    ranges::transform(dictJson, dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
 
     string collectionAlias = collectionName;
@@ -2623,7 +2521,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     dict = e->columns()[0];
     REQUIRE(dict->type() == kDict);
     dictJson = dict->toJSON().asString();
-    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
+    ranges::transform(dictJson, dictJson.begin(), [](char c) { return c == '"' ? '\'' : c; });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
 
     query = store->compileQuery(string("SELECT meta().id FROM ") + collectionName, QueryLanguage::kN1QL);
@@ -2659,198 +2557,139 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         t.commit();
     }
 
-    string meta_default = "META(" + collectionName + ").revisionID";
-    std::tuple<const char*, std::function<bool(const Value*, bool)>> testCases[] = {{"acos(3)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"acos(\"abc\")",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"2/0",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return missing;
-                                                                                     }},
-                                                                                    {"lower([1,2])",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    /*4*/
-                                                                                    {"length(missingValue)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =MISSING
-                                                                                         return missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"is_array(null)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"atan(asin(1.1))",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"round(12.5)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =13
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 13;
-                                                                                     }},
-                                                                                    {"8/10",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    /*9*/
-                                                                                    {"unitPrice/10",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    {"orderlines",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // type() == kArray & columnTitle="orderlines"
-                                                                                         return !missing
-                                                                                                && v->type() == kArray;
-                                                                                     }},
-                                                                                    {"orderlines[0]",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // columnTitle="$11"
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 1;
-                                                                                     }},
-                                                                                    {"div(8, 10)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0.8
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0.8;
-                                                                                     }},
-                                                                                    {"idiv(8, 10)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    /*14*/
-                                                                                    {"idiv(-1, 1.9)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =-1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == -1;
-                                                                                     }},
-                                                                                    {"idiv(-1, 2.0)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    {"idiv(-1, 2.9)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =0
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 0;
-                                                                                     }},
-                                                                                    {"idiv(-3.9, 2.1)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =-1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == -1;
-                                                                                     }},
-                                                                                    {"idiv(5, 3)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 1;
-                                                                                     }},
-                                                                                    /*19*/
-                                                                                    {"idiv(5, 3.0)",
-                                                                                     [](const Value* v,
-                                                                                        bool         missing) {  // =1
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 1;
-                                                                                     }},
-                                                                                    {"idiv(1, 0.99)",
-                                                                                     [](const Value* v,
-                                                                                        bool missing) {  // =NULL
-                                                                                         return !missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"round_even(12.5)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 12;
-                                                                                     }},
-                                                                                    {"round_even(11.5)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 12;
-                                                                                     }},
-                                                                                    {"round_even(12.115, 2)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble()
-                                                                                                           == 12.12;
-                                                                                     }},
-                                                                                    /*24*/
-                                                                                    {"round_even(-12.125, 2)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble()
-                                                                                                           == -12.12;
-                                                                                     }},
-                                                                                    {"META().id",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kString
-                                                                                                && (v->asString()
-                                                                                                            .compare(
-                                                                                                                    "do"
-                                                                                                                    "c"
-                                                                                                                    "1")
-                                                                                                    == 0);
-                                                                                     }},
-                                                                                    {meta_default.c_str(),
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return missing
-                                                                                                && v->type() == kNull;
-                                                                                     }},
-                                                                                    {"round_even(8.8343534, -1)",
-                                                                                     [](const Value* v, bool missing) {
-                                                                                         return !missing
-                                                                                                && v->type() == kNumber
-                                                                                                && v->asDouble() == 10;
-                                                                                     }}};
-    size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
+    string meta_default  = "META(" + collectionName + ").revisionID";
+    using TestCase       = std::tuple<const char*, std::function<bool(const Value*, bool)>>;
+    TestCase testCases[] = {
+            {"acos(3)",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"acos(\"abc\")",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"2/0",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return missing;
+             }},
+            {"lower([1,2])",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            /*4*/
+            {"length(missingValue)",
+             [](const Value* v,
+                bool         missing) {  // =MISSING
+                 return missing && v->type() == kNull;
+             }},
+            {"is_array(null)",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"atan(asin(1.1))",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"round(12.5)",
+             [](const Value* v,
+                bool         missing) {  // =13
+                 return !missing && v->type() == kNumber && v->asDouble() == 13;
+             }},
+            {"8/10",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            /*9*/
+            {"unitPrice/10",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            {"orderlines",
+             [](const Value* v,
+                bool         missing) {  // type() == kArray & columnTitle="orderlines"
+                 return !missing && v->type() == kArray;
+             }},
+            {"orderlines[0]",
+             [](const Value* v,
+                bool         missing) {  // columnTitle="$11"
+                 return !missing && v->type() == kNumber && v->asDouble() == 1;
+             }},
+            {"div(8, 10)",
+             [](const Value* v,
+                bool         missing) {  // =0.8
+                 return !missing && v->type() == kNumber && v->asDouble() == 0.8;
+             }},
+            {"idiv(8, 10)",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            /*14*/
+            {"idiv(-1, 1.9)",
+             [](const Value* v,
+                bool         missing) {  // =-1
+                 return !missing && v->type() == kNumber && v->asDouble() == -1;
+             }},
+            {"idiv(-1, 2.0)",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            {"idiv(-1, 2.9)",
+             [](const Value* v,
+                bool         missing) {  // =0
+                 return !missing && v->type() == kNumber && v->asDouble() == 0;
+             }},
+            {"idiv(-3.9, 2.1)",
+             [](const Value* v,
+                bool         missing) {  // =-1
+                 return !missing && v->type() == kNumber && v->asDouble() == -1;
+             }},
+            {"idiv(5, 3)",
+             [](const Value* v,
+                bool         missing) {  // =1
+                 return !missing && v->type() == kNumber && v->asDouble() == 1;
+             }},
+            /*19*/
+            {"idiv(5, 3.0)",
+             [](const Value* v,
+                bool         missing) {  // =1
+                 return !missing && v->type() == kNumber && v->asDouble() == 1;
+             }},
+            {"idiv(1, 0.99)",
+             [](const Value* v,
+                bool         missing) {  // =NULL
+                 return !missing && v->type() == kNull;
+             }},
+            {"round_even(12.5)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+            {"round_even(11.5)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+            {"round_even(12.115, 2)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 12.12; }},
+            /*24*/
+            {"round_even(-12.125, 2)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == -12.12; }},
+            {"META().id",
+             [](const Value* v, bool missing) {
+                 return !missing && v->type() == kString
+                        && (v->asString().compare("do"
+                                                  "c"
+                                                  "1")
+                            == 0);
+             }},
+            {meta_default.c_str(), [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"round_even(8.8343534, -1)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNumber && v->asDouble() == 10; }}};
+    size_t testCaseCount = std::size(testCases);
     string queryStr      = "select ";
     queryStr += std::get<0>(testCases[0]);
     for ( unsigned i = 1; i < testCaseCount; ++i ) { (queryStr += ", ") += std::get<0>(testCases[i]); }
@@ -2967,6 +2806,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
         ExpectingExceptions _;
         CHECK_THROWS_WITH(db->compileQuery(queryStr, QueryLanguage::kN1QL), "N1QL error: missing the FROM clause");
     }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query nonexistent collection", "[Query][N1QL]") {
+    ExpectException(error::LiteCore, error::InvalidQuery, [&] {
+        store->compileQuery("SELECT num, num*num AS square FROM bogus WHERE num > 10", QueryLanguage::kN1QL);
+    });
 }
 
 TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {

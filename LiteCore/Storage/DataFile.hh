@@ -75,6 +75,7 @@ namespace litecore {
             bool                   writeable : 1;        ///< If false, db is opened read-only
             bool                   useDocumentKeys : 1;  ///< Use SharedKeys for Fleece docs
             bool                   upgradeable : 1;      ///< DB schema can be upgraded
+            bool                   diskSyncFull : 1;     ///< SQLite PRAGMA synchronous
             EncryptionAlgorithm    encryptionAlgorithm;  ///< What encryption (if any)
             alloc_slice            encryptionKey;        ///< Encryption key, if encrypting
             DatabaseTag            dbTag;
@@ -178,7 +179,9 @@ namespace litecore {
 
         void _logVerbose(const char* format, ...) const __printflike(2, 3) { LOGBODY(Verbose) }
 
-        void _logDebug(const char* format, ...) const __printflike(2, 3){LOGBODY(Debug)}
+        void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
+
+        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4){LOGBODY_(level)}
 
         //////// SHARED OBJECTS:
 
@@ -221,6 +224,10 @@ namespace litecore {
         static Factory*              factoryNamed(const char* name);
         static Factory*              factoryForFile(const FilePath&);
 
+        static bool isDefaultCollection(slice id) { return id == KeyStore::kDefaultCollectionName; }
+
+        static bool isDefaultScope(slice id) { return !id || isDefaultCollection(id); }
+
         // kScopeCollectionSeparator must not be escaped as it separates the scope from the
         // generalized collection name, a.k.a. collection path.
         // This function returns the position of unescaped separator starting from pos.
@@ -229,6 +236,8 @@ namespace litecore {
         // After separating out the scope from collection path by kScopeCollectionSeparator ('.'),
         // the following function can be used to unescape the escaped separator.
         static string unescapeCollectionName(const string& unescaped);
+
+        static std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath);
 
         DataFile(const DataFile&)            = delete;
         DataFile& operator=(const DataFile&) = delete;
@@ -267,6 +276,8 @@ namespace litecore {
 
         void setOptions(const Options& o) { _options = o; }
 
+        const Options& getOptions() const { return _options; }
+
         void forOpenKeyStores(function_ref<void(KeyStore&)> fn);
 
         virtual Factory& factory() const = 0;
@@ -299,6 +310,7 @@ namespace litecore {
         std::mutex                                            _queriesMutex;          // Thread-safe access to _queries
         bool                                                  _inTransaction{false};  // Am I in a Transaction?
         std::atomic_bool                                      _closeSignaled{false};  // Have I been asked to close?
+        mutable std::once_flag                                _documentKeysOnce{};  // Thread-safe init of documentKeys
     };
 
     /** Grants exclusive write access to a DataFile while in scope.

@@ -195,7 +195,7 @@ namespace litecore {
         return result;
     }
 
-    string VersionVector::asString() const { return std::string(asASCII()); }
+    string VersionVector::asString(SourceID myID) const { return std::string(asASCII(myID)); }
 
     void VersionVector::readASCII(slice str, SourceID mySourceID) {
         clear();
@@ -219,27 +219,6 @@ namespace litecore {
     optional<Version> VersionVector::readCurrentVersionFromASCII(slice str) {
         if ( const uint8_t* delim = str.findAnyByteOf(",;") ) str = str.upTo(delim);
         return Version::readASCII(str);
-    }
-
-    void VersionVector::readHistory(const slice history[], size_t historyCount, SourceID mySourceID) {
-        Assert(historyCount > 0);
-        readASCII(history[0], mySourceID);
-        if ( historyCount == 1 ) return;  // -> Single version vector (or single version)
-        if ( count() > 1 )
-            error::_throw(error::BadRevisionID, "Invalid version history (vector followed by other history)");
-        if ( historyCount == 2 ) {
-            Version newVers = _vers[0];
-            readASCII(history[1], mySourceID);
-            _add(newVers);  // -> New version plus parent vector
-        } else {
-            for ( size_t i = 1; i < historyCount; ++i ) {
-                Version parentVers(history[i], mySourceID);
-                if ( auto time = timeOfAuthor(parentVers.author()); time == logicalTime::none )
-                    _vers.push_back(parentVers);
-                else if ( time <= parentVers.time() )
-                    error::_throw(error::BadRevisionID, "Invalid version history (increasing logicalTime)");
-            }
-        }  // -> List of versions
     }
 
 #pragma mark - OPERATIONS:
@@ -279,9 +258,8 @@ namespace litecore {
     }
 
     bool VersionVector::isNewerIgnoring(SourceID ignoring, const VersionVector& other) const {
-        return std::any_of(_vers.begin(), _vers.end(), [&ignoring, other](auto& v) {
-            return v.author() != ignoring && v.time() > other[v.author()];
-        });
+        return ranges::any_of(
+                _vers, [&ignoring, other](auto& v) { return v.author() != ignoring && v.time() > other[v.author()]; });
     }
 
     vec::iterator VersionVector::findPeerIter(SourceID author) const {
@@ -331,9 +309,10 @@ namespace litecore {
     }
 
     void VersionVector::add(Version v) {
-        if ( auto t = timeOfAuthor(v.author()); t >= v.time() )
+        if ( auto t = timeOfAuthor(v.author()); t > v.time() )
             error::_throw(error::BadRevisionID, "New version timestamp is older than current one");
-        _add(v);
+        else if ( t < v.time() )
+            _add(v);
     }
 
     void VersionVector::_add(Version const& v) {
@@ -376,7 +355,7 @@ namespace litecore {
 #pragma mark - MERGING:
 
     static vec& sortBy(VersionVector::vec& v, bool (*cmp)(Version const&, Version const&)) {
-        std::sort(v.begin(), v.end(), cmp);
+        ranges::sort(v, cmp);
         return v;
     }
 

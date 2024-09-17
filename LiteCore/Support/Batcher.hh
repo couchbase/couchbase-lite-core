@@ -95,8 +95,10 @@ namespace litecore::actor {
                             is added to the queue. */
         ActorBatcher(ACTOR* actor, const char* name, Processor processor, Timer::duration latency = {},
                      size_t capacity = 0)
-            : Batcher<ITEM>([=](int gen) { actor->enqueue(_name, processor, gen); },
-                            [=](int gen) { actor->enqueueAfter(latency, _name, processor, gen); }, latency, capacity)
+            : Batcher<ITEM>(
+                    [actor, this, processor](int gen) { actor->enqueue(_name, processor, gen); },
+                    [actor, this, latency, processor](int gen) { actor->enqueueAfter(latency, _name, processor, gen); },
+                    latency, capacity)
             , _name(name) {}
 
       private:
@@ -126,7 +128,7 @@ namespace litecore::actor {
         typedef void (ACTOR::*Processor)();
 
         ActorCountBatcher(ACTOR* actor, const char* name, Processor processor)
-            : CountBatcher([=]() { actor->enqueue(_name, processor); }), _name(name) {}
+            : CountBatcher([this, actor, processor]() { actor->enqueue(_name, processor); }), _name(name) {}
 
       private:
         const char* _name;

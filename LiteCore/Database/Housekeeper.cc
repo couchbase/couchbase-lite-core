@@ -24,7 +24,7 @@ namespace litecore {
     using namespace std;
 
     Housekeeper::Housekeeper(C4Collection* coll)
-        : Actor(DBLog, format("Housekeeper for %s", asInternal(coll)->fullName().c_str()))
+        : Actor(DBLog, stringprintf("Housekeeper for %s", asInternal(coll)->fullName().c_str()))
         , _keyStoreName(asInternal(coll)->keyStore().name())
         , _expiryTimer(std::bind(&Housekeeper::doExpirationAsync, this))
         , _collection(coll) {}

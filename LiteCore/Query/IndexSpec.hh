@@ -13,14 +13,10 @@
 #pragma once
 #include "Base.hh"
 #include "VectorIndexSpec.hh"
+#include "fleece/Fleece.h"
 #include <optional>
 #include <string>
 #include <variant>
-
-namespace fleece::impl {
-    class Array;
-    class Doc;
-}  // namespace fleece::impl
 
 namespace litecore {
 
@@ -81,10 +77,10 @@ namespace litecore {
         const VectorOptions* vectorOptions() const { return std::get_if<VectorOptions>(&options); }
 
         /** The required WHAT clause: the list of expressions to index */
-        const fleece::impl::Array* NONNULL what() const;
+        FLArray what() const;
 
         /** The optional WHERE clause: the condition for a partial index */
-        const fleece::impl::Array* where() const;
+        FLArray where() const;
 
         std::string const name;           ///< Name of index
         Type const        type;           ///< Type of index
@@ -93,9 +89,9 @@ namespace litecore {
         Options const     options;        ///< Options for FTS and vector indexes
 
       private:
-        fleece::impl::Doc* doc() const;
+        FLDoc doc() const;
 
-        mutable Retained<fleece::impl::Doc> _doc;
+        mutable FLDoc _doc = nullptr;
     };
 
 }  // namespace litecore

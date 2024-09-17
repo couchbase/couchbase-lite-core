@@ -512,8 +512,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
                                                                                  {tulips2, "tulips-docko"_sl}};
 
     SECTION("PUSH") {
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = std::thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = std::thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 CHECK(c4coll_getDocumentCount(roses2) == 2);
                 CHECK(c4coll_getDocumentCount(tulips2) == 2);
 
@@ -528,8 +528,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
     }
     SECTION("PULL") {
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = std::thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = std::thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 CHECK(c4coll_getDocumentCount(roses2) == 2);
                 CHECK(c4coll_getDocumentCount(tulips2) == 2);
 
@@ -549,8 +549,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         docsWithIncrementalRevisions.emplace_back(roses, "roses2-docko"_sl);
         docsWithIncrementalRevisions.emplace_back(tulips, "tulips2-docko"_sl);
 
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 // When first time it turns to Idle, we assume 2 documents from db are pushed to db2,
                 // and 2 documents from db2 are pulled to db.
                 CHECK(c4coll_getDocumentCount(roses) == 4);
@@ -579,8 +579,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
     for ( const auto& coll_doc : docsWithIncrementalRevisions ) {
         c4::ref<C4Document> doc = c4coll_getDoc(coll_doc.first, coll_doc.second, true, kDocGetMetadata, ERROR_INFO());
         CHECK(doc);
-        alloc_slice hist = c4doc_getRevisionHistory(doc, 1, nullptr, 0);
-        if ( isRevTrees() ) CHECK(3 == c4rev_getGeneration(hist));
+        if ( doc && isRevTrees() ) CHECK(c4rev_getGeneration(doc->revID) == 3);
     }
 }
 

@@ -509,7 +509,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
-                enc.writeKey(format("field%03d", p));
+                enc.writeKey(stringprintf("field%03d", p));
                 enc.writeInt(std::rand());
             }
             enc.endDict();

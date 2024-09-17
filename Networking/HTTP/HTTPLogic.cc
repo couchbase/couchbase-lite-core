@@ -94,8 +94,8 @@ namespace litecore::net {
                 // the new type can be handled the same way.
                 if ( _isWebSocket ) {
                     Address address = {_address.scheme() == "wss"_sl ? "https"_sl : "http"_sl, _address.hostname(),
-                                       _address.port(), _address.url()};
-                    rq << string(Address::toURL(*(C4Address*)&address));
+                                       _address.port(), _address.path()};
+                    rq << string(Address::toURL(*(C4Address*)address));
                 } else {
                     rq << string(_address.url());
                 }
