@@ -2991,3 +2991,221 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
         }
     }
 }
+
+namespace {
+    void AddDocWithJSON(KeyStore* store, slice docID, ExclusiveTransaction& t, const char* jsonBody) {
+        DataFileTestFixture::writeDoc(
+                *store, docID, DocumentFlags::kNone, t,
+                [=](Encoder& enc) {
+                    impl::JSONConverter jc(enc);
+                    if ( !jc.encodeJSON(slice(jsonBody)) ) {
+                        enc.reset();
+                        error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
+                    }
+                },
+                false);
+        t.commit();
+    }
+}  // anonymous namespace
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
+    const char* json = R"==(
+{
+   "name":{"first":"Lue","last":"Laserna"},
+   "contacts":[
+     {
+       "type":"primary",
+       "address":{"street":"1 St","city":"San Pedro","state":"CA"},
+       "phones":[
+         {"type":"home","numbers":["310-123-4567","310-123-4568"]},
+         {"type":"mobile","numbers":["310-123-6789","310-222-1234"]}
+       ],
+       "emails":["lue@email.com","laserna@email.com"]
+     },
+     {
+       "type":"secondary",
+       "address":{"street":"5 St","city":"Santa Clara","state":"CA"},
+       "phones":[
+         {"type":"home","numbers":["650-123-4567","650-123-2120"]},
+         {"type":"mobile","numbers":["650-123-6789"]}
+       ],
+       "emails":["eul@email.com","laser@email.com"]
+     }
+   ],
+   "likes":["Soccer","Cat"]
+}
+)==";
+    {
+        ExclusiveTransaction t(store->dataFile());
+        AddDocWithJSON(store, "doc01"_sl, t, json);
+    }
+
+    // Case 1, Single level UNNEST
+    // ---------------------------
+    //    SELECT name.first as name, c.address.city as city
+    //    FROM profiles
+    //    UNNEST contacts AS c
+
+    string queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+                      + "['AS', ['.c.address.city'], 'city']], " + "FROM: [{COLLECTION: '" + collectionName + "'}, "
+                      + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}]}";
+    Retained<Query>           query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
+    Retained<QueryEnumerator> e{query->createEnumerator()};
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(!e->next());
+
+    // Case 2, Multiple Single level UNNESTs
+    // -------------------------------------
+    //    SELECT name.first as name, c.address.city as city, `like`
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST likes AS `like`
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+               + "['AS', ['.c.address.city'], 'city'], ['.like']], " + "FROM: [{COLLECTION: '" + collectionName + "'}, "
+               + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}, " + "{UNNEST: ['." + collectionName
+               + ".likes'], AS: 'like'}]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "Soccer"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "Cat"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "Soccer"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "Cat"_sl);
+    CHECK(!e->next());
+
+    // Case 3, 2-Level UNNEST
+    // ----------------------
+    //    SELECT name.first as name, c.address.city as city, p.numbers as phone
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+               + "['AS', ['.c.address.city'], 'city'], ['AS', ['.p.numbers'], 'phone']], " + "FROM: [{COLLECTION: '"
+               + collectionName + "'}, " + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}, "
+               + "{UNNEST: ['.c.phones'], AS: 'p'}]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"310-123-4567\",\"310-123-4568\"]");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"310-123-6789\",\"310-222-1234\"]");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"650-123-4567\",\"650-123-2120\"]");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"650-123-6789\"]");
+    CHECK(!e->next());
+
+    // Case 4, 3-level UNNEST
+    // ----------------------
+    //    SELECT name.first as name, c.address.city as city, p.type as `phone-type`, number
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+    //    UNNEST p.numbers as number
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'], "
+               + "['AS', ['.c.address.city'], 'city'], ['AS', ['.p.type'], 'phone-type'], " + "['.number']], "
+               + "FROM: [{COLLECTION: '" + collectionName + "'}, " + "{UNNEST: ['." + collectionName
+               + ".contacts'], AS: 'c'}, " + "{UNNEST: ['.c.phones'], AS: 'p'}, "
+               + "{UNNEST: ['.p.numbers'], AS: 'number'}]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "310-123-4567"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "310-123-4568"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "mobile"_sl);
+    CHECK(e->columns()[3]->asString() == "310-123-6789"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "mobile"_sl);
+    CHECK(e->columns()[3]->asString() == "310-222-1234"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "650-123-4567"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "650-123-2120"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "mobile"_sl);
+    CHECK(e->columns()[3]->asString() == "650-123-6789"_sl);
+    CHECK(!e->next());
+
+    // Test 5, Unnest with Where & order by
+    // -------------------------
+    //    SELECT name.first as name, c.address.city as city, p.numbers[0] as phone
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+    //    WHERE p.type = "mobile"
+    //    ORDER BY c.address.city DESC
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+               + "['AS', ['.c.address.city'], 'city'], ['AS', ['.p.numbers[0]'], 'phone']], " + "FROM: [{COLLECTION: '"
+               + collectionName + "'}, " + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}, "
+               + "{UNNEST: ['.c.phones'], AS: 'p'}], " + "WHERE: ['=', ['.p.type'], 'mobile'], "
+               + "ORDER_BY: [['DESC', ['.c.address.city']]]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "650-123-6789");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "310-123-6789");
+    CHECK(!e->next());
+
+    // Test 6, Unnest with Group-by
+    // ----------------------------
+    //    SELECT DISTINCT c.address.state as state, count(c.address.city) as num
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    GROUP BY c.address.state, c.address.city
+    //
+    // "Group By" does not work yet with pure virtual table, fl_each.
+    // c.f. test "C4Query UNNEST objects" in C4QueryTest.cc
+}
