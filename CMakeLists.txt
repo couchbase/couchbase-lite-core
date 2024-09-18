@@ -11,7 +11,6 @@ CppTests - A test runner that runs test based on the static library
 FleeceObjects - The Fleece serialization library for saving data to a binary format
 FleeceBase - A subset of the above for linking into non LiteCore targets
 LiteCoreObjects - The precompiled object files containing the logic of LiteCore
-LiteCoreUnitTesting - The precompiled object files containing the logic of LiteCore for unit testing.
 LiteCoreStatic - The static LiteCore library (LiteCoreObjects linked statically)
 LiteCore - The shared LiteCore library (LiteCoreObjects linked dynamically)
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
@@ -88,7 +87,13 @@ option(LITECORE_PERF_TESTING_MODE "Build LiteCore with more things public than i
 option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
-option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
+
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests and defines 'LITECORE_CPPTEST'" ON)
+else()
+    option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests and defines 'LITECORE_CPPTEST'" OFF)
+endif ()
+
 set(LITECORE_PREBUILT_LIB "" CACHE STRING "If set, C4Tests will use the prebuilt LiteCore instead of building it from source")
 
 option(LITECORE_MAINTAINER_MODE "Build the library with official options, disable this to reveal additional options" ON)
@@ -198,7 +203,6 @@ target_compile_definitions(
 
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreObjects OBJECT ${ALL_SRC_FILES})
-add_library(LiteCoreUnitTesting OBJECT ${ALL_SRC_FILES})
 set(LiteCoreObjectsDefines
     LITECORE_IMPL
     LITECORE_CPP_API=1
@@ -208,17 +212,22 @@ target_compile_definitions(
     LiteCoreObjects PRIVATE
     ${LiteCoreObjectsDefines}
 )
-target_compile_definitions(
-    LiteCoreUnitTesting PRIVATE
-    ${LiteCoreObjectsDefines}
-    PUBLIC LITECORE_CPPTEST
-)
+
+if (LITECORE_BUILD_TESTS)
+    if (CMAKE_BUILD_TYPE MATCHES "Rel")
+        message(WARNING "Release builds should not use LITECORE_BUILD_TESTS!")
+    endif ()
+    target_compile_definitions(
+        LiteCoreObjects PUBLIC
+        LITECORE_CPPTEST            # Some test-specific code is enabled with `#ifdef LITECORE_CPPTEST`
+    )
+endif ()
 
 
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
-         PRIVATE
-        -DSQLITE_HAS_CODEC              # Enables SQLite encryption extension (SEE)
+        PRIVATE
+        SQLITE_HAS_CODEC              # Enables SQLite encryption extension (SEE)
     )
 endif()
 
@@ -260,10 +269,6 @@ target_include_directories(
     LiteCoreObjects PRIVATE
     ${LiteCoreObjectsIncludes}
 )
-target_include_directories(
-    LiteCoreUnitTesting PRIVATE
-    ${LiteCoreObjectsIncludes}
-)
 
 add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
 
@@ -300,21 +305,10 @@ target_link_libraries(
     mbedtls
     mbedx509
 )
-target_link_libraries(
-    LiteCoreUnitTesting INTERFACE
-    SQLite3_UnicodeSN
-    mbedcrypto
-    mbedtls
-    mbedx509
-)
 
 if(USE_COUCHBASE_SQLITE)
     target_link_libraries(
         LiteCoreObjects PUBLIC
-        CouchbaseSqlite3
-    )
-    target_link_libraries(
-        LiteCoreUnitTesting PUBLIC
         CouchbaseSqlite3
     )
 endif()

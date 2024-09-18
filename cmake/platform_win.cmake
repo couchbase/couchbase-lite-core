@@ -50,25 +50,23 @@ function(setup_globals)
 endfunction()
 
 function(setup_litecore_build_win)
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-        target_compile_definitions(
-            ${liteCoreVariant} PRIVATE
-            -DUNICODE               # Use wide string variants for Win32 calls
-            -D_UNICODE              # Ditto
-            -D_USE_MATH_DEFINES     # Define math constants like PI
-            -DWIN32                 # Identify as WIN32
-            -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
-            PUBLIC
-            -DLITECORE_EXPORTS      # Export functions marked CBL_CORE_API, etc
-            -DPERSISTENT_PRIVATE_KEY_AVAILABLE
-        )
+    target_compile_definitions(
+        LiteCoreObjects PRIVATE
+        -DUNICODE               # Use wide string variants for Win32 calls
+        -D_UNICODE              # Ditto
+        -D_USE_MATH_DEFINES     # Define math constants like PI
+        -DWIN32                 # Identify as WIN32
+        -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
+        PUBLIC
+        -DLITECORE_EXPORTS      # Export functions marked CBL_CORE_API, etc
+        -DPERSISTENT_PRIVATE_KEY_AVAILABLE
+    )
 
-        target_include_directories(
-            ${liteCoreVariant} PRIVATE
-            MSVC
-            vendor/fleece/MSVC
-        )
-    endforeach()
+    target_include_directories(
+        LiteCoreObjects PRIVATE
+        MSVC
+        vendor/fleece/MSVC
+    )
 
     target_include_directories(
         LiteCore PRIVATE
@@ -77,7 +75,7 @@ function(setup_litecore_build_win)
     )
 
     # Link with subproject libz and Windows sockets lib
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
+    foreach(liteCoreVariant LiteCoreObjects)
         target_link_libraries(
            ${liteCoreVariant} INTERFACE
            zlibstatic

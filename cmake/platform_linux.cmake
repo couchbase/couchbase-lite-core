@@ -58,39 +58,32 @@ function(setup_litecore_build_linux)
     setup_litecore_build_unix()
 
     if(LITECORE_DYNAMIC_ICU)
-        foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-            target_compile_definitions(
-                ${liteCoreVariant} PRIVATE
-                -DCBL_USE_ICU_SHIM
-                -DLITECORE_USES_ICU=1
-            )
-        endforeach()
+        target_compile_definitions(
+            LiteCoreObjects PRIVATE
+            -DCBL_USE_ICU_SHIM
+            -DLITECORE_USES_ICU=1
+        )
     elseif(NOT LITECORE_DISABLE_ICU)
-        foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-            target_compile_definitions(
-                ${liteCoreVariant} PRIVATE
-                -DLITECORE_USES_ICU=1
-            )
+        target_compile_definitions(
+            LiteCoreObjects PRIVATE
+            -DLITECORE_USES_ICU=1
+        )
 
-            target_link_libraries(
-                ${liteCoreVariant} INTERFACE
-                ${ICU_LIBS}
-           )
-       endforeach()
+        target_link_libraries(
+            LiteCoreObjects INTERFACE
+            ${ICU_LIBS}
+       )
     endif()
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-        target_include_directories(
-            ${liteCoreVariant} PRIVATE
-            LiteCore/Unix
-        )
-    endforeach()
+    target_include_directories(
+        LiteCoreObjects PRIVATE
+        LiteCore/Unix
+    )
 
-    foreach(platform LiteCoreObjects LiteCoreUnitTesting BLIPObjects)
+    foreach(platform LiteCoreObjects BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat=2"
         )
     endforeach()
 endfunction()
-

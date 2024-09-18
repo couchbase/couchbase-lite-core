@@ -34,19 +34,17 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_unix()
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-        target_compile_definitions(
-            ${liteCoreVariant} PUBLIC
-            -DPERSISTENT_PRIVATE_KEY_AVAILABLE
-        )
-        target_link_libraries(
-            ${liteCoreVariant} INTERFACE
-            "-framework Security"
-            "-framework SystemConfiguration"
-        )
-    endforeach()
+    target_compile_definitions(
+        LiteCoreObjects PUBLIC
+        -DPERSISTENT_PRIVATE_KEY_AVAILABLE
+    )
+    target_link_libraries(
+        LiteCoreObjects INTERFACE
+        "-framework Security"
+        "-framework SystemConfiguration"
+    )
 
-    foreach(platform LiteCoreObjects LiteCoreUnitTesting BLIPObjects)
+    foreach(platform LiteCoreObjects BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
             "-Wformat"
