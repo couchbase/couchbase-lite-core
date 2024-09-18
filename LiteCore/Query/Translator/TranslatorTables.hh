@@ -85,6 +85,7 @@ namespace litecore::qt {
         rank,
 #ifdef COUCHBASE_ENTERPRISE
         vectorDistance,
+        prediction,
 #endif
     };
 
@@ -160,6 +161,7 @@ namespace litecore::qt {
 
 #ifdef COUCHBASE_ENTERPRISE
         {"APPROX_VECTOR_DISTANCE()", 2, 5, kFnPrecedence,   OpType::vectorDistance},
+        {"PREDICTION()",    2, 3, kFnPrecedence,            OpType::prediction},
 #endif
     };
 

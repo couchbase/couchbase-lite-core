@@ -27,7 +27,8 @@ namespace litecore::qt {
     // Typical queries only allocate a few KB, not enough to fill a single chunk.
     static constexpr size_t kArenaChunkSize = 4000;
 
-    RootContext::RootContext() : Arena(kArenaChunkSize), ParseContext(*static_cast<Arena*>(this)) {}
+    RootContext::RootContext()
+        : Arena(kArenaChunkSize), ParseContext(*static_cast<ParseDelegate*>(this), *static_cast<Arena*>(this)) {}
 
     void* Node::operator new(size_t size, ParseContext& ctx) noexcept { return ctx.arena.alloc(size, alignof(Node)); }
 

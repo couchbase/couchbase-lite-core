@@ -63,16 +63,32 @@ namespace litecore::qt {
     };
 
     /** Types of indexes. */
-    enum class IndexType { FTS, vector };
+    enum class IndexType {
+        FTS,
+#ifdef COUCHBASE_ENTERPRISE
+        vector,
+        prediction,
+#endif
+    };
 
 #pragma mark - PARSE CONTEXT:
 
+    struct ParseDelegate {
+#ifdef COUCHBASE_ENTERPRISE
+        std::function<bool(string_view id)> hasPredictiveIndex;
+#endif
+    };
+
     /** State used during parsing, passed down through the recursive descent. */
     struct ParseContext {
-        ParseContext(Arena<>& a) : arena(a) {}
+        ParseContext(ParseDelegate& d, Arena<>& a) : delegate(d), arena(a) {}
 
-        ParseContext(ParseContext const& parent) : arena(parent.arena){};
+        // not a copy constructor! Creates a new child context.
+        explicit ParseContext(ParseContext& parent) : delegate(parent.delegate), arena(parent.arena){};
 
+        ParseContext(ParseContext&&) = default;
+
+        ParseDelegate&                           delegate;
         Arena<>&                                 arena;                    // The arena allocator
         SelectNode* C4NULLABLE                   select{};                 // The enclosing SELECT, if any
         std::unordered_map<string, AliasedNode*> aliases;                  // All of the sources & named results
@@ -87,8 +103,10 @@ namespace litecore::qt {
     /** Top-level Context that provides an Arena, and destructs all Nodes in its destructor. */
     struct RootContext
         : Arena<>
+        , public ParseDelegate
         , public ParseContext {
-        RootContext();
+        explicit RootContext();
+        RootContext(RootContext&&) = default;
     };
 
 #pragma mark - NODE CLASS:

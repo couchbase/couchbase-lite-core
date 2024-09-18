@@ -23,6 +23,7 @@ namespace litecore {
     namespace qt {
         class Node;
         struct ParseContext;
+        struct RootContext;
         class SourceNode;
         class SQLWriter;
     }  // namespace qt
@@ -117,8 +118,9 @@ namespace litecore {
 
         string eachExpressionSQL(FLValue);
         string unnestedTableName(FLValue key) const;
+#ifdef COUCHBASE_ENTERPRISE
         string predictiveTableName(FLValue) const;
-
+#endif
       private:
         QueryTranslator(const QueryTranslator& qp)         = delete;
         QueryTranslator& operator=(const QueryTranslator&) = delete;
@@ -126,6 +128,8 @@ namespace litecore {
         void             assignTableNameToSource(qt::SourceNode*, qt::ParseContext&);
         string           writeSQL(function_ref<void(qt::SQLWriter&)>);
         string           functionCallSQL(slice fnName, FLValue arg, FLValue C4NULLABLE param = nullptr);
+        string           predictiveIdentifier(FLValue expression) const;
+        qt::RootContext  makeRootContext() const;
 
         const Delegate&     _delegate;                 // delegate object (SQLiteKeyStore)
         string              _defaultTableName;         // Name of the default table to use
