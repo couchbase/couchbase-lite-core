@@ -675,7 +675,9 @@ C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) noexcept {
 
 C4SliceResult c4doc_getRevisionHistory(C4Document* doc, unsigned maxRevs, const C4String backToRevs[],
                                        unsigned backToRevsCount) noexcept {
-    return C4SliceResult(doc->getRevisionHistory(maxRevs, (const slice*)backToRevs, backToRevsCount));
+    return tryCatch<C4SliceResult>(nullptr, [=] {
+        return C4SliceResult(doc->getRevisionHistory(maxRevs, (const slice*)backToRevs, backToRevsCount));
+    });
 }
 
 bool c4doc_selectParentRevision(C4Document* doc) noexcept { return doc->selectParentRevision(); }
