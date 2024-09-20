@@ -12,18 +12,18 @@ ARG LEGACY_MODE=false
 RUN [ -z "$SG_DEB_ARM64" ] && echo "SG_DEB_ARM64 is required" && exit 1 || true
 RUN [ -z "$SG_DEB_AMD64" ] && echo "SG_DEB_AMD64 is required" && exit 1 || true
 
-RUN apt -yqq update 
+RUN apt -yqq update
 RUN apt -yqq install curl
 
 RUN mkdir -p /opt/sg && \
     ARCHITECTURE="$(dpkg --print-architecture)" && \
     if [ "$ARCHITECTURE" = "amd64" ]; then \
-        curl -o /opt/sg/couchbase-sync-gateway.deb $SG_DEB_AMD64; \
+    curl -o /opt/sg/couchbase-sync-gateway.deb $SG_DEB_AMD64; \
     elif [ "$ARCHITECTURE" = "arm64" ]; then \
-        curl -o /opt/sg/couchbase-sync-gateway.deb $SG_DEB_ARM64; \
+    curl -o /opt/sg/couchbase-sync-gateway.deb $SG_DEB_ARM64; \
     else \
-        echo "Unsupported architecture"; \
-        exit 1; \
+    echo "Unsupported architecture"; \
+    exit 1; \
     fi
 
 COPY cert /opt/sg/cert

@@ -15,6 +15,7 @@
 #include "SGTestUser.hh"
 #include "ReplParams.hh"
 #include <array>
+#include <cstdint>
 #include <iostream>
 #include <typeinfo>
 
@@ -37,7 +38,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
   public:
     explicit ReplicatorCollectionSGTest(const std::string& minSGVer = "3.1", const std::string& maxSGVer = "",
                                         uint16_t port = 4984, const slice remoteDBName = kScratchDBName)
-        : ReplicatorAPITest(), _expectedSGVersion{minSGVer, maxSGVer} {
+        : ReplicatorAPITest(VersionVectorOption), _expectedSGVersion{minSGVer, maxSGVer} {
         _sg.pinnedCert = C4Test::readFile("Replicator/tests/data/cert/cert.pem");
         if ( getenv("NOTLS") ) {
             _sg.address      = {kC4Replicator2Scheme, C4STR("localhost"), port};
@@ -112,7 +113,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
     }
 
     // propertyEncryption: 0, no encryption; 1, encryption only; 2, encryption and decryption
-    void verifyDocs(const std::vector<std::unordered_map<alloc_slice, unsigned>>& docIDs, bool checkRev = false,
+    void verifyDocs(const std::vector<std::unordered_map<alloc_slice, uint64_t>>& docIDs, bool checkRev = false,
                     int propertyEncryption = 0) {
         REQUIRE((!_collectionSpecs.empty() && !_collections.empty()));
         resetVerifyDb();
@@ -169,14 +170,14 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
     }
 
     // map: docID -> rev generation
-    static std::unordered_map<alloc_slice, unsigned> getDocIDs(C4Collection* collection) {
-        std::unordered_map<alloc_slice, unsigned> ret;
+    static std::unordered_map<alloc_slice, uint64_t> getDocIDs(C4Collection* collection) {
+        std::unordered_map<alloc_slice, uint64_t> ret;
         c4::ref<C4DocEnumerator>                  e = c4coll_enumerateAllDocs(collection, nullptr, ERROR_INFO());
         {
             while ( c4enum_next(e, ERROR_INFO()) ) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                ret.emplace(info.docID, c4rev_getGeneration(info.revID));
+                ret.emplace(info.docID, c4rev_getTimestamp(info.revID));
             }
         }
         return ret;
@@ -261,7 +262,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
     std::vector<C4Collection*>                             _collections{};
     SG::TestUser                                           _testUser{};
     size_t                                                 _collectionCount = 0;
-    std::vector<std::unordered_map<alloc_slice, unsigned>> _docIDs{};
+    std::vector<std::unordered_map<alloc_slice, uint64_t>> _docIDs{};
     // Pair of strings representing min and max SG version
     // min is inclusive, max is exclusive. Empty string for max will ignore it
     // i.e.: {"3.0", "3.1"} represents anything 3.0 and above, and excludes 3.1 and above

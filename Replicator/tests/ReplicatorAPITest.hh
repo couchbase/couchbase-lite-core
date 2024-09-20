@@ -58,7 +58,9 @@ class ReplicatorAPITest : public C4Test {
 
     static std::once_flag once;
 
-    ReplicatorAPITest() : C4Test(0), _sg({kDefaultAddress, kScratchDBName}) {
+    ReplicatorAPITest() : ReplicatorAPITest(0) {}
+
+    explicit ReplicatorAPITest(int option) : C4Test(option), _sg({kDefaultAddress, kScratchDBName}) {
         std::call_once(once, [&]() {
             // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
             C4RegisterBuiltInWebSocket();

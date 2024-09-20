@@ -31,8 +31,10 @@ std::unique_ptr<REST::Response> SG::createRequest(const std::string& method, C4C
             path = std::string("/") + kspace + path;
         }
     }
-    if ( logRequests )
+    if ( logRequests ) {
         C4Log("*** Server command: %s %.*s:%d%s", method.c_str(), SPLAT(address.hostname), port, path.c_str());
+        C4Log("Body: %.*s", SPLAT(body));
+    }
 
     Encoder enc;
     enc.beginDict();

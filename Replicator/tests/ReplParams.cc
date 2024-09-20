@@ -3,6 +3,7 @@
 //
 
 #include "ReplParams.hh"
+#include <cstdint>
 
 ReplParams::ReplParams(const std::vector<C4ReplicationCollection>& collections_) : C4ReplicatorParameters() {
     _collectionVector = {collections_};
@@ -70,7 +71,7 @@ ReplParams& ReplParams::setCollectionOptions(C4CollectionSpec collectionSpec, co
     return *this;
 }
 
-ReplParams& ReplParams::setDocIDs(const std::vector<std::unordered_map<alloc_slice, unsigned>>& docIDs) {
+ReplParams& ReplParams::setDocIDs(const std::vector<std::unordered_map<alloc_slice, uint64_t>>& docIDs) {
     for ( size_t i = 0; i < docIDs.size(); ++i ) {
         fleece::Encoder enc;
         enc.beginArray();
