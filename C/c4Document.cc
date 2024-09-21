@@ -208,30 +208,35 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
 // Sanity checks a document update request before writing to the database.
 bool C4Document::checkNewRev(slice parentRevID, C4RevisionFlags rqFlags, bool allowConflict,
                              C4Error* outError) noexcept {
-    int code = 0;
-    if ( parentRevID ) {
-        // Updating an existing revision; make sure it exists and is a leaf:
-        if ( !exists() ) code = kC4ErrorNotFound;
-        else if ( !selectRevision(parentRevID, false) )
-            code = allowConflict ? kC4ErrorNotFound : kC4ErrorConflict;
-        else if ( !allowConflict && !(_selected.flags & kRevLeaf) )
-            code = kC4ErrorConflict;
-    } else {
-        // No parent revision given:
-        if ( rqFlags & kRevDeleted ) {
-            // Didn't specify a revision to delete: NotFound or a Conflict, depending
-            code = ((_flags & kDocExists) ? kC4ErrorConflict : kC4ErrorNotFound);
-        } else if ( (_flags & kDocExists) && !(_selected.flags & kRevDeleted) ) {
-            // If doc exists, current rev must be a deletion or there will be a conflict:
-            code = kC4ErrorConflict;
+    try {
+        int code = 0;
+        if ( parentRevID ) {
+            // Updating an existing revision; make sure it exists and is a leaf:
+            if ( !exists() ) code = kC4ErrorNotFound;
+            else if ( !selectRevision(parentRevID, false) )
+                code = allowConflict ? kC4ErrorNotFound : kC4ErrorConflict;
+            else if ( !allowConflict && !(_selected.flags & kRevLeaf) )
+                code = kC4ErrorConflict;
+        } else {
+            // No parent revision given:
+            if ( rqFlags & kRevDeleted ) {
+                // Didn't specify a revision to delete: NotFound or a Conflict, depending
+                code = ((_flags & kDocExists) ? kC4ErrorConflict : kC4ErrorNotFound);
+            } else if ( (_flags & kDocExists) && !(_selected.flags & kRevDeleted) ) {
+                // If doc exists, current rev must be a deletion or there will be a conflict:
+                code = kC4ErrorConflict;
+            }
         }
-    }
 
-    if ( code ) {
-        c4error_return(LiteCoreDomain, code, nullslice, outError);
+        if ( code ) {
+            c4error_return(LiteCoreDomain, code, nullslice, outError);
+            return false;
+        }
+        return true;
+    } catch ( ... ) {
+        if ( outError ) *outError = C4Error::fromCurrentException();
         return false;
     }
-    return true;
 }
 
 #pragma mark - CONFLICTS:

@@ -10,11 +10,17 @@
 // the file licenses/APL2.txt.
 //
 
+// Reference: <https://docs.couchbase.com/sync-gateway/current/rest-api.html>
+
+
 #include "RESTListener.hh"
+#include "DatabasePool.hh"
 #include "c4Private.h"
 #include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4Database.hh"
+#include "c4ListenerInternal.hh"
+#include "c4Query.hh"
 #include "c4DocEnumerator.hh"
 #include "fleece/Expert.hh"
 #include <functional>
@@ -28,108 +34,84 @@ namespace litecore::REST {
 #pragma mark - ROOT HANDLERS:
 
     void RESTListener::handleGetRoot(RequestResponse& rq) {
-        alloc_slice version(c4_getVersion());
-        auto&       json = rq.jsonEncoder();
-        json.beginDict();
-        json.writeKey("couchdb"_sl);
-        json.writeString("Welcome"_sl);
-        json.writeKey("vendor"_sl);
-        json.beginDict();
-        json.writeKey("name"_sl);
-        json.writeString(kServerName);
-        json.writeKey("version"_sl);
-        json.writeString(version);
-        json.endDict();
-        json.writeKey("version"_sl);
-        json.writeString(serverNameAndVersion());
-        json.endDict();
+        rq.jsonEncoder().writeFormatted("{couchdb:'Welcome', vendor: {name: %s, version: %s}, version: %s}",
+                                        _serverName.c_str(), _serverVersion.c_str(),
+                                        (_serverName + "/" + _serverVersion).c_str());
     }
 
     void RESTListener::handleGetAllDBs(RequestResponse& rq) {
         auto& json = rq.jsonEncoder();
-        json.beginArray();
-        for ( string& name : databaseNames() ) json.writeString(name);
-        json.endArray();
+        json.writeArray([&] {
+            for ( string& name : databaseNames() ) json.writeString(name);
+        });
     }
 
     void RESTListener::handleActiveTasks(RequestResponse& rq) {
+        rq.uncacheable();
         auto& json = rq.jsonEncoder();
-        json.beginArray();
-        for ( auto& task : tasks() ) {
-            json.beginDict();
-            task->writeDescription(json);
-            json.endDict();
-        }
-        json.endArray();
+        json.writeArray([&] {
+            for ( auto& task : tasks() ) {
+                json.writeDict([&] { task->writeDescription(json); });
+            }
+        });
     }
 
 #pragma mark - DATABASE HANDLERS:
 
     void RESTListener::handleGetDatabase(RequestResponse& rq, C4Collection* coll) {
+        if ( rq.method() == HEAD ) return;
+
         C4Database*      db     = coll->getDatabase();
         optional<string> dbName = nameOfDatabase(db);
         if ( !dbName ) return rq.respondWithStatus(HTTPStatus::NotFound);
         auto   docCount     = coll->getDocumentCount();
         auto   lastSequence = coll->getLastSequence();
         C4UUID uuid         = db->getPublicUUID();
-        auto   uuidStr      = slice(&uuid, sizeof(uuid)).hexString();
+        string uuidStr      = slice(&uuid, sizeof(uuid)).hexString();
         slice  scope        = coll->getScope();
+        slice  collection   = coll->getName();
         if ( !scope ) scope = kC4DefaultScopeID;
 
         auto& json = rq.jsonEncoder();
-        json.beginDict();
-        json.writeKey("db_name"_sl);
-        json.writeString(*dbName);
-        json.writeKey("db_uuid"_sl);
-        json.writeString(uuidStr);
-        json.writeKey("scope_name"_sl);
-        json.writeString(scope);
-        json.writeKey("collection_name"_sl);
-        json.writeString(coll->getName());
-        json.writeKey("doc_count"_sl);
-        json.writeUInt(docCount);
-        json.writeKey("update_seq"_sl);
-        json.writeUInt(uint64_t(lastSequence));
-        json.writeKey("committed_update_seq"_sl);
-        json.writeUInt(uint64_t(lastSequence));
+        json.writeDict([&] {
+            json.writeFormatted("db_name: %s, db_uuid: %s, scope_name: %.*s, collection_name: %.*s, "
+                                "doc_count: %llu, update_seq: %llu, committed_update_seq: %llu",
+                                dbName->c_str(), uuidStr.c_str(), FMTSLICE(scope), FMTSLICE(collection), docCount,
+                                uint64_t(lastSequence), uint64_t(lastSequence));
 
-        if ( !collectionGiven(rq) ) {
-            // List all the scope and collections:
-            json.writeKey("scopes");
-            json.beginDict();
-            db->forEachScope([&](slice scope) {
-                json.writeKey(scope);
-                json.beginDict();
-                db->forEachCollection(scope, [&](C4CollectionSpec const& spec) {
-                    C4Collection* coll = db->getCollection(spec);
-                    json.writeKey(spec.name);
-                    json.beginDict();
-                    json.writeKey("doc_count"_sl);
-                    json.writeUInt(coll->getDocumentCount());
-                    json.writeKey("update_seq"_sl);
-                    json.writeUInt(uint64_t(coll->getLastSequence()));
-                    json.endDict();
+            if ( !collectionGiven(rq) ) {
+                // List all the scope and collections:
+                json.writeKey("scopes");
+                json.writeDict([&] {
+                    db->forEachScope([&](slice scope) {
+                        json.writeKey(scope);
+                        json.writeDict([&] {
+                            db->forEachCollection(scope, [&](C4CollectionSpec const& spec) {
+                                C4Collection* coll = db->getCollection(spec);
+                                json.writeKey(spec.name);
+                                json.writeFormatted("{doc_count: %llu, update_seq: %llu}", coll->getDocumentCount(),
+                                                    uint64_t(coll->getLastSequence()));
+                            });
+                        });
+                    });
                 });
-                json.endDict();
-            });
-            json.endDict();
-        }
-        json.endDict();
+            }
+        });
     }
 
     void RESTListener::handleCreateDatabase(RequestResponse& rq) {
         string keySpace     = rq.path(0);
         auto [dbName, spec] = parseKeySpace(keySpace);
-        auto db             = databaseNamed(dbName);
         if ( !collectionGiven(rq) ) {
             // No collection given: create database:
             if ( !_allowCreateDB ) return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create databases");
-            if ( db ) return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
+            if ( databaseNamed(dbName, false) )
+                return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
             FilePath path;
             if ( !pathFromDatabaseName(dbName, path) )
                 return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
 
-            db = C4Database::openNamed(dbName, {slice(path.dirName()), kC4DB_Create});
+            auto db = C4Database::openNamed(dbName, {slice(path.dirName()), kC4DB_Create});
             _c4db_setDatabaseTag(db, DatabaseTag_RESTListener);
             registerDatabase(db, dbName);
 
@@ -139,6 +121,7 @@ namespace litecore::REST {
             // Create collection in database:
             if ( !_allowCreateCollection )
                 return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create collections");
+            auto db = databaseNamed(dbName, true);
             if ( !db ) return rq.respondWithStatus(HTTPStatus::NotFound, "No such database");
             if ( db->getCollection(spec) )
                 return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Collection exists");
@@ -147,25 +130,20 @@ namespace litecore::REST {
         }
     }
 
-    void RESTListener::handleDeleteDatabase(RequestResponse& rq, C4Collection* coll) {
-        auto db = coll->getDatabase();
+    void RESTListener::handleDeleteDatabase(RequestResponse& rq) {
         if ( !collectionGiven(rq) ) {
             // No collection given; delete database:
             if ( !_allowDeleteDB ) return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete databases");
-            optional<string> dbName = nameOfDatabase(db);
-            if ( !dbName ) return rq.respondWithStatus(HTTPStatus::NotFound);
-            if ( !unregisterDatabase(*dbName) ) return rq.respondWithStatus(HTTPStatus::NotFound);
-            try {
-                db->closeAndDeleteFile();
-            } catch ( ... ) {
-                registerDatabase(db, *dbName);
-                rq.respondWithError(C4Error::fromCurrentException());
-            }
-
+            string             dbName = rq.path(0);
+            optional<FilePath> path   = pathOfDatabaseNamed(dbName);
+            if ( !path || !unregisterDatabase(dbName) ) return rq.respondWithStatus(HTTPStatus::NotFound);
+            if ( string pathStr(*path); !C4Database::deleteAtPath(pathStr) )
+                c4log(ListenerLog, kC4LogWarning, "Unable to delete db at %s", pathStr.c_str());
         } else {
             // Delete scope/collection:
             if ( !_allowDeleteCollection )
                 return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete collections");
+            auto [db, coll] = collectionFor(rq, true);
             db->deleteCollection(coll->getSpec());
         }
     }
@@ -183,38 +161,34 @@ namespace litecore::REST {
         int64_t limit = rq.intQuery("limit", INT64_MAX);
         // TODO: Implement startkey, endkey, etc.
 
+        rq.setHeader("Content-Type", "application/json");
+        rq.write("{\"rows\": [\n");
+
         // Create enumerator:
         C4DocEnumerator e(coll, options);
 
         // Enumerate, building JSON:
-        auto& json = rq.jsonEncoder();
-        json.beginDict();
-        json.writeKey("rows"_sl);
-        json.beginArray();
+        JSONEncoder json;
+        int64_t     rows = 0;
         while ( e.next() ) {
             if ( skip-- > 0 ) continue;
             else if ( limit-- <= 0 )
                 break;
             C4DocumentInfo info = e.documentInfo();
-            json.beginDict();
-            json.writeKey("key"_sl);
-            json.writeString(info.docID);
-            json.writeKey("id"_sl);
-            json.writeString(info.docID);
-            json.writeKey("value"_sl);
-            json.beginDict();
-            json.writeKey("rev"_sl);
-            json.writeString(info.revID);
-            json.endDict();
-
-            if ( includeDocs ) {
-                json.writeKey("doc"_sl);
-                expert(json).writeRaw(e.getDocument()->bodyAsJSON());
-            }
-            json.endDict();
+            json.writeDict([&] {
+                json.writeFormatted("key: %.*s, id: %.*s, value: {rev: %.*s},", FMTSLICE(info.docID),
+                                    FMTSLICE(info.docID), FMTSLICE(info.revID));
+                if ( includeDocs ) {
+                    json.writeKey("doc"_sl);
+                    json.writeRaw(e.getDocument()->bodyAsJSON());
+                }
+            });
+            rq.write(json.finish());
+            rq.write("\n");
+            rq.flush(32768);
+            ++rows;
         }
-        json.endArray();
-        json.endDict();
+        rq.printf("],\n\"total_rows\":%lld,\"update_seq\":%llu}", rows, coll->getLastSequence());
     }
 
     void RESTListener::handleGetDoc(RequestResponse& rq, C4Collection* coll) {
@@ -223,7 +197,7 @@ namespace litecore::REST {
         Retained<C4Document> doc   = coll->getDocument(docID, true, (revID.empty() ? kDocGetCurrentRev : kDocGetAll));
         if ( doc ) {
             if ( revID.empty() ) {
-                if ( doc->flags() & kDocDeleted ) doc = nullptr;
+                if ( doc->flags() & kDocDeleted ) doc = nullptr;  // Don't return a tombstone unless rev given
                 else
                     revID = doc->revID().asString();
             } else {
@@ -232,11 +206,20 @@ namespace litecore::REST {
         }
         if ( !doc ) return rq.respondWithStatus(HTTPStatus::NotFound);
 
+        // Use the revID as the HTTP ETag for conditional GETs:
+        string eTag = stringprintf("\"%s\"", revID.c_str());
+        if ( slice inm = rq.header("If-None-Match"); inm == eTag ) {
+            return rq.respondWithStatus(HTTPStatus::NotModified);
+        }
+        rq.setHeader("Etag", eTag);
+        rq.setHeader("Content-Type", "application/json");
+
+        if ( rq.method() == HEAD ) return;
+
         // Get the revision
         alloc_slice json = doc->bodyAsJSON(false);
 
         // Splice the _id and _rev into the start of the JSON:
-        rq.setHeader("Content-Type", "application/json");
         rq.write(R"({"_id":")");
         rq.write(docID);
         rq.write(R"(","_rev":")");
@@ -250,6 +233,7 @@ namespace litecore::REST {
         } else {
             rq.write("}");
         }
+        rq.write("\n");
     }
 
     // Core code for create/update/delete operation on a single doc.
@@ -290,6 +274,12 @@ namespace litecore::REST {
             }
 
             if ( body["_deleted"_sl].asBool() ) deleting = true;
+
+            if ( deleting && !revID ) {
+                c4error_return(WebSocketDomain, (int)HTTPStatus::Conflict,
+                               C4STR("\"_rev\" must be given when deleting a document"), outError);
+                return false;
+            }
 
             Retained<C4Document> doc;
             {
@@ -380,6 +370,76 @@ namespace litecore::REST {
         json.endArray();
 
         t.commit();
+    }
+
+#pragma mark - FUNCTION/QUERY HANDLERS:
+
+    void RESTListener::handleFunction(RequestResponse& rq, C4Collection* coll) {
+        rq.respondWithStatus(HTTPStatus::NotImplemented);
+    }
+
+    void RESTListener::handleQuery(RequestResponse& rq, C4Collection* coll) {
+        if ( !_allowQueries ) return rq.respondWithStatus(HTTPStatus::Forbidden);
+
+        Dict body = rq.bodyAsJSON().asDict();
+
+        // Compile the query:
+        auto queryStr = body["query"].asString();
+        if ( !queryStr )
+            return rq.respondWithStatus(HTTPStatus::BadRequest,
+                                        "Request body must be a JSON object with a 'query' string");
+        Retained<C4Query> query;
+        int               errPos;
+        try {
+            query = coll->newQuery(kC4N1QLQuery, queryStr, &errPos);
+        } catch ( exception const& x ) {
+            return rq.respondWithStatus(HTTPStatus::BadRequest, ("Invalid SQL++ query: "s + x.what()).c_str());
+        }
+
+        // Verify parameter values match query's parameters:
+        auto paramNames = query->parameterNames();
+        Dict params     = body["params"].asDict();
+        for ( Dict::iterator i(params); i; ++i ) {
+            if ( string name(i.keyString()); paramNames.contains(string(name)) ) {
+                paramNames.erase(name);
+            } else {
+                return rq.respondWithStatus(HTTPStatus::BadRequest, ("Query has no parameter named " + name).c_str());
+            }
+        }
+        if ( !paramNames.empty() ) {
+            if ( params )
+                return rq.respondWithStatus(HTTPStatus::BadRequest,
+                                            ("Missing value for parameter " + *paramNames.begin()).c_str());
+            else
+                return rq.respondWithStatus(HTTPStatus::BadRequest, "Request body must contain a 'params' object");
+        }
+
+        // Set the parameter values:
+        if ( params ) {
+            Encoder enc;
+            enc.writeValue(params);
+            query->setParameters(enc.finish());
+        }
+
+        // Run!
+        rq.setHeader("Content-Type", "application/json");
+        rq.setChunked();
+        rq.write("[\n");
+        JSONEncoder json;
+        unsigned    nCols = query->columnCount();
+        auto        e     = query->run();
+        while ( e.next() ) {
+            json.beginDict(nCols);
+            for ( unsigned col = 0; col < nCols; ++col ) {
+                json.writeKey(query->columnTitle(col));
+                json.writeValue(e.column(col));
+            }
+            json.endDict();
+            rq.write(json.finish());
+            rq.write("\n");
+            rq.flush(32768);
+        }
+        rq.write("]\n");
     }
 
 }  // namespace litecore::REST

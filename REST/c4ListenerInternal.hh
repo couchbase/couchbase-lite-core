@@ -20,6 +20,7 @@ namespace litecore::REST {
 
 
     extern C4LogDomain ListenerLog;
+    extern C4LogDomain RESTLog;
 
 
     extern const C4ListenerAPIs kListenerAPIs;

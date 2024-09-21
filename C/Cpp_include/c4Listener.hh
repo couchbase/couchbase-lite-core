@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4ListenerTypes.h"
+#include "fleece/FLBase.h"
 #include "fleece/InstanceCounted.hh"
 #include <vector>
 
@@ -42,6 +43,11 @@ struct C4Listener final
 
     bool unshareCollection(slice name, C4Collection* coll);
 
+    /// Starts a replication, just like a POST to `/_replicate`.
+    /// @param parameters  The same parameters as the request body to `/_replicate`.
+    /// @returns  The task ID.
+    unsigned startReplication(FLDict parameters);
+
     [[nodiscard]] uint16_t port() const;
 
     [[nodiscard]] std::pair<unsigned, unsigned> connectionStatus() const;
@@ -53,8 +59,7 @@ struct C4Listener final
     C4Listener(const C4Listener&) = delete;
 
   private:
-    // For some reason, MSVC on Jenkins will not compile this with noexcept (everything else will)
-    C4Listener(C4Listener&&);  // NOLINT(performance-noexcept-move-constructor)
+    C4Listener(C4Listener&&) noexcept;
 
     Retained<litecore::REST::RESTListener> _impl;
     C4ListenerHTTPAuthCallback C4NULLABLE  _httpAuthCallback;

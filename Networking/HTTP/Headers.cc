@@ -28,12 +28,10 @@ namespace litecore::websocket {
 
     Headers::Headers(Dict dict) { readFrom(dict); }
 
-    Headers::Headers(const Headers& other) { *this = other; }
+    Headers::Headers(Headers&& other) noexcept            = default;
+    Headers& Headers::operator=(Headers&& other) noexcept = default;
 
-    Headers::Headers(Headers&& other) noexcept
-        : _map(std::move(other._map))
-        , _backingStore(std::move(other._backingStore))
-        , _writer(std::move(other._writer)) {}
+    Headers::Headers(const Headers& other) { *this = other; }
 
     Headers& Headers::operator=(const Headers& other) {
         clear();
@@ -78,6 +76,12 @@ namespace litecore::websocket {
     void Headers::add(slice name, slice value) {
         assert(name);
         if ( value ) _map.insert({store(name), store(value)});
+    }
+
+    void Headers::set(slice name, slice value) {
+        assert(name);
+        _map.erase(name);
+        add(name, value);
     }
 
     slice Headers::get(slice name) const {

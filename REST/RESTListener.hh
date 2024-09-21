@@ -15,6 +15,7 @@
 #include "Listener.hh"
 #include "Server.hh"
 #include "FilePath.hh"
+#include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
 #include <memory>
 #include <mutex>
@@ -48,37 +49,56 @@ namespace litecore::REST {
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string& name, FilePath& outPath);
 
+        /** Returns the collection for this request, or null on error */
+        std::pair<BorrowedDatabase, C4Collection*> collectionFor(RequestResponse&, bool writeable);
+
+        /// Starts a replication, just like a POST to `/_replicate`.
+        /// On failure, throws a litecore::error with domain WebSocketDomain.
+        /// @param params  The same parameters as the request body to `/_replicate`.
+        /// @returns  The task ID.
+        unsigned startReplication(Dict params);
+
         /** An asynchronous task (like a replication). */
-        class Task : public RefCounted {
+        class Task
+            : public RefCounted
+            , public InstanceCountedIn<Task> {
           public:
             explicit Task(RESTListener* listener) : _listener(listener) {}
 
             RESTListener* listener() const { return _listener; }
 
+            /// A unique integer ID, assigned when registerTask is called (until then, 0.)
             unsigned taskID() const { return _taskID; }
 
+            /// The time activity last occurred (i.e. when bumpTimeUpdated was called.)
             time_t timeUpdated() const { return _timeUpdated; }
 
+            /// Call this when activity occurs: it sets timeUpdated to now.
+            void bumpTimeUpdated();
+
+            /// Should return true if the Task has completed its work.
             virtual bool finished() const = 0;
+
+            /// Should add keys+values to the encoder to describe the Task.
             virtual void writeDescription(fleece::JSONEncoder&);
 
+            /// Should stop whatever activity the Task is doing.
             virtual void stop() = 0;
 
-            void registerTask();
-            void unregisterTask();
+            void registerTask();    ///< Call this before returning from handler
+            void unregisterTask();  ///< Call this when the Task is finished.
 
           protected:
-            ~Task() override = default;
-
-            time_t _timeUpdated{0};
+            mutable std::recursive_mutex _mutex;
 
           private:
             RESTListener* const _listener;
             unsigned            _taskID{0};
-            time_t              _timeStarted{0};
+            std::atomic<time_t> _timeStarted{0};
+            time_t              _timeUpdated{0};
         };
 
-        /** The currently-running tasks. */
+        /// The currently-running tasks.
         std::vector<Retained<Task>> tasks();
 
       protected:
@@ -89,53 +109,57 @@ namespace litecore::REST {
 
         Server* server() const { return _server.get(); }
 
-        Retained<C4Database> getDatabase(RequestResponse& rq, const std::string& dbName);
+        BorrowedDatabase getDatabase(RequestResponse& rq, const std::string& dbName, bool writeable);
 
-        /** Returns the collection for this request, or null on error */
-        std::pair<Retained<C4Database>, C4Collection*> collectionFor(RequestResponse&);
-        unsigned                                       registerTask(Task*);
-        void                                           unregisterTask(Task*);
+        unsigned registerTask(Task*);
+        void     unregisterTask(Task*);
 
+        using APIVersion              = Server::APIVersion;
         using HandlerMethod           = void (RESTListener::*)(RequestResponse&);
         using DBHandlerMethod         = void (RESTListener::*)(RequestResponse&, C4Database*);
         using CollectionHandlerMethod = void (RESTListener::*)(RequestResponse&, C4Collection*);
 
-        void addHandler(net::Method, const char* uri, HandlerMethod);
-        void addDBHandler(net::Method, const char* uri, DBHandlerMethod);
-        void addCollectionHandler(net::Method, const char* uri, CollectionHandlerMethod);
+        void addHandler(net::Method, const char* uri, APIVersion, HandlerMethod);
+        void addDBHandler(net::Method, const char* uri, bool writeable, APIVersion, DBHandlerMethod);
+        void addCollectionHandler(net::Method, const char* uri, bool writeable, APIVersion, CollectionHandlerMethod);
 
         std::vector<net::Address> _addresses(C4Database* dbOrNull = nullptr, C4ListenerAPIs api = kC4RESTAPI) const;
 
         virtual void handleSync(RequestResponse&, C4Database*);
 
-        static std::string serverNameAndVersion();
-        static std::string kServerName;
-
       private:
+        class ReplicationTask;
+
         static std::pair<std::string, C4CollectionSpec> parseKeySpace(slice keySpace);
         static bool                                     collectionGiven(RequestResponse&);
 
         void handleGetRoot(RequestResponse&);
         void handleGetAllDBs(RequestResponse&);
         void handleReplicate(RequestResponse&);
+        void cancelReplication(RequestResponse&, Value taskVal);
         void handleActiveTasks(RequestResponse&);
 
         void handleGetDatabase(RequestResponse&, C4Collection*);
         void handleCreateDatabase(RequestResponse&);
-        void handleDeleteDatabase(RequestResponse&, C4Collection*);
+        void handleDeleteDatabase(RequestResponse&);
 
         void handleGetAllDocs(RequestResponse&, C4Collection*);
         void handleGetDoc(RequestResponse&, C4Collection*);
         void handleModifyDoc(RequestResponse&, C4Collection*);
         void handleBulkDocs(RequestResponse&, C4Collection*);
+        void handleChanges(RequestResponse&, C4Collection*);
+        void handleFunction(RequestResponse&, C4Collection*);
+        void handleQuery(RequestResponse&, C4Collection*);
 
         bool modifyDoc(fleece::Dict body, std::string docID, const std::string& revIDQuery, bool deleting,
                        bool newEdits, C4Collection* coll, fleece::JSONEncoder& json, C4Error* outError) noexcept;
+        std::tuple<net::HTTPStatus, std::string, ReplicationTask*> _handleReplicate(Dict params);
 
-        std::unique_ptr<FilePath>  _directory;
-        const bool                 _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection;
+        std::unique_ptr<FilePath> _directory;
+        const bool _allowCreateDB, _allowDeleteDB, _allowCreateCollection, _allowDeleteCollection, _allowQueries;
         Retained<crypto::Identity> _identity;
         Retained<Server>           _server;
+        std::string                _serverName, _serverVersion;
         std::set<Retained<Task>>   _tasks;
         unsigned                   _nextTaskID{1};
     };

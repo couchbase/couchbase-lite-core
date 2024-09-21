@@ -22,6 +22,8 @@
 #include <vector>
 
 namespace litecore::REST {
+    class DatabasePool;
+    class BorrowedDatabase;
 
     /** Abstract superclass of network listeners that can serve access to databases.
         Subclassed by RESTListener. */
@@ -48,6 +50,9 @@ namespace litecore::REST {
             be valid according to isValidDatabaseName(). */
         static std::string databaseNameFromPath(const FilePath&);
 
+        /** Returns the filesystem path of the database registered under the given name. */
+        std::optional<FilePath> pathOfDatabaseNamed(const std::string& name);
+
         /** Makes a database visible via the REST API.
             Retains the C4Database; the caller does not need to keep a reference to it. */
         bool registerDatabase(C4Database* NONNULL, std::optional<std::string> name = std::nullopt);
@@ -66,7 +71,7 @@ namespace litecore::REST {
         bool unregisterCollection(const std::string& name, CollectionSpec collection);
 
         /** Returns the database registered under the given name. */
-        fleece::Retained<C4Database> databaseNamed(const std::string& name) const;
+        BorrowedDatabase databaseNamed(const std::string& name, bool writeable) const;
 
         /** Returns the name a database is registered under. */
         std::optional<std::string> nameOfDatabase(C4Database* NONNULL) const;
@@ -81,10 +86,12 @@ namespace litecore::REST {
         virtual int activeConnectionCount() = 0;
 
       protected:
-        mutable std::mutex                                  _mutex;
-        Config                                              _config;
-        std::map<std::string, fleece::Retained<C4Database>> _databases;
-        std::map<std::string, std::vector<CollectionSpec>>  _allowedCollections;
+        DatabasePool* _databasePoolNamed(const std::string& name) const;
+
+        mutable std::mutex                                 _mutex;
+        Config                                             _config;
+        std::map<std::string, DatabasePool>                _databases;
+        std::map<std::string, std::vector<CollectionSpec>> _allowedCollections;
     };
 
 }  // namespace litecore::REST

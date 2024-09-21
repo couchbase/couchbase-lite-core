@@ -18,6 +18,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <string>
 #include <utility>
 
 C4_ASSUME_NONNULL_BEGIN
@@ -48,8 +49,9 @@ struct C4Query final
     slice       columnTitle(unsigned col) const;
     alloc_slice explain() const;
 
-    alloc_slice parameters() const noexcept;
-    void        setParameters(slice parameters);
+    const std::set<std::string>& parameterNames() const noexcept;
+    alloc_slice                  parameters() const noexcept;
+    void                         setParameters(slice parameters);
 
     alloc_slice fullTextMatched(const C4FullTextMatch&);
 

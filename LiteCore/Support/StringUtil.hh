@@ -53,7 +53,16 @@ namespace litecore {
     /** Like vsprintf(), but returns a std::string */
     std::string vstringprintf(const char* fmt NONNULL, va_list) __printflike(1, 0);
 
+    /** Splits the string at occurrences of `separator` and calls the callback for each piece.
+        There may be empty pieces, if the separator occurs at the start or end or twice in a row. */
     void split(std::string_view str, std::string_view separator, fleece::function_ref<void(std::string_view)> callback);
+
+    /** Splits the string at occurrences of `separator` and returns all the pieces.*/
+    std::vector<std::string_view> split(std::string_view str, std::string_view separator);
+
+    /** Splits the string at the _first occurrence_ of `separator` and returns the pieces before and after.
+        If the separator is not found, returns the original string and an empty string. */
+    std::pair<string_view, string_view> split2(std::string_view str, std::string_view separator);
 
     /** Returns the strings in the vector concatenated together,
         with the separator (if non-null) between them. */

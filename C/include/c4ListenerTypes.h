@@ -52,7 +52,7 @@ typedef bool (*C4ListenerHTTPAuthCallback)(C4Listener* listener, C4Slice authHea
 /** TLS configuration for C4Listener. */
 typedef struct C4TLSConfig {
     C4PrivateKeyRepresentation            privateKeyRepresentation;  ///< Interpretation of `privateKey`
-    C4KeyPair*                            key;                       ///< A key pair that contains the private key
+    C4KeyPair* C4NULLABLE                 key;                       ///< A key pair that contains the private key
     C4Cert*                               certificate;               ///< X.509 certificate data
     bool                                  requireClientCerts;  ///< True to require clients to authenticate with a cert
     C4Cert* C4NULLABLE                    rootClientCerts;     ///< Root CA certs to trust when verifying client cert
@@ -66,6 +66,8 @@ typedef struct C4ListenerConfig {
     C4String                networkInterface;  ///< name or address of interface to listen on; else all
     C4ListenerAPIs          apis;              ///< Which API(s) to enable
     C4TLSConfig* C4NULLABLE tlsConfig;         ///< TLS configuration, or NULL for no TLS
+    C4String                serverName;        ///< Name for "Server:" response header (optional)
+    C4String                serverVersion;     ///< Version for "Server:" response header (optional)
 
     C4ListenerHTTPAuthCallback C4NULLABLE httpAuthCallback;  ///< Callback for HTTP auth
     void* C4NULLABLE                      callbackContext;   ///< Client value passed to HTTP auth callback
@@ -76,6 +78,7 @@ typedef struct C4ListenerConfig {
     bool     allowDeleteDBs;          ///< If true, "DELETE /db" is allowed
     bool     allowCreateCollections;  ///< If true, "PUT /db.scope.coll" is allowed
     bool     allowDeleteCollections;  ///< If true, "DELETE /db.scope.coll" is allowed
+    bool     allowQueries;            ///< If true, "POST /db/_query" is allowed (arbitrary N1QL queries)
 
     // For sync listeners only:
     bool allowPush;        ///< Allow peers to push changes to local db

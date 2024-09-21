@@ -12,19 +12,17 @@
 
 #include "Request.hh"
 #include "HTTPLogic.hh"
-#include "Server.hh"
-#include "Writer.hh"
+#include "c4ListenerInternal.hh"  // for ListenerLog
 #include "Error.hh"
-#include "Logging.hh"
 #include "netUtils.hh"
+#include "Server.hh"
 #include "TCPSocket.hh"
-#include "date/date.h"
+#include "Writer.hh"
 #include "slice_stream.hh"
 #include <chrono>
-#include <cstdarg>
 #include <cinttypes>
+#include <cstdarg>
 #include <memory>
-#include <utility>
 #include <utility>
 
 #ifdef _MSC_VER
@@ -52,8 +50,17 @@ namespace litecore::REST {
         _method        = Method::None;
         Method method  = MethodNamed(in.readToDelimiter(" "_sl));
         slice  uri     = in.readToDelimiter(" "_sl);
+        slice  http    = in.readToDelimiter("/"_sl);
         slice  version = in.readToDelimiter("\r\n"_sl);
-        if ( method == Method::None || uri.size == 0 || !version.hasPrefix("HTTP/"_sl) ) return false;
+        if ( method == Method::None || !uri.hasPrefix('/') || http != "HTTP"_sl ) return false;
+
+        if ( version == "1.1" ) _version = HTTP1_1;
+        else if ( version == "1.0" )
+            _version = HTTP1_0;
+        else
+            return false;
+
+        if ( !HTTPLogic::parseHeaders(in, _headers) ) return false;
 
         const uint8_t* q = uri.findByte('?');
         if ( q ) {
@@ -63,8 +70,6 @@ namespace litecore::REST {
             _queries.clear();
         }
         _path = string(uri);
-
-        if ( !HTTPLogic::parseHeaders(in, _headers) ) return false;
 
         _method = method;
         return true;
@@ -97,28 +102,58 @@ namespace litecore::REST {
         return defaultValue;
     }
 
+    string Request::uri() const {
+        if ( _queries.empty() ) return _path;
+        else
+            return _path + "?" + _queries;
+    }
+
+    uint64_t Request::uintQuery(const char* param, uint64_t defaultValue) const {
+        defaultValue = std::min(defaultValue, uint64_t(INT64_MAX));
+        return std::max(int64_t(0), intQuery(param, defaultValue));
+    }
+
     bool Request::boolQuery(const char* param, bool defaultValue) const {
         string val = query(param);
         if ( val.empty() ) return defaultValue;
         return val != "false" && val != "0";  // same behavior as Obj-C CBL 1.x
     }
 
-#pragma mark - RESPONSE STATUS LINE:
+    bool Request::keepAlive() const {
+        auto connection = header("Connection");
+        return (_version == Request::HTTP1_1) ? (connection != "close") : (connection == "keep-alive");
+    }
+
+#pragma mark - REQUESTRESPONSE:
+
+    RequestResponse::RequestResponse(RequestResponse&&) noexcept            = default;
+    RequestResponse& RequestResponse::operator=(RequestResponse&&) noexcept = default;
+    RequestResponse::~RequestResponse()                                     = default;
 
     RequestResponse::RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket> socket)
         : _server(server), _socket(std::move(socket)) {
         auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
         if ( !request ) {
-            handleSocketError();
+            _error = _socket->error();
+            if ( _error == C4Error{WebSocketDomain, 400} ) _error = C4Error{NetworkDomain, kC4NetErrConnectionReset};
             return;
         }
-        if ( !readFromHTTP(request) ) return;
+        if ( !readFromHTTP(request) ) {
+            _error = C4Error::make(WebSocketDomain, int(HTTPStatus::BadRequest));
+            return;
+        }
         if ( _method == Method::POST || _method == Method::PUT ) {
             if ( !_socket->readHTTPBody(_headers, _body) ) {
-                handleSocketError();
+                _error = _socket->error();
                 return;
             }
         }
+
+        // Add standard headers:
+        char   dateStr[100];
+        time_t t = time(nullptr);
+        strftime(dateStr, sizeof(dateStr), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&t));  // faster than date::format()
+        setHeader("Date", dateStr);
     }
 
     void RequestResponse::setStatus(HTTPStatus status, const char* message) {
@@ -130,7 +165,6 @@ namespace litecore::REST {
 
     void RequestResponse::sendStatus() {
         if ( _sentStatus ) return;
-        Log("Response status: %d", static_cast<int>(_status));
         if ( _statusMessage.empty() ) {
             const char* defaultMessage = StatusMessage(_status);
             if ( defaultMessage ) _statusMessage = defaultMessage;
@@ -138,12 +172,6 @@ namespace litecore::REST {
         string statusLine = stringprintf("HTTP/1.1 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
         _responseHeaderWriter.write(statusLine);
         _sentStatus = true;
-
-        // Add the 'Date:' header:
-        stringstream s;
-        auto         tp = floor<seconds>(system_clock::now());
-        s << date::format("%a, %d %b %Y %H:%M:%S GMT", tp);
-        setHeader("Date", s.str().c_str());
     }
 
     void RequestResponse::writeStatusJSON(HTTPStatus status, const char* message) {
@@ -235,41 +263,52 @@ namespace litecore::REST {
     }
 
     void RequestResponse::handleSocketError() {
-        C4Error err = _socket->error();
-        WarnError("Socket error sending response: %s", err.description().c_str());
+        if ( C4Error err = _socket->error(); err != _error ) {
+            c4log(ListenerLog, kC4LogError, "Socket error sending HTTP response: %s", err.description().c_str());
+            if ( !_error ) _error = err;
+        }
+    }
+
+    void RequestResponse::writeToSocket(slice data) {
+        if ( _socket->write_n(data) < 0 ) handleSocketError();
     }
 
 #pragma mark - RESPONSE HEADERS:
 
-    void RequestResponse::setHeader(const char* header, const char* value) {
-        sendStatus();
-        Assert(!_endedHeaders);
-        _responseHeaderWriter.write(slice(header));
-        _responseHeaderWriter.write(": "_sl);
-        _responseHeaderWriter.write(slice(value));
-        _responseHeaderWriter.write("\r\n"_sl);
+    void RequestResponse::setHeader(slice header, slice value) {
+        Assert(!_sentHeaders);
+        _responseHeaders.set(header, value);
     }
 
     void RequestResponse::addHeaders(const map<string, string>& headers) {
-        for ( auto& entry : headers ) setHeader(entry.first.c_str(), entry.second.c_str());
+        for ( auto& entry : headers ) setHeader(entry.first, entry.second);
     }
 
     void RequestResponse::setContentLength(uint64_t length) {
-        sendStatus();
         Assert(_contentLength < 0, "Content-Length has already been set");
-        Log("Content-Length: %" PRIu64, length);
-        _contentLength           = (int64_t)length;
-        constexpr size_t bufSize = 20;
-        char             len[bufSize];
-        snprintf(len, bufSize, "%" PRIu64, length);
-        setHeader("Content-Length", len);
+        Assert(!_chunked);
+        _contentLength = (int64_t)length;
+        setHeader("Content-Length", _contentLength);
+    }
+
+    void RequestResponse::setChunked() {
+        Assert(_contentLength < 0, "Content-Length has already been set");
+        setHeader("Transfer-Encoding", "chunked");
+        _streaming = _chunked = true;
     }
 
     void RequestResponse::sendHeaders() {
-        if ( _jsonEncoder ) setHeader("Content-Type", "application/json");
+        sendStatus();
+        if ( _sentHeaders ) return;
+        _responseHeaders.forEach([&](slice header, slice value) {
+            _responseHeaderWriter.write(header);
+            _responseHeaderWriter.write(": "_sl);
+            _responseHeaderWriter.write(value);
+            _responseHeaderWriter.write("\r\n"_sl);
+        });
         _responseHeaderWriter.write("\r\n"_sl);
-        if ( _socket->write_n(_responseHeaderWriter.finish()) < 0 ) handleSocketError();
-        _endedHeaders = true;
+        writeToSocket(_responseHeaderWriter.finish());
+        _sentHeaders = true;
     }
 
 #pragma mark - RESPONSE BODY:
@@ -296,28 +335,65 @@ namespace litecore::REST {
         free(str);
     }
 
+    void RequestResponse::flush(size_t minLength) {
+        if ( _responseWriter.length() < minLength ) return;
+        Assert(!_jsonEncoder);
+        if ( !_streaming ) {
+            _streaming = true;
+            if ( _contentLength < 0 ) setChunked();
+        }
+        sendHeaders();
+        _flush();
+    }
+
+    void RequestResponse::_flush() {
+        Assert(_sentHeaders);
+        if ( _chunked ) {
+            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding
+            auto chunkSize = _responseWriter.length();
+            if ( chunkSize == 0 ) return;
+            char   buf[100];
+            size_t len = snprintf(buf, sizeof(buf), "%zx\r\n", chunkSize);
+            writeToSocket({buf, len});
+            write("\r\n");  // this is at the end of the chunk
+        }
+        _responseWriter.finish([&](slice responseData) { writeToSocket(responseData); });
+    }
+
     fleece::JSONEncoder& RequestResponse::jsonEncoder() {
-        if ( !_jsonEncoder ) _jsonEncoder = std::make_unique<fleece::JSONEncoder>();
+        if ( !_jsonEncoder ) {
+            _jsonEncoder = std::make_unique<fleece::JSONEncoder>();
+            setHeader("Content-Type", "application/json");
+        }
         return *_jsonEncoder;
     }
 
     void RequestResponse::finish() {
-        if ( _finished ) return;
+        if ( _finished || !_socket ) return;
 
         if ( _jsonEncoder ) {
             alloc_slice json = _jsonEncoder->finish();
+            if ( !json ) {
+                c4log(ListenerLog, kC4LogError, "HTTP handler failed to encode JSON response: %s (%d)",
+                      _jsonEncoder->errorMessage(), _jsonEncoder->error());
+                respondWithStatus(HTTPStatus::ServerError, "Internal error");
+                return;
+            }
+            DebugAssert(Doc::fromJSON(json, nullptr), "Response is not valid JSON: %.*s", FMTSLICE(json));
             write(json);
         }
 
-        alloc_slice responseData = _responseWriter.finish();
-        if ( _contentLength < 0 ) setContentLength(responseData.size);
-        else
-            Assert(_contentLength == responseData.size);
-
+        if ( !_streaming ) {
+            if ( _contentLength < 0 ) setContentLength(_responseWriter.length());
+            else
+                Assert(_contentLength == _responseWriter.length());
+        }
         sendHeaders();
 
-        Log("Now sending body...");
-        if ( _socket->write_n(responseData) < 0 ) handleSocketError();
+        _flush();
+        if ( _chunked ) {
+            writeToSocket("0\r\n\r\n");  // Ending chunk
+        }
         _finished = true;
     }
 
@@ -344,6 +420,6 @@ namespace litecore::REST {
         return std::move(_socket);
     }
 
-    string RequestResponse::peerAddress() { return _socket->peerAddress(); }
+    string RequestResponse::peerAddress() { return _socket ? _socket->peerAddress() : ""s; }
 
 }  // namespace litecore::REST
