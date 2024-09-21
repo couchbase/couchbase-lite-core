@@ -24,7 +24,25 @@ namespace litecore::qt {
     using namespace fleece;
 
     // indexed by IndexType:
-    constexpr const char* kOwnerFnName[2] = {"MATCH", "APPROX_VECTOR_DISTANCE"};
+    constexpr const char* kIndexTypeName[3] = {"FTS", "vector", "predictive"};
+    constexpr const char* kOwnerFnName[3]   = {"MATCH", "APPROX_VECTOR_DISTANCE", "PREDICTION"};
+
+    void IndexedNode::setIndexedExpression(ExprNode* expression) {
+        _indexedExpr = expression;
+        expression->visitTree([&](Node& n, unsigned /*depth*/) {
+            if ( SourceNode* nodeSource = n.source() ) {
+                require(_sourceCollection == nullptr || _sourceCollection == nodeSource,
+                        "1st argument to %s may only refer to a single collection", kOwnerFnName[int(_type)]);
+                _sourceCollection = nodeSource;
+            }
+        });
+        require(_sourceCollection, "unknown source collection for %s()", kOwnerFnName[int(_type)]);
+    }
+
+    void IndexedNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const {
+        require(!tableName.empty(), "missing %s index", kIndexTypeName[int(_type)]);
+        ctx << sqlIdentifier(tableName);
+    }
 
 #pragma mark - FTS:
 
@@ -38,13 +56,8 @@ namespace litecore::qt {
         require(source, "unknown source collection for %s()", name);
         require(source->isCollection(), "invalid source collection for %s()", name);
         require(path.count() > 0, "missing property after collection alias in %s()", name);
-        _sourceCollection    = source;
-        _indexExpressionJSON = string(path.toString());
-    }
-
-    void FTSNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const {
-        require(!tableName.empty(), "missing FTS index");
-        ctx << sqlIdentifier(tableName);
+        _sourceCollection = source;
+        _indexID          = ctx.newString(path.toString());
     }
 
     void FTSNode::writeIndex(SQLWriter& sql) const {
@@ -71,10 +84,9 @@ namespace litecore::qt {
         ctx << "))";
     }
 
-#pragma mark - VECTOR:
-
-
 #ifdef COUCHBASE_ENTERPRISE
+
+#    pragma mark - VECTOR:
 
     // A SQLite vector MATCH expression; used by VectorDistanceNode to add a join condition.
     class VectorMatchNode final : public ExprNode {
@@ -90,19 +102,9 @@ namespace litecore::qt {
         ExprNode*        _vector;
     };
 
-    VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx)
-        : IndexedNode(IndexType::vector), _indexedExpr(parse(args[0], ctx)) {
+    VectorDistanceNode::VectorDistanceNode(Array::iterator& args, ParseContext& ctx) : IndexedNode(IndexType::vector) {
         // Determine which collection the vector is based on:
-        SourceNode* source = nullptr;
-        _indexedExpr->visitTree([&](Node& n, unsigned /*depth*/) {
-            if ( SourceNode* nodeSource = n.source() ) {
-                require(source == nullptr || source == nodeSource,
-                        "1st argument (vector) to APPROX_VECTOR_DISTANCE may only refer to a single collection");
-                source = nodeSource;
-            }
-        });
-        require(source, "unknown source collection for APPROX_VECTOR_DISTANCE()");
-        _sourceCollection = source;
+        setIndexedExpression(ExprNode::parse(args[0], ctx));
 
         // Create the JSON expression used to locate the index:
         string indexExpr(args[0].toJSON(false, true));
@@ -118,7 +120,7 @@ namespace litecore::qt {
                 replace(indexExpr, "[\"." + prefix + ".", "[\".");
             }
         }
-        _indexExpressionJSON = ctx.newString(indexExpr);
+        _indexID = ctx.newString(indexExpr);
 
         _vector = ExprNode::parse(args[1], ctx);
 
@@ -183,8 +185,7 @@ namespace litecore::qt {
     }
 
     void VectorDistanceNode::writeSourceTable(SQLWriter& sql, string_view tableName) const {
-        require(!tableName.empty(), "missing vector index");
-        if ( _simple ) {
+        if ( _simple && !tableName.empty() ) {
             // In a "simple" vector match, run the vector query as a nested SELECT:
             sql << "(SELECT docid, distance FROM " << sqlIdentifier(tableName) << " WHERE vector MATCH encode_vector("
                 << _vector << ")";
@@ -193,7 +194,7 @@ namespace litecore::qt {
             require(limit, "a LIMIT must be given when using APPROX_VECTOR_DISTANCE()");
             sql << " LIMIT " << limit << ")";
         } else {
-            sql << sqlIdentifier(tableName);
+            IndexedNode::writeSourceTable(sql, tableName);
         }
     }
 
@@ -202,6 +203,49 @@ namespace litecore::qt {
     void VectorDistanceNode::writeSQL(SQLWriter& ctx) const {
         ctx << sqlIdentifier(_indexSource->alias()) << ".distance";
     }
+
+#    pragma mark - PREDICTION:
+
+    ExprNode* PredictionNode::parse(Array::iterator args, ParseContext& ctx) {
+        // Unlike a vector or FTS query, a prediction() is not required to have an index.
+        // Check whether one exists. Unfortunately, the index identifier is based on the entire
+        // expression array including the first item `PREDICTION()` which isn't in the iterator,
+        // so we have to reconstruct it:
+        auto expr = MutableArray::newArray();
+        expr.append("PREDICTION()");
+        expr.append(args[0]);
+        expr.append(args[1]);
+        string id = expressionIdentifier(expr);
+
+        if ( ctx.delegate.hasPredictiveIndex(id) ) {
+            return new (ctx) PredictionNode(args, ctx, id);
+        } else {
+            return FunctionNode::parse(kPredictionFnName, args, ctx);
+        }
+    }
+
+    PredictionNode::PredictionNode(Array::iterator& args, ParseContext& ctx, string_view indexID)
+        : IndexedNode(IndexType::prediction) {
+        _indexID = ctx.newString(indexID);
+        setIndexedExpression(ExprNode::parse(args[1], ctx));
+        if ( args.count() > 2 ) {
+            slice   pathStr = requiredString(args[2], "property path of PREDICTION()");
+            KeyPath path    = parsePath(pathStr);
+            require(path.count() > 0, "invalid property path in PREDICTION()");
+            _subProperty = ctx.newString(path.toString());
+        }
+    }
+
+    void PredictionNode::writeSQL(SQLWriter& out) const {
+        auto alias = sqlIdentifier(_indexSource->alias());
+        if ( _subProperty ) {
+            out << kUnnestedValueFnName << "(" << alias << ".body, " << sqlString(_subProperty);
+            out << ")";
+        } else {
+            out << kRootFnName << "(" << alias << ".body)";
+        }
+    }
+
 
 #endif
 
@@ -221,15 +265,14 @@ namespace litecore::qt {
     }
 
     bool IndexSourceNode::matchesNode(const IndexedNode* node) const {
-        return _indexedNode->indexType() == node->indexType()
-               && _indexedNode->indexExpressionJSON() == node->indexExpressionJSON()
+        return _indexedNode->indexType() == node->indexType() && _indexedNode->indexID() == node->indexID()
                && collection() == node->sourceCollection()->collection()
                && scope() == node->sourceCollection()->scope();
     }
 
     IndexType IndexSourceNode::indexType() const { return _indexedNode->indexType(); }
 
-    string_view IndexSourceNode::indexedExpressionJSON() const { return _indexedNode->indexExpressionJSON(); }
+    string_view IndexSourceNode::indexID() const { return _indexedNode->indexID(); }
 
     void IndexSourceNode::addIndexedNode(IndexedNode* node) {
         Assert(node != _indexedNode && node->indexType() == _indexedNode->indexType());
@@ -300,7 +343,7 @@ namespace litecore::qt {
     /// Adds a SourceNode for an IndexedNode, or finds an existing one.
     /// Sets the source as its indexSource.
     void SelectNode::addIndexForNode(IndexedNode* node, ParseContext& ctx) {
-        DebugAssert(!node->indexExpressionJSON().empty());
+        DebugAssert(!node->indexID().empty());
 
         // Look for an existing index source:
         IndexSourceNode* indexSrc = nullptr;
