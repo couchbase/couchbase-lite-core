@@ -56,13 +56,13 @@ jobs:
 
     - name: Clone EE PR Branch
       id: clone-ee-pr
-      if: '${{github.event_name}}' == 'pull_request'
+      if: ${{ github.event_name == 'pull_request' }}
       continue-on-error: true
       working-directory: ${{github.workspace}}/..
       run: git clone git@github.com:couchbase/couchbase-lite-core-EE --branch ${{github.head_ref}} --recursive --depth 1
 
     - name: Clone EE Target Branch
-      if: '${{github.event_name}}' == 'push' || ${{ steps.clone-ee-pr.conclusion == 'failure' }}
+      if: ${{ github.event_name == 'push' || steps.clone-ee-pr.conclusion == 'failure' }}
       working-directory: ${{github.workspace}}/..
       run: git clone git@github.com:couchbase/couchbase-lite-core-EE --branch ${{github.base_ref}} --recursive --depth 1
 
