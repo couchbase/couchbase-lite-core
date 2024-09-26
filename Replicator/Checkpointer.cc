@@ -406,7 +406,7 @@ namespace litecore::repl {
             if ( doc ) {
                 generation = C4Document::getRevIDGeneration(doc->meta);
                 if ( generation > 0 ) actualRev = doc->meta;
-            };
+            }
         });
 
         // Check for conflict:

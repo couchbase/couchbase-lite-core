@@ -3,7 +3,11 @@ function(setup_build)
     if(NOT LITECORE_PREBUILT_LIB STREQUAL "")
         cmake_path(REMOVE_EXTENSION LITECORE_PREBUILT_LIB OUTPUT_VARIABLE FilesToCopy)
     else()
-        set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore)
+        if(CMAKE_CONFIGURATION_TYPES)
+            set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore)
+        else()
+            set(FilesToCopy ${BIN_TOP}/LiteCore)
+        endif()
     endif()
 
     target_sources(
@@ -35,11 +39,21 @@ function(setup_build)
         mbedx509
     )
 
-    add_custom_command(
-        TARGET C4Tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        -DFilesToCopy="${FilesToCopy}"
-        -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
-        -P ${TOP}MSVC/copy_artifacts.cmake
-    )
+    if(CMAKE_CONFIGURATION_TYPES)
+        add_custom_command(
+            TARGET C4Tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+            -DFilesToCopy="${FilesToCopy}"
+            -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
+            -P ${TOP}MSVC/copy_artifacts.cmake
+        )
+    else()
+        add_custom_command(
+            TARGET C4Tests POST_BUILD
+            COMMAND ${CMAKE_COMMAND}
+            -DFilesToCopy="${FilesToCopy}"
+            -DDestinationDirectory=${PROJECT_BINARY_DIR}
+            -P ${TOP}MSVC/copy_artifacts.cmake
+        )
+    endif()
 endfunction()

@@ -185,7 +185,7 @@ namespace litecore::repl {
                     body        = C4Document::encodeStrippingOldMetaProperties(root, sk);
                     bodyChanged = true;
                 }
-                catchAndWarn();
+                catchAndWarn()
                 if ( !body ) *outError = C4Error::make(WebSocketDomain, 500, "invalid legacy attachments");
             }
         }

@@ -20,12 +20,15 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "c4ListenerInternal.hh"
+#include "NumConversion.hh"
 #include <memory>
 #include <mutex>
 
 // TODO: Remove these pragmas when doc-comments in sockpp are fixed
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
+#pragma clang diagnostic ignored "-Wmissing-braces"
 #include "sockpp/tcp_acceptor.h"
 #include "sockpp/inet6_address.h"
 #pragma clang diagnostic pop
@@ -120,7 +123,7 @@ namespace litecore::REST {
         if ( !_acceptor || !*_acceptor ) return;
 
         c4log(ListenerLog, kC4LogInfo, "Stopping server");
-        Poller::instance().removeListeners(_acceptor->handle());
+        Poller::instance().removeListeners(narrow_cast<int>(_acceptor->handle()));
         _acceptor->close();
         _acceptor.reset();
         _rules.clear();
@@ -130,7 +133,7 @@ namespace litecore::REST {
         lock_guard<mutex> lock(_mutex);
         if ( !_acceptor ) return;
 
-        Poller::instance().addListener(_acceptor->handle(), Poller::kReadable, [this] {
+        Poller::instance().addListener(narrow_cast<int>(_acceptor->handle()), Poller::kReadable, [this] {
             Retained<Server> selfRetain = this;
             acceptConnection();
         });

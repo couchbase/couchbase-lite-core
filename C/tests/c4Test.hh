@@ -130,7 +130,7 @@ class WITH_ERROR {
 
 
 // Platform-specific filesystem path separator.
-#ifdef _MSC_VER
+#ifdef WIN32
 #    define kPathSeparator "\\"
 #else
 #    define kPathSeparator "/"

@@ -178,7 +178,6 @@ namespace litecore {
                     enc << rev->properties;
                     _latestBody = enc.finishDoc();
                     return _latestBody.data();
-                    ;
                 }
             }
             return nullslice;

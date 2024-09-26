@@ -22,7 +22,7 @@ typedef const char* (*version_func)();
 typedef int (*version_number_func)();
 
 #ifdef WIN32
-#    include <windows.h>
+#    include <Windows.h>
 #    define cbl_dlopen(path)                                                                                           \
         LoadLibraryExA(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)
 #    define cbl_dlsym   GetProcAddress

@@ -166,7 +166,7 @@ namespace litecore::blip {
                   "BLIP sent %zu msgs (%" PRIu64 " bytes), rcvd %" PRIu64 " msgs (%" PRIu64
                   " bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
                   _countOutboxDepth, _totalBytesWritten, _numRequestsReceived, _totalBytesRead, _timeOpen.elapsed(),
-                  _maxOutboxDepth, _totalOutboxDepth / (double)_countOutboxDepth);
+                  _maxOutboxDepth, (double)_totalOutboxDepth / (double)_countOutboxDepth);
             logStats();
         }
 

@@ -207,8 +207,8 @@ namespace litecore {
 
     void SequenceTracker::_documentChanged(const alloc_slice& docID, const alloc_slice& revID, sequence_t sequence,
                                            uint64_t bodySize, RevisionFlags flags) {
-        logDebug("documentChanged('%.*s', %.*s, %llu, size=%llu, flags=%hhx", SPLAT(docID), SPLAT(revID), sequence,
-                 bodySize, flags);
+        logDebug("documentChanged('%.*s', %.*s, %llu, size=%llu, flags=%hhx", SPLAT(docID), SPLAT(revID), (uint64_t)sequence,
+                 bodySize, (uint8_t)flags);
         auto   shortBodySize = (uint32_t)min(bodySize, (uint64_t)UINT32_MAX);
         bool   listChanged   = true;
         Entry* entry;

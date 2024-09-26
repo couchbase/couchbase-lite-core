@@ -149,7 +149,7 @@ namespace litecore {
                 // Now run the query:
                 newQE = _query->createEnumerator(&options);
             }
-            catchError(&error);
+            catchError(&error)
 
             return false;
         });

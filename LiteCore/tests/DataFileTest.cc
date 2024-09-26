@@ -183,7 +183,7 @@ static void createNumberedDocs(KeyStore* store, int n = 100, bool withAssertions
 N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
     {
         INFO("Enumerate empty db");
-        int              i = 0;
+        [[maybe_unused]] int i = 0;
         RecordEnumerator e(*store);
         for ( ; e.next(); ++i ) { FAIL("Shouldn't have found any docs"); }
         REQUIRE_FALSE(e.hasRecord());

@@ -33,7 +33,7 @@ static constexpr int kPrimes[] = {2, 3, 5, 7, 11};
 /// vector whose elements are the number's closeness to a multiple of the primes listed above.
 class FactorsModel : public PredictiveModel {
   public:
-    explicit FactorsModel(DataFile* db) : db(db) {}
+    explicit FactorsModel(DataFile* _db) : db(_db) {}
 
     DataFile* const db;
     bool            allowCalls{true};

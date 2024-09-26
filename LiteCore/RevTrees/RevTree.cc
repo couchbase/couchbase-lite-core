@@ -239,7 +239,6 @@ namespace litecore {
                     // As a special case, allow this gap in the history as long as it's at a depth
                     // that's going to be pruned away anyway. This allows very long histories to
                     // be represented in short form by skipping revs in the middle.
-                    ;
                 } else {
                     // Otherwise this is an error.
                     return {nullptr, -400};

@@ -163,3 +163,18 @@ target_link_libraries(
     LiteCoreREST_Static
     LiteCoreWebSocket
 )
+
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options(
+        CppTests PRIVATE
+        "-Wno-nonportable-system-include-path" # Some deps are not honoring this
+        -Wno-extra-semi-stmt
+        -Wno-header-hygiene
+        -Wno-unused-template
+        -Wno-unused-but-set-variable
+        -Wno-double-promotion
+        -Wno-implicit-int-float-conversion # TODO: Benchmark.hh, 
+        -Wno-reorder-ctor
+        -Wno-deprecated-literal-operator
+    )
+endif()

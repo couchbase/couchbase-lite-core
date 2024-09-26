@@ -41,14 +41,14 @@ namespace litecore::crypto {
 
     static const DWORD LITECORE_ID_PROPERTY = CERT_FIRST_USER_PROP_ID;
 
-    [[noreturn]] void throwSecurityStatus(SECURITY_STATUS err, const char* fnName, const char* what) {
+    [[noreturn]] static void throwSecurityStatus(SECURITY_STATUS err, const char* fnName, const char* what) {
         LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, static_cast<int>(err));
         error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, static_cast<int>(err));
     }
 
-    [[noreturn]] void throwWincryptError(DWORD err, const char* fnName, const char* what) {
-        LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, err);
-        error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, err);
+    [[noreturn]] static void throwWincryptError(DWORD err, const char* fnName, const char* what) {
+        LogError(TLSLogDomain, "%s (%s returned %lu)", what, fnName, err);
+        error::_throw(error::CryptoError, "%s (%s returned %lu)", what, fnName, err);
     }
 
     inline void checkSecurityStatus(SECURITY_STATUS err, const char* fnName, const char* what,
@@ -77,7 +77,7 @@ namespace litecore::crypto {
         return resultCert;
     }
 
-    DWORD getBlockSize(NCRYPT_KEY_HANDLE hKey) {
+    static DWORD getBlockSize(NCRYPT_KEY_HANDLE hKey) {
         DWORD      blockSize;
         DWORD      dummy = sizeof(DWORD);
         const auto blockSizeResult =
@@ -87,7 +87,7 @@ namespace litecore::crypto {
         return blockSize;
     }
 
-    PCCERT_CONTEXT getWinCert(const string& id) {
+    static PCCERT_CONTEXT getWinCert(const string& id) {
         auto* store =
                 CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
 
@@ -97,7 +97,6 @@ namespace litecore::crypto {
 
         const DWORD    prop        = LITECORE_ID_PROPERTY;
         PCCERT_CONTEXT winCert     = nullptr;
-        void*          enumContext = nullptr;
         do {
             winCert = CertFindCertificateInStore(store, X509_ASN_ENCODING, 0, CERT_FIND_PROPERTY, &prop, winCert);
 
@@ -128,7 +127,7 @@ namespace litecore::crypto {
         return winCert;
     }
 
-    PCCERT_CONTEXT getWinCert(PublicKey* subjectKey) {
+    static PCCERT_CONTEXT getWinCert(PublicKey* subjectKey) {
         auto          keyData = subjectKey->publicKeyData(KeyFormat::Raw);
         unsigned char hash[16];
 
@@ -152,7 +151,7 @@ namespace litecore::crypto {
         return winCert;
     }
 
-    PCCERT_CHAIN_CONTEXT getCertChain(PCCERT_CONTEXT leaf) {
+    static PCCERT_CHAIN_CONTEXT getCertChain(PCCERT_CONTEXT leaf) {
         CERT_CHAIN_PARA para = {sizeof(CERT_CHAIN_PARA), {USAGE_MATCH_TYPE_AND, {0, NULL}}};
 
         PCCERT_CHAIN_CONTEXT retVal;
@@ -164,7 +163,7 @@ namespace litecore::crypto {
 
     static int getChildCount(HCERTSTORE store, PCCERT_CONTEXT cert) {
         wchar_t subjectName[256];
-        DWORD   count = CertGetNameStringW(cert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, NULL, subjectName, 256);
+        CertGetNameStringW(cert, CERT_NAME_SIMPLE_DISPLAY_TYPE, 0, NULL, subjectName, 256);
 
         PCCERT_CONTEXT childCert = nullptr;
         int            certCount = -1;
@@ -402,13 +401,13 @@ namespace litecore::crypto {
         DEFER { CertCloseStore(store, 0); };
 
         for ( Retained<Cert> cert = this; cert; cert = cert->next() ) {
-            const auto* const winCert = toWinCert(cert);
-            DEFER { CertFreeCertificateContext(winCert); };
+            const auto* const newWinCert = toWinCert(cert);
+            DEFER { CertFreeCertificateContext(newWinCert); };
 
             if ( cert == this ) {
                 CRYPT_DATA_BLOB idBlob{narrow_cast<DWORD>(persistentID.size() + 1), PBYTE(persistentID.c_str())};
 
-                BOOL success = CertSetCertificateContextProperty(winCert, LITECORE_ID_PROPERTY, 0, &idBlob);
+                BOOL success = CertSetCertificateContextProperty(newWinCert, LITECORE_ID_PROPERTY, 0, &idBlob);
 
                 if ( !success ) {
                     throwWincryptError(GetLastError(), "CertSetCertificateContextProperty",
@@ -416,7 +415,7 @@ namespace litecore::crypto {
                 }
             }
 
-            BOOL success = CertAddCertificateContextToStore(store, winCert, CERT_STORE_ADD_NEW, NULL);
+            BOOL success = CertAddCertificateContextToStore(store, newWinCert, CERT_STORE_ADD_NEW, NULL);
 
             if ( !success ) {
                 HRESULT err = GetLastError();

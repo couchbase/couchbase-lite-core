@@ -79,6 +79,15 @@ target_compile_definitions(
     -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
 )
 
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    target_compile_options(
+        C4Tests PRIVATE
+        -Wno-header-hygiene
+        -Wno-implicit-int-float-conversion
+        -Wno-extra-semi-stmt
+    )
+endif()
+
 if(LITECORE_PERF_TESTING_MODE)
     target_compile_definitions(
         C4Tests PRIVATE

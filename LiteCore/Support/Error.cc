@@ -26,9 +26,9 @@
 #include <sstream>
 #include <utility>
 
-#ifdef _MSC_VER
-#    include <winsock2.h>
-#    include <ws2tcpip.h>
+#ifdef WIN32
+#    include <WinSock2.h>
+#    include <WS2tcpip.h>
 #else
 #    include <netdb.h>
 #endif
@@ -37,8 +37,8 @@
 #    include <android/log.h>
 #endif
 
-#if defined(__clang__) && !defined(__ANDROID__)  // For logBacktrace:
-#    include <execinfo.h>                        // Not available in Windows?
+#if __has_include("cxxabi.h")  // For logBacktrace:
+#    include <execinfo.h>                      
 #    include <cxxabi.h>
 #endif
 

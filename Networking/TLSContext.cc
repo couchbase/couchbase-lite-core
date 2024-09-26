@@ -13,7 +13,12 @@
 #include "TLSContext.hh"
 #include "Certificate.hh"
 #include "Logging.hh"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
 #include "sockpp/mbedtls_context.h"
+#pragma clang diagnostic pop
+
 #include <string>
 
 using namespace std;

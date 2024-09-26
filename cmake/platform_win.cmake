@@ -26,11 +26,18 @@ function(set_litecore_source)
 endfunction()
 
 function(setup_globals)
-    set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
-    set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
-    set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
-    set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
+    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+        set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi" CACHE INTERNAL "")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi" CACHE INTERNAL "")
+        set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /debug" CACHE INTERNAL "")
+        set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /debug" CACHE INTERNAL "")
+    else()
+        set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
+        set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
+        set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
+        set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
+    endif()
 
     # Disable the following warnings:
     #   4099 (library linked without debug info)
@@ -50,6 +57,8 @@ function(setup_globals)
 endfunction()
 
 function(setup_litecore_build_win)
+    setup_litecore_build_base()
+
     foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_compile_definitions(
             ${liteCoreVariant} PRIVATE
@@ -105,6 +114,7 @@ function(setup_litecore_build_win)
             "-D_CRT_SECURE_NO_WARNINGS=1"
             "/guard:cf"
             "$<$<COMPILE_LANGUAGE:CXX>:/EHsc>"
+            $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
         )
     endforeach()
 
@@ -119,6 +129,68 @@ function(setup_litecore_build_win)
         mbedtls PRIVATE
         _SOCKLEN_T_DECLARED
     )
+
+    if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+        target_compile_options(
+            mbedcrypto PRIVATE
+            "-Wno-unsafe-buffer-usage"
+            "-Wno-unknown-argument"
+            "-Wno-reserved-macro-identifier"
+            "-Wno-extra-semi-stmt"
+            "-Wno-unused-macros"
+            "-Wno-sign-conversion"
+            "-Wno-reserved-identifier"
+            "-Wno-nonportable-system-include-path"
+            "-Wno-unused-command-line-argument"
+            "-Wno-switch-enum"
+            "-Wno-declaration-after-statement"
+            "-Wno-implicit-int-conversion"
+            "-Wno-documentation-unknown-command"
+            "-Wno-cast-qual"
+            "-Wno-covered-switch-default"
+            "-Wno-undef"
+        )
+
+        target_compile_options(
+            mbedtls PRIVATE
+            "-Wno-unsafe-buffer-usage"
+            "-Wno-unknown-argument"
+            "-Wno-reserved-macro-identifier"
+            "-Wno-extra-semi-stmt"
+            "-Wno-unused-macros"
+            "-Wno-sign-conversion"
+            "-Wno-nonportable-system-include-path"
+            "-Wno-unused-command-line-argument"
+            "-Wno-switch-enum"
+            "-Wno-declaration-after-statement"
+            "-Wno-implicit-int-conversion"
+            "-Wno-cast-qual"
+            "-Wno-covered-switch-default"
+        )
+
+        target_compile_options(
+            mbedx509 PRIVATE
+            "-Wno-unsafe-buffer-usage"
+            "-Wno-unknown-argument"
+            "-Wno-reserved-macro-identifier"
+            "-Wno-extra-semi-stmt"
+            "-Wno-unused-macros"
+            "-Wno-sign-conversion"
+            "-Wno-nonportable-system-include-path"
+            "-Wno-unused-command-line-argument"
+            "-Wno-switch-enum"
+            "-Wno-declaration-after-statement"
+            "-Wno-implicit-int-conversion"
+            "-Wno-cast-qual"
+        )
+
+        target_compile_options(
+            CouchbaseSqlite3 PRIVATE
+            "-Wno-unused-variable"
+            "-Wno-unused-but-set-variable"
+            "-Wno-language-extension-token"
+        )
+    endif()
 
     target_compile_definitions(
         LiteCoreWebSocket PRIVATE

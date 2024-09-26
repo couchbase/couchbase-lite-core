@@ -132,7 +132,7 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
-if(MSVC)
+if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
     if(WINDOWS_STORE)
         message(FATAL_ERROR "UWP no longer supported")
@@ -148,7 +148,7 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     include("${PROJECT_SOURCE_DIR}/cmake/platform_linux_desktop.cmake")
 else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
-endif(MSVC)
+endif()
 
 check_threading()
 setup_globals()
@@ -355,6 +355,10 @@ set(
     Networking/TCPSocket.cc
     Networking/TLSContext.cc
     Networking/WebSockets/BuiltInWebSocket.cc
+)
+
+set(
+    SOCKPP_SRC
     vendor/sockpp/src/acceptor.cpp
     vendor/sockpp/src/connector.cpp
     vendor/sockpp/src/datagram_socket.cpp
@@ -364,6 +368,22 @@ set(
     vendor/sockpp/src/mbedtls_context.cpp
     vendor/sockpp/src/socket.cpp
     vendor/sockpp/src/stream_socket.cpp
+)
+
+add_library(sockpp_objects OBJECT EXCLUDE_FROM_ALL ${SOCKPP_SRC})
+target_compile_options(
+    sockpp_objects PRIVATE
+    -Wno-nonportable-system-include-path
+    -Wno-missing-braces
+    -Wno-misleading-indentation
+    -Wno-unreachable-code
+    -Wno-shorten-64-to-32
+)
+
+target_include_directories(
+    sockpp_objects PRIVATE
+    vendor/sockpp/include
+    vendor/mbedtls/include
 )
 
 add_library(LiteCoreWebSocket STATIC EXCLUDE_FROM_ALL ${LC_WEBSOCKET_SRC})
@@ -390,6 +410,7 @@ target_include_directories(
 target_link_libraries(
     LiteCoreWebSocket PUBLIC
     LiteCoreObjects
+    sockpp_objects
 )
 
 if(LITECORE_PERF_TESTING_MODE)

@@ -15,6 +15,7 @@
 #include "Logging.hh"
 #include "ThreadUtil.hh"
 #include "c4Log.h"
+#include "NumConversion.hh"
 #include <vector>
 
 #ifndef _WIN32
@@ -66,7 +67,7 @@ namespace litecore::net {
     }
 
     Poller::~Poller() {
-        if ( _interruptReadFD >= 0 ) {
+        if ( _interruptReadFD != INVALID_SOCKET ) {
 #ifndef _WIN32
             ::close(_interruptReadFD);
             ::close(_interruptWriteFD);
@@ -184,7 +185,7 @@ namespace litecore::net {
             _waiting = true;
         }
 
-        while ( select(maxfd, &fds_read, &fds_write, &fds_err, nullptr) == SOCKET_ERROR ) {
+        while ( select(narrow_cast<int>(maxfd), &fds_read, &fds_write, &fds_err, nullptr) == SOCKET_ERROR ) {
             if ( WSAGetLastError() != WSAEINTR ) {
                 LogError(WSLog, "Poller: poll() returned WSA error %d; stopping thread", WSAGetLastError());
                 return false;
@@ -210,20 +211,21 @@ namespace litecore::net {
         }
 
         for ( SOCKET s : all_fds ) {
+            int fd = narrow_cast<int>(s);
             if ( FD_ISSET(s, &fds_read) ) {
                 LogDebug(WSLog, "Poller: socket %d got read event", s);
-                callAndRemoveListener(s, kReadable);
+                callAndRemoveListener(fd, kReadable);
             }
 
             if ( FD_ISSET(s, &fds_write) ) {
                 LogDebug(WSLog, "Poller: socket %d got write event", s);
-                callAndRemoveListener(s, kWriteable);
+                callAndRemoveListener(fd, kWriteable);
             }
 
             if ( FD_ISSET(s, &fds_err) ) {
                 LogDebug(WSLog, "Poller: socket %d got error", s);
-                callAndRemoveListener(s, kDisconnected);
-                removeListeners(s);
+                callAndRemoveListener(fd, kDisconnected);
+                removeListeners(fd);
             }
         }
 

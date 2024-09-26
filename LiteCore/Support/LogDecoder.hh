@@ -32,6 +32,8 @@ namespace litecore {
         };
 
         virtual ~LogIterator() = default;
+        LogIterator()                         = default;
+        LogIterator(const LogIterator& other) = default;
 
         /** Decodes the entire log and writes it to the output stream, with timestamps.
             If you want more control over the presentation, use the other methods below to

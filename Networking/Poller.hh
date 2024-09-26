@@ -17,7 +17,11 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
 #include "sockpp/socket.h"
+#pragma clang diagnostic pop
 
 namespace litecore::net {
     // This needs to stay here because of the platform variations of

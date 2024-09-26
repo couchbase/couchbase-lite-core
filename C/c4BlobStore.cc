@@ -245,7 +245,7 @@ C4WriteStream::~C4WriteStream() {
     try {
         if ( _impl ) _impl->close();
     }
-    catchAndWarn();
+    catchAndWarn()
 }
 
 // clang-format off

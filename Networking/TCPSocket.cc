@@ -18,6 +18,11 @@
 #include "NetworkInterfaces.hh"
 #include "WebSocketInterface.hh"
 #include "Error.hh"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
+#pragma clang diagnostic ignored "-Wmissing-braces"
+
 #include "sockpp/exception.h"
 #include "sockpp/inet_address.h"
 #include "sockpp/inet6_address.h"
@@ -25,6 +30,9 @@
 #include "sockpp/mbedtls_context.h"
 #include "sockpp/tls_socket.h"
 #include "sockpp/tcp_socket.h"
+
+#pragma clang diagnostic pop
+
 #include "NumConversion.hh"
 #include "c4ExceptionUtils.hh"  // for ExpectingExceptions
 #include "slice_stream.hh"
@@ -147,7 +155,7 @@ namespace litecore::net {
 
             socket = make_unique<connector>();
 
-            auto interface = networkInterface(sockAddr->family());
+            auto interface = networkInterface(narrow_cast<uint8_t>(sockAddr->family()));
             socket->connect(*sockAddr, secsToMicrosecs(timeout()), interface);
         } catch ( const sockpp::sys_error& sx ) {
             auto e = error::convertException(sx);
@@ -461,7 +469,7 @@ namespace litecore::net {
     }
 
     int TCPSocket::fileDescriptor() {
-        if ( auto socket = actualSocket(); socket ) return socket->handle();
+        if ( auto socket = actualSocket(); socket ) return narrow_cast<int>(socket->handle());
         else
             return -1;
     }

@@ -32,7 +32,7 @@ namespace litecore {
     }
 
     /** Macro to substitute for a regular 'catch' block, that just logs a warning. */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #    define catchAndWarn()                                                                                             \
         catch ( ... ) {                                                                                                \
             C4Error::warnCurrentException(__FUNCSIG__);                                                                \
@@ -55,7 +55,7 @@ namespace litecore {
         try {
             return fn();
         }
-        catchError(outError);
+        catchError(outError)
         return RESULT();  // this will be 0, nullptr, false, etc.
     }
 
@@ -68,7 +68,7 @@ namespace litecore {
             fn();
             return true;
         }
-        catchError(outError);
+        catchError(outError)
         return false;
     }
 

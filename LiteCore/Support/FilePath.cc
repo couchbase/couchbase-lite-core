@@ -16,7 +16,6 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
-#include <sqlite3.h>  // for sqlite3_temp_directory
 #include <fcntl.h>
 #include <cerrno>
 #include <dirent.h>

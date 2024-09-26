@@ -21,7 +21,7 @@
 #include <thread>
 #include <utility>
 
-#if defined(__clang__) && !defined(__ANDROID__)
+#if __has_include("cxxabi.h")
 #    include <cxxabi.h>
 #endif
 

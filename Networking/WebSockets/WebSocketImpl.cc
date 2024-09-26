@@ -241,7 +241,7 @@ namespace litecore::websocket {
         switch ( opCode ) {
             case TEXT:
                 if ( !ClientProtocol::isValidUtf8((unsigned char*)message.buf, message.size) ) return false;
-                // fall through:
+                [[fallthrough]];
             case BINARY:
                 deliverMessageToDelegate(message, (opCode == BINARY));
                 return true;
@@ -413,6 +413,7 @@ namespace litecore::websocket {
                     sendOp(closeMsg, uWS::CLOSE);
                     return;
                 }
+                [[fallthrough]];
             case SOCKET_OPENING:
                 if ( currState != SOCKET_OPENED ) { logVerbose("Calling close before the socket is connected"); }
                 if ( _framing ) {

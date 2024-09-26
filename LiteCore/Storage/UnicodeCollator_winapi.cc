@@ -23,7 +23,7 @@
 
 #ifdef _MSC_VER
 
-#    include <windows.h>
+#    include <Windows.h>
 
 namespace litecore {
 
@@ -87,7 +87,7 @@ namespace litecore {
         int result = CompareStringEx(locale, winFlags, wchars1, -1, wchars2, -1, nullptr, nullptr, 0);
         if ( result == 0 ) {
             DWORD err = GetLastError();
-            Warn("Failed to compare strings (Error %d), arbitrarily returning equal", err);
+            Warn("Failed to compare strings (Error %lu), arbitrarily returning equal", err);
             return 0;
         }
 
@@ -132,12 +132,12 @@ namespace litecore {
         return context;
     }
 
-    BOOL __stdcall SupportedLocalesCallback(LPWSTR name, DWORD flags, LPARAM arg) {
+    static BOOL __stdcall SupportedLocalesCallback(LPWSTR name, DWORD flags, LPARAM arg) {
         auto*  locales = (vector<string>*)arg;
         size_t len     = wcslen(name);
         TempArray(buf, char, len + 1);
         buf[len] = 0;
-        WideCharToMultiByte(CP_UTF8, 0, name, wcslen(name), buf, (int)len, NULL, NULL);
+        WideCharToMultiByte(CP_UTF8, 0, name, narrow_cast<int>(wcslen(name)), buf, (int)len, NULL, NULL);
         locales->push_back(buf);
         return TRUE;
     }

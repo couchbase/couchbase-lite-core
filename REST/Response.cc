@@ -161,7 +161,7 @@ namespace litecore::REST {
             _statusMessage = string(_logic->statusMessage());
             _headers       = _logic->responseHeaders();
         }
-        catchError(&_error);
+        catchError(&_error)
         _logic.reset();
         _tlsContext = nullptr;
         return (_error.code == 0);

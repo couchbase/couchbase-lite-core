@@ -14,16 +14,23 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "fleece/slice.hh"
+#include "NumConversion.hh"
 #include <unordered_map>
 #include <array>
 #include <vector>
 #include <map>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonportable-system-include-path"
+#pragma clang diagnostic ignored "-Wmissing-braces"
+
 #include "sockpp/inet_address.h"
 #include "sockpp/inet6_address.h"
 
+#pragma clang diagnostic pop
+
 #ifdef _WIN32
-#    include <IPHlpApi.h>
+#    include <iphlpapi.h>
 #    include <atlconv.h>
 
 #    pragma comment(lib, "iphlpapi")
@@ -48,7 +55,7 @@ namespace litecore::net {
 
 #pragma mark - IPADDRESS:
 
-    IPAddress::IPAddress(const sockaddr& addr) noexcept : _family(addr.sa_family) {
+    IPAddress::IPAddress(const sockaddr& addr) noexcept : _family(narrow_cast<uint8_t>(addr.sa_family)) {
         static_assert(sizeof(_data) >= sizeof(in_addr));
         static_assert(sizeof(_data) >= sizeof(in6_addr));
         Assert(_family == AF_INET || _family == AF_INET6);
@@ -272,7 +279,7 @@ namespace litecore::net {
                 auto                   intf = &interfaces.emplace_back();
                 const ATL::CW2AEX<256> convertedPath(current->FriendlyName, CP_UTF8);
                 intf->name   = convertedPath.m_psz;
-                intf->type   = current->IfType;
+                intf->type   = narrow_cast<uint8_t>(current->IfType);
                 intf->flags  = 0;
                 auto address = current->FirstUnicastAddress;
                 while ( address ) {

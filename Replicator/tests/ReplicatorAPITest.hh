@@ -141,13 +141,16 @@ class ReplicatorAPITest : public C4Test {
             switch ( _sg.proxy->type ) {
                 case ProxyType::HTTP:
                     proxyType = slice(kC4ProxyTypeHTTP);
+                    break;
                 case ProxyType::HTTPS:
                     proxyType = slice(kC4ProxyTypeHTTPS);
+                    break;
                 // If we ever support SOCKS
                 // case ProxyType::SOCKS:
                 //     proxyType = slice(kC4ProxyTypeSOCKS);
                 default:
                     proxyType = kC4ProxyTypeNone;
+                    break;
             }
             enc.writeString(proxyType);
             if ( proxyType != slice(kC4ProxyTypeNone) ) {

@@ -15,7 +15,7 @@
 
 
 #define LOCK(MUTEX) std::unique_lock _lock(MUTEX)
-#define UNLOCK()    _lock.unlock();
+#define UNLOCK()    _lock.unlock()
 
 #if defined(__clang__)
 #    define C4_START_WARNINGS_SUPPRESSION _Pragma("clang diagnostic push")

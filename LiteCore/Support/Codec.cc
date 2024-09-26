@@ -126,7 +126,7 @@ namespace litecore::blip {
 
         logInfo("    compressed %zu bytes to %zu (%.0f%%), %u unflushed", (origInput.size - input.size),
                 (origOutputSize - output.capacity()),
-                (origOutputSize - output.capacity()) * 100.0 / (origInput.size - input.size), unflushedBytes());
+                (double)(origOutputSize - output.capacity()) * 100.0 / (double)(origInput.size - input.size), unflushedBytes());
     }
 
     void Deflater::_writeAndFlush(slice_istream& input, slice_ostream& output) {

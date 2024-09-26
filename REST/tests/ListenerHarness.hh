@@ -109,8 +109,8 @@ class ListenerHarness {
 
   private:
     c4::ref<C4Listener> _listener;
-    C4TLSConfig         _tlsConfig = {};
 #ifdef COUCHBASE_ENTERPRISE
+    C4TLSConfig _tlsConfig = {};
     CertHelper _certHelper;
 #endif
 };

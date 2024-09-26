@@ -1037,7 +1037,7 @@ static void testUpdateDocInOlderDB(C4Database* db, C4Slice docID, C4RevisionFlag
 
     // Update:
     alloc_slice body;
-    if ( revFlags | kRevDeleted ) body = kC4SliceNull;
+    if ( (revFlags | kRevDeleted) != 0 ) body = kC4SliceNull;
     else
         body = c4db_encodeJSON(db, "{\"ok\":\"go\"}"_sl, ERROR_INFO());
     C4Test::createNewRev(db, docID, doc->revID, body, revFlags);

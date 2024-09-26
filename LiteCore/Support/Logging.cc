@@ -29,7 +29,7 @@
 #    include <android/log.h>
 #endif
 
-#if ( defined(__linux__) || defined(__APPLE__) ) && !defined(__ANDROID__)
+#if __has_include("cxxabi.h")
 #    include <cxxabi.h>
 #endif
 
@@ -243,7 +243,7 @@ namespace litecore {
         if ( teardown ) {
             teardownEncoders();
             teardownFileOut();
-            for ( auto& no : sRotateSerialNo ) { no++; };
+            for ( auto& no : sRotateSerialNo ) { no++; }
         }
 
         sCurrentOptions = options;

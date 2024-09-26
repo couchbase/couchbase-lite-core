@@ -228,6 +228,7 @@ namespace litecore::REST {
                 break;
             case WebSocketDomain:
                 if ( err.code < 1000 ) status = HTTPStatus(err.code);
+                [[fallthrough]];
             default:
                 break;
         }

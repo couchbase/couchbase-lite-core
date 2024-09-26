@@ -24,7 +24,7 @@ using namespace fleece::impl;
 
 class EightBall : public PredictiveModel {
   public:
-    explicit EightBall(DataFile* db) : db(db) {}
+    explicit EightBall(DataFile* _db) : db(_db) {}
 
     DataFile* const db;
     bool            allowCalls{true};

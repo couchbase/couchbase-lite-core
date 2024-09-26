@@ -128,10 +128,10 @@
 
 
 // Type-checking for printf-style vararg functions:
-#ifdef _MSC_VER
-#    define __printflike(A, B)
-#else
-#    ifndef __printflike
-#        define __printflike(fmtarg, firstvararg) __attribute__((__format__(__printf__, fmtarg, firstvararg)))
-#    endif
+#ifndef __printflike
+#   if defined(_MSC_VER) && !defined(__clang__)
+#       define __printflike(A, B)
+#   else
+#       define __printflike(fmtarg, firstvararg) __attribute__((__format__(__printf__, fmtarg, firstvararg)))
+#   endif
 #endif

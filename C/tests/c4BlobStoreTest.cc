@@ -19,7 +19,7 @@ using namespace std;
 class BlobStoreTest : public C4Test {
   public:
     explicit BlobStoreTest(int option)
-        : C4Test(option), encrypted(isEncrypted()), store(c4db_getBlobStore(db, nullptr)) {}
+        : C4Test(option), store(c4db_getBlobStore(db, nullptr)), encrypted(isEncrypted()) {}
 
     C4BlobStore* store{nullptr};
     const bool   encrypted;

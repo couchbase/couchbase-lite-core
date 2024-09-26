@@ -43,7 +43,7 @@ CBL_CORE_API bool c4listener_shareDB(C4Listener* listener, C4String name, C4Data
     try {
         return listener->shareDB(name, db);
     }
-    catchError(outError);
+    catchError(outError)
     return false;
 }
 
@@ -52,7 +52,7 @@ CBL_CORE_API bool c4listener_unshareDB(C4Listener* listener, C4Database* db, C4E
         if ( listener->unshareDB(db) ) return true;
         c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Database not shared"_sl, outError);
     }
-    catchError(outError);
+    catchError(outError)
     return false;
 }
 
@@ -61,7 +61,7 @@ CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener, C4String name
     try {
         return listener->shareCollection(name, collection);
     }
-    catchError(outError);
+    catchError(outError)
     return false;
 }
 
@@ -71,7 +71,7 @@ CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String na
         if ( listener->unshareCollection(name, collection) ) return true;
         c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Collection not shared"_sl, outError);
     }
-    catchError(outError);
+    catchError(outError)
     return false;
 }
 
@@ -89,7 +89,7 @@ CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Dat
         for ( string& url : listener->URLs(db, api) ) urls.append(url);
         return (FLMutableArray)FLValue_Retain(urls);
     }
-    catchError(err);
+    catchError(err)
     return nullptr;
 }
 

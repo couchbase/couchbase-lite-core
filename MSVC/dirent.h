@@ -10,6 +10,9 @@
 #ifndef DIRENT_H
 #define DIRENT_H
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+
 /*
 * Include windows.h without Windows Sockets 1.1 to prevent conflicts with
 * Windows Sockets 2.0.
@@ -17,7 +20,7 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #    define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+#include <Windows.h>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -832,4 +835,7 @@ static void dirent_set_errno(int error) {
 #ifdef __cplusplus
 }
 #endif
+
+#pragma clang diagnostic pop
+
 #endif /*DIRENT_H*/

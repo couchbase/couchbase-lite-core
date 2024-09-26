@@ -52,7 +52,7 @@
 #        define NOMINMAX
 #    endif
 #    include <WinSock2.h>
-#    include <Ws2tcpip.h>
+#    include <WS2tcpip.h>
 #    ifdef __MINGW32__
 // Windows has always been tied to LE
 #        define htobe64(x) __builtin_bswap64(x)

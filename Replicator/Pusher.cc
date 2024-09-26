@@ -458,7 +458,7 @@ namespace litecore::repl {
                 revToSendIsObsolete(*rev);
             }
         }
-        catchAndWarn();
+        catchAndWarn()
         return false;
     }
 

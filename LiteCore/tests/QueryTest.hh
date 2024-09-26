@@ -43,7 +43,7 @@ class QueryTest : public DataFileTestFixture {
     static constexpr slice kKeyStoreNameOptions[numberOfOptions] = {nullslice, nullslice, ".Secondary", ".Secondary",
                                                                     ".scopey.subsidiary"};
 
-    explicit QueryTest(int option) : option(option) {
+    explicit QueryTest(int _option) : option(_option) {
         Assert(option < numberOfOptions, "Test option out of valid range");
         collectionName = kCollectionNameOptions[option];
         logSection(stringprintf("Collection `%s`", collectionName.c_str()));

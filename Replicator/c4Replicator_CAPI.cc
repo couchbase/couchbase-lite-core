@@ -39,7 +39,7 @@ C4StringResult c4address_toURL(C4Address address) noexcept {
     try {
         return C4StringResult(address.toURL());
     }
-    catchError(nullptr);
+    catchError(nullptr)
     return {};
 }
 
@@ -48,7 +48,7 @@ C4Replicator* c4repl_new(C4Database* db, C4Address serverAddress, C4String remot
     try {
         return db->newReplicator(serverAddress, remoteDatabaseName, params, logPrefix).detach();
     }
-    catchError(outError);
+    catchError(outError)
     return nullptr;
 }
 
@@ -59,7 +59,7 @@ C4Replicator* c4repl_newLocal(C4Database* db, C4Database* otherLocalDB, C4Replic
     try {
         return db->newLocalReplicator(otherLocalDB, params, logPrefix).detach();
     }
-    catchError(outError);
+    catchError(outError)
     return nullptr;
 }
 #endif
@@ -70,7 +70,7 @@ C4Replicator* c4repl_newWithSocket(C4Database* db, C4Socket* openSocket, C4Repli
     try {
         return db->newIncomingReplicator(openSocket, params, logPrefix).detach();
     }
-    catchError(outError);
+    catchError(outError)
     return nullptr;
 }
 
@@ -107,7 +107,7 @@ C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4CollectionSpec spec,
         *outErr = {};
         return C4SliceResult(repl->pendingDocIDs(spec));
     }
-    catchError(outErr);
+    catchError(outErr)
     return {};
 }
 
@@ -116,7 +116,7 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4CollectionSpe
         *outErr = {};
         return repl->isDocumentPending(docID, spec);
     }
-    catchError(outErr);
+    catchError(outErr)
     return false;
 }
 

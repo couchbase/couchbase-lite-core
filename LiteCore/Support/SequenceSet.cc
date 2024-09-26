@@ -185,7 +185,7 @@ namespace litecore {
         for ( auto& range : _sequences ) {
             enc.writeUInt(uint64_t(range.first));
             enc.writeUInt(uint64_t(range.second - range.first));
-        };
+        }
         enc.endArray();
         enc.detach();
     }

@@ -41,12 +41,14 @@ using namespace fleece;
 using namespace litecore;
 
 
-#define returnIfCollectionInvalid(c, err, ret)                                                                         \
-    if ( _usuallyFalse(!c4coll_isValid(c)) ) {                                                                         \
-        *(err) = c4error_make(LiteCoreDomain, kC4ErrorNotOpen, "Invalid collection: either deleted, or db closed"_sl); \
-                                                                                                                       \
-        return ret;                                                                                                    \
-    }
+#define returnIfCollectionInvalid(c, err, ret)                                                                              \
+    do {                                                                                                                    \
+        if ( _usuallyFalse(!c4coll_isValid(c)) ) {                                                                          \
+            *(err) = c4error_make(LiteCoreDomain, kC4ErrorNotOpen, "Invalid collection: either deleted, or db closed"_sl);  \
+                                                                                                                            \
+            return ret;                                                                                                     \
+        }                                                                                                                   \
+    } while (0)                                                                                                             \
 
 
 #pragma mark - BLOBS:
@@ -64,7 +66,7 @@ C4SliceResult c4blob_keyToString(C4BlobKey key) noexcept {
     try {
         return C4SliceResult(alloc_slice(key.digestString()));
     }
-    catchError(nullptr);
+    catchError(nullptr)
     return {};
 }
 

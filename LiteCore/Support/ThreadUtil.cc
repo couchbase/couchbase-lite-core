@@ -86,83 +86,24 @@ namespace litecore {
 
 namespace litecore {
 
-    // This is sickening, but it used to be the only way to set thread names in MSVC.
-    // By raising an SEH exception (Windows equivalent to Unix signal)
-    // then catching and ignoring it
-    // https://stackoverflow.com/a/10364541/1155387
-
-    const DWORD MS_VC_EXCEPTION = 0x406D1388;
-
-#    pragma pack(push, 8)
-
-    typedef struct {
-        DWORD  dwType;      // Must be 0x1000.
-        LPCSTR szName;      // Pointer to name (in user addr space).
-        DWORD  dwThreadID;  // Thread ID (-1=caller thread).
-        DWORD  dwFlags;     // Reserved for future use, must be zero.
-    } THREADNAME_INFO;
-
-#    pragma pack(pop)
-
-    // Sometimes these functions are only available this way, according to the docs:
-    // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getthreaddescription#remarks
-    typedef HRESULT (*SetThreadNameCall)(HANDLE, PCWSTR);
-    typedef HRESULT (*GetThreadNameCall)(HANDLE, PWSTR*);
-
-    static HINSTANCE kernelLib() {
-        // Defer the LoadLibrary call from static-init time, until it's actually needed:
-        static HINSTANCE sKernelLib = LoadLibrary(TEXT("kernel32.dll"));
-        return sKernelLib;
-    }
-
-    static bool TryNewSetThreadName(const char* name) {
-        bool valid = false;
-        if ( kernelLib() != NULL ) {
-            static SetThreadNameCall setThreadNameCall =
-                    (SetThreadNameCall)GetProcAddress(kernelLib(), "SetThreadDescription");
-            if ( setThreadNameCall != NULL ) {
-                CA2WEX<256> wide(name, CP_UTF8);
-                setThreadNameCall(GetCurrentThread(), wide);
-                valid = true;
-            }
-        }
-
-        return valid;
-    }
-
     void SetThreadName(const char* name) {
-        if ( !TryNewSetThreadName(name) ) { return; }
-
-        THREADNAME_INFO info;
-        info.dwType     = 0x1000;
-        info.szName     = name;
-        info.dwThreadID = -1;
-        info.dwFlags    = 0;
-
-        __try {
-            RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
-        } __except (EXCEPTION_EXECUTE_HANDLER) {}
+        CA2WEX<256> wide(name, CP_UTF8);
+        SetThreadDescription(GetCurrentThread(), wide);
     }
 
     std::string GetThreadName() {
         std::string       retVal;
         std::stringstream s;
 
-        if ( kernelLib() != NULL ) {
-            static GetThreadNameCall getThreadNameCall =
-                    (GetThreadNameCall)GetProcAddress(kernelLib(), "GetThreadDescription");
-            if ( getThreadNameCall != NULL ) {
-                wchar_t* buf;
-                HRESULT  r = getThreadNameCall(GetCurrentThread(), &buf);
-                if ( SUCCEEDED(r) ) {
-                    CW2AEX<256> mb(buf, CP_UTF8);
-                    retVal = mb;
-                    LocalFree(buf);
-                }
-            }
+        wchar_t* buf;
+        HRESULT  r = GetThreadDescription(GetCurrentThread(), &buf);
+        if ( SUCCEEDED(r) ) {
+            CW2AEX<256> mb(buf, CP_UTF8);
+            retVal = mb;
+            LocalFree(buf);
         }
 
-        if ( retVal.size() == 0 ) {
+        if ( retVal.empty() ) {
             s << std::this_thread::get_id();
             retVal = s.str();
         }
