@@ -263,6 +263,7 @@ namespace litecore {
         }
 #endif
 
+        if ( type == IndexSpec::kArray ) { options.emplace<IndexSpec::ArrayOptions>(""); }
         SQLiteIndexSpec spec{name, type, expression, queryLanguage, options, keyStoreName, indexTableName};
         if ( auto col5 = stmt.getColumn(5); col5.isText() ) spec.indexedSequences = col5.getText();
         return spec;

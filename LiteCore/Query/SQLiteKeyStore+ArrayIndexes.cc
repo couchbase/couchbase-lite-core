@@ -24,27 +24,32 @@ using namespace fleece::impl;
 namespace litecore {
 
     bool SQLiteKeyStore::createArrayIndex(const IndexSpec& spec) {
+        Array::iterator itPath(spec.unnestPaths());
+        string          plainTableName, unnestTableName;
+        for ( ; itPath; ++itPath ) {
+            std::tie(plainTableName, unnestTableName) =
+                    createUnnestedTable(itPath.value(), plainTableName, unnestTableName);
+        }
         Array::iterator iExprs(spec.what());
-        string          arrayTableName = createUnnestedTable(iExprs.value());
-        return createIndex(spec, arrayTableName, ++iExprs);
+        return createIndex(spec, unnestTableName, iExprs);
     }
 
-    string SQLiteKeyStore::createUnnestedTable(const Value* expression) {
+    std::pair<string, string> SQLiteKeyStore::createUnnestedTable(const Value* expression, string plainParentTable,
+                                                                  string parentTable) {
         // Derive the table name from the expression it unnests:
-        string      kvTableName = tableName();
-        QueryParser qp(db(), "", kvTableName);
-        string      unnestTableName = qp.unnestedTableName(expression);
+        if ( plainParentTable.empty() ) plainParentTable = parentTable = tableName();
+        QueryParser qp(db(), "", plainParentTable);
+        auto [plainTableName, unnestTableName] = qp.unnestedTableName(expression);
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(unnestTableName)
                                             << " "
                                                "(docid INTEGER NOT NULL REFERENCES "
-                                            << sqlIdentifier(kvTableName)
+                                            << sqlIdentifier(parentTable)
                                             << "(rowid), "
                                                " i INTEGER NOT NULL,"
                                                " body BLOB NOT NULL, "
-                                               " CONSTRAINT pk PRIMARY KEY (docid, i)) "
-                                               "WITHOUT ROWID");
+                                               " CONSTRAINT pk PRIMARY KEY (docid, i))");
         if ( !db().schemaExistsWithSQL(unnestTableName, "table", unnestTableName, sql) ) {
             LogTo(QueryLog, "Creating UNNEST table '%s' on %s", unnestTableName.c_str(),
                   expression->toJSON(true).asString().c_str());
@@ -52,14 +57,23 @@ namespace litecore {
 
             qp.setBodyColumnName("new.body");
             string eachExpr = qp.eachExpressionSQL(expression);
+            bool   nested   = plainParentTable.find(KeyStore::kUnnestSeparator) != string::npos;
 
             // Populate the index-table with data from existing documents:
-            db().exec(CONCAT("INSERT INTO " << sqlIdentifier(unnestTableName)
-                                            << " (docid, i, body) "
-                                               "SELECT new.rowid, _each.rowid, _each.value "
-                                            << "FROM " << sqlIdentifier(kvTableName) << " as new, " << eachExpr
-                                            << " AS _each "
-                                               "WHERE (new.flags & 1) = 0"));
+            if ( !nested ) {
+                db().exec(CONCAT("INSERT INTO " << sqlIdentifier(unnestTableName)
+                                                << " (docid, i, body) "
+                                                   "SELECT new.rowid, _each.rowid, _each.value "
+                                                << "FROM " << sqlIdentifier(parentTable) << " as new, " << eachExpr
+                                                << " AS _each "
+                                                   "WHERE (new.flags & 1) = 0"));
+            } else {
+                db().exec(CONCAT("INSERT INTO " << sqlIdentifier(unnestTableName)
+                                                << " (docid, i, body) "
+                                                   "SELECT new.rowid, _each.rowid, _each.value "
+                                                << "FROM " << sqlIdentifier(parentTable) << " as new, " << eachExpr
+                                                << " AS _each"));
+            }
 
             // Set up triggers to keep the index-table up to date
             // ...on insertion:
@@ -81,7 +95,7 @@ namespace litecore {
             createTrigger(unnestTableName, "postupdate", "AFTER UPDATE OF body, flags", "WHEN (new.flags & 1 = 0)",
                           insertTriggerExpr);
         }
-        return unnestTableName;
+        return {plainTableName, unnestTableName};
     }
 
 }  // namespace litecore

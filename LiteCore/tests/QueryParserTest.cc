@@ -14,6 +14,7 @@
 #include "c4DatabaseTypes.h"  // for kC4DefaultCollectionName
 #include "FleeceImpl.hh"
 #include "Error.hh"
+#include "SecureDigest.hh"
 #include <vector>
 #include <iostream>
 using namespace std;
@@ -434,32 +435,50 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][QueryPar
                      WHERE: ['>', ['.notes.page'], 100]}]")
           == "SELECT fl_result(notes.value) FROM kv_default AS book JOIN fl_each(book.body, 'notes') AS notes WHERE "
              "(fl_nested_value(notes.body, 'page') > 100) AND (book.flags & 1 = 0)");
-    CHECK(parseWhere("['SELECT', {\
+    ExpectException(
+            error::LiteCore, error::InvalidQuery,
+            "the use of a general expression as the object of UNNEST is not supported; "
+            "only a property path is allowed.",
+            [&] {
+                //
+                // Not supported in 3.2.1
+                //
+                bool check =
+                        (parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['pi()']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]")
-          == "SELECT fl_result(notes.value) FROM kv_default AS book JOIN fl_each(pi()) AS notes WHERE "
-             "(fl_nested_value(notes.body, 'page') > 100) AND (book.flags & 1 = 0)");
+                         == "SELECT fl_result(notes.value) FROM kv_default AS book JOIN fl_each(pi()) AS notes WHERE "
+                            "(fl_nested_value(notes.body, 'page') > 100) AND (book.flags & 1 = 0)");
+                (void)check;
+            });
 }
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST optimized", "[Query][QueryParser]") {
-    tableNames.insert("kv_default:unnest:notes");
+    string hashedUnnestTable = (SHA1Builder{} << "kv_default:unnest:notes").finish().asSlice().hexString();
+    tableNames.insert(hashedUnnestTable);
+    if ( '0' <= hashedUnnestTable[0] && hashedUnnestTable[0] <= '9' )
+        hashedUnnestTable = "\""s + hashedUnnestTable + "\"";
 
     CHECK(parseWhere("['SELECT', {\
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['=', ['.notes'], 'torn']}]")
-          == "SELECT book.key, book.sequence FROM kv_default AS book JOIN \"kv_default:unnest:notes\" AS notes ON "
-             "notes.docid=book.rowid WHERE (fl_unnested_value(notes.body) = 'torn') AND (book.flags & 1 = 0)");
+          == "SELECT book.key, book.sequence FROM kv_default AS book JOIN "s + hashedUnnestTable
+                     + " AS notes ON "
+                       "notes.docid=book.rowid WHERE (fl_unnested_value(notes.body) = 'torn') AND (book.flags & 1 = "
+                       "0)");
     CHECK(parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]")
-          == "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN \"kv_default:unnest:notes\" "
-             "AS notes ON notes.docid=book.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND (book.flags & "
-             "1 = 0)");
+          == "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN "s + hashedUnnestTable
+                     + " "
+                       "AS notes ON notes.docid=book.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND "
+                       "(book.flags & "
+                       "1 = 0)");
 }
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST with collections", "[Query][QueryParser]") {
@@ -477,12 +496,18 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST with collections", 
              "(fl_nested_value(notes.body, 'page') > 100) AND (library.flags & 1 = 0)");
 
     // Same, but optimized:
-    tableNames.insert("kv_.books:unnest:notes");
+    string hashedUnnestTable = (SHA1Builder{} << "kv_.books:unnest:notes").finish().asSlice().hexString();
+    tableNames.insert(hashedUnnestTable);
+    if ( '0' <= hashedUnnestTable[0] && hashedUnnestTable[0] <= '9' )
+        hashedUnnestTable = "\""s + hashedUnnestTable + "\"";
     CHECK(parseWhere(str)
           == "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS library INNER JOIN \"kv_.books\" AS "
-             "book ON (fl_value(book.body, 'library') = library.key) JOIN \"kv_.books:unnest:notes\" AS notes ON "
-             "notes.docid=library.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND (library.flags & 1 = "
-             "0)");
+             "book ON (fl_value(book.body, 'library') = library.key) JOIN "
+                     + hashedUnnestTable
+                     + " AS notes ON "
+                       "notes.docid=book.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND (library.flags "
+                       "& 1 = "
+                       "0)");
 }
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Collate", "[Query][QueryParser][Collation]") {

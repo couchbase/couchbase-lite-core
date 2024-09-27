@@ -32,7 +32,8 @@ namespace litecore {
         , queryLanguage(queryLanguage_)
         , options(std::move(opt)) {
         auto whichOpts = options.index();
-        if ( (type == kFullText && whichOpts != 1 && whichOpts != 0) || (type == kVector && whichOpts != 2) )
+        if ( (type == kFullText && whichOpts != 1 && whichOpts != 0) || (type == kVector && whichOpts != 2)
+             || (type == kArray && whichOpts != 3) )
             error::_throw(error::LiteCoreError::InvalidParameter, "Invalid options type for index");
     }
 
@@ -59,11 +60,17 @@ namespace litecore {
                     break;
                 case QueryLanguage::kN1QL:
                     try {
-                        int           errPos;
-                        FLMutableDict result = n1ql::parse(string(expression), &errPos);
-                        if ( !result ) { throw Query::parseError("N1QL syntax error in index expression", errPos); }
-                        alloc_slice json = ((MutableDict*)result)->toJSON(true);
-                        FLMutableDict_Release(result);
+                        int         errPos;
+                        alloc_slice json;
+                        if ( !expression.empty() ) {
+                            FLMutableDict result = n1ql::parse(string(expression), &errPos);
+                            if ( !result ) { throw Query::parseError("N1QL syntax error in index expression", errPos); }
+                            json = ((MutableDict*)result)->toJSON(true);
+                            FLMutableDict_Release(result);
+                        } else {
+                            // n1ql parser won't compile empty string to empty array. Do it manually.
+                            json = "[]";
+                        }
                         _doc = Doc::fromJSON(json);
                     } catch ( const std::runtime_error& ) {
                         error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
@@ -83,7 +90,6 @@ namespace litecore {
             // of expressions.
             what = qp::requiredArray(doc()->root(), "Index JSON");
         }
-        if ( what->empty() ) error::_throw(error::InvalidQuery, "Index WHAT list cannot be empty");
         return what;
     }
 
@@ -95,5 +101,58 @@ namespace litecore {
         return nullptr;
     }
 
+    const Array* IndexSpec::unnestPaths() const {
+        const ArrayOptions* arrayOpts = arrayOptions();
+        if ( !arrayOpts || !arrayOpts->unnestPath )
+            error::_throw(error::InvalidParameter, "IndexOptions for ArrayIndex must include unnestPath.");
+
+        if ( auto dict = unnestDoc()->asDict(); dict ) {
+            if ( auto whatVal = qp::getCaseInsensitive(dict, "WHAT"); whatVal )
+                return qp::requiredArray(whatVal, "Index WHAT term");
+        }
+        return nullptr;
+    }
+
+    Doc* IndexSpec::unnestDoc() const {
+        if ( !_unnestDoc ) {
+            try {
+                string_view unnestPath = arrayOptions()->unnestPath;
+                // Split unnestPath from the options by "[]."
+                std::vector<std::string_view> splitPaths;
+                for ( size_t pos = 0; pos < unnestPath.length() && pos != string::npos; ) {
+                    size_t next = unnestPath.find(KeyStore::kUnnestLevelSeparator, pos);
+                    if ( next == string::npos ) {
+                        splitPaths.push_back(unnestPath.substr(pos));
+                        pos = string::npos;
+                    } else {
+                        splitPaths.push_back(unnestPath.substr(pos, next - pos));
+                        pos = next + 3;
+                    }
+                }
+                if ( splitPaths.empty() )
+                    error::_throw(error::InvalidParameter,
+                                  "IndexOptions for ArrayIndex must have non-empty unnestPath.");
+
+                string n1qlUnnestPaths = string(splitPaths[0]);
+                for ( unsigned i = 1; i < splitPaths.size(); ++i ) {
+                    n1qlUnnestPaths += ", ";
+                    n1qlUnnestPaths += splitPaths[i];
+                }
+                int           errPos;
+                FLMutableDict result = n1ql::parse(n1qlUnnestPaths, &errPos);
+                if ( !result ) {
+                    string msg = "N1QL syntax error in unnestPath \"" + n1qlUnnestPaths + "\"";
+                    throw Query::parseError(msg.c_str(), errPos);
+                }
+
+                alloc_slice json = ((MutableDict*)result)->toJSON(true);
+                FLMutableDict_Release(result);
+                _unnestDoc = Doc::fromJSON(json);
+            } catch ( const std::runtime_error& exc ) {
+                error::_throw(error::InvalidQuery, "Invalid N1QL in unnestPath (%s)", exc.what());
+            }
+        }
+        return _unnestDoc;
+    }
 
 }  // namespace litecore

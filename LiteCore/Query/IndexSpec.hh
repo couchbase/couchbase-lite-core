@@ -47,13 +47,20 @@ namespace litecore {
             const char* stopWords{};         ///< NULL for default, or comma-delimited string, or empty
         };
 
+        /// Options for an ArrayIndex
+        struct ArrayOptions {
+            alloc_slice unnestPath;
+
+            ArrayOptions(const char* unnestPath_) : unnestPath(unnestPath_) {}
+        };
+
         /// Options for a vector index.
         using VectorOptions = vectorsearch::IndexSpec;
 
         static constexpr vectorsearch::SQEncoding DefaultEncoding{8};
 
         /// Index options. If not empty (the first state), must match the index type.
-        using Options = std::variant<std::monostate, FTSOptions, VectorOptions>;
+        using Options = std::variant<std::monostate, FTSOptions, VectorOptions, ArrayOptions>;
 
         /// Constructs an index spec.
         /// @param name_  Name of the index (must be unique in its collection.)
@@ -80,11 +87,16 @@ namespace litecore {
 
         const VectorOptions* vectorOptions() const { return std::get_if<VectorOptions>(&options); }
 
+        const ArrayOptions* arrayOptions() const { return std::get_if<ArrayOptions>(&options); }
+
         /** The required WHAT clause: the list of expressions to index */
         const fleece::impl::Array* NONNULL what() const;
 
         /** The optional WHERE clause: the condition for a partial index */
         const fleece::impl::Array* where() const;
+
+        /** The nested unnestPath from arrayOptions, as separated by "[]." is turned to an array. */
+        const fleece::impl::Array* unnestPaths() const;
 
         std::string const name;           ///< Name of index
         Type const        type;           ///< Type of index
@@ -94,8 +106,10 @@ namespace litecore {
 
       private:
         fleece::impl::Doc* doc() const;
+        fleece::impl::Doc* unnestDoc() const;
 
         mutable Retained<fleece::impl::Doc> _doc;
+        mutable Retained<fleece::impl::Doc> _unnestDoc;
     };
 
 }  // namespace litecore

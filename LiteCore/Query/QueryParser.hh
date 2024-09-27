@@ -117,7 +117,8 @@ namespace litecore {
         /// Returns the column name of an FTS table to use for a MATCH expression.
         static string FTSColumnName(const Value* expression);
 
-        string unnestedTableName(const Value* key) const;
+        pair<string, string> unnestedTableName(const Value* key) const;
+        static string        parentUnnestedTableName(const string& unnestedTable);
 
         string predictiveIdentifier(const Value*) const;
         string predictiveTableName(const Value*) const;
@@ -145,10 +146,11 @@ namespace litecore {
 
         // Info about a table alias (an item of the FROM list, i.e. the main table or a join)
         struct aliasInfo {
-            aliasType      type;                  // Type of alias (see above)
-            string         alias;                 // The alias (same as the AliasMap key)
-            string         collection;            // Collection name
-            string         tableName;             // SQLite table name
+            aliasType      type;        // Type of alias (see above)
+            string         alias;       // The alias (same as the AliasMap key)
+            string         collection;  // Collection name
+            string         tableName;   // SQLite table name
+            string         plainTableName;
             DeletionStatus delStatus{kLiveDocs};  // Match live or deleted docs, or both?
             const Dict*    dict   = nullptr;      // The Dict defining this alias
             const Value*   on     = nullptr;      // The 'ON' clause of `dict`, if any
