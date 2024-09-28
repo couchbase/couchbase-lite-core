@@ -101,10 +101,10 @@ joinOperator =
                                           $$ = join.empty() ? string("INNER") : join;}
 
 unnest =
-    UNNEST _ p:propertyPath ( _ AS? ca:columnAlias )?
+    UNNEST _ e:expression ( _ AS? ca:columnAlias )?
                                         {
                                           MutableDict dict = MutableDict::newDict();
-                                          setAny(dict, "UNNEST", op(p));
+                                          setAny(dict, "UNNEST", e);
                                           if (!ca.isNull()) setAny(dict, "AS", ca);
                                           $$ = dict;
                                         }

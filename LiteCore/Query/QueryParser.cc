@@ -472,17 +472,21 @@ namespace litecore {
                     _kvTables.insert(entry.tableName);
                 } else {
                     require(!entry.on, "cannot use ON and UNNEST together");
-                    string unnestTable = unnestedTableName(entry.unnest);
-                    if ( _delegate.tableExists(unnestTable) ) entry.type = kUnnestTableAlias;
-                    else
-                        entry.type = kUnnestVirtualTableAlias;
-                    entry.tableName = "";
+                    auto [plainUnnestTable, unnestTable] = unnestedTableName(entry.unnest);
+                    if ( _delegate.tableExists(unnestTable) ) {
+                        entry.type           = kUnnestTableAlias;
+                        entry.tableName      = unnestTable;
+                        entry.plainTableName = plainUnnestTable;
+                    } else {
+                        entry.type      = kUnnestVirtualTableAlias;
+                        entry.tableName = "";
+                    }
                     if ( entry.alias.empty() ) {
                         // unnestTable looks like, kv_default:unnest:students[].interests
                         // KeyStore::kUnnestSeparator == ":unnest:"
-                        auto pos = unnestTable.find(KeyStore::kUnnestSeparator);
+                        auto pos = plainUnnestTable.find(KeyStore::kUnnestSeparator);
                         Assert(pos != std::string::npos);
-                        std::string_view path(unnestTable.c_str() + pos + KeyStore::kUnnestSeparator.size);
+                        std::string_view path(plainUnnestTable.c_str() + pos + KeyStore::kUnnestSeparator.size);
                         // find the last unescaped dot and use the last property name as default alias.
                         int dot = -1;
                         for ( int d = 0; d < path.length(); ++d ) {
@@ -532,10 +536,16 @@ namespace litecore {
                         break;
                     case kUnnestTableAlias:
                         {
-                            // UNNEST: Optimize query by using the unnest table as a join source:
-                            string unnestTable = unnestedTableName(entry.unnest);
+                            // UNNEST: Optimize query by using the unnest table as a join source
+                            auto [plainUnnestTable, unnestTable] = unnestedTableName(entry.unnest);
+                            string parentTable                   = parentUnnestedTableName(plainUnnestTable);
+                            auto   parentIt = std::find_if(_aliases.begin(), _aliases.end(), [&](auto& entry) {
+                                return entry.second.tableName == parentTable;
+                            });
+                            require(parentIt != _aliases.end(), "parent table \"%s\" must be in the FROM clause.",
+                                    parentTable.c_str());
                             _sql << " JOIN " << sqlIdentifier(unnestTable) << " AS " << sqlIdentifier(entry.alias)
-                                 << " ON " << sqlIdentifier(entry.alias) << ".docid=" << sqlIdentifier(_dbAlias)
+                                 << " ON " << sqlIdentifier(entry.alias) << ".docid=" << sqlIdentifier(parentIt->first)
                                  << ".rowid";
                             break;
                         }
@@ -2069,8 +2079,8 @@ namespace litecore {
         return sha.finish().asBase64();
     }
 
-    // Returns the index table name for an unnested array property.
-    string QueryParser::unnestedTableName(const Value* arrayExpr) const {
+    // Returns the index table name for an unnested array property in plain and hashed forms.
+    pair<string, string> QueryParser::unnestedTableName(const Value* arrayExpr) const {
         string table = _defaultTableName;
         Path   path  = propertyFromNode(arrayExpr);
         string propertyStr;
@@ -2079,7 +2089,9 @@ namespace litecore {
             if ( _propertiesUseSourcePrefix ) {
                 if ( const auto& first = path[0]; first.isKey() ) {
                     if ( string keyStr(first.keyStr()); keyStr != _dbAlias ) {
-                        if ( auto i = _aliases.find(keyStr); i != _aliases.end() ) { table = i->second.tableName; }
+                        if ( auto i = _aliases.find(keyStr); i != _aliases.end() ) {
+                            table = i->second.plainTableName.empty() ? i->second.tableName : i->second.plainTableName;
+                        }
                     }
                 }
                 path.drop(1);
@@ -2087,10 +2099,24 @@ namespace litecore {
             propertyStr = string(path);
             require(propertyStr.find('"') == string::npos, "invalid property path for array index");
         } else {
+            require(false, "the use of a general expression as the object of UNNEST is not supported; only a property "
+                           "path is allowed.");
             // It's some other expression; make a unique digest of it:
             propertyStr = expressionIdentifier(arrayExpr->asArray());
         }
-        return _delegate.unnestedTableName(table, propertyStr);
+        string plainName = _delegate.unnestedTableName(table, propertyStr);
+        return {plainName, (SHA1Builder{} << plainName).finish().asSlice().hexString()};
+    }
+
+    // Returns the parent table of the unnestedTable. If the parent table is an unnest table, returned hashed form.
+    string QueryParser::parentUnnestedTableName(const string& unnestTable) {
+        auto pos = unnestTable.rfind(KeyStore::kUnnestLevelSeparator);
+        if ( pos == string::npos ) pos = unnestTable.find(KeyStore::kUnnestSeparator);
+        Assert(pos != string::npos);
+        auto parentTable = unnestTable.substr(0, pos);
+        if ( parentTable.find(KeyStore::kUnnestSeparator) == string::npos ) return parentTable;
+        else
+            return (SHA1Builder{} << parentTable).finish().asSlice().hexString();
     }
 
 #pragma mark - PREDICTIVE QUERY:

@@ -776,11 +776,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
-            auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
-            REQUIRE(c4coll_createIndex(defaultColl, C4STR("likes"), C4STR("[[\".likes\"]]"), kC4JSONQuery,
-                                       kC4ArrayIndex, nullptr, nullptr));
-            REQUIRE(c4coll_createIndex(defaultColl, C4STR("phone"), C4STR("contact.phone"), kC4N1QLQuery, kC4ArrayIndex,
-                                       nullptr, nullptr));
+            C4IndexOptions indexOpts{};
+            indexOpts.unnestPath = "likes";
+            auto defaultColl     = getCollection(db, kC4DefaultCollectionSpec);
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("likes"), C4STR("[]"), kC4JSONQuery, kC4ArrayIndex,
+                                       &indexOpts, nullptr));
+            indexOpts.unnestPath = "contact.phone";
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("phone"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex, &indexOpts,
+                                       nullptr));
         }
 
         // Two UNNESTs for two array properties.
@@ -832,10 +835,11 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
-            REQUIRE(c4db_createIndex(db, C4STR("shapes"), C4STR("[[\".shapes\"], [\".color\"]]"), kC4ArrayIndex,
-                                     nullptr, nullptr));
-            REQUIRE(c4db_createIndex2(db, C4STR("shapes2"), C4STR("shapes, concat(color, to_string(size))"),
-                                      kC4N1QLQuery, kC4ArrayIndex, nullptr, nullptr));
+            C4IndexOptions indexOpts{};
+            indexOpts.unnestPath = "shapes";
+            REQUIRE(c4db_createIndex(db, C4STR("shapes"), C4STR("[[\".color\"]]"), kC4ArrayIndex, &indexOpts, nullptr));
+            REQUIRE(c4db_createIndex2(db, C4STR("shapes2"), C4STR("concat(color, to_string(size))"), kC4N1QLQuery,
+                                      kC4ArrayIndex, &indexOpts, nullptr));
         }
         compileSelect(json5("{WHAT: ['.shape.color'],\
                           DISTINCT: true,\
@@ -882,13 +886,24 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
     deleteDatabase();
     db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
-    importJSONLines(sFixturesDir + "students.json");
-
-    compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'], ['.student.id'], ['.student.class'], ['.interest']],"
-                        " FROM: [{as: 'doc'},"
-                        "        {as: 'student', unnest: ['.doc.students']},"
-                        "        {as: 'interest', unnest: ['.student.interests']}]"
-                        "}"));
+    std::stringstream students{R"(
+[
+{"type":"university",
+ "name":"Univ of Michigan",
+ "students":[
+   {"id":"student_112","class":"3","order":"1","interests":["violin","baseball"]},
+   {"id":"student_189","class":"2","order":"5","interests":["violin","tennis"]},
+   {"id":"student_1209","class":"3","order":"15","interests":["art","writing"]}
+ ]
+},
+{"type":"university",
+ "name":"Univ of Pennsylvania",
+ "students":[
+   {"id":"student_112","class":"3","order":"1","interests":["piano","swimming"]},
+   {"id":"student_189","class":"2","order":"5","interests":["violin","movies"]}]}
+]
+)"};
+    importJSONFile(students, c4db_getDefaultCollection(db, nullptr));
     vector<string> results{
             "Univ of Michigan, student_112, 3, violin",     "Univ of Michigan, student_112, 3, baseball",
             "Univ of Michigan, student_189, 2, violin",     "Univ of Michigan, student_189, 2, tennis",
@@ -896,19 +911,71 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
             "Univ of Pennsylvania, student_112, 3, piano",  "Univ of Pennsylvania, student_112, 3, swimming",
             "Univ of Pennsylvania, student_189, 2, violin", "Univ of Pennsylvania, student_189, 2, movies"};
 
-    CHECK(run2(nullptr, 4) == results);
+    for ( int withIndex = 1; withIndex <= 1; ++withIndex ) {
+        if ( withIndex ) {
+            C4Log("-------- Repeating with index --------");
+            C4IndexOptions indexOpts{};
+            indexOpts.unnestPath = "students[].interests";
+            REQUIRE(c4db_createIndex2(db, C4STR("students_interests"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
+                                      &indexOpts, nullptr));
+        }
+
+        compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'],"
+                            " ['.student.id'], ['.student.class'], ['.interest']],"
+                            " FROM: [{as: 'doc'},"
+                            "        {as: 'student', unnest: ['.doc.students']},"
+                            "        {as: 'interest', unnest: ['.student.interests']}]"
+                            "}"));
+        checkExplanation(false);
+        CHECK(run2(nullptr, 4) == results);
+    }
 
     deleteDatabase();
     db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
     // The only difference from "students.json" is that there is an extra property from student to interests.
-    importJSONLines(sFixturesDir + "students2.json");
+    std::stringstream students2{R"(
+[
+{"type":"university",
+ "name":"Univ of Michigan",
+ "students":[
+   {"id":"student_112","class":"3","order":"1","extra":{"interests":["violin","baseball"]}},
+   {"id":"student_189","class":"2","order":"5","extra":{"interests":["violin","tennis"]}},
+   {"id":"student_1209","class":"3","order":"15","extra":{"interests":["art","writing"]}}
+ ]
+},
+{"type":"university",
+ "name":"Univ of Pennsylvania",
+ "students":[
+   {"id":"student_112","class":"3","order":"1","extra":{"interests":["piano","swimming"]}},
+   {"id":"student_189","class":"2","order":"5","extra":{"interests":["violin","movies"]}}
+ ]}
+]
+)"};
+    importJSONFile(students2, c4db_getDefaultCollection(db, nullptr));
 
-    compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'], ['.student.id'], ['.student.class'], ['.interest']],"
-                        " FROM: [{as: 'doc'},"
-                        "        {as: 'student', unnest: ['.doc.students']},"
-                        "        {as: 'interest', unnest: ['.student.extra.interests']}]"
-                        "}"));
-    CHECK(run2(nullptr, 4) == results);
+    for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
+        if ( withIndex ) {
+            C4Log("-------- Repeating with index --------");
+            C4IndexOptions indexOpts{};
+            indexOpts.unnestPath = "students[].extra.interests";
+            REQUIRE(c4db_createIndex2(db, C4STR("students_interests"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
+                                      &indexOpts, nullptr));
+        }
+        compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'], ['.student.id'], ['.student.class']],"
+                            " FROM: [{as: 'doc'},"
+                            "        {as: 'student', unnest: ['.doc.students']},"
+                            "        {as: 'interest', unnest: ['.student.extra.interests']}],"
+                            " WHERE: ['=', ['.interest'], 'violin']"
+                            "}"));
+        vector<string> violins;
+        for ( auto& row : results ) {
+            string_view rview{row};
+            auto        pos = rview.find_last_of(',');
+            if ( rview.substr(pos + 2) == "violin" ) violins.emplace_back(rview.substr(0, pos));
+        }
+        checkExplanation(withIndex);
+        CHECK(run2(nullptr, 3) == violins);
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {

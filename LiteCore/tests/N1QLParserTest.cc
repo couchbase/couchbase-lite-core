@@ -458,6 +458,16 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL UNNEST", "[Query][N1QL][C]") {
           == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
              "{'AS':'music_interest','UNNEST':['.person.interests\\\\.music']}],'WHAT':[['_.',['meta()','person'],'.id'"
              "]]}");
+
+    // Unnest an array literal
+    {
+        ExpectingExceptions x;
+        CHECK_THROWS_WITH(translate("SELECT store.customers.name, phone "
+                                    "FROM store.customers "
+                                    "UNNEST [customers.phones[0], customers.phones[1]] AS phone"),
+                          "the use of a general expression as the object of UNNEST is not supported; "
+                          "only a property path is allowed.");
+    }
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Query][N1QL][C]") {

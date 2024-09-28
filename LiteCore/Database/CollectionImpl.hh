@@ -401,6 +401,7 @@ namespace litecore {
             switch ( indexType ) {
                 case kC4ValueIndex:
                 case kC4ArrayIndex:
+                    if ( indexOptions ) { options.emplace<IndexSpec::ArrayOptions>(indexOptions->unnestPath); }
                     break;
                 case kC4FullTextIndex:
                     if ( indexOptions ) {

@@ -873,7 +873,11 @@ namespace litecore {
     }
 
     string SQLiteDataFile::unnestedTableName(const string& onTable, const string& property) const {
-        return auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
+        if ( onTable.find(KeyStore::kUnnestSeparator) == string::npos ) {
+            return auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
+        } else {
+            return auxiliaryTableName(onTable, KeyStore::kUnnestLevelSeparator, property);
+        }
     }
 
 #ifdef COUCHBASE_ENTERPRISE

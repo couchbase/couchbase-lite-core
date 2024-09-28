@@ -65,9 +65,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
-    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
-    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
-    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, options));
+    IndexSpec::ArrayOptions arrOpts{"numbers"};
+    CHECK(store->createIndex("array_1st"_sl, "[]"_sl, IndexSpec::kArray, arrOpts));
+    CHECK(!store->createIndex("array_1st"_sl, "[]"_sl, IndexSpec::kArray, arrOpts));
+    CHECK(store->createIndex("array_2nd"_sl, "[[\".key\"]]"_sl, IndexSpec::kArray, arrOpts));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
 
@@ -82,7 +83,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
-    store->createIndex("nums"_sl, R"([[".numbers"]])", IndexSpec::kArray);
+    store->createIndex("nums"_sl, R"([])", IndexSpec::kArray, IndexSpec::ArrayOptions{"numbers"});
     store->deleteIndex("nums"_sl);
 }
 
@@ -1937,7 +1938,7 @@ class ArrayQueryTest : public QueryTest {
         checkQuery(88, 3);
 
         Log("-------- Creating index --------");
-        store->createIndex("numbersIndex"_sl, R"([[".numbers"]])", IndexSpec::kArray);
+        store->createIndex("numbersIndex"_sl, R"([])", IndexSpec::kArray, IndexSpec::ArrayOptions{"numbers"});
         Log("-------- Recompiling query with index --------");
         query = store->compileQuery(json);
         checkOptimized(query, checkOptimization);
@@ -1991,29 +1992,38 @@ N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
 
 N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
     addArrayDocs(1, 90);
-
-    auto json          = json5("['SELECT', {\
+    ExpectException(error::LiteCore, error::InvalidQuery,
+                    "the use of a general expression as the object of UNNEST is not supported; "
+                    "only a property path is allowed.",
+                    [&] {
+                        //
+                        // general expression with UNNEST is not supported in 3.2.1
+                        //
+                        auto json          = json5("['SELECT', {\
                               FROM: [{as: 'doc'}, \
                                      {as: 'num', 'unnest': ['[]', ['.doc.numbers[0]'], ['.doc.numbers[1]']]}],\
                               WHERE: ['=', ['.num'], 'one-eight']}]");
-    query              = store->compileQuery(json);
-    string explanation = query->explain();
-    Log("%s", explanation.c_str());
+                        query              = store->compileQuery(json);
+                        string explanation = query->explain();
+                        Log("%s", explanation.c_str());
 
-    checkQuery(22, 2);
+                        checkQuery(22, 2);
 
-    if ( GENERATE(0, 1) ) {
-        Log("-------- Creating JSON index --------");
-        store->createIndex("numbersIndex"_sl, json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"), IndexSpec::kArray);
-    } else {
-        Log("-------- Creating N1QL index --------");
-        store->createIndex("numbersIndex"_sl, "[numbers[0], numbers[1]]", QueryLanguage::kN1QL, IndexSpec::kArray);
-    }
-    Log("-------- Recompiling query with index --------");
-    query = store->compileQuery(json);
-    checkOptimized(query);
+                        if ( GENERATE(0, 1) ) {
+                            Log("-------- Creating JSON index --------");
+                            store->createIndex("numbersIndex"_sl, json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"),
+                                               IndexSpec::kArray);
+                        } else {
+                            Log("-------- Creating N1QL index --------");
+                            store->createIndex("numbersIndex"_sl, "[numbers[0], numbers[1]]", QueryLanguage::kN1QL,
+                                               IndexSpec::kArray);
+                        }
+                        Log("-------- Recompiling query with index --------");
+                        query = store->compileQuery(json);
+                        checkOptimized(query);
 
-    checkQuery(22, 2);
+                        checkQuery(22, 2);
+                    });
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {  // CBL-1248
