@@ -87,12 +87,10 @@ function(setup_litecore_build)
         )
     endforeach()
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-        target_link_libraries(
-           ${liteCoreVariant} INTERFACE
-           Threads::Threads
-        )
-    endforeach()
+    target_link_libraries(
+            LiteCoreObjects INTERFACE
+       Threads::Threads
+    )
 endfunction()
 
 function(setup_rest_build)

@@ -21,7 +21,7 @@ try {
 
     New-Item -Type Directory -ErrorAction Ignore couchbase-lite-core\build_cmake\x64
     Set-Location couchbase-lite-core\build_cmake\x64
-    & 'C:\Program Files\CMake\bin\cmake.exe' -A x64 -DCMAKE_SYSTEM_VERSION="10.0" -DBUILD_ENTERPRISE=ON ..\..
+    & 'C:\Program Files\CMake\bin\cmake.exe' -A x64 -DCMAKE_SYSTEM_VERSION="10.0" -DCMAKE_BUILD_TYPE=Debug -DBUILD_ENTERPRISE=ON ..\..
     if($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run CMake!" -ForegroundColor Red
         exit 1

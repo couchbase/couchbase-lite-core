@@ -48,22 +48,20 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
-    foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
-        target_compile_definitions(
-            ${liteCoreVariant} PRIVATE
-            -DLITECORE_USES_ICU=1
-        )
+    target_compile_definitions(
+        LiteCoreObjects PRIVATE
+        -DLITECORE_USES_ICU=1
+    )
 
-        target_include_directories(
-            ${liteCoreVariant} PRIVATE
-            LiteCore/Android
-        )
+    target_include_directories(
+        LiteCoreObjects PRIVATE
+        LiteCore/Android
+    )
 
-        target_link_libraries(
-            ${liteCoreVariant} INTERFACE
-            zlibstatic
-        )
-    endforeach()
+    target_link_libraries(
+        LiteCoreObjects INTERFACE
+        zlibstatic
+    )
 
     target_compile_options(
         CouchbaseSqlite3 PRIVATE
