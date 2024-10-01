@@ -168,14 +168,26 @@ namespace litecore::qt {
             if ( a.second->matchPath(path) ) return a.second;
         }
 
-        if ( path.count() >= 1 && ctx.from && !ctx.from->hasExplicitAlias() ) {
-            // As a special case, we'll match on just the collection name of the main source,
-            // even if it has a scope name:
+        if ( path.count() >= 1 ) {
+            // As a special case, we'll match on just the collection name of collection source
+            // as long as there is no ambiguity
             slice first = path.get(0).first;
             DebugAssert(!first.empty());
-            if ( first.caseEquivalent(ctx.from->collection()) ) {
+            SourceNode* matchedNode = nullptr;
+            int         matched     = 0;
+            for ( auto& a : ctx.aliases ) {
+                SourceNode* srcNode = dynamic_cast<SourceNode*>(a.second);
+                if ( srcNode == nullptr || srcNode->type() != SourceType::collection || srcNode->hasExplicitAlias() )
+                    continue;
+                if ( first.caseEquivalent(srcNode->collection()) ) {
+                    matched++;
+                    matchedNode = srcNode;
+                }
+            }
+            // Make sure it's unique match
+            if ( matched == 1 ) {
                 path.dropComponents(1);
-                return ctx.from;
+                return matchedNode;
             }
         }
 
