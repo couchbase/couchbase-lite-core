@@ -232,7 +232,7 @@ namespace litecore {
         // generalized collection name, a.k.a. collection path.
         // This function returns the position of unescaped separator starting from pos.
         // It returns string::npos if not found.
-        static size_t findCollectionPathSeparator(const string& collectionPath, size_t pos = 0);
+        static size_t findCollectionPathSeparator(string_view connectionPath, size_t pos = 0);
         // After separating out the scope from collection path by kScopeCollectionSeparator ('.'),
         // the following function can be used to unescape the escaped separator.
         static string unescapeCollectionName(const string& unescaped);

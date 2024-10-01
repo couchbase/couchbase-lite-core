@@ -17,6 +17,7 @@
 //
 
 #include "SelectNodes.hh"
+#include "DataFile.hh"
 #include "IndexedNodes.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -133,7 +134,7 @@ namespace litecore::qt {
                 _columnName = collection;
             } else {
                 _collection = collection;
-                if ( auto dot = _collection.find('.'); dot != string::npos ) {
+                if ( auto dot = DataFile::findCollectionPathSeparator(_collection, 0); dot != string::npos ) {
                     // COLLECTION contains both a scope and collection name:
                     require(_scope.empty(), "if SCOPE is given, COLLECTION cannot contain a scope");
                     _scope      = _collection.substr(0, dot);
