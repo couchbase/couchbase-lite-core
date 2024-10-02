@@ -108,7 +108,7 @@ namespace litecore {
             string tableName = tableNameForSource(source, ctx);
             printf("Windows Debug - assignTableNameToSource, tableName = %s\n", tableName.c_str());
             if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) ) {
-                printf("Windows Debug - goint to setTableName()\n");
+                printf("Windows Debug - going to setTableName()\n");
                 source->setTableName(ctx.newString(tableName));
             }
         }
