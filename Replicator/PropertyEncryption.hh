@@ -29,7 +29,7 @@ namespace litecore::repl {
     /// A heuristic to quickly weed out documents that don't need property encryption.
     /// @return  True if the JSON/Fleece data _may_ contain encryptable properties,
     ///          false if it definitely doesn't.
-    static inline bool MayContainPropertiesToEncrypt(fleece::slice documentData) noexcept {
+    inline bool MayContainPropertiesToEncrypt(fleece::slice documentData) noexcept {
         return documentData.find(C4Document::kObjectTypeProperty)
                && documentData.find(C4Document::kObjectType_Encryptable);
     }
@@ -37,7 +37,7 @@ namespace litecore::repl {
     /// A heuristic to quickly weed out documents that don't need property decryption.
     /// @return  True if the JSON/Fleece data _may_ contain encrypted properties,
     ///          false if it definitely doesn't.
-    static inline bool MayContainPropertiesToDecrypt(fleece::slice documentData) noexcept {
+    inline bool MayContainPropertiesToDecrypt(fleece::slice documentData) noexcept {
         return documentData.find(kServerEncryptedPropKeyPrefix) != fleece::nullslice;
     }
 

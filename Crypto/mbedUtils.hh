@@ -21,7 +21,7 @@ namespace litecore::crypto {
     [[noreturn]] void throwMbedTLSError(int err);
 
     // Wrap this around mbed API calls that return an error code.
-    static inline int TRY(int err) {
+    inline int TRY(int err) {
         if ( _usuallyFalse(err < 0) ) throwMbedTLSError(err);
         return err;
     }

@@ -163,7 +163,6 @@
 		2744B354241854F2005A194D /* Actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B337241854F2005A194D /* Actor.cc */; };
 		2744B355241854F2005A194D /* ThreadedMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B33A241854F2005A194D /* ThreadedMailbox.cc */; };
 		2744B356241854F2005A194D /* GCDMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B33B241854F2005A194D /* GCDMailbox.cc */; };
-		2744B358241854F2005A194D /* Channel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B342241854F2005A194D /* Channel.cc */; };
 		2744B359241854F2005A194D /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B343241854F2005A194D /* Timer.cc */; };
 		2744B35A241854F2005A194D /* BLIPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B347241854F2005A194D /* BLIPConnection.cc */; };
 		2744B35B241854F2005A194D /* MessageBuilder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B349241854F2005A194D /* MessageBuilder.cc */; };
@@ -1073,7 +1072,6 @@
 		2744B33E241854F2005A194D /* Codec.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Codec.hh; sourceTree = "<group>"; };
 		2744B340241854F2005A194D /* Actor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Actor.hh; sourceTree = "<group>"; };
 		2744B341241854F2005A194D /* Async.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Async.hh; sourceTree = "<group>"; };
-		2744B342241854F2005A194D /* Channel.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Channel.cc; sourceTree = "<group>"; };
 		2744B343241854F2005A194D /* Timer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timer.cc; sourceTree = "<group>"; };
 		2744B344241854F2005A194D /* Channel.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Channel.hh; sourceTree = "<group>"; };
 		2744B345241854F2005A194D /* Timer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Timer.hh; sourceTree = "<group>"; };
@@ -2207,7 +2205,6 @@
 				2744B33B241854F2005A194D /* GCDMailbox.cc */,
 				2744B340241854F2005A194D /* Actor.hh */,
 				2744B341241854F2005A194D /* Async.hh */,
-				2744B342241854F2005A194D /* Channel.cc */,
 				2744B344241854F2005A194D /* Channel.hh */,
 				274C1DC325C4A79C00B0EEAC /* ChannelManifest.cc */,
 				274C1DC425C4A79C00B0EEAC /* ChannelManifest.hh */,
@@ -4465,7 +4462,6 @@
 				27A83D58269F7DB2002B7EBA /* PropertyEncryption_stub.cc in Sources */,
 				2744B35C241854F2005A194D /* MessageOut.cc in Sources */,
 				27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */,
-				2744B358241854F2005A194D /* Channel.cc in Sources */,
 				2744B35D241854F2005A194D /* Message.cc in Sources */,
 				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
 				278CE55D2B98E78D00245552 /* carray.cc in Sources */,

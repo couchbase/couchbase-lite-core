@@ -39,8 +39,8 @@ namespace litecore::n1ql {
 
 #define YYSTYPE Any  // The data type returned by grammar-rule actions
 
-#define YY_LOCAL(T) LITECORE_UNUSED static T
-#define YY_RULE(T)  LITECORE_UNUSED static T
+#define YY_LOCAL(T) [[maybe_unused]] static T
+#define YY_RULE(T)  [[maybe_unused]] static T
 #define YY_PARSE(T) static T
 
 #define YYPARSE     parse
@@ -94,7 +94,7 @@ namespace litecore::n1ql {
     // Constructing arrays:
 
 
-    static inline MutableArray array() { return MutableArray::newArray(); }
+    inline MutableArray array() { return MutableArray::newArray(); }
 
     template <class T>
     static MutableArray arrayWith(T item) {
@@ -137,7 +137,7 @@ namespace litecore::n1ql {
     // Constructing JSON operations:
 
 
-    static inline MutableArray op(const Any& oper) { return arrayWith(oper); }
+    inline MutableArray op(const Any& oper) { return arrayWith(oper); }
 
     static MutableArray op(const Any& oper, const Any& op1) {
         string postOp;
@@ -333,9 +333,9 @@ namespace litecore::n1ql {
         return false;
     }
 
-    static inline bool isReservedWord(const char* ident) { return findIdentifier(ident, kReservedWords); }
+    inline bool isReservedWord(const char* ident) { return findIdentifier(ident, kReservedWords); }
 
-    static inline bool isFunction(const char* fn) { return findIdentifier(fn, kFunctions); }
+    inline bool isFunction(const char* fn) { return findIdentifier(fn, kFunctions); }
 
     // Collation modes:
 
@@ -362,3 +362,7 @@ namespace litecore::n1ql {
     }
 
 }  // namespace litecore::n1ql
+
+// The code generator produces some unreachable code; keep Clang from warning about it:
+#pragma clang diagnostic ignored "-Wunreachable-code"
+#pragma clang diagnostic ignored "-Wused-but-marked-unused"

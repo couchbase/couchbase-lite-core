@@ -313,7 +313,7 @@ namespace litecore::blip {
         /** Removes an outgoing message from the icebox and re-queues it (after ACK arrives.) */
         void thawMessage(MessageOut* msg) {
             logVerbose("Thawing %s #%" PRIu64 "", kMessageTypeNames[msg->type()], msg->number());
-            LITECORE_UNUSED bool removed = _icebox.remove(msg);
+            [[maybe_unused]] bool removed = _icebox.remove(msg);
             DebugAssert(removed);
             requeue(msg, true);
         }

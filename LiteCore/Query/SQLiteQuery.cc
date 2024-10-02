@@ -368,11 +368,11 @@ namespace litecore {
         SQLiteQueryRunner(SQLiteQuery* query, const Query::Options* options, sequence_t lastSequence,
                           uint64_t purgeCount)
             : _query(query)
+            , _options(options ? *options : Query::Options())
             , _lastSequence(lastSequence)
             , _purgeCount(purgeCount)
             , _statement(query->statement())
-            , _sk(query->dataFile().documentKeys())
-            , _options(options ? *options : Query::Options()) {
+            , _sk(query->dataFile().documentKeys()) {
             _statement->clearBindings();
             _unboundParameters = query->_parameters;
             if ( options && options->paramBindings.buf ) bindParameters(options->paramBindings);

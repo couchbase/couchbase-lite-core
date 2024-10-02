@@ -28,10 +28,10 @@ namespace litecore::actor {
 #    define beginBusy()    _busy.start()
 #    define endBusy()      _maxBusy = max(_maxBusy, _busy.lap())
 #else
-#    define beginLatency() ({})
-#    define endLatency()   ({})
-#    define beginBusy()    ({})
-#    define endBusy()      ({})
+#    define beginLatency() void(0)
+#    define endLatency()   void(0)
+#    define beginBusy()    void(0)
+#    define endBusy()      void(0)
 #endif
 
 

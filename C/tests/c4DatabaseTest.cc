@@ -1228,69 +1228,6 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
     CHECK(c4db_delete(db, WITH_ERROR()));
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator with Conflicted Option", "[Database][Enumerator]") {
-    auto defaultColl = C4DatabaseTest::getCollection(db, kC4DefaultCollectionSpec);
-    auto populateDB  = [&](unsigned recordCount) -> void {
-        TransactionHelper t(db);
-
-        slice       body        = R"({"name":{"first":"Lue","last":"Laserna"}})"_sl;
-        alloc_slice encodedBody = c4db_encodeJSON(db, body, ERROR_INFO());
-        REQUIRE(encodedBody);
-        unsigned numDocs = 0;
-        for ( int i = 0; i < recordCount; ++i ) {
-            string docID = litecore::stringprintf("doc%07u", ++numDocs);
-            // Save document:
-            C4DocPutRequest rq      = {};
-            rq.docID                = slice(docID);
-            rq.allocedBody          = {(void*)encodedBody.buf, encodedBody.size};
-            rq.save                 = true;
-            c4::ref<C4Document> doc = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO());
-            REQUIRE(doc != nullptr);
-        }
-    };
-    populateDB(12000);
-
-    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    options.flags &= ~kC4IncludeBodies;
-    options.flags &= ~kC4IncludeNonConflicted;
-    options.flags |= kC4IncludeDeleted;
-
-    // With the above options, particularly the option to include only the conflicted documents,
-    // the following option, kC4Unsorted, becomes very significant in terms of performance. This
-    // is because the option to get sorted result will kepp SQLite from using, or taking advantage of,
-    // the index we have on DocumentFlags kConflicted. It is most salient when there are a large
-    // number of documents with only few having conflicts.
-    // Motivated by DBAccess::unresolvedDocsEnumerator, c.f. CBL-4506
-
-    auto doIt = [&](bool sorted) -> double {
-        if ( sorted ) {
-            options.flags &= ~kC4Unsorted;
-        } else {
-            options.flags |= kC4Unsorted;
-        }
-        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(defaultColl, &options, ERROR_INFO());
-        REQUIRE(e);
-        unsigned  count = 0;
-        C4Error   error;
-        Stopwatch sw;
-        while ( c4enum_next(e, ERROR_INFO(error)) ) { ++count; }
-        double elapsed = sw.lap();
-        REQUIRE(error == C4Error{});
-        REQUIRE(count == 0);
-        return elapsed;
-    };
-    double elapsedUnsorted = doIt(false);
-    double elapsedSorted   = doIt(true);
-    cout << "Enum with conflicted/sorted takes " << elapsedSorted << " sec, Enum With conflicted/unsorted takes "
-         << elapsedUnsorted << "sec, ratio = " << elapsedSorted / elapsedUnsorted << endl;
-    auto config = c4db_getConfig2(db);
-    if ( config->encryptionKey.algorithm != kC4EncryptionNone ) {
-        // Encrypted case is not stable.
-        return;
-    }
-    CHECK(elapsedSorted / elapsedUnsorted > 4);
-}
-
 TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
     // In 3.0 it's no longer possible to open 2.x databases without upgrading

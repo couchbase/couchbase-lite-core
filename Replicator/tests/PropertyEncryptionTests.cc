@@ -23,11 +23,11 @@ using namespace litecore;
 using namespace litecore::repl;
 
 
-LITECORE_UNUSED
-static constexpr slice kDocID = "i_have_seekrits", kDefaultCleartext = "\"123-45-6789\"",
-                       kDefaultCiphertext       = "XXXXENCRYPTEDXXXX",
-                       kDefaultCiphertextBase64 = "WFhYWEVOQ1JZUFRFRFhYWFg=", kCustomAlgorithm = "Rot13",
-                       kCustomKeyID = "Schlage", kDefaultKeyPath = "SSN", kNestedKeyPath = "nested[2].SSN";
+[[maybe_unused]] static constexpr slice kDocID = "i_have_seekrits", kDefaultCleartext = "\"123-45-6789\"",
+                                        kDefaultCiphertext       = "XXXXENCRYPTEDXXXX",
+                                        kDefaultCiphertextBase64 = "WFhYWEVOQ1JZUFRFRFhYWFg=",
+                                        kCustomAlgorithm = "Rot13", kCustomKeyID = "Schlage", kDefaultKeyPath = "SSN",
+                                        kNestedKeyPath = "nested[2].SSN";
 
 
 #pragma mark - TEST CLASSES:
@@ -157,8 +157,7 @@ class PropDecryptionTest {
     int                                    _numCallbacks = 0;
 };
 
-LITECORE_UNUSED
-static constexpr slice
+[[maybe_unused]] static constexpr slice
         kDecryptedOneProperty = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})",
         kEncryptedOneProperty =
                 R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}})",

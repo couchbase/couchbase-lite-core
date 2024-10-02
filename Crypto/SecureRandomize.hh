@@ -27,10 +27,10 @@ namespace litecore {
     void GenerateUUID(fleece::mutable_slice);
 
     /** Returns a random integer in the range [0 .. UINT32_MAX].
-        @warn  On some platforms this RNG is cryptographically secure, on others less so. */
+        @warning  On some platforms this RNG is cryptographically secure, on others less so. */
     uint32_t RandomNumber();
 
     /** Returns a random integer in the range [0 .. upperBound-1].
-        @warn  On some platforms this RNG is cryptographically secure, on others less so. */
+        @warning  On some platforms this RNG is cryptographically secure, on others less so. */
     uint32_t RandomNumber(uint32_t upperBound);
 }  // namespace litecore

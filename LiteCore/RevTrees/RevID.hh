@@ -32,7 +32,7 @@ namespace litecore {
         It consists of a logical timestamp and a UUID "source ID" (or "peer ID".)
         - An all-zero source ID (`kMeSourceID`) is reserved to mean "the local device/database".
         - The ASCII form combines a hex timestamp with a base64 source ID, separated by an `@`,
-          for example `1772c7cb27da0000@ZegpoldZegpoldZegpoldA`.
+          for example `1772c7cb27da0000\@ZegpoldZegpoldZegpoldA`.
           The source ID zero is represented as a '*' character.
         - The binary form is, basically, a zero byte, the timestamp as a varint, and the source.
           The leading zero is to distinguish it from the digest form. It's actually a bit more
@@ -60,7 +60,7 @@ namespace litecore {
         /// - or if both are digest-based and are bitwise equal.
         [[nodiscard]] bool isEquivalentTo(const revid&) const noexcept FLPURE;
 
-        /// Returns true for version-vector style (time@peer), false for rev-tree style (gen-digest).
+        /// Returns true for version-vector style (time\@peer), false for rev-tree style (gen-digest).
         [[nodiscard]] bool isVersion() const noexcept FLPURE { return size > 0 && (*this)[0] == 0; }
 
         //---- Tree revision IDs only

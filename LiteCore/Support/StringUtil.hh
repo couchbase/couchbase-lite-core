@@ -42,7 +42,7 @@ namespace litecore {
 #endif
 
     /** Writes a slice to a stream with the usual "<<" syntax */
-    static inline std::ostream& operator<<(std::ostream& o, fleece::slice s) {
+    inline std::ostream& operator<<(std::ostream& o, fleece::slice s) {
         o.write((const char*)s.buf, static_cast<std::streamsize>(s.size));
         return o;
     }
@@ -91,7 +91,7 @@ namespace litecore {
     /** Converts an ASCII string to lowercase, in place. */
     void toLowercase(std::string&);
 
-    static inline std::string lowercase(std::string str) {
+    inline std::string lowercase(std::string str) {
         toLowercase(str);
         return str;
     }
@@ -108,7 +108,7 @@ namespace litecore {
     bool hasNoControlCharacters(fleece::slice) noexcept;
 
     /** Returns true if the UTF-8 encoded string contains no characters with code points < 32. */
-    static inline bool hasNoControlCharacters(const std::string& str) noexcept {
+    inline bool hasNoControlCharacters(const std::string& str) noexcept {
         return hasNoControlCharacters(fleece::slice(str));
     }
 
@@ -116,7 +116,7 @@ namespace litecore {
     bool isValidUTF8(fleece::slice) noexcept;
 
     /** Returns true if the string contains valid UTF-8 encoded data. */
-    static inline bool isValidUTF8(const std::string& str) noexcept { return isValidUTF8(fleece::slice(str)); }
+    inline bool isValidUTF8(const std::string& str) noexcept { return isValidUTF8(fleece::slice(str)); }
 
     /** Returns the number of characters in a UTF-8 encoded string. */
     size_t UTF8Length(fleece::slice) noexcept;

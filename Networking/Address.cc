@@ -45,8 +45,6 @@ namespace litecore::net {
     Address::Address(slice scheme, slice hostname, uint16_t port, slice uri)
         : Address(mkAddr(scheme, hostname, port, uri)) {}
 
-    Address& Address::operator=(const Address& other) = default;
-
     static alloc_slice dbURL(C4Database* db) {
         alloc_slice path(c4db_getPath(db));
         return alloc_slice(string("file:///") + string(path));

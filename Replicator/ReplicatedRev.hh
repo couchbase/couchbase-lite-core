@@ -63,14 +63,14 @@ namespace litecore::repl {
         virtual void trim() = 0;
 
       protected:
-        ReplicatedRev(C4CollectionSpec collSpec, slice docID_, slice revID_, void* collectionContext,
+        ReplicatedRev(C4CollectionSpec collSpec, slice docID_, slice revID_, void* collectionContext_,
                       C4SequenceNumber sequence_ = {})
             : collectionName(collSpec.name)
             , scopeName(collSpec.scope)
             , docID(alloc_slice::nullPaddedString(docID_))
             , revID(alloc_slice::nullPaddedString(revID_))
             , sequence(sequence_)
-            , collectionContext(collectionContext) {}
+            , collectionContext(collectionContext_) {}
 
         ~ReplicatedRev() override = default;
     };

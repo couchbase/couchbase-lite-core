@@ -59,7 +59,7 @@ namespace litecore {
 
             if ( !coll.diacriticSensitive ) flags |= kCFCompareDiacriticInsensitive;
 
-            slice localeName = coll.localeName ?: "en_US"_sl;
+            slice localeName = coll.localeName ? coll.localeName : "en_US"_sl;
             flags |= kCFCompareLocalized;
             TempCFString localeStr(localeName);
             if ( localeStr ) localeRef = CFLocaleCreate(nullptr, localeStr);

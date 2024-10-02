@@ -154,7 +154,7 @@ namespace litecore::qt {
 
         ExprNode* child() const { return _child; }  ///< The expression to which the collation is applied
 
-        Collation const& collation() const { return _collation; }  ///< The collation used
+        Collation collation() const;  ///< The collation used
 
         bool isBinary() const;  ///< True if collation is binary (i.e. neither case-sensitive nor Unicode)
 
@@ -164,8 +164,11 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
 
       private:
-        ExprNode* _child;      // The expression COLLATE is applied to
-        Collation _collation;  // The collation
+        ExprNode*   _child;  // The expression COLLATE is applied to
+        const char* localeName;
+        bool        unicodeAware;
+        bool        caseSensitive;
+        bool        diacriticSensitive;
     };
 
     /** A Node that just writes arbitrary SQL. Use sparingly and with caution. */

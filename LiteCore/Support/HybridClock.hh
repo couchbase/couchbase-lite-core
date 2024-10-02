@@ -30,12 +30,12 @@ namespace litecore {
     static constexpr logicalTime kMaxValidTime{0x7fffffffffffffff};
 
     /** Converts a wall-time to a number of seconds since the Unix epoch. */
-    static inline double asSeconds(walltime_t t) { return double(t) / kNsPerSec; }
+    inline double asSeconds(walltime_t t) { return double(t) / kNsPerSec; }
 
     /// Converts a logical timestamp to a number of seconds since the Unix epoch.
     /// This will not necessarily match the local time, even for a hybrid-time created locally;
     /// but it should at worst be slightly ahead. */
-    static inline double asSeconds(logicalTime t) { return double(t) / kNsPerSec; }
+    inline double asSeconds(logicalTime t) { return double(t) / kNsPerSec; }
 
     /// An object that provides the time, as a `walltime_t`, for a HybridClock.
     class ClockSource {

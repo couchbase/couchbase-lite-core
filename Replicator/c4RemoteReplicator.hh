@@ -23,10 +23,7 @@
 #include <chrono>
 #include <functional>
 
-using namespace litecore::net;
-
 namespace litecore {
-
 
     /** A replicator with a remote database via WebSockets. */
     class C4RemoteReplicator final : public C4ReplicatorImpl {
@@ -213,7 +210,7 @@ namespace litecore {
             if ( !path.hasSuffix("/"_sl) ) newPath += "/";
             newPath += string(remoteDatabaseName) + "/_blipsync";
             address.path = slice(newPath);
-            return Address::toURL(address);
+            return net::Address::toURL(address);
         }
 
         // Options to pass to the C4Socket

@@ -58,7 +58,7 @@ namespace litecore::net {
         GatewayError   = 502,
     };
 
-    static inline bool IsSuccess(HTTPStatus s) { return int(s) < 300; }
+    inline bool IsSuccess(HTTPStatus s) { return int(s) < 300; }
 
     const char* StatusMessage(HTTPStatus);
 

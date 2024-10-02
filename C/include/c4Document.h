@@ -191,7 +191,7 @@ NODISCARD CBL_CORE_API bool c4doc_setRemoteAncestor(C4Document* doc, C4RemoteID 
     Use \ref c4rev_getTimestamp to support version-based revIDs. */
 CBL_CORE_API unsigned c4rev_getGeneration(C4String revID) C4API;
 
-/** Given a revision ID that's a Version (of the form `time@peer`), returns its timestamp.
+/** Given a revision ID that's a Version (of the form `time\@peer`), returns its timestamp.
     This can be interpreted as the time the revision was created, in nanoseconds since the Unix
     epoch, but it's not necessarily exact.
 

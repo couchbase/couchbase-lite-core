@@ -168,7 +168,7 @@ namespace litecore {
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
-    extern LogDomain                  DBLog, QueryLog, SyncLog, &ActorLog;
+    extern LogDomain                  BlobLog, DBLog, QueryLog, SyncLog, &ActorLog;
 
 
 #define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                               \
@@ -194,7 +194,7 @@ namespace litecore {
 #    define WriteDebug(FMT, ...)
 #endif
 
-    static inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }
+    inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }
 
     /** Mixin that adds log(), warn(), etc. methods. The messages these write will be prefixed
         with a description of the object; by default this is just the class and address, but

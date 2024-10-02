@@ -56,11 +56,11 @@ namespace litecore {
     /// Wrap around a string when writing to a stream, to single-quote it as a SQL string literal
     /// and escape any single-quotes it contains:
     /// `out << sqlString("I'm a string");` --> `'I''m a string'`
-    static inline auto sqlString(slice str) { return quotedSlice<'\'', '\''>(str); }
+    inline auto sqlString(slice str) { return quotedSlice<'\'', '\''>(str); }
 
     /// Wrap around a SQL identifier when writing to a stream, to double-quote it if necessary:
     /// `out << sqlIdentifier("normal_identifier") --> `normal_identifier`
     /// `out << sqlIdentifier("weird/\"identifier\"");` --> `"weird/""identifier"""`
-    static inline auto sqlIdentifier(slice name) { return quotedSlice<'"', '"'>(name); }
+    inline auto sqlIdentifier(slice name) { return quotedSlice<'"', '"'>(name); }
 
 }  // namespace litecore

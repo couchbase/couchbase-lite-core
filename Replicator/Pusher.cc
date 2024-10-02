@@ -29,8 +29,8 @@ namespace litecore::repl {
     Pusher::Pusher(Replicator* replicator, Checkpointer& checkpointer, CollectionIndex collIndex)
         : Worker(replicator, "Push", collIndex)
         , _continuous(_options->push(collectionIndex()) == kC4Continuous)
-        , _checkpointer(checkpointer)
-        , _changesFeed(*this, _options, *_db, &checkpointer) {
+        , _changesFeed(*this, _options, *_db, &checkpointer)
+        , _checkpointer(checkpointer) {
         setParentObjectRef(replicator->getObjectRef());
         if ( _options->push(collectionIndex()) <= kC4Passive
              // Always use "changes" with version vectors

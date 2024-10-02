@@ -221,7 +221,7 @@ namespace litecore {
     }
 
 #ifdef LITECORE_IMPL
-    __cold static const char* litecore_errstr(error::LiteCoreError code) {
+    __cold __no_sanitize("enum") static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
                 // These must match up with the codes in the declaration of LiteCoreError
                 "no error",  // 0
@@ -260,12 +260,12 @@ namespace litecore {
         };
         static_assert(std::size(kLiteCoreMessages) == error::NumLiteCoreErrorsPlus1, "Incomplete error message table");
         const char* str = nullptr;
-        if ( code < sizeof(kLiteCoreMessages) / sizeof(char*) ) str = kLiteCoreMessages[code];
+        if ( code < std::size(kLiteCoreMessages) ) str = kLiteCoreMessages[code];
         if ( !str ) str = "(unknown LiteCoreError)";
         return str;
     }
 
-    __cold static const char* fleece_errstr(fleece::ErrorCode code) {
+    __cold __no_sanitize("enum") static const char* fleece_errstr(fleece::ErrorCode code) {
         static const char* kFleeceMessages[] = {
                 // These must match up with the codes in the declaration of FLError
                 "no error",  // 0
@@ -286,7 +286,7 @@ namespace litecore {
         return str;
     }
 
-    __cold static const char* network_errstr(int code) {
+    __cold __no_sanitize("enum") static const char* network_errstr(int code) {
         static const char* kNetworkMessages[] = {
                 // These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
                 // The wording is from a client's perspective, i.e. the peer is referred to as "server";
@@ -361,7 +361,7 @@ namespace litecore {
     }
 #endif  // LITECORE_IMPL
 
-    __cold string error::_what(error::Domain domain, int code) noexcept {
+    __cold __no_sanitize("enum") string error::_what(error::Domain domain, int code) noexcept {
 #ifdef LITECORE_IMPL
         switch ( domain ) {
             case LiteCore:
@@ -400,7 +400,7 @@ namespace litecore {
 #endif
     }
 
-    __cold const char* error::nameOfDomain(Domain domain) noexcept {
+    __cold __no_sanitize("enum") const char* error::nameOfDomain(Domain domain) noexcept {
         // Indexed by Domain
         static const char* kDomainNames[] = {"0",      "LiteCore", "POSIX",     "SQLite",
                                              "Fleece", "Network",  "WebSocket", "mbedTLS"};

@@ -30,7 +30,7 @@ class N1QLParserTest : public QueryTranslatorTest {
         Log("translating: %s", n1ql);
         int errorPos;
 
-        FLValue dict = (FLValue)n1ql::parse(n1ql, &errorPos);
+        FLMutableDict dict = n1ql::parse(n1ql, &errorPos);
         if ( !dict ) {
             UNSCOPED_INFO(string(errorPos + 6, ' ') << "^--syntax error");
             return "";
@@ -41,10 +41,15 @@ class N1QLParserTest : public QueryTranslatorTest {
         UNSCOPED_INFO(jsonResult);
         Log("    ...JSON is: %s", jsonResult.c_str());
 
-        string sql = parse(dict);
-        UNSCOPED_INFO("-->  " << sql);
+        try {
+            string sql = parse(FLValue(dict));
+            UNSCOPED_INFO("-->  " << sql);
+        } catch ( ... ) {
+            FLDict_Release(dict);
+            throw;
+        }
 
-        FLValue_Release(dict);
+        FLDict_Release(dict);
         return jsonResult;
     }
 };
