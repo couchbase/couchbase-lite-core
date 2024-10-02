@@ -67,7 +67,7 @@ namespace litecore::qt {
 
     void MetaNode::writeSQL(SQLWriter& ctx) const {
         string aliasDot;
-        if ( _source ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
+        if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
         writeMetaSQL(aliasDot, _property, ctx);
     }
 

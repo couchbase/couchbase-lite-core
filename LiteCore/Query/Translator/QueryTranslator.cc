@@ -35,8 +35,20 @@ namespace litecore {
 
     QueryTranslator::~QueryTranslator() = default;
 
+    RootContext QueryTranslator::makeRootContext() const {
+        RootContext root;
+#ifdef COUCHBASE_ENTERPRISE
+        root.hasPredictiveIndex = [&](string_view id) -> bool {
+            string indexTable = _delegate.predictiveTableName(_defaultTableName, string(id));
+            return _delegate.tableExists(indexTable);
+        };
+#endif
+        return root;
+    }
+
     void QueryTranslator::parse(FLValue v) {
-        RootContext ctx;
+        RootContext ctx = makeRootContext();
+
         // Parse the query into a Node tree:
         SelectNode* query = new (ctx) SelectNode(v, ctx);
         query->postprocess(ctx);
@@ -79,7 +91,7 @@ namespace litecore {
     }
 
     string QueryTranslator::expressionSQL(FLValue exprSource) {
-        RootContext ctx;
+        RootContext ctx  = makeRootContext();
         auto        expr = ExprNode::parse(exprSource, ctx);
         expr->postprocess(ctx);
 
@@ -122,15 +134,26 @@ namespace litecore {
                 fail("no such collection \"%s\"", name.c_str());
 
             if ( auto index = dynamic_cast<IndexSourceNode*>(source) ) {
-                if ( index->indexType() == IndexType::FTS ) {
-                    tableName = _delegate.FTSTableName(tableName, string(index->indexedExpressionJSON()));
-                    _ftsTables.push_back(tableName);
-                } else if ( index->indexType() == IndexType::vector ) {
+                switch ( index->indexType() ) {
+                    case IndexType::FTS:
+                        tableName = _delegate.FTSTableName(tableName, string(index->indexID()));
+                        _ftsTables.push_back(tableName);
+                        break;
 #ifdef COUCHBASE_ENTERPRISE
-                    auto vecSource = dynamic_cast<VectorDistanceNode*>(index->indexedNode());
-                    Assert(vecSource);
-                    tableName = _delegate.vectorTableName(tableName, string(vecSource->indexExpressionJSON()),
-                                                          vecSource->metric());
+                    case IndexType::vector:
+                        {
+                            auto vecSource = dynamic_cast<VectorDistanceNode*>(index->indexedNode());
+                            Assert(vecSource);
+                            tableName = _delegate.vectorTableName(tableName, string(vecSource->indexID()),
+                                                                  vecSource->metric());
+                            break;
+                        }
+                    case IndexType::prediction:
+                        {
+                            auto predSource = index->indexedNode();
+                            tableName       = _delegate.predictiveTableName(tableName, string(predSource->indexID()));
+                            break;
+                        }
 #endif
                 }
             } else if ( source->isCollection() ) {
@@ -147,7 +170,7 @@ namespace litecore {
                                            FLArrayIterator& whatExpressions, FLArray whereClause,
                                            bool isUnnestedTable) {
         _sql = writeSQL([&](SQLWriter& writer) {
-            RootContext ctx;
+            RootContext ctx = makeRootContext();
 
             SourceNode* source;
             if ( isUnnestedTable ) {
@@ -188,7 +211,7 @@ namespace litecore {
 
     string QueryTranslator::whereClauseSQL(FLValue exprSource, string_view dbAlias) {
         if ( !exprSource ) return "";
-        RootContext ctx;
+        RootContext ctx = makeRootContext();
         auto        src = new (ctx) SourceNode(ctx.newString(dbAlias));
         ctx.from        = src;
         auto expr       = ExprNode::parse(exprSource, ctx);
@@ -197,7 +220,7 @@ namespace litecore {
     }
 
     string QueryTranslator::functionCallSQL(slice fnName, FLValue arg, FLValue param) {
-        RootContext ctx;
+        RootContext ctx     = makeRootContext();
         auto        argExpr = ExprNode::parse(arg, ctx);
         argExpr->postprocess(ctx);
         ExprNode* paramExpr = nullptr;
@@ -230,7 +253,7 @@ namespace litecore {
     }
 
     string QueryTranslator::unnestedTableName(FLValue flExpr) const {
-        RootContext ctx;
+        RootContext ctx  = makeRootContext();
         auto        expr = ExprNode::parse(flExpr, ctx);
         expr->postprocess(ctx);
 
@@ -244,7 +267,7 @@ namespace litecore {
     }
 
     string QueryTranslator::eachExpressionSQL(FLValue flExpr) {
-        RootContext ctx;
+        RootContext ctx  = makeRootContext();
         auto        expr = ExprNode::parse(flExpr, ctx);
 
         auto prop = dynamic_cast<PropertyNode*>(expr);
@@ -253,5 +276,16 @@ namespace litecore {
         return writeSQL([&prop](SQLWriter& sql) { prop->writeSQL(sql); });
     }
 
-    string QueryTranslator::predictiveTableName(FLValue) const { error::_throw(error::Unimplemented); }
+    string QueryTranslator::predictiveIdentifier(FLValue expression) const {
+        auto array = Value(expression).asArray();
+        if ( array.count() < 2 || !array[0].asString().caseEquivalent("PREDICTION()") )
+            fail("Invalid PREDICTION() call");
+        return expressionIdentifier(array, 3);  // ignore the output-property parameter
+    }
+
+#ifdef COUCHBASE_ENTERPRISE
+    string QueryTranslator::predictiveTableName(FLValue expression) const {
+        return _delegate.predictiveTableName(_defaultTableName, predictiveIdentifier(expression));
+    }
+#endif
 }  // namespace litecore

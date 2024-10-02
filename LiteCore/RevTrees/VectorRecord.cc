@@ -91,11 +91,10 @@ namespace litecore {
     static constexpr slice kLegacyRevIDKey   = "~";
     static constexpr slice kRevFlagsKey      = "&";
 
+
+#pragma mark - INITIALIZATION:
+
     bool Revision::hasVersionVector() const { return revID.isVersion(); }
-
-    Version Revision::version() const { return VersionVector::readCurrentVersionFromBinary(revID); }
-
-    VersionVector Revision::versionVector() const { return VersionVector::fromBinary(revID); }
 
     VectorRecord::VectorRecord(KeyStore& store, const Record& rec)
         : _store(store)
@@ -133,6 +132,7 @@ namespace litecore {
         } else {
             if ( body ) {
                 _bodyDoc            = newLinkedFleeceDoc(body, kFLTrusted);
+                _bodyDocRange       = _bodyDoc.data();
                 _current.properties = _bodyDoc.asDict();
                 if ( !_current.properties )
                     error::_throw(error::CorruptRevisionData, "VectorRecord reading properties error");
@@ -180,10 +180,13 @@ namespace litecore {
         if ( _docFlags & DocumentFlags::kSynced ) revTree.setLatestRevisionOnRemote(1, curRev);
 
         if ( !extra ) {
-            // This is a v2.x document with body & rev-tree in `body`, and no `extra`:
+            // This is a v2.x document with body & rev-tree in `body`, and no `extra`.
+            // That means _bodyDoc's data is the entire rev-tree, not just the current rev data.
+            // This is why we have _bodyDocRange! Set it to the current rev itself:
             Assert(!_bodyDoc);
             _bodyDoc            = newLinkedFleeceDoc(body, kFLTrustedDontParse);
-            FLValue bodyProps   = FLValue_FromData(curRev->body(), kFLTrusted);
+            _bodyDocRange       = curRev->body();
+            FLValue bodyProps   = FLValue_FromData(_bodyDocRange, kFLTrusted);
             _current.properties = Value(bodyProps).asDict();
             if ( !_current.properties )
                 error::_throw(error::CorruptRevisionData, "VectorRecord reading 2.x properties error");
@@ -370,9 +373,13 @@ namespace litecore {
 
 #pragma mark - CURRENT REVISION:
 
+    Version Revision::version() const { return VersionVector::readCurrentVersionFromBinary(revID); }
+
+    VersionVector Revision::versionVector() const { return VersionVector::fromBinary(revID); }
+
     slice VectorRecord::currentRevisionData() const {
         requireBody();
-        return _bodyDoc.data();
+        return _bodyDocRange;
     }
 
     void VectorRecord::setCurrentRevision(const Revision& rev) {
@@ -383,7 +390,7 @@ namespace litecore {
 
     Dict VectorRecord::originalProperties() const {
         requireBody();
-        return _bodyDoc.asDict();
+        return Value(FLValue_FromData(_bodyDocRange, kFLTrusted)).asDict();
     }
 
     MutableDict VectorRecord::mutableProperties() {

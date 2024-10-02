@@ -773,6 +773,15 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried FTS", "[Query][Que
 }
 
 #ifdef COUCHBASE_ENTERPRISE
+
+TEST_CASE_METHOD(QueryTranslatorTest, "Predictive Index ID", "[Query][QueryTranslator][Predict]") {
+    // It's important that the mapping from PREDICT expressions to table names doesn't change,
+    // or it will make existing indexes in existing databases useless.
+    QueryTranslator t(*this, "_default", "kv_default");
+    auto            doc = Doc::fromJSON(R"-(["PREDICTION()", "8ball", {"number": [".num"]}])-");
+    CHECK(t.predictiveTableName(doc.asArray()) == R"(kv_default:predict:0\M\W\K\Sbbzr0gn4\V\V\Vu\Ks\N\E9s\Z\E8o=)");
+}
+
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][QueryTranslator][VectorSearch]") {
     tableNames.insert("kv_default:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});

@@ -129,6 +129,8 @@ namespace litecore::qt {
 #ifdef COUCHBASE_ENTERPRISE
             case OpType::vectorDistance:
                 return new (ctx) VectorDistanceNode(operands, ctx);
+            case OpType::prediction:
+                return PredictionNode::parse(operands, ctx);
 #endif
             default:
                 // A normal OpNode
