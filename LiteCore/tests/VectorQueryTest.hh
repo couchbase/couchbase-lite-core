@@ -27,7 +27,7 @@ class VectorQueryTest : public QueryTest {
         return 0;
     }
 
-    VectorQueryTest(int which) : QueryTest(which + initialize()) {}
+    explicit VectorQueryTest(int which) : QueryTest(which + initialize()) {}
 
     ~VectorQueryTest() {
         // Assert that the callback did not log unexpected warnings:
