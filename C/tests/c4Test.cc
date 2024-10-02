@@ -203,9 +203,6 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
         memcpy(_dbConfig.encryptionKey.bytes, "this is not a random key at all.", kC4EncryptionKeySizeAES256);
     }
 
-    fprintf(stderr, "        --- %s %s\n", ((_dbConfig.flags & kC4DB_VersionVectors) ? "Version-vectors" : "Rev-trees"),
-            (_dbConfig.encryptionKey.algorithm ? ", Encrypted" : ""));
-
     C4Error error;
     if ( !c4db_deleteNamed(kDatabaseName, _dbConfig.parentDirectory, ERROR_INFO(&error)) ) REQUIRE(error.code == 0);
     db = c4db_openNamed(kDatabaseName, &_dbConfig, ERROR_INFO(&error));
@@ -213,7 +210,10 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
 }
 
 C4Test::~C4Test() {
-    if ( db ) deleteDatabase();
+    if ( db ) {
+        CHECK(c4db_delete(db, WITH_ERROR()));
+        c4db_release(db);
+    }
 
     if ( !current_exception() ) {
         // Check for leaks:

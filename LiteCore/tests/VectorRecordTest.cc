@@ -55,7 +55,7 @@ using namespace fleece;
 
 static constexpr auto kRemote1 = RemoteID(1), kRemote2 = RemoteID(2);
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRecord][RevIDs]") {
     VectorRecord doc(*store, "Nuu");
     cerr << "Doc is: " << doc << "\n";
 
@@ -82,7 +82,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRec
     CHECK(mutableProps == properties);
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     {
@@ -137,7 +137,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord]
     }
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Empty Properties", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Empty Properties", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     VectorRecord doc(*store, "Nuu");
@@ -154,7 +154,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Empty Properties", "[V
     CHECK(doc.properties().empty());
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     ExclusiveTransaction t(db);
@@ -192,7 +192,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorReco
     cerr << "Storage:\n" << doc.dumpStorage();
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     ExclusiveTransaction t(db);

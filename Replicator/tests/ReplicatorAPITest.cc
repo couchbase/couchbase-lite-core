@@ -30,7 +30,7 @@ using namespace litecore;
 
 std::once_flag ReplicatorAPITest::once;
 
-TEST_CASE("URL Parsing", "[C]][Replicator]") {
+TEST_CASE("URL Parsing", "[C][Replicator]") {
     C4Address address;
     C4String  dbName;
 
@@ -130,7 +130,7 @@ TEST_CASE("URL Parsing", "[C]][Replicator]") {
     CHECK(!c4address_fromURL("ws://snej:password@example.com:8080/db"_sl, &address, &dbName));
 }
 
-TEST_CASE("URL Generation", "[C]][Replicator]") {
+TEST_CASE("URL Generation", "[C][Replicator]") {
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl})) == "ws://foo.com:8888/bar"_sl);
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0, "/"_sl})) == "ws://foo.com/"_sl);
 }

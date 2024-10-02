@@ -187,33 +187,33 @@ class C4Test {
     enum TestOptions { RevTreeOption = 0, VersionVectorOption, EncryptedRevTreeOption };
 #if defined(COUCHBASE_ENTERPRISE)
 #    if SkipVersionVectorTest
-    static const int numberOfOptions = 2;  // rev-tree, rev-tree encrypted
+    static constexpr int         numberOfOptions               = 2;  // rev-tree, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "EncryptedRevTree"};
 #    else
-    static const int numberOfOptions = 3;  // rev-tree, version vector, rev-tree encrypted
+    static constexpr int         numberOfOptions               = 3;  // rev-tree, version vector, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "VersionVector", "EncryptedRevTree"};
 #    endif
 #else
 #    if SkipVersionVectorTest
-    static const int numberOfOptions = 1;  // rev-tree
+    static constexpr int         numberOfOptions = 1;  // rev-tree
 #    else
-    static const int numberOfOptions = 2;  // rev-tree, version vector
+    static constexpr int numberOfOptions = 2;  // rev-tree, version vector
 #    endif
+    static constexpr const char* nameOfOption[2] = {"RevTree", "VersionVector"};
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
     static std::string sReplicatorFixturesDir;  // directory where replicator test files live
 
     static constexpr slice kDatabaseName = "cbl_core_test";
-#if SkipVersionVectorTest
-    explicit C4Test(int testOption = RevTreeOption);
-#else
-    C4Test(int testOption = VersionVectorOption);
-#endif
+
+    explicit C4Test(int);
     ~C4Test();
 
     [[nodiscard]] alloc_slice databasePath() const { return {c4db_getPath(db)}; }
 
     /// The database handle.
-    C4Database* db;
+    C4Database* db{};
 
     [[nodiscard]] const C4DatabaseConfig2& dbConfig() const { return _dbConfig; }
 

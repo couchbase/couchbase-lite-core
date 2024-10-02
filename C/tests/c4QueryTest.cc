@@ -1198,7 +1198,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query alternative FROM names", "[Query][C
 
 class CollectionTest : public C4QueryTest {
   public:
-    CollectionTest() : C4QueryTest(0, "") {}
+    CollectionTest() : C4QueryTest(0) {}
 
     void populate(C4CollectionSpec spec, const std::string& filename) {
         C4Collection* coll = c4db_createCollection(db, spec, ERROR_INFO());

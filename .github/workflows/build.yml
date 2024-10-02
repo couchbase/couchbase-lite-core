@@ -79,7 +79,7 @@ jobs:
       shell: bash
       run: |
         pushd LiteCore/tests
-        ./CppTests -r quiet
+        ./CppTests -r quiet --min-duration 10
         popd
         echo "\n\n"
         pushd C/tests
@@ -93,9 +93,9 @@ jobs:
       run: |
         mkdir -p /c/tmp
         pushd LiteCore/tests/$BUILD_TYPE
-        ./CppTests.exe -r quiet
+        ./CppTests.exe -r quiet --min-duration 10
         popd
         echo "\n\n"
         pushd C/tests/$BUILD_TYPE
-        ./C4Tests.exe -r quiet
+        ./C4Tests.exe -r quiet --min-duration 10
         popd
