@@ -106,8 +106,11 @@ namespace litecore {
     void QueryTranslator::assignTableNameToSource(SourceNode* source, ParseContext& ctx) {
         if ( source->tableName().empty() ) {
             string tableName = tableNameForSource(source, ctx);
-            if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) )
+            printf("Windows Debug - assignTableNameToSource, tableName = %s\n", tableName.c_str());
+            if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) ) {
+                printf("Windows Debug - goint to setTableName()\n");
                 source->setTableName(ctx.newString(tableName));
+            }
         }
     }
 
@@ -136,7 +139,10 @@ namespace litecore {
             if ( auto index = dynamic_cast<IndexSourceNode*>(source) ) {
                 switch ( index->indexType() ) {
                     case IndexType::FTS:
+                        printf("Windows Debug - tableName(I)/ID = %s/%s\n", tableName.c_str(),
+                               string(index->indexID()).c_str());
                         tableName = _delegate.FTSTableName(tableName, string(index->indexID()));
+                        printf("Windows Debug - tableName(II) = %s\n", tableName.c_str());
                         _ftsTables.push_back(tableName);
                         break;
 #ifdef COUCHBASE_ENTERPRISE
