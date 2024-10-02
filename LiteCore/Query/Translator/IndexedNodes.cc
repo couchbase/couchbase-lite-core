@@ -40,7 +40,8 @@ namespace litecore::qt {
     }
 
     void IndexedNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const {
-        require(!tableName.empty(), "missing %s index", kIndexTypeName[int(_type)]);
+        printf("Windows Debug - missing %s index (%p)\n", kIndexTypeName[int(_type)], this);
+        require(!tableName.empty(), "missing %s index (%p)", kIndexTypeName[int(_type)], this);
         ctx << sqlIdentifier(tableName);
     }
 
