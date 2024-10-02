@@ -23,9 +23,9 @@ using namespace std;
 class RESTClientTest : public ReplicatorAPITest {
   public:
 #if TEST_PROXIES
-    static const int numberOfOptions = 2;
+    static constexpr int numberOfOptions = 2;
 #else
-    static const int numberOfOptions = 1;
+    static constexpr int numberOfOptions = 1;
 #endif
 
     explicit RESTClientTest(int option) : ReplicatorAPITest() {

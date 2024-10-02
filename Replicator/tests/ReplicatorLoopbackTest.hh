@@ -54,9 +54,9 @@ class ReplicatorLoopbackTest
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
 #if SkipVersionVectorTest
-    ReplicatorLoopbackTest() : ReplicatorLoopbackTest(0) {}
+    static constexpr int numberOfOptions = 1;
 #else
-    ReplicatorLoopbackTest() : ReplicatorLoopbackTest(GENERATE(0, 1)) {}
+    static constexpr int numberOfOptions = 2;
 #endif
 
     ReplicatorLoopbackTest(int which) : C4Test(which), db2(createDatabase("2")) {

@@ -26,9 +26,7 @@
 
 class SIFTVectorQueryTest : public VectorQueryTest {
   public:
-    SIFTVectorQueryTest(int which) : VectorQueryTest(which) {}
-
-    SIFTVectorQueryTest() : VectorQueryTest(0) {}
+    explicit SIFTVectorQueryTest(int which = 0) : VectorQueryTest(which) {}
 
     IndexSpec::VectorOptions vectorIndexOptions() const {
         return IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);

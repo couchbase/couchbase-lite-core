@@ -30,20 +30,18 @@ using namespace fleece::impl;
 
 class QueryTest : public DataFileTestFixture {
   public:
-    static const int numberOfOptions = 5;
+    static constexpr int numberOfOptions = 5;
 
     string collectionName;
     int    option{0};
 
   protected:
-    QueryTest() : QueryTest(0) {}
-
     static constexpr slice kCollectionNameOptions[numberOfOptions] = {
             KeyStore::kDefaultCollectionName, "_", "Secondary", "_default.Secondary", "scopey.subsidiary"};
     static constexpr slice kKeyStoreNameOptions[numberOfOptions] = {nullslice, nullslice, ".Secondary", ".Secondary",
                                                                     ".scopey.subsidiary"};
 
-    explicit QueryTest(int option) : option(option) {
+    explicit QueryTest(int opt = 0) : option(opt) {
         Assert(option < numberOfOptions, "Test option out of valid range");
         collectionName = kCollectionNameOptions[option];
         logSection(stringprintf("Collection `%s`", collectionName.c_str()));

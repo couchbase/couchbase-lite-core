@@ -38,7 +38,9 @@ using CollectionOptions = Options::CollectionOptions;
 
 class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
   public:
-    ReplicatorCollectionTest() {
+    ReplicatorCollectionTest(int which)
+    :ReplicatorLoopbackTest(which)
+    {
         db->createCollection(Guitars);
         db->createCollection(Roses);
         db->createCollection(Tulips);
@@ -239,19 +241,19 @@ class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
     }
 };
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push][Pull]") {
     vector<CollectionSpec> specs = {CollectionSpec("dummy1"_sl), CollectionSpec("dummy2"_sl)};
     ExpectingExceptions    x;
     _expectedError = {LiteCoreDomain, kC4ErrorNotFound};
     runPushPullReplication(specs, specs);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][Pull]") {
     _expectedError = {WebSocketDomain, 404};
     runPushPullReplication({Roses, Lavenders}, {Tulips, Lavenders});
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]") {
     ExpectingExceptions x;
     _expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
     runPushPullReplication({}, {});
@@ -310,7 +312,7 @@ struct CheckDBEntries {
     vector<set<string>>      _db2Before;
 };
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
 #ifdef LITECORE_CPPTEST
     bool collectionAwareActive  = GENERATE(false, true);
     bool collectionAwareOnEntry = repl::Options::sActiveIsCollectionAware;
@@ -369,7 +371,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
     addDocs(db, Guitars, 10);
     addDocs(db2, Guitars, 10);
 
@@ -418,7 +420,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[Push][Pull]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
     addDocs(db, Lavenders, 10);
@@ -476,7 +478,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Push and Pull", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Push and Pull", "[Push][Pull]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
     addDocs(db2, Roses, 10);
@@ -499,7 +501,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Pus
     validateCollectionCheckpoints(db, db2, 1, R"({"local":22,"remote":24})");
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Revisions", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Revisions", "[Push][Pull]") {
     addDocs(db, Roses, 2, "db-Roses-");
     addDocs(db, Tulips, 2, "db-Tulips-");
     C4Collection* roses   = getCollection(db, Roses);
@@ -584,7 +586,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
 }
 
 // Failed : CBL-3500
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-3500]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-3500]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
 
@@ -607,7 +609,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-
     validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
 
@@ -630,7 +632,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]
     validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][Pull]") {
     vector<string>    attachments1 = {"Attachment A", "Attachment B", "Attachment Z"};
     vector<C4BlobKey> blobKeys1a, blobKeys1b;
     {
@@ -664,7 +666,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][
     checkAttachments(db2, blobKeys2b, attachments2);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
     int  resolveCount = 0;
     auto resolver     = [&resolveCount](CollectionSpec spec, C4Document* localDoc, C4Document* remoteDoc) {
         resolveCount++;
@@ -750,7 +752,7 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with Collections",
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with Collections",
                  "[Push][Pull][Encryption]") {
     const bool TestDecryption = GENERATE(false, true);
     C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
@@ -827,7 +829,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with 
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters]") {
     string db_roses   = "db-roses-";
     string db_tulips  = "db-tulips-";
     string db2_roses  = "db2-roses-";
