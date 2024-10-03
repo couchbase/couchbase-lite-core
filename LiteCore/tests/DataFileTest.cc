@@ -32,6 +32,7 @@ using namespace std;
 class KeyStoreTestFixture : public DataFileTestFixture {
   public:
     static constexpr int numberOfOptions = 2;
+    static constexpr const char* nameOfOption[numberOfOptions] = { "SQLiteKeyStore", "BothKeyStore" };
 
     KeyStoreTestFixture(int option) {
         if ( int(option) == 0 ) {

@@ -31,6 +31,8 @@ using namespace fleece::impl;
 class QueryTest : public DataFileTestFixture {
   public:
     static constexpr int numberOfOptions = 5;
+    static constexpr const char* nameOfOption[numberOfOptions] = { "Collection `_default`", "Collection `_`", "Collection `Secondary`",
+    "Collection `_default.Secondary`", "Collection `scopey.subsidiary`"};
 
     string collectionName;
     int    option{0};
@@ -44,7 +46,6 @@ class QueryTest : public DataFileTestFixture {
     explicit QueryTest(int opt = 0) : option(opt) {
         Assert(option < numberOfOptions, "Test option out of valid range");
         collectionName = kCollectionNameOptions[option];
-        logSection(stringprintf("Collection `%s`", collectionName.c_str()));
         if ( slice keyStoreName = kKeyStoreNameOptions[option] ) store = &db->getKeyStore(keyStoreName);
     }
 

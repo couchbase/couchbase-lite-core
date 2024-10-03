@@ -188,8 +188,10 @@ class C4Test {
 #if defined(COUCHBASE_ENTERPRISE)
 #    if SkipVersionVectorTest
     static constexpr int numberOfOptions = 2;  // rev-tree, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = { "RevTree", "EncryptedRevTree" };
 #    else
     static constexpr int numberOfOptions = 3;  // rev-tree, version vector, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = { "RevTree", "VersionVector", "EncryptedRevTree" };
 #    endif
 #else
 #    if SkipVersionVectorTest
@@ -197,6 +199,7 @@ class C4Test {
 #    else
     static constexpr int numberOfOptions = 2;  // rev-tree, version vector
 #    endif
+    static constexpr const char* nameOfOption[2] = { "RevTree", "VersionVector" };
 #endif
 
     static std::string sFixturesDir;            // directory where test files live

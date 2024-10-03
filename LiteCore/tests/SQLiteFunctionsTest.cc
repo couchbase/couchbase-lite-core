@@ -31,6 +31,7 @@ class SQLiteFunctionsTest
     , DataFile::Delegate {
   public:
     static constexpr int numberOfOptions = 2;
+    static constexpr const char* nameOfOption[numberOfOptions] = { "No SharedKeys", "With SharedKeys" };
 
     explicit SQLiteFunctionsTest(int which) : db(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE) {
         // Run test once with shared keys, once without:
