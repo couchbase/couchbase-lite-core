@@ -38,9 +38,7 @@ using CollectionOptions = Options::CollectionOptions;
 
 class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
   public:
-    ReplicatorCollectionTest(int which)
-    :ReplicatorLoopbackTest(which)
-    {
+    ReplicatorCollectionTest(int which) : ReplicatorLoopbackTest(which) {
         db->createCollection(Guitars);
         db->createCollection(Roses);
         db->createCollection(Tulips);
@@ -728,7 +726,7 @@ using CipherContextMap = unordered_map<C4CollectionSpec, CipherContext*>;
 static mutex sCatchMutex;
 
 static void validateCipherInputs(void* ctx, C4CollectionSpec& spec, C4String& docID, C4String& keyPath) {
-    unique_lock lock(sCatchMutex); // I may be called on multiple threads, but Catch is not thread-safe
+    unique_lock lock(sCatchMutex);  // I may be called on multiple threads, but Catch is not thread-safe
 
     auto contextMap = (CipherContextMap*)ctx;
     auto i          = contextMap->find(spec);
@@ -757,7 +755,7 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
 }
 
 N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with Collections",
-                 "[Push][Pull][Encryption]") {
+                       "[Push][Pull][Encryption]") {
     const bool TestDecryption = GENERATE(false, true);
     C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
 

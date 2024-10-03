@@ -168,8 +168,7 @@ class ReplicatorLoopbackTest
         CHECK((createReplicatorThrew || _gotResponse));
         CHECK((createReplicatorThrew || _statusChangedCalls > 0));
         CHECK(_statusReceived.level == kC4Stopped);
-        CHECK(_statusReceived.error.code == _expectedError.code);
-        if ( _expectedError.code ) CHECK(_statusReceived.error.domain == _expectedError.domain);
+        CHECK(_statusReceived.error == _expectedError);
         if ( !(_ignoreLackOfDocErrors && _docPullErrors.empty()) )
             CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
         if ( !(_ignoreLackOfDocErrors && _docPushErrors.empty()) )

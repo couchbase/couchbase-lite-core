@@ -1050,7 +1050,8 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[
     compareDatabases();
 }
 
-N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pull][Push][Conflict][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently",
+                       "[Pull][Push][Conflict][NoConflicts]") {
     // CBL-726: Push conflict but server rev is just a newer ancestor of the local rev.
     // Local:  1-abcd -- 2-c001d00d -- 3-deadbeef -- 4-baba    (known remote rev: 2)
     // Server: 1-abcd -- 2-c001d00d -- 3-deadbeef
