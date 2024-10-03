@@ -725,7 +725,11 @@ struct CipherContext {
 
 using CipherContextMap = unordered_map<C4CollectionSpec, CipherContext*>;
 
+static mutex sCatchMutex;
+
 static void validateCipherInputs(void* ctx, C4CollectionSpec& spec, C4String& docID, C4String& keyPath) {
+    unique_lock lock(sCatchMutex); // I may be called on multiple threads, but Catch is not thread-safe
+
     auto contextMap = (CipherContextMap*)ctx;
     auto i          = contextMap->find(spec);
     REQUIRE(i != contextMap->end());
