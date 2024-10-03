@@ -213,7 +213,10 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
 }
 
 C4Test::~C4Test() {
-    if ( db ) deleteDatabase();
+    if ( db ) {
+        CHECK(c4db_delete(db, WITH_ERROR()));
+        c4db_release(db);
+    }
 
     if ( !current_exception() ) {
         // Check for leaks:
