@@ -121,7 +121,7 @@ namespace litecore {
         return ret;
     }
 
-
+    
 #pragma mark - DATAFILE:
 
 
@@ -190,7 +190,7 @@ namespace litecore {
             // getKeyStore will reopen them on demand
             i.second->close();
         }
-
+        
         _shared->addDataFile(this);
     }
 
@@ -299,7 +299,7 @@ namespace litecore {
                     std::this_thread::sleep_for(100ms);
                 }
             }
-
+            
             if (file)
                 file->close(true);
             bool result = factory._deleteFile(FilePath(shared->path), options);
@@ -350,7 +350,7 @@ namespace litecore {
         logDebug("close KVS '%s'", name.c_str());
         auto i = _keyStores.find(name);
         if (i != _keyStores.end()) {
-            // Never remove a KeyStore from _keyStores: there may be objects pointing to it
+            // Never remove a KeyStore from _keyStores: there may be objects pointing to it 
             i->second->close();
         }
     }
@@ -369,15 +369,13 @@ namespace litecore {
 
 
     fleece::impl::SharedKeys* DataFile::documentKeys() const {
-        std::call_once(_documentKeysOnce, [this] {
-            auto keys = _documentKeys.get();
-            if ( !keys && _options.useDocumentKeys ) {
-                auto mutableThis = const_cast<DataFile*>(this);
-                keys             = new DocumentKeys(*mutableThis);
-                _documentKeys    = keys;
-            }
-        });
-        return _documentKeys.get();
+        auto keys = _documentKeys.get();
+        if (!keys && _options.useDocumentKeys) {
+            auto mutableThis = const_cast<DataFile*>(this);
+            keys = new DocumentKeys(*mutableThis);
+            _documentKeys = keys;
+        }
+        return keys;
     }
 
 #pragma mark - QUERIES:
@@ -405,7 +403,7 @@ namespace litecore {
 
 #pragma mark - TRANSACTION:
 
-
+    
     void DataFile::beginTransactionScope(ExclusiveTransaction* t) {
         Assert(!_inTransaction);
         checkOpen();
@@ -432,7 +430,7 @@ namespace litecore {
             ks.transactionWillEnd(committing);
         });
     }
-
+    
     void DataFile::endTransactionScope(ExclusiveTransaction* t) {
         _shared->unsetTransaction(t);
         _inTransaction = false;
