@@ -95,7 +95,10 @@ namespace litecore::qt {
 
         string_view tableName() const { return _tableName; }  ///< SQLite table name (set by QueryTranslator)
 
-        void setTableName(const char* name) { _tableName = name; }  ///< Sets SQLite table name
+        void setTableName(const char* name) {
+            printf("Windows Debug - setTableName(%s) %p\n", name, this);
+            _tableName = name;
+        }  ///< Sets SQLite table name
 
         bool matchPath(KeyPath& path) const override;
         void visitChildren(ChildVisitor const&) override;
