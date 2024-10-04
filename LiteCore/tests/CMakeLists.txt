@@ -69,6 +69,7 @@ add_executable(
     SQLiteFunctionsTest.cc
     SequenceTrackerTest.cc
     UpgraderTest.cc
+    VectorRecordTest.cc
     VectorQueryTest.cc
     LazyVectorQueryTest.cc
     VersionVectorTest.cc
@@ -101,7 +102,9 @@ add_executable(
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
-    main.cpp
+
+    ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
+    ${TOP}vendor/fleece/vendor/catch/CaseListReporter.cc
 )
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
