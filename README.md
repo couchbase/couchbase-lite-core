@@ -1,4 +1,4 @@
-**Couchbase Lite Core** (aka **LiteCore**) is the next-generation core storage and query engine for [Couchbase Lite][CBL]. It provides a cross-platform implementation of the database CRUD and query features, document versioning, and replication/sync.
+**Couchbase Lite Core** (aka **LiteCore**) is the core storage and query engine for [Couchbase Lite][CBL]. It provides a cross-platform implementation of the database CRUD and query features, document versioning, and replication/sync.
 
 All platform implementations of Couchbase Lite (from 2.0 onward) are built atop this core, adding higher-level language & platform bindings.
 
@@ -45,7 +45,7 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
 
 LiteCore runs on Mac OS, iOS, Android, various other flavors of Unix, and Windows.
 
-It is written in C++ (using C++17 features) and compiles with Clang, G++ and MSVC.
+It is written in C++ (using C++20 features) and compiles with Clang, G++ and MSVC.
 
 It has been experimentally built and run on the Raspberry Pi but this is not an actively maintained use.
 
@@ -80,11 +80,15 @@ If you want to use Objective-C or Swift APIs, you should use Couchbase Lite inst
 
 The following instructions are to build just LiteCore on its own:
 
-* Make sure you have Xcode **12.2** or later.
+* Make sure you have Xcode **15** or later.
 * Open **Xcode/LiteCore.xcodeproj**. 
 * Select the scheme **LiteCore static** or **LiteCore dylib**. 
 * Choose _Product>Build_ (for a debug build) or _Product>Build For>Profiling_ (for a release/optimized build).
 * Link the build product `libLiteCoreStatic.a` or `libLiteCore.dylib` into your target.
+
+### Testing
+
+In the Xcode project, choose the scheme **CppTests** and run it. Then run **C4Tests** too.
 
 ## Linux
 
@@ -96,10 +100,16 @@ The following instructions are to build just LiteCore on its own:
 
 You can use either g++ or clang++ for compilation but you will need to honor the minimum versions of each, and only g++ is officially supported.
 
-- clang: 5.0+
-    - libstdc++: 7.0+ **or**
-    - libc++: Version from LLVM 5 or higher (unclear)
-- g++: 7.0+
+- clang: 15.0+
+- g++: 11.0+
+
+On Ubuntu or Debian you can run e.g.
+
+```sh
+sudo apt-get install cmake gcc-11 g++-11 libicu-dev zlib1g-dev
+```
+
+and prefix the `cmake` line (below) with `CC=/usr/bin/gcc-11 CXX=/usr/bin/c++-11`
 
 ### Actually Building
 
@@ -117,6 +127,24 @@ make -j8 LiteCore
 ```
 
 If CMake's initial configuration checks fail, the setup may be left in a broken state and will then fail immediately. To remedy this simply delete the `unix` directory and try again.
+
+### Testing
+
+To run tests you'll want to use the Debug build type and enable the GCC address and undefined-behavior sanitizers. For complicated reasons we have two test binaries, called CppTests and C4Tests; the first tests internals and the second tests the API exported from the shared library.
+
+```sh
+mkdir build_cmake/unix_tests
+cd build_cmake/unix_tests
+
+cmake -DCMAKE_BUILD_TYPE=Debug -DLITECORE_SANITIZE=ON ../..
+make CppTests
+make C4Tests
+
+(cd LiteCore/tests && ./CppTests -r quiet)
+(cd C/tests && ./C4Tests -r quiet)
+```
+
+> Note: If you encounter a failure in one of the Fleece encoder tests, it's likely because your system doesn't have the French locale installed. Run `sudo localedef -v -c -i fr_FR -f UTF-8 fr_FR`.
 
 ## Android
 
