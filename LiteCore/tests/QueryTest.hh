@@ -30,9 +30,10 @@ using namespace fleece::impl;
 
 class QueryTest : public DataFileTestFixture {
   public:
-    static constexpr int numberOfOptions = 5;
-    static constexpr const char* nameOfOption[numberOfOptions] = { "Collection `_default`", "Collection `_`", "Collection `Secondary`",
-    "Collection `_default.Secondary`", "Collection `scopey.subsidiary`"};
+    static constexpr int         numberOfOptions               = 5;
+    static constexpr const char* nameOfOption[numberOfOptions] = {
+            "Collection `_default`", "Collection `_`", "Collection `Secondary`", "Collection `_default.Secondary`",
+            "Collection `scopey.subsidiary`"};
 
     string collectionName;
     int    option{0};

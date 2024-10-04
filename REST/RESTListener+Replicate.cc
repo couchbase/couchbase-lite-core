@@ -262,7 +262,7 @@ namespace litecore::REST {
 
         Array                         collections = params["collections"].asArray();
         std::vector<C4CollectionSpec> collSpecs;
-        if (collections.empty()) {
+        if ( collections.empty() ) {
             collSpecs.push_back(kC4DefaultCollectionSpec);
         } else {
             for ( Array::iterator iter(collections); iter; iter.next() ) {

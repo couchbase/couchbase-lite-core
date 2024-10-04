@@ -187,19 +187,19 @@ class C4Test {
     enum TestOptions { RevTreeOption = 0, VersionVectorOption, EncryptedRevTreeOption };
 #if defined(COUCHBASE_ENTERPRISE)
 #    if SkipVersionVectorTest
-    static constexpr int numberOfOptions = 2;  // rev-tree, rev-tree encrypted
-    static constexpr const char* nameOfOption[numberOfOptions] = { "RevTree", "EncryptedRevTree" };
+    static constexpr int         numberOfOptions               = 2;  // rev-tree, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "EncryptedRevTree"};
 #    else
-    static constexpr int numberOfOptions = 3;  // rev-tree, version vector, rev-tree encrypted
-    static constexpr const char* nameOfOption[numberOfOptions] = { "RevTree", "VersionVector", "EncryptedRevTree" };
+    static constexpr int         numberOfOptions               = 3;  // rev-tree, version vector, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "VersionVector", "EncryptedRevTree"};
 #    endif
 #else
 #    if SkipVersionVectorTest
-    static constexpr int numberOfOptions = 1;  // rev-tree
+    static constexpr int         numberOfOptions = 1;  // rev-tree
 #    else
     static constexpr int numberOfOptions = 2;  // rev-tree, version vector
 #    endif
-    static constexpr const char* nameOfOption[2] = { "RevTree", "VersionVector" };
+    static constexpr const char* nameOfOption[2] = {"RevTree", "VersionVector"};
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
