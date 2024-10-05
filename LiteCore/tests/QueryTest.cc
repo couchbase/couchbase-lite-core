@@ -13,6 +13,7 @@
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
 #include "Benchmark.hh"
+#include "SQLiteKeyStore.hh"
 #include <cstdint>
 #include <ctime>
 #include <cfloat>
@@ -85,6 +86,62 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayInd
     addArrayDocs();
     store->createIndex("nums"_sl, R"([])", IndexSpec::kArray, IndexSpec::ArrayOptions{"numbers"});
     store->deleteIndex("nums"_sl);
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Query][ArrayIndex]") {
+    addArrayDocs();
+
+    const SQLiteDataFile* sqlite = dynamic_cast<SQLiteDataFile*>(db.get());
+    REQUIRE(sqlite);
+
+    // Starts with no indexes
+    CHECK(store->getIndexes().size() == 0);
+
+    REQUIRE(store->createIndex("students_interests"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
+                               IndexSpec::ArrayOptions{"students[].interests"}));
+
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"students_interests"}));
+
+    // The KV table that unnest tables starts from.
+    string      kv          = "kv_" + SQLiteKeyStore::transformCollectionName(store->name(), true);
+    string      unnestHash1 = KeyStore::hexName(kv + ":unnest:students");
+    string      unnestHash2 = KeyStore::hexName(kv + ":unnest:students[].interests");
+    const char* triggers[]  = {"ins", "del", "preupdate", "postupdate"};
+
+    // The triggers installed on the KV table. There are 4 triggers
+    string trigger1s[4];
+    for ( int i = 0; i < 4; ++i ) trigger1s[i] = unnestHash1 + "::" + triggers[i];
+
+    // The triggers installed on 1st level array and applied to the 2nd array. There are two.
+    // No triggers for updates
+    string trigger2s[2];
+    for ( int i = 0; i < 2; ++i ) trigger2s[i] = unnestHash2 + "::" + triggers[i];
+
+    string sql;
+    bool   succ[8];
+    succ[0] = sqlite->getSchema(unnestHash1, "table", unnestHash1, sql);
+    succ[1] = sqlite->getSchema(unnestHash2, "table", unnestHash2, sql);
+    for ( int i = 0; i < 4; ++i ) succ[2 + i] = sqlite->getSchema(trigger1s[i], "trigger", kv, sql);
+    for ( int i = 0; i < 2; ++i ) succ[6 + i] = sqlite->getSchema(trigger2s[i], "trigger", unnestHash1, sql);
+
+    // Check that unnest tables are present and so are all the triggers.
+    bool succAll = succ[0];
+    for ( int i = 1; i < 8; ++i ) succAll = succAll && succ[i];
+    CHECK(succAll);
+
+    store->deleteIndex("students_interests"_sl);
+
+    CHECK(store->getIndexes().size() == 0);
+
+    succ[0] = sqlite->getSchema(unnestHash1, "table", unnestHash1, sql);
+    succ[1] = sqlite->getSchema(unnestHash2, "table", unnestHash2, sql);
+    for ( int i = 0; i < 4; ++i ) succ[2 + i] = sqlite->getSchema(trigger1s[i], "trigger", kv, sql);
+    for ( int i = 0; i < 2; ++i ) succ[6 + i] = sqlite->getSchema(trigger2s[i], "trigger", unnestHash1, sql);
+
+    // Check that all the above tables and triggers are dropped.
+    succAll = succ[0];
+    for ( int i = 1; i < 8; ++i ) succAll = succAll || succ[i];
+    CHECK(!succAll);
 }
 
 TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {

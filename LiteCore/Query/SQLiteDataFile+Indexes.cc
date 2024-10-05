@@ -99,6 +99,9 @@ namespace litecore {
                     case IndexSpec::kVector:
                         same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
                         break;
+                    case IndexSpec::kArray:
+                        same = schemaExistsWithSQL(spec.name, "index", KeyStore::hexName(indexTableName), indexSQL);
+                        break;
                     default:
                         same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
                         break;
@@ -122,26 +125,68 @@ namespace litecore {
         unregisterIndex(spec.name);
         if ( spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector )
             exec(CONCAT("DROP INDEX IF EXISTS " << sqlIdentifier(spec.name)));
-        if ( !spec.indexTableName.empty() ) garbageCollectIndexTable(spec.indexTableName);
+        if ( !spec.indexTableName.empty() ) garbageCollectIndexTable(spec);
     }
 
     // Drops unnested-array tables that no longer have any indexes on them.
-    void SQLiteDataFile::garbageCollectIndexTable(const string& tableName) {
-        {
-            SQLite::Statement stmt(*this, "SELECT name FROM indexes WHERE indexTableName=?");
-            stmt.bind(1, tableName);
-            if ( stmt.executeStep() ) return;
+    void SQLiteDataFile::garbageCollectIndexTable(const SQLiteIndexSpec& spec) {
+        string              tableName = spec.indexTableName;  // tableName is in plain form.
+        std::vector<string> unnestTables;
+        if ( spec.type == IndexSpec::kArray ) {
+            for ( size_t pos = 0; pos != string::npos; ) {
+                pos = tableName.find(KeyStore::kUnnestLevelSeparator, pos);
+                if ( pos != string::npos ) {
+                    unnestTables.push_back(tableName.substr(0, pos));
+                    pos += KeyStore::kUnnestLevelSeparator.size;
+                } else {
+                    unnestTables.push_back(tableName);
+                }
+            }
+            // Assertion: unnestTables.back() == tableName
         }
 
-        LogTo(QueryLog, "Dropping unused index table '%s'", tableName.c_str());
-        exec(CONCAT("DROP TABLE " << sqlIdentifier(tableName) << ""));
+        size_t unnestLevel = unnestTables.size();
+        // Invariant: spec.type != IndexSpec::kArray || unnestLevel >= 1
+        while ( true ) {
+            {
+                // Check that if the index table still exists. If so, don't do GC
+                SQLite::Statement stmt(*this, "SELECT name FROM indexes WHERE indexTableName=?");
+                stmt.bind(1, tableName);
+                if ( stmt.executeStep() ) return;
+            }
+            if ( spec.type == IndexSpec::kArray ) {
+                // Assertion: unnestLevel >= 1
+                // check if it has index on child/nested array. If so, we cannot GC
+                SQLite::Statement stmt(*this, "SELECT name FROM indexes WHERE indexTableName like ?");
+                stmt.bind(1, unnestTables[unnestLevel - 1] + string(KeyStore::kUnnestLevelSeparator) + "%");
+                // This table has child table. Don't delete it and its parent
+                if ( stmt.executeStep() ) return;
 
-        stringstream       sql;
-        static const char* kTriggerSuffixes[] = {"ins", "del", "upd", "preupdate", "postupdate", nullptr};
-        for ( int i = 0; kTriggerSuffixes[i]; ++i ) {
-            sql << "DROP TRIGGER IF EXISTS \"" << tableName << "::" << kTriggerSuffixes[i] << "\";";
+                tableName = KeyStore::hexName(tableName);  // Now, it's the true table name, hashed.
+                // Move on to delete the unused tables.
+            }
+
+            LogTo(QueryLog, "Dropping unused index table '%s'", tableName.c_str());
+            exec(CONCAT("DROP TABLE " << sqlIdentifier(tableName) << ""));
+
+            static const char* kTriggerSuffixes[]       = {"ins", "del", "upd", "preupdate", "postupdate", nullptr};
+            static const char* kNestedTriggerSuffixes[] = {"ins", "del", nullptr};
+
+            const char** triggerSuffixes = kTriggerSuffixes;
+            if ( unnestLevel > 1 ) triggerSuffixes = kNestedTriggerSuffixes;
+
+            {
+                stringstream sql;
+                for ( int i = 0; triggerSuffixes[i]; ++i ) {
+                    sql << "DROP TRIGGER IF EXISTS \"" << tableName << "::" << triggerSuffixes[i] << "\";";
+                }
+                exec(sql.str());
+            }
+
+            if ( unnestLevel-- <= 1 ) return;
+            else
+                tableName = unnestTables[unnestLevel - 1];
         }
-        exec(sql.str());
     }
 
 #pragma mark - GETTING INDEX INFO:

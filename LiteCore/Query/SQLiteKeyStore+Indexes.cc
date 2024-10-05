@@ -88,8 +88,10 @@ namespace litecore {
     bool SQLiteKeyStore::createIndex(const IndexSpec& spec, const string& sourceTableName,
                                      Array::iterator& expressions) {
         Assert(spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector);
-        QueryParser qp(db(), "", sourceTableName);
-        qp.writeCreateIndex(spec.name, sourceTableName, expressions, spec.where(), (spec.type != IndexSpec::kValue));
+        string      hexName{spec.type == IndexSpec::kArray ? KeyStore::hexName(sourceTableName) : ""};
+        QueryParser qp(db(), "", hexName.empty() ? sourceTableName : hexName);
+        qp.writeCreateIndex(spec.name, hexName.empty() ? sourceTableName : hexName, expressions, spec.where(),
+                            (spec.type != IndexSpec::kValue));
         string sql = qp.SQL();
         return db().createIndex(spec, this, sourceTableName, sql);
     }

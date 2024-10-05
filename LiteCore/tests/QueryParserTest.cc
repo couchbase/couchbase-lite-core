@@ -456,7 +456,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][QueryPar
 }
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST optimized", "[Query][QueryParser]") {
-    string hashedUnnestTable = (SHA1Builder{} << "kv_default:unnest:notes").finish().asSlice().hexString();
+    string hashedUnnestTable = KeyStore::hexName("kv_default:unnest:notes");
     tableNames.insert(hashedUnnestTable);
     if ( '0' <= hashedUnnestTable[0] && hashedUnnestTable[0] <= '9' )
         hashedUnnestTable = "\""s + hashedUnnestTable + "\"";
@@ -496,7 +496,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST with collections", 
              "(fl_nested_value(notes.body, 'page') > 100) AND (library.flags & 1 = 0)");
 
     // Same, but optimized:
-    string hashedUnnestTable = (SHA1Builder{} << "kv_.books:unnest:notes").finish().asSlice().hexString();
+    string hashedUnnestTable = KeyStore::hexName("kv_.books:unnest:notes");
     tableNames.insert(hashedUnnestTable);
     if ( '0' <= hashedUnnestTable[0] && hashedUnnestTable[0] <= '9' )
         hashedUnnestTable = "\""s + hashedUnnestTable + "\"";

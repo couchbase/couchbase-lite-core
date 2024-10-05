@@ -472,7 +472,8 @@ namespace litecore {
                     _kvTables.insert(entry.tableName);
                 } else {
                     require(!entry.on, "cannot use ON and UNNEST together");
-                    auto [plainUnnestTable, unnestTable] = unnestedTableName(entry.unnest);
+                    string plainUnnestTable = unnestedTableName(entry.unnest);
+                    string unnestTable      = KeyStore::hexName(plainUnnestTable);
                     if ( _delegate.tableExists(unnestTable) ) {
                         entry.type           = kUnnestTableAlias;
                         entry.tableName      = unnestTable;
@@ -537,13 +538,14 @@ namespace litecore {
                     case kUnnestTableAlias:
                         {
                             // UNNEST: Optimize query by using the unnest table as a join source
-                            auto [plainUnnestTable, unnestTable] = unnestedTableName(entry.unnest);
-                            string parentTable                   = parentUnnestedTableName(plainUnnestTable);
-                            auto   parentIt = std::find_if(_aliases.begin(), _aliases.end(), [&](auto& entry) {
+                            string plainUnnestTable = unnestedTableName(entry.unnest);
+                            string parentTable      = parentUnnestedTableName(plainUnnestTable);
+                            auto   parentIt         = std::find_if(_aliases.begin(), _aliases.end(), [&](auto& entry) {
                                 return entry.second.tableName == parentTable;
                             });
                             require(parentIt != _aliases.end(), "parent table \"%s\" must be in the FROM clause.",
                                     parentTable.c_str());
+                            string unnestTable = KeyStore::hexName(plainUnnestTable);
                             _sql << " JOIN " << sqlIdentifier(unnestTable) << " AS " << sqlIdentifier(entry.alias)
                                  << " ON " << sqlIdentifier(entry.alias) << ".docid=" << sqlIdentifier(parentIt->first)
                                  << ".rowid";
@@ -2079,8 +2081,8 @@ namespace litecore {
         return sha.finish().asBase64();
     }
 
-    // Returns the index table name for an unnested array property in plain and hashed forms.
-    pair<string, string> QueryParser::unnestedTableName(const Value* arrayExpr) const {
+    // Returns the index table name for an unnested array property.
+    string QueryParser::unnestedTableName(const Value* arrayExpr) const {
         string table = _defaultTableName;
         Path   path  = propertyFromNode(arrayExpr);
         string propertyStr;
@@ -2104,8 +2106,7 @@ namespace litecore {
             // It's some other expression; make a unique digest of it:
             propertyStr = expressionIdentifier(arrayExpr->asArray());
         }
-        string plainName = _delegate.unnestedTableName(table, propertyStr);
-        return {plainName, (SHA1Builder{} << plainName).finish().asSlice().hexString()};
+        return _delegate.unnestedTableName(table, propertyStr);
     }
 
     // Returns the parent table of the unnestedTable. If the parent table is an unnest table, returned hashed form.
@@ -2116,7 +2117,7 @@ namespace litecore {
         auto parentTable = unnestTable.substr(0, pos);
         if ( parentTable.find(KeyStore::kUnnestSeparator) == string::npos ) return parentTable;
         else
-            return (SHA1Builder{} << parentTable).finish().asSlice().hexString();
+            return KeyStore::hexName(parentTable);
     }
 
 #pragma mark - PREDICTIVE QUERY:

@@ -16,6 +16,7 @@
 #endif
 #include "IndexSpec.hh"
 #include "RecordEnumerator.hh"
+#include "SecureDigest.hh"
 #include <optional>
 #include <utility>
 #include <vector>
@@ -83,6 +84,10 @@ namespace litecore {
         [[nodiscard]] static bool isValidCollectionName(slice name);
         /// Returns true if this is a valid collection name, or a scope plus a collection name.
         [[nodiscard]] static bool isValidCollectionNameWithScope(slice name);
+
+        [[nodiscard]] static std::string hexName(string_view name) {
+            return (SHA1Builder{} << name).finish().asSlice().hexString();
+        }
 
         /// This KeyStore's collection name. Throws an exception if it's not a collection.
         [[nodiscard]] std::string collectionName() const;

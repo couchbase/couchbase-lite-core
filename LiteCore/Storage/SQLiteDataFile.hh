@@ -190,7 +190,7 @@ namespace litecore {
         void                         registerIndex(const litecore::IndexSpec&, const std::string& keyStoreName,
                                                    const std::string& indexTableName);
         void                         unregisterIndex(slice indexName);
-        void                         garbageCollectIndexTable(const std::string& tableName);
+        void                         garbageCollectIndexTable(const SQLiteIndexSpec&);
         SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt) const;
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr) const;
 
