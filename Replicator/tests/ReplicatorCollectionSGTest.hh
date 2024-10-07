@@ -159,7 +159,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
                     c4enum_getDocumentInfo(e, &info);
                     auto it = docIDs[i].find(info.docID);
                     CHECK(it != docIDs[i].end());
-                    CHECK(it->second == c4rev_getGeneration(info.revID));
+                    CHECK(it->second == c4rev_getTimestamp(info.revID));
                 }
                 CHECK(count == docIDs[i].size());
             } else {
@@ -227,6 +227,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         new (&_testUser) SG::TestUser{_sg, username, channelIDs, collSpecs};
         _options       = createOptionsAuth(_testUser._username, _testUser._password);
         _sg.authHeader = _testUser.authHeader();
+        _sg.useRevTrees = isRevTrees();
         _docIDs.resize(_collectionCount);
         REQUIRE(sgVersionCheck());
     }

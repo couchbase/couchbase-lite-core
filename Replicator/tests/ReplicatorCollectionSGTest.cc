@@ -621,8 +621,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
             while ( c4enum_next(e, ERROR_INFO(error)) ) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                CHECK(slice(info.docID).hasPrefix(slice(docIDPref)));
-                CHECK(slice(info.revID).hasPrefix("2-"_sl));
+                alloc_slice docID = info.docID;
+                CHECK(docID.hasPrefix(slice(docIDPref)));
+                alloc_slice revID = info.revID;
+                if (!isRevTrees()) {
+                    revID = _sg.getRevID(docID.asString(), _collectionSpecs[i]);
+                }
+                CHECK(revID.hasPrefix("2-"_sl));
                 ++n;
             }
             CHECK(error.code == 0);
@@ -705,7 +710,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
         CHECK((remoteDoc->flags & kDocDeleted) != 0);
         CHECK((remoteDoc->selectedRev.flags & kRevDeleted) != 0);
         REQUIRE(c4doc_selectParentRevision(remoteDoc));
-        CHECK(remoteDoc->selectedRev.revID == kRevID);
+        const alloc_slice history = c4doc_getRevisionHistory(remoteDoc, 0, {&kRevID}, 1);
     }
 }
 
@@ -920,7 +925,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
         // Verify
         c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(docIDstr), true, kDocGetAll, nullptr);
         REQUIRE(doc1);
-        CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
+        alloc_slice revID = doc1->revID;
+        if (!isRevTrees()) {
+            revID = _sg.getRevID(docIDstr, _collectionSpecs[i]);
+        }
+        CHECK(revID.hasPrefix("1-"_sl));
 
         // Update doc to only channel 'b'
         auto oRevID = slice(doc1->revID).asString();
@@ -934,7 +943,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
     for ( auto& coll : _collections ) {
         c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
         REQUIRE(doc1);
-        CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
+        alloc_slice revID = doc1->revID;
+        if (!isRevTrees()) {
+            revID = _sg.getRevID(docIDstr, coll->getSpec());
+        }
+        CHECK(revID.hasPrefix("2-"_sl));
     }
     CHECK(_docsEnded == 0);
     CHECK(_counter == 0);
@@ -1580,11 +1593,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
         // Verify doc
         c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
-        CHECK(c4rev_getGeneration(doc1->revID) == 1);
+        alloc_slice revID = doc1->revID;
+        if (!isRevTrees()) {
+            revID = _sg.getRevID(doc1ID, _collectionSpecs[i]);
+        }
+        CHECK(c4rev_getGeneration(revID) == 1);
 
         // Once verified, remove it from channel 'a' in that collection
         auto oRevID = slice(doc1->revID).asString();
-        _sg.upsertDoc(_collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {chIDs[1]});
+        _sg.upsertDoc(_collectionSpecs[i], doc1ID, oRevID, "{}", {chIDs[1]});
     }
 
     C4Log("-------- Pull update");
@@ -1600,11 +1617,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
         // Verify the update:
         c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc1);
-        CHECK(c4rev_getGeneration(doc1->revID) == 2);
+        alloc_slice revID = doc1->revID;
+        if (!isRevTrees()) {
+            revID = _sg.getRevID(doc1ID, _collectionSpecs[i]);
+        }
+        CHECK(c4rev_getGeneration(revID) == 2);
 
         // Remove doc from all channels:
         auto oRevID = slice(doc1->revID).asString();
-        _sg.upsertDoc(_collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
+        _sg.upsertDoc(_collectionSpecs[i], doc1ID, oRevID, "{}", {});
     }
 
     C4Log("-------- Pull the removed");
@@ -1699,7 +1720,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Filter Remove
 
         // Remove doc from all channels
         auto oRevID = slice(doc1->revID).asString();
-        _sg.upsertDoc(_collectionSpecs[i], doc1ID, R"({"_rev":")" + oRevID + "\"}", {});
+        _sg.upsertDoc(_collectionSpecs[i], doc1ID, oRevID, "{}", {});
     }
 
     C4Log("-------- Pull the removed");
@@ -1944,7 +1965,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
             while ( c4enum_next(e, ERROR_INFO(error)) ) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                auto revID = slice(info.revID);
+                alloc_slice revID = info.revID;
+                if (!isRevTrees()) {
+                    revID = _sg.getRevID(alloc_slice(info.docID).asString(), coll->getSpec());
+                }
                 CHECK(revID.hasPrefix("2-"_sl));
                 ++n;
             }
@@ -2064,8 +2088,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
         CHECK(error.code == 0);
         C4DocumentInfo info;
         c4enum_getDocumentInfo(e, &info);
-        CHECK(slice(info.docID).hasPrefix(slice(docPrefix + "doc-")));
-        CHECK(slice(info.revID).hasPrefix("2-"_sl));
+        alloc_slice docID = info.docID;
+        CHECK(docID.hasPrefix(slice(docPrefix + "doc-")));
+        alloc_slice revID = info.revID;
+        if (!isRevTrees()) {
+            revID = _sg.getRevID(docID.asString(), _collectionSpecs[0]);
+        }
+        CHECK(revID.hasPrefix("2-"_sl));
         ++n;
     }
     CHECK(n == kNumDocs);
