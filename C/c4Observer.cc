@@ -64,7 +64,6 @@ namespace litecore {
         Retained<CollectionImpl>           _collection;
         optional<CollectionChangeNotifier> _notifier;
         Callback                           _callback;
-        bool                               _inCallback{false};
     };
 
 }  // namespace litecore

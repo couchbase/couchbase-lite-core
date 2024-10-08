@@ -118,7 +118,7 @@ namespace litecore {
         optional<uint64_t> time = in.readUVarInt();
         if ( !time ) throwBadBinary();
         _time = decompress(*time);
-        LITECORE_UNUSED bool current;
+        bool current;
         if ( !_author.readBinary(in, &current) ) throwBadBinary();
         validate();
     }

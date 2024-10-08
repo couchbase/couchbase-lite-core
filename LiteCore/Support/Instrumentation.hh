@@ -52,11 +52,11 @@ namespace litecore {
         uintptr_t  _param1, _param2;
 
 #else
-        static inline void mark(Type, uintptr_t param = 0, uintptr_t param2 = 0) {}
+        static void mark(Type, uintptr_t param = 0, uintptr_t param2 = 0) {}
 
-        static inline void begin(Type, uintptr_t param = 0, uintptr_t param2 = 0) {}
+        static void begin(Type, uintptr_t param = 0, uintptr_t param2 = 0) {}
 
-        static inline void end(Type, uintptr_t param = 0, uintptr_t param2 = 0) {}
+        static void end(Type, uintptr_t param = 0, uintptr_t param2 = 0) {}
 
         Signpost(Type t) {}
 

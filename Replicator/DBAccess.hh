@@ -46,7 +46,7 @@ namespace litecore::repl {
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess() override;
 
-        static inline void AssertDBOpen(const Retained<C4Database>& db) {
+        static void AssertDBOpen(const Retained<C4Database>& db) {
             if ( !db ) {
                 litecore::error::_throw(litecore::error::Domain::LiteCore, litecore::error::LiteCoreError::NotOpen);
             }
@@ -153,7 +153,6 @@ namespace litecore::repl {
           private:
             AccessLockedDB::access<Retained<C4Database>&> _dba;
             C4Database::Transaction                       _t;
-            bool                                          _active{false};
         };
 
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only

@@ -37,10 +37,10 @@ namespace litecore {
         : Actor(QueryLog)
         , _database(db)
         , _backgroundDB(db->backgroundDatabase())
+        , _delegate(delegate)
         , _expression(query->expression())
         , _language(query->language())
-        , _continuous(continuous)
-        , _delegate(delegate) {
+        , _continuous(continuous) {
         logInfo("Created on Query %s", query->loggingName().c_str());
         // Note that we don't keep a reference to `_query`, because it's tied to `db`, but we
         // need to run the query on `_backgroundDB`. So instead we save the query text and

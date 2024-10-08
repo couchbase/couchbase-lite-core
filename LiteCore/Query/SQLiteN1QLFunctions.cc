@@ -35,6 +35,7 @@
 using namespace fleece;
 using namespace fleece::impl;
 using namespace std;
+using namespace std::chrono;
 
 namespace litecore {
 
@@ -116,7 +117,8 @@ namespace litecore {
     // Any argument that's a Fleece array will have all numeric values in it added.
     static void fl_array_sum(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         double sum = 0.0;
-        aggregateNumericArrayOperation(ctx, argc, argv, [&sum](double num, C4UNUSED bool& stop) { sum += num; });
+        aggregateNumericArrayOperation(ctx, argc, argv,
+                                       [&sum](double num, [[maybe_unused]] bool& stop) { sum += num; });
 
         sqlite3_result_double(ctx, sum);
     }
@@ -125,7 +127,7 @@ namespace litecore {
     static void fl_array_avg(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         double sum   = 0.0;
         double count = 0.0;
-        aggregateNumericArrayOperation(ctx, argc, argv, [&sum, &count](double num, C4UNUSED bool& stop) {
+        aggregateNumericArrayOperation(ctx, argc, argv, [&sum, &count](double num, [[maybe_unused]] bool& stop) {
             sum += num;
             count++;
         });
@@ -138,7 +140,7 @@ namespace litecore {
     }
 
     // array_contains(array, value) returns true if `array` contains `value`.
-    static void fl_array_contains(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void fl_array_contains(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         auto type = sqlite3_value_type(argv[0]);
         if ( type == SQLITE_NULL ) sqlite3_result_null(ctx);
         else if ( type != SQLITE_BLOB )
@@ -154,7 +156,7 @@ namespace litecore {
     // array_count() returns the number of non-null items in an array.
     static void fl_array_count(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         sqlite3_int64 count = 0;
-        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, C4UNUSED bool& stop) {
+        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, [[maybe_unused]] bool& stop) {
             if ( val->type() != valueType::kNull ) { count++; }
         });
 
@@ -181,7 +183,7 @@ namespace litecore {
     // array_length() returns the length of an array.
     static void fl_array_length(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         sqlite3_int64 count = 0;
-        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, C4UNUSED bool& stop) { count++; });
+        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, [[maybe_unused]] bool& stop) { count++; });
 
         sqlite3_result_int64(ctx, count);
     }
@@ -190,7 +192,7 @@ namespace litecore {
     static void fl_array_max(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         double max      = numeric_limits<double>::min();
         bool   nonEmpty = false;
-        aggregateNumericArrayOperation(ctx, argc, argv, [&max, &nonEmpty](double num, C4UNUSED bool& stop) {
+        aggregateNumericArrayOperation(ctx, argc, argv, [&max, &nonEmpty](double num, [[maybe_unused]] bool& stop) {
             max      = std::max(num, max);
             nonEmpty = true;
         });
@@ -206,7 +208,7 @@ namespace litecore {
     static void fl_array_min(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         double max      = numeric_limits<double>::max();
         bool   nonEmpty = false;
-        aggregateNumericArrayOperation(ctx, argc, argv, [&max, &nonEmpty](double num, C4UNUSED bool& stop) {
+        aggregateNumericArrayOperation(ctx, argc, argv, [&max, &nonEmpty](double num, [[maybe_unused]] bool& stop) {
             max      = std::min(num, max);
             nonEmpty = true;
         });
@@ -267,7 +269,7 @@ namespace litecore {
         } catch ( const std::exception& ) { sqlite3_result_error(ctx, "array_agg: exception!", -1); }
     }
 
-    static void array_agg_step(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void array_agg_step(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         array_agg(ctx, argv[0]);
     }
 
@@ -370,7 +372,7 @@ namespace litecore {
     }  // namespace
 
     // missingif(a,b) returns MISSING if a==b, else returns a.
-    static void missingif(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void missingif(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         if ( isMissing(argv[0]) || isMissing(argv[1]) ) {
             sqlite3_result_null(ctx);
             return;
@@ -388,7 +390,7 @@ namespace litecore {
     }
 
     // nullif(a,b) returns null if a==b, else returns a.
-    static void nullif(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void nullif(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         if ( isMissing(argv[0]) || isMissing(argv[1]) ) {
             sqlite3_result_null(ctx);
             return;
@@ -405,7 +407,7 @@ namespace litecore {
         }
     }
 
-    static void isvalued(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void isvalued(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         if ( isMissing(argv[0]) || isNull(argv[0]) ) {
             sqlite3_result_int(ctx, 0);
         } else {
@@ -641,7 +643,7 @@ namespace litecore {
     }
 
     // lower() converts all uppercase letters in a string to lowercase and returns the result.
-    static void lower(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void lower(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         changeCase(ctx, argv, false);
     }
 
@@ -743,7 +745,7 @@ namespace litecore {
     static void trim(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept { trim(ctx, argc, argv, 0); }
 
     // upper() converts all lowercase letters in a string to uppercase and returns the result.
-    static void upper(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void upper(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         changeCase(ctx, argv, true);
     }
 
@@ -873,21 +875,21 @@ namespace litecore {
 
             // atan2(y, x) returns the arctangent of y/x, i.e. the angle of the vector from the origin to
             // (x, y). It works correctly in all quadrants, and when x=0.
-            static void fl_atan2(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+            static void fl_atan2(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         if ( isNumeric(ctx, argv[0]) && isNumeric(ctx, argv[1]) )
             sqlite3_result_double(ctx, atan2(sqlite3_value_double(argv[0]), sqlite3_value_double(argv[1])));
     }
 
-    static void fl_power(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+    static void fl_power(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         if ( isNumeric(ctx, argv[0]) && isNumeric(ctx, argv[1]) )
             sqlite3_result_double(ctx, pow(sqlite3_value_double(argv[0]), sqlite3_value_double(argv[1])));
     }
 
-    static void fl_e(sqlite3_context* ctx, C4UNUSED int argc, C4UNUSED sqlite3_value** argv) {
+    static void fl_e(sqlite3_context* ctx, [[maybe_unused]] int argc, [[maybe_unused]] sqlite3_value** argv) {
         sqlite3_result_double(ctx, M_E);
     }
 
-    static void fl_pi(sqlite3_context* ctx, C4UNUSED int argc, C4UNUSED sqlite3_value** argv) {
+    static void fl_pi(sqlite3_context* ctx, [[maybe_unused]] int argc, [[maybe_unused]] sqlite3_value** argv) {
         sqlite3_result_double(ctx, M_PI);
     }
 
@@ -940,7 +942,7 @@ namespace litecore {
     static void fl_trunc(sqlite3_context* ctx, int argc, sqlite3_value** argv) { roundTo(ctx, argc, argv, trunc); }
 
     // sign(n) returns the numeric sign of `n` as either -1, 0, or 1.
-    static void fl_sign(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+    static void fl_sign(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         if ( !isNumeric(ctx, argv[0]) ) return;
         double num = sqlite3_value_double(argv[0]);
         sqlite3_result_int(ctx, num > 0 ? 1 : (num < 0 ? -1 : 0));
@@ -1002,7 +1004,7 @@ namespace litecore {
      *   - `date`: string,
      * Where `fmt` is an optional format string.
      */
-    static void millis_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+    static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) ) {
@@ -1029,7 +1031,7 @@ namespace litecore {
         if ( isNumericNoError(argv[0]) && isNumericNoError(argv[1]) ) {
             int64_t millis   = sqlite3_value_int64(argv[0]);
             int64_t tzoffset = sqlite3_value_int64(argv[1]);
-            setResultDateString(ctx, millis, minutes{tzoffset}, format);
+            setResultDateString(ctx, millis, std::chrono::minutes{tzoffset}, format);
         } else {
             setResultFleeceNull(ctx);
         }
@@ -1045,7 +1047,7 @@ namespace litecore {
      * Where `fmt` is an optional format string.
      * The local time of the current device will be assumed.
      */
-    static void millis_to_str(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+    static void millis_to_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) ) {
@@ -1064,7 +1066,7 @@ namespace litecore {
      *   - `millis`: int,
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
-    static void str_to_millis(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+    static void str_to_millis(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         int64_t millis;
         if ( parseDateArg(argv[0], &millis) ) sqlite3_result_int64(ctx, millis);
         else
@@ -1081,7 +1083,7 @@ namespace litecore {
      * Where `fmt` is an optional format string.
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
-    static void str_to_utc(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+    static void str_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         DateTime   dt;
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
@@ -1385,7 +1387,7 @@ namespace litecore {
     // Numbers +0, -0, and NaN are false.
     // Empty strings, arrays, and objects are false.
     // All other values are true.
-    static void toboolean(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void toboolean(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         enhanced_bool_t result = booleanValue(ctx, argv[0]);
         if ( result == kTrue || result == kFalse ) {
             sqlite3_result_int(ctx, result);
@@ -1405,7 +1407,7 @@ namespace litecore {
     // Numbers are themselves.
     // Strings that parse as numbers are those numbers.
     // All other values are NULL.
-    static void tonumber(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void tonumber(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         switch ( sqlite3_value_type(argv[0]) ) {
             case SQLITE_NULL:
                 sqlite3_result_null(ctx);
@@ -1449,7 +1451,7 @@ namespace litecore {
     // Numbers are their string representation.
     // Strings are themselves.
     // All other values are NULL.
-    static void tostring(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void tostring(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         switch ( sqlite3_value_type(argv[0]) ) {
             case SQLITE_NULL:
                 sqlite3_result_null(ctx);
@@ -1494,7 +1496,7 @@ namespace litecore {
     //   NULL                 if v == NULL
     //   v                    if v is an array
     //   wrapp v in an array  otherwise
-    static void toarray(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void toarray(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             if ( isMissing(argv[0]) || isNull(argv[0]) || isArray(ctx, argv[0]) ) {
                 sqlite3_result_value(ctx, argv[0]);
@@ -1513,7 +1515,7 @@ namespace litecore {
     //   NULL                   if v == NULL
     //   v                      if v is an object
     //   {} (the empty object), otherwise
-    static void toobject(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+    static void toobject(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) noexcept {
         try {
             if ( isMissing(argv[0]) || isNull(argv[0]) || isObject(ctx, argv[0]) ) {
                 sqlite3_result_value(ctx, argv[0]);
@@ -1527,7 +1529,8 @@ namespace litecore {
 
     // LCOV_EXCL_START
     // placeholder implementation for unimplemented functions; just returns a SQLite error.
-    static void unimplemented(sqlite3_context* ctx, C4UNUSED int argc, C4UNUSED sqlite3_value** argv) noexcept {
+    static void unimplemented(sqlite3_context* ctx, [[maybe_unused]] int argc,
+                              [[maybe_unused]] sqlite3_value** argv) noexcept {
         Warn("Calling unimplemented N1QL function; query will fail");
         sqlite3_result_error(ctx, "unimplemented N1QL function", -1);
     }

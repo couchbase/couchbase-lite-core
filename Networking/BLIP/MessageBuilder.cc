@@ -52,7 +52,7 @@ namespace litecore::blip {
     }
 
     FrameFlags MessageBuilder::flags() const {
-        int flags = type & kTypeMask;
+        int flags = type & int(kTypeMask);
         if ( urgent ) flags |= kUrgent;
         if ( compressed ) flags |= kCompressed;
         if ( noreply ) flags |= kNoReply;

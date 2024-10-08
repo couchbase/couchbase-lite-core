@@ -52,8 +52,6 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
-    extern LogDomain BlobLog;
-
     void EncryptedStream::initEncryptor(EncryptionAlgorithm alg, slice encryptionKey, slice nonce) {
         if ( alg != kAES256 ) error::_throw(error::UnsupportedEncryption);
 

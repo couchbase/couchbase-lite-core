@@ -88,8 +88,8 @@ namespace litecore {
         static void operator delete(void* mem) noexcept { free(mem); }
 
         // Creates a new sqlite3_vtab that describes the virtual table.
-        static int connect(sqlite3* db, void* aux, C4UNUSED int argc, C4UNUSED const char* const* argv,
-                           sqlite3_vtab** outVtab, C4UNUSED char** outErr) noexcept {
+        static int connect(sqlite3* db, void* aux, [[maybe_unused]] int argc, [[maybe_unused]] const char* const* argv,
+                           sqlite3_vtab** outVtab, [[maybe_unused]] char** outErr) noexcept {
             /* "A virtual table that contains hidden columns can be used like a table-valued function
             in the FROM clause of a SELECT statement. The arguments to the table-valued function
             become constraints on the HIDDEN columns of the virtual table." */
@@ -128,7 +128,7 @@ namespace litecore {
         // "SQLite will invoke this method one or more times while planning a query
         // that uses this virtual table.  This routine needs to create
         // a query plan for each invocation and compute an estimated cost for that plan."
-        static int bestIndex(C4UNUSED sqlite3_vtab* vtab, sqlite3_index_info* info) noexcept {
+        static int bestIndex([[maybe_unused]] sqlite3_vtab* vtab, sqlite3_index_info* info) noexcept {
             /* "Arguments on the virtual table name are matched to hidden columns in order. The number
            of arguments can be less than the number of hidden columns, in which case the latter
            hidden columns are unconstrained." */
@@ -202,7 +202,8 @@ namespace litecore {
         // This method is called to "rewind" the FleeceCursor object back
         // to the first row of output.  This method is always called at least
         // once prior to any call to column() or rowid() or eof().
-        int filter(int idxNum, C4UNUSED const char* idxStr, C4UNUSED int argc, sqlite3_value** argv) noexcept {
+        int filter(int idxNum, [[maybe_unused]] const char* idxStr, [[maybe_unused]] int argc,
+                   sqlite3_value** argv) noexcept {
             reset();
             if ( idxNum == kNoIndex ) return SQLITE_OK;
 

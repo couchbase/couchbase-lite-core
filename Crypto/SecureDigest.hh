@@ -12,6 +12,7 @@
 
 #pragma once
 #include "fleece/slice.hh"
+#include "Base64.hh"
 #include <string>
 
 namespace litecore {
@@ -40,6 +41,18 @@ namespace litecore {
 
         char _bytes[N]{};
     };
+
+    template <unsigned int N>
+    bool Hash<N>::setDigest(fleece::slice s) {
+        if ( s.size != size() ) return false;
+        memcpy(_bytes, s.buf, size());
+        return true;
+    }
+
+    template <unsigned int N>
+    std::string Hash<N>::asBase64() const {
+        return fleece::base64::encode(asSlice());
+    }
 
     /// A SHA-1 digest.
     class SHA1 : public Hash<20> {
@@ -77,7 +90,7 @@ namespace litecore {
         }
 
       private:
-        uint8_t _context[100]{};  // big enough to hold any platform's context struct
+        uint32_t _context[25]{};  // big enough to hold any platform's context struct
     };
 
     class SHA256 : public Hash<32> {
@@ -115,6 +128,6 @@ namespace litecore {
         }
 
       private:
-        uint8_t _context[110]{};  // big enough to hold any platform's context struct
+        uint32_t _context[28]{};  // big enough to hold any platform's context struct
     };
 }  // namespace litecore

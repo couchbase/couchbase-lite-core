@@ -174,7 +174,7 @@ namespace litecore {
             WithIndexesLastSeq = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
             MaxReadable        = 599,  // Cannot open versions newer than this
 
-            Current = WithDeletedTable
+            Current = WithIndexesLastSeq
         };
 
         void reopenSQLiteHandle();

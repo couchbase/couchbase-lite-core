@@ -23,6 +23,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
 #include "mbedtls/asn1write.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/md.h"

@@ -27,7 +27,7 @@ namespace litecore::net {
         : _context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER)), _role(role) {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
         _context->set_root_cert_locator(
-                [this](const string& certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
+                [](const string& certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
 #endif
 
         // Set up mbedTLS logging. mbedTLS log levels are numbered:
@@ -126,7 +126,7 @@ namespace litecore::net {
     void TLSContext::resetRootCertFinder() {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
         _context->set_root_cert_locator(
-                [this](const string& certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
+                [](const string& certStr, string& rootStr) { return findSigningRootCert(certStr, rootStr); });
 #else
         _context->set_root_cert_locator(nullptr);
 #endif

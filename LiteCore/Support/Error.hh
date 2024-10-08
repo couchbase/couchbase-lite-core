@@ -97,6 +97,7 @@ namespace litecore {
         error(Domain, int code);
         error(error::Domain, int code, const std::string& what);
         error(Domain, int code, const std::string& what, std::shared_ptr<fleece::Backtrace> btrace);
+        error(error const&) = default;
 
         explicit error(LiteCoreError e) : error(LiteCore, e) {}
 
@@ -142,11 +143,9 @@ namespace litecore {
         static bool sCaptureBacktraces;
     };
 
-    static inline bool operator==(const error& a, const error& b) noexcept {
-        return a.domain == b.domain && a.code == b.code;
-    }
+    inline bool operator==(const error& a, const error& b) noexcept { return a.domain == b.domain && a.code == b.code; }
 
-    static inline bool operator==(const error& a, error::LiteCoreError code) noexcept {
+    inline bool operator==(const error& a, error::LiteCoreError code) noexcept {
         return a.domain == error::LiteCore && a.code == code;
     }
 

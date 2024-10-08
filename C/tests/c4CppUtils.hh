@@ -27,52 +27,52 @@
 namespace c4 {
 
     // The functions the ref<> template calls to free a reference.
-    static inline void releaseRef(C4Cert* c) noexcept { c4cert_release(c); }
+    inline void releaseRef(C4Cert* c) noexcept { c4cert_release(c); }
 
-    static inline void releaseRef(C4Database* c) noexcept { c4db_release(c); }
+    inline void releaseRef(C4Database* c) noexcept { c4db_release(c); }
 
-    static inline void releaseRef(C4Collection* c) noexcept { c4coll_release(c); }
+    inline void releaseRef(C4Collection* c) noexcept { c4coll_release(c); }
 
-    static inline void releaseRef(C4CollectionObserver* c) noexcept { c4dbobs_free(c); }
+    inline void releaseRef(C4CollectionObserver* c) noexcept { c4dbobs_free(c); }
 
-    static inline void releaseRef(C4DocEnumerator* c) noexcept { c4enum_free(c); }
+    inline void releaseRef(C4DocEnumerator* c) noexcept { c4enum_free(c); }
 
-    static inline void releaseRef(C4Document* c) noexcept { c4doc_release(c); }
+    inline void releaseRef(C4Document* c) noexcept { c4doc_release(c); }
 
-    static inline void releaseRef(C4DocumentObserver* c) noexcept { c4docobs_free(c); }
+    inline void releaseRef(C4DocumentObserver* c) noexcept { c4docobs_free(c); }
 
-    static inline void releaseRef(C4KeyPair* c) noexcept { c4keypair_release(c); }
+    inline void releaseRef(C4KeyPair* c) noexcept { c4keypair_release(c); }
 
-    static inline void releaseRef(C4Listener* c) noexcept { c4listener_free(c); }
+    inline void releaseRef(C4Listener* c) noexcept { c4listener_free(c); }
 
-    static inline void releaseRef(C4Query* c) noexcept { c4query_release(c); }
+    inline void releaseRef(C4Query* c) noexcept { c4query_release(c); }
 
-    static inline void releaseRef(C4QueryEnumerator* c) noexcept { c4queryenum_release(c); }
+    inline void releaseRef(C4QueryEnumerator* c) noexcept { c4queryenum_release(c); }
 
-    static inline void releaseRef(C4QueryObserver* c) noexcept { c4queryobs_free(c); }
+    inline void releaseRef(C4QueryObserver* c) noexcept { c4queryobs_free(c); }
 
-    static inline void releaseRef(C4RawDocument* c) noexcept { c4raw_free(c); }
+    inline void releaseRef(C4RawDocument* c) noexcept { c4raw_free(c); }
 
-    static inline void releaseRef(C4ReadStream* c) noexcept { c4stream_close(c); }
+    inline void releaseRef(C4ReadStream* c) noexcept { c4stream_close(c); }
 
-    static inline void releaseRef(C4Replicator* c) noexcept { c4repl_free(c); }
+    inline void releaseRef(C4Replicator* c) noexcept { c4repl_free(c); }
 
-    static inline void releaseRef(C4WriteStream* c) noexcept { c4stream_closeWriter(c); }
+    inline void releaseRef(C4WriteStream* c) noexcept { c4stream_closeWriter(c); }
 
     // The functions the ref<> template calls to retain a reference. (Not all types can be retained)
-    static inline C4Cert* retainRef(C4Cert* c) noexcept { return c4cert_retain(c); }
+    inline C4Cert* retainRef(C4Cert* c) noexcept { return c4cert_retain(c); }
 
-    static inline C4Collection* retainRef(C4Collection* c) noexcept { return c4coll_retain(c); }
+    inline C4Collection* retainRef(C4Collection* c) noexcept { return c4coll_retain(c); }
 
-    static inline C4Database* retainRef(C4Database* c) noexcept { return c4db_retain(c); }
+    inline C4Database* retainRef(C4Database* c) noexcept { return c4db_retain(c); }
 
-    static inline C4Document* retainRef(C4Document* c) noexcept { return c4doc_retain(c); }
+    inline C4Document* retainRef(C4Document* c) noexcept { return c4doc_retain(c); }
 
-    static inline C4KeyPair* retainRef(C4KeyPair* c) noexcept { return c4keypair_retain(c); }
+    inline C4KeyPair* retainRef(C4KeyPair* c) noexcept { return c4keypair_retain(c); }
 
-    static inline C4Query* retainRef(C4Query* c) noexcept { return c4query_retain(c); }
+    inline C4Query* retainRef(C4Query* c) noexcept { return c4query_retain(c); }
 
-    static inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) noexcept { return c4queryenum_retain(c); }
+    inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) noexcept { return c4queryenum_retain(c); }
 
     /** Smart pointer for C4 references, similar to Retained<>.
 

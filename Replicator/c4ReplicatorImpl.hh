@@ -466,8 +466,8 @@ namespace litecore {
                     error::_throw(error::NotOpen, "collection not in the Replicator's config");
                 }
 
-                checkpointer = new Checkpointer{repl->_options, repl->URL(), collection};
-                database     = repl->_database;
+                checkpointer.emplace(repl->_options, repl->URL(), collection);
+                database = repl->_database;
             }
 
             alloc_slice pendingDocumentIDs() {
@@ -497,10 +497,10 @@ namespace litecore {
             }
 
           private:
-            Retained<Replicator> replicator;
-            Checkpointer*        checkpointer{nullptr};  // assigned in the constructor
-            Retained<C4Database> database;
-            C4CollectionSpec     collectionSpec;
+            Retained<Replicator>   replicator;
+            optional<Checkpointer> checkpointer;  // initialized in the constructor
+            Retained<C4Database>   database;
+            C4CollectionSpec       collectionSpec;
         };
 
         mutable std::mutex            _mutex;

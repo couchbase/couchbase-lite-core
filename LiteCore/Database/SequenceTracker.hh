@@ -35,6 +35,8 @@ namespace litecore {
 
         slice name() const { return _name; }
 
+        std::string loggingIdentifier() const override { return string(_name); }
+
         /** Call this as soon as the database begins a transaction. */
         void beginTransaction();
 

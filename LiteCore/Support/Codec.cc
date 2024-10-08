@@ -37,7 +37,7 @@ namespace litecore::blip {
     static constexpr int kZlibDeflateMemLevel = 9;
 
 
-    LogDomain Zip("Zip", LogLevel::Warning);
+    static LogDomain Zip("Zip", LogLevel::Warning);
 
     Codec::Codec()
         : Logging(Zip)

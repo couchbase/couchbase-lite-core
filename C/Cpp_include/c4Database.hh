@@ -290,13 +290,11 @@ struct C4Database
 };
 
 // This stuff allows CollectionSpec to be used as a key in an unordered_map or unordered_set:
-static inline bool operator==(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) {
+inline bool operator==(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) {
     return a.name == b.name && a.effectiveScope() == b.effectiveScope();
 }
 
-static inline bool operator!=(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) {
-    return !(a == b);
-}
+inline bool operator!=(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) { return !(a == b); }
 
 template <>
 struct std::hash<C4Database::CollectionSpec> {

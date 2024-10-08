@@ -39,7 +39,7 @@ namespace fleece {
         struct YMD {
             enum class Separator : char { Hyphen = '-', Slash = '/' };
 
-            explicit YMD(const Separator separator) : separator(separator) {}
+            explicit YMD(const Separator separator_) : separator(separator_) {}
 
             bool operator==(const YMD& other) const;
 
@@ -51,7 +51,7 @@ namespace fleece {
         struct HMS {
             enum class Separator : char { Colon = ':' };
 
-            HMS(const bool millis, const Separator separator) : millis(millis), separator(separator) {}
+            HMS(const bool millis_, const Separator separator_) : millis(millis_), separator(separator_) {}
 
             bool operator==(const HMS& other) const;
 
@@ -62,14 +62,14 @@ namespace fleece {
         };
 
         // 1111-11-11T11:11:11(Z)
-        DateFormat(YMD ymd, Separator separator, HMS hms, const std::optional<Timezone> tz = {})
-            : ymd{ymd}, separator{separator}, hms{hms}, tz{tz} {}
+        DateFormat(YMD ymd_, Separator separator_, HMS hms_, const std::optional<Timezone> tz_ = {})
+            : ymd{ymd_}, separator{separator_}, hms{hms_}, tz{tz_} {}
 
         // 11-11-11
-        explicit DateFormat(YMD ymd) : ymd{ymd} {}
+        explicit DateFormat(YMD ymd_) : ymd{ymd_} {}
 
         // 11:11:11(Z)
-        explicit DateFormat(HMS hms, const std::optional<Timezone> tz = {}) : hms{hms}, tz{tz} {}
+        explicit DateFormat(HMS hms_, const std::optional<Timezone> tz_ = {}) : hms{hms_}, tz{tz_} {}
 
         bool operator==(const DateFormat& other) const;
 

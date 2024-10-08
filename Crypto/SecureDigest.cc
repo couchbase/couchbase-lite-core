@@ -11,7 +11,6 @@
 //
 
 #include "SecureDigest.hh"
-#include "Base64.hh"
 #include "Error.hh"
 
 #pragma clang diagnostic push
@@ -36,18 +35,6 @@ namespace litecore {
     void SHA1::computeFrom(fleece::slice s) { (SHA1Builder() << s).finish(&_bytes, size()); }
 
     void SHA256::computeFrom(fleece::slice s) { (SHA256Builder() << s).finish(&_bytes, size()); }
-
-    template <unsigned int N>
-    bool Hash<N>::setDigest(fleece::slice s) {
-        if ( s.size != size() ) return false;
-        memcpy(_bytes, s.buf, size());
-        return true;
-    }
-
-    template <unsigned int N>
-    std::string Hash<N>::asBase64() const {
-        return fleece::base64::encode(asSlice());
-    }
 
     SHA1Builder::SHA1Builder() {
         static_assert(sizeof(_context) >= sizeof(mbedtls_sha1_context));

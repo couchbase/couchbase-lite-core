@@ -46,14 +46,12 @@ namespace litecore {
         auto target   = (deleting ? _deadStore : _liveStore).get();  // the store to update
         auto other    = (deleting ? _liveStore : _deadStore).get();
 
-        auto insert = [](const RecordUpdate& rec, const SetOptions& flags) {
-            return rec.sequence == 0_seq || flags & kInsert;
-        };
+        auto inserting = (rec.sequence == 0_seq || flags & kInsert);
 
         // At this level, insertion of a new record must pick a new sequence.
-        Assert(flags & kUpdateSequence || !insert(rec, flags));
+        Assert(flags & kUpdateSequence || !inserting);
 
-        if ( insert(rec, flags) ) {
+        if ( inserting ) {
             // Request should succeed only if doc _doesn't_ exist yet, so check other KeyStore:
             if ( other->get(rec.key, kMetaOnly).exists() ) return 0_seq;
         }
@@ -186,9 +184,9 @@ namespace litecore {
         BothUnorderedEnumeratorImpl(sequence_t since, RecordEnumerator::Options options, KeyStore* liveStore,
                                     KeyStore* deadStore)
             : _impl(liveStore->newEnumeratorImpl(false, since, options))
+            , _deadStore(deadStore)
             , _since(since)
-            , _options(options)
-            , _deadStore(deadStore) {}
+            , _options(options) {}
 
         bool next() override {
             bool ok = _impl->next();

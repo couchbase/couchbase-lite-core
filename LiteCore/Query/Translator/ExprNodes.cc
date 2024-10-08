@@ -51,6 +51,9 @@ namespace litecore::qt {
                     return result;
                 }
         }
+#ifdef __GNUC__
+        __builtin_unreachable();  // suppress GCC warning "control reaches end of non-void function"
+#endif
     }
 
     ExprNode* ExprNode::parseArray(Array array, ParseContext& ctx) {
@@ -126,6 +129,8 @@ namespace litecore::qt {
 #ifdef COUCHBASE_ENTERPRISE
             case OpType::vectorDistance:
                 return new (ctx) VectorDistanceNode(operands, ctx);
+            case OpType::prediction:
+                return PredictionNode::parse(operands, ctx);
 #endif
             default:
                 // A normal OpNode
@@ -371,12 +376,12 @@ namespace litecore::qt {
         Collation savedCollation        = ctx.collation;
         bool      savedCollationApplied = ctx.collationApplied;
 
-        auto setFlagFromOption = [](bool& flag, Dict options, slice key) {
+        auto setFlagFromOption = [&](bool& flag, slice key) {
             if ( Value val = getCaseInsensitive(options, key) ) flag = val.asBool();
         };
-        setFlagFromOption(ctx.collation.caseSensitive, options, "CASE");
-        setFlagFromOption(ctx.collation.diacriticSensitive, options, "DIAC");
-        setFlagFromOption(ctx.collation.unicodeAware, options, "UNICODE");
+        setFlagFromOption(ctx.collation.caseSensitive, "CASE");
+        setFlagFromOption(ctx.collation.diacriticSensitive, "DIAC");
+        setFlagFromOption(ctx.collation.unicodeAware, "UNICODE");
         if ( Value localeName = getCaseInsensitive(options, "LOCALE") )
             ctx.collation.localeName = localeName.asString();
         ctx.collationApplied = false;
@@ -396,12 +401,22 @@ namespace litecore::qt {
         return node;
     }
 
-    CollateNode::CollateNode(ExprNode* child, ParseContext& ctx) : _collation(ctx.collation) {
+    CollateNode::CollateNode(ExprNode* child, ParseContext& ctx)
+        : localeName(ctx.newString(ctx.collation.localeName))
+        , unicodeAware{ctx.collation.unicodeAware}
+        , caseSensitive{ctx.collation.caseSensitive}
+        , diacriticSensitive{ctx.collation.diacriticSensitive} {
         initChild(_child, child);
         ctx.collationApplied = true;
     }
 
-    bool CollateNode::isBinary() const { return _collation.caseSensitive && !_collation.unicodeAware; }
+    Collation CollateNode::collation() const {
+        Collation c(caseSensitive, diacriticSensitive, localeName);
+        c.unicodeAware = unicodeAware;
+        return c;
+    }
+
+    bool CollateNode::isBinary() const { return caseSensitive && !unicodeAware; }
 
     void CollateNode::visitChildren(ChildVisitor const& visitor) { visitor(_child); }
 

@@ -29,8 +29,8 @@ namespace litecore::qt {
       public:
         IndexType indexType() const { return _type; }
 
-        /// JSON of the indexed expression, usually a property
-        string_view indexExpressionJSON() const { return _indexExpressionJSON; }
+        /// A unique identifier of the indexed expression, used to match it with an IndexSourceNode.
+        string_view indexID() const { return _indexID; }
 
         /// The collection being searched.
         SourceNode* C4NULLABLE sourceCollection() const { return _sourceCollection; }
@@ -49,13 +49,16 @@ namespace litecore::qt {
         bool isAuxiliary() const { return _isAuxiliary; }
 
         /// Writes SQL for the index table name (or SELECT expression)
-        virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const = 0;
+        virtual void writeSourceTable(SQLWriter& ctx, string_view tableName) const;
 
       protected:
         IndexedNode(IndexType type) : _type(type) {}
 
+        void setIndexedExpression(ExprNode*);
+
         IndexType const             _type;                 // Index type
-        string                      _indexExpressionJSON;  // Expression/property that's indexed, as JSON
+        ExprNode*                   _indexedExpr;          // The indexed expression (usually a doc property)
+        string_view                 _indexID;              // Expression/property that's indexed
         SourceNode* C4NULLABLE      _sourceCollection{};   // The collection being queried
         IndexSourceNode* C4NULLABLE _indexSource{};        // Source representing the index
         SelectNode* C4NULLABLE      _select{};             // The containing SELECT statement
@@ -67,7 +70,6 @@ namespace litecore::qt {
       protected:
         FTSNode(Array::iterator& args, ParseContext&, const char* name);
 
-        void writeSourceTable(SQLWriter& ctx, string_view tableName) const override;
         void writeIndex(SQLWriter&) const;
     };
 
@@ -111,11 +113,23 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
 
       private:
-        ExprNode* _indexedExpr;       // The indexed expression (usually a doc property)
         ExprNode* _vector;            // The vector being queried
         int       _metric;            // Distance metric (actually vectorsearch::Metric)
         unsigned  _numProbes = 0;     // Number of probes, or 0 for default
         bool      _simple    = true;  // True if this is a simple (non-hybrid) query
+    };
+
+    /** A `prediction()` function call that uses an index. */
+    class PredictionNode final : public IndexedNode {
+      public:
+        static ExprNode* parse(Array::iterator args, ParseContext&);
+
+        void writeSQL(SQLWriter&) const override;
+
+      private:
+        PredictionNode(Array::iterator& args, ParseContext& ctx, string_view indexID);
+
+        const char* _subProperty{};
     };
 
 #endif
@@ -128,7 +142,7 @@ namespace litecore::qt {
         explicit IndexSourceNode(IndexedNode*, string_view alias, ParseContext& ctx);
 
         IndexType   indexType() const;
-        string_view indexedExpressionJSON() const;
+        string_view indexID() const;
 
         bool matchesNode(IndexedNode const*) const;
 

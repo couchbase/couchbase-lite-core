@@ -29,24 +29,24 @@ namespace litecore::repl {
 
     // Operations on C4Progress objects:
 
-    static inline bool operator==(const C4Progress& p1, const C4Progress& p2) {
+    inline bool operator==(const C4Progress& p1, const C4Progress& p2) {
         return p1.unitsCompleted == p2.unitsCompleted && p1.unitsTotal == p2.unitsTotal
                && p1.documentCount == p2.documentCount;
     }
 
-    static inline bool operator!=(const C4Progress& p1, const C4Progress& p2) { return !(p1 == p2); }
+    inline bool operator!=(const C4Progress& p1, const C4Progress& p2) { return !(p1 == p2); }
 
-    static inline C4Progress operator+(const C4Progress& p1, const C4Progress& p2) {
+    inline C4Progress operator+(const C4Progress& p1, const C4Progress& p2) {
         return C4Progress{p1.unitsCompleted + p2.unitsCompleted, p1.unitsTotal + p2.unitsTotal,
                           p1.documentCount + p2.documentCount};
     }
 
-    static inline C4Progress operator-(const C4Progress& p1, const C4Progress& p2) {
+    inline C4Progress operator-(const C4Progress& p1, const C4Progress& p2) {
         return C4Progress{p1.unitsCompleted - p2.unitsCompleted, p1.unitsTotal - p2.unitsTotal,
                           p1.documentCount - p2.documentCount};
     }
 
-    static inline C4Progress& operator+=(C4Progress& p1, const C4Progress& p2) {
+    inline C4Progress& operator+=(C4Progress& p1, const C4Progress& p2) {
         p1 = p1 + p2;
         return p1;
     }

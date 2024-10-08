@@ -26,8 +26,7 @@ namespace litecore::repl {
     class Puller;
     class ReplicatedRev;
 
-    static const array<string, 2> kCompatProtocols = {{string(blip::Connection::kWSProtocolName) + "+CBMobile_3",
-                                                       string(blip::Connection::kWSProtocolName) + "+CBMobile_2"}};
+    static const array<string, 1> kCompatProtocols = {{string(blip::Connection::kWSProtocolName) + "+CBMobile_4"}};
 
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.

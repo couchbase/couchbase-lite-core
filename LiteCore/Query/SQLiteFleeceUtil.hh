@@ -42,7 +42,7 @@ namespace litecore {
     // you MUST call `::free((void*)data.buf` on the result.
     slice valueAsDocBody(sqlite3_value* arg, bool& outCopied);
 
-    static inline const fleece::impl::Value* asFleeceValue(sqlite3_value* value) {
+    inline const fleece::impl::Value* asFleeceValue(sqlite3_value* value) {
         return (const fleece::impl::Value*)sqlite3_value_pointer(value, kFleeceValuePointerType);
     }
 
@@ -59,24 +59,24 @@ namespace litecore {
         bool _copied;  // Do not initialize it; the base class will do.
     };
 
-    static inline DataFile::Delegate* getDBDelegate(sqlite3_context* ctx) {
+    inline DataFile::Delegate* getDBDelegate(sqlite3_context* ctx) {
         return ((fleeceFuncContext*)sqlite3_user_data(ctx))->delegate;
     }
 
     // Returns the data of a SQLite blob value as a slice
-    static inline slice valueAsSlice(sqlite3_value* arg) noexcept {
+    inline slice valueAsSlice(sqlite3_value* arg) noexcept {
         const void* blob = sqlite3_value_blob(arg);  // must be called _before_ sqlite3_value_bytes
         return {blob, static_cast<size_t>(sqlite3_value_bytes(arg))};
     }
 
     // Returns the data of a SQLite string value as a slice
-    static inline slice valueAsStringSlice(sqlite3_value* arg) noexcept {
+    inline slice valueAsStringSlice(sqlite3_value* arg) noexcept {
         auto blob = sqlite3_value_text(arg);  // must be called _before_ sqlite3_value_bytes
         return {blob, static_cast<size_t>(sqlite3_value_bytes(arg))};
     }
 
     // Returns a string argument as a slice, or a null slice if the argument isn't a string.
-    static inline slice stringSliceArgument(sqlite3_value* arg) noexcept {
+    inline slice stringSliceArgument(sqlite3_value* arg) noexcept {
         if ( sqlite3_value_type(arg) != SQLITE_TEXT ) return nullslice;
         return valueAsStringSlice(arg);
     }
@@ -119,11 +119,11 @@ namespace litecore {
     void setResultBlobFromData(sqlite3_context*, alloc_slice, int subtype = kPlainBlobSubtype) noexcept;
 
     // Sets the function result to a Fleece container (a blob with subtype 0)
-    static inline void setResultBlobFromFleeceData(sqlite3_context* ctx, slice blob) noexcept {
+    inline void setResultBlobFromFleeceData(sqlite3_context* ctx, slice blob) noexcept {
         setResultBlobFromData(ctx, blob, 0);
     }
 
-    static inline void setResultBlobFromFleeceData(sqlite3_context* ctx, alloc_slice blob) noexcept {
+    inline void setResultBlobFromFleeceData(sqlite3_context* ctx, alloc_slice blob) noexcept {
         setResultBlobFromData(ctx, std::move(blob), 0);
     }
 

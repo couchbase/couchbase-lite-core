@@ -67,7 +67,7 @@ namespace litecore::qt {
 
     void MetaNode::writeSQL(SQLWriter& ctx) const {
         string aliasDot;
-        if ( _source ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
+        if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
         writeMetaSQL(aliasDot, _property, ctx);
     }
 
@@ -264,7 +264,7 @@ namespace litecore::qt {
 
     void CollateNode::writeSQL(SQLWriter& ctx) const {
         Parenthesize p(ctx, kCollatePrecedence);
-        ctx << _child << " COLLATE " << sqlIdentifier(_collation.sqliteName());
+        ctx << _child << " COLLATE " << sqlIdentifier(collation().sqliteName());
     }
 
     void AnyEveryNode::writeSQL(SQLWriter& ctx) const {

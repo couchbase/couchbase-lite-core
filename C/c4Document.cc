@@ -32,7 +32,7 @@ using namespace fleece;
 using namespace litecore;
 
 C4Document::C4Document(C4Collection* collection, alloc_slice docID_)
-    : _collection(asInternal(collection)), _docID(std::move(docID_)), _flags(0), _sequence(C4SequenceNumber::None) {
+    : _flags(0), _docID(std::move(docID_)), _sequence(C4SequenceNumber::None), _collection(asInternal(collection)) {
     // Quick sanity test of the docID, but no need to scan for valid UTF-8 since we're not inserting.
     if ( _docID.size < 1 || _docID.size > kMaxDocIDLength )
         error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(_docID));

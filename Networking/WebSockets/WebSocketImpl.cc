@@ -265,7 +265,7 @@ namespace litecore::websocket {
         callCloseSocket();
     }
 
-    void WebSocketImpl::deliverMessageToDelegate(slice data, C4UNUSED bool binary) {
+    void WebSocketImpl::deliverMessageToDelegate(slice data, bool /*binary*/) {
         logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
@@ -560,8 +560,7 @@ namespace litecore::websocket {
                 double t = _timeConnected.elapsed();
                 // Our formater in LogEncoder does not recognize %Lf
                 logInfo("sent %" PRIu64 " bytes, rcvd %" PRIu64 ", in %.3f sec (%.0f/sec, %.0f/sec)", _bytesSent,
-                        _bytesReceived, t, (double)((long double)_bytesSent / t),
-                        (double)((long double)_bytesReceived / t));
+                        _bytesReceived, t, double(_bytesSent) / t, double(_bytesReceived) / t);
             } else {
                 logErrorForStatus("WebSocket failed to connect!", status);
             }
@@ -583,12 +582,12 @@ namespace uWS {
 #define USER_SOCK ((litecore::websocket::WebSocketImpl*)user)
 
     template <const bool isServer>
-    bool WebSocketProtocol<isServer>::setCompressed(C4UNUSED void* user) {
+    bool WebSocketProtocol<isServer>::setCompressed(void* /*user*/) {
         return false;  //TODO: Implement compression
     }
 
     template <const bool isServer>
-    bool WebSocketProtocol<isServer>::refusePayloadLength(C4UNUSED void* user, size_t length) {
+    bool WebSocketProtocol<isServer>::refusePayloadLength(void* /*user*/, size_t length) {
         return length > kMaxMessageLength;
     }
 

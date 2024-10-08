@@ -120,7 +120,7 @@ NODISCARD CBL_CORE_API bool c4queryenum_seek(C4QueryEnumerator* e, int64_t rowIn
 /** Restarts the enumeration, as though it had just been created: the next call to
         \ref c4queryenum_next will read the first row, and so on from there. 
         \note The caller must use a lock for Database when this function is called. */
-NODISCARD static inline bool c4queryenum_restart(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API {
+NODISCARD inline bool c4queryenum_restart(C4QueryEnumerator* e, C4Error* C4NULLABLE outError) C4API {
     return c4queryenum_seek(e, -1, outError);
 }
 

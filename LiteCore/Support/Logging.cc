@@ -552,11 +552,12 @@ namespace litecore {
                                              ANDROID_LOG_ERROR};
         __android_log_vprint(androidLevels[(int)level], tag.c_str(), fmt, args);
 #else
-        auto name = domain.name();
+        char* cstr = nullptr;
+        if ( vasprintf(&cstr, fmt, args) < 0 ) throw bad_alloc();
         LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
-        LogDecoder::writeHeader(kLevels[(int)level], name, cerr);
-        vfprintf(stderr, fmt, args);
-        fputc('\n', stderr);
+        LogDecoder::writeHeader(kLevels[(int)level], domain.name(), cerr);
+        cerr << cstr << endl;
+        free(cstr);
 #endif
     }
 

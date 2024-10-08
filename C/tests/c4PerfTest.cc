@@ -259,7 +259,7 @@ class PerfTest : public C4Test {
         fout.close();
     }
 
-    static void onTimedReplicatorStatusChanged(C4UNUSED C4Replicator* r, C4ReplicatorStatus sts, void* ctx) {
+    static void onTimedReplicatorStatusChanged(C4Replicator*, C4ReplicatorStatus sts, void* ctx) {
         if ( sts.level == kC4Stopped ) { ((PerfTest*)ctx)->_replConditional.notify_one(); }
     }
 

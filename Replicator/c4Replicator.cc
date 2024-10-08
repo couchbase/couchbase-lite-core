@@ -12,14 +12,16 @@
 
 #include "c4Replicator.hh"
 #include "c4RemoteReplicator.hh"
-#ifdef COUCHBASE_ENTERPRISE
-#    include "c4LocalReplicator.hh"
-#endif
 #include "c4IncomingReplicator.hh"
 #include "c4Database.hh"
 #include "c4ExceptionUtils.hh"
 #include "StringUtil.hh"
 #include <cerrno>
+
+using namespace litecore::net;  // work around missing 'using' in c4LocalReplicator.hh in EE repo
+#ifdef COUCHBASE_ENTERPRISE
+#    include "c4LocalReplicator.hh"
+#endif
 
 using namespace std;
 using namespace litecore;

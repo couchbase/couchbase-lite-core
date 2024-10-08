@@ -104,7 +104,6 @@ namespace litecore::REST {
         std::mutex                         _mutex;
         std::vector<URIRule>               _rules;
         std::map<std::string, std::string> _extraHeaders;
-        uint16_t                           _port{};
         std::atomic<int>                   _connectionCount{0};
         Authenticator                      _authenticator;
     };

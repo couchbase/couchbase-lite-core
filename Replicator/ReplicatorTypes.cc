@@ -12,6 +12,7 @@
 
 #include "ReplicatorTypes.hh"
 #include "IncomingRev.hh"
+#include "ReplicatorTuning.hh"
 #include "c4DocEnumeratorTypes.h"
 #include "c4Document.hh"
 #include <sstream>
@@ -81,8 +82,8 @@ namespace litecore::repl {
                              bool noConflicts_, C4CollectionSpec spec, void* collectionContext)
         : ReplicatedRev(spec, docID_, revID_, collectionContext)
         , historyBuf(historyBuf_)
-        , owner(owner_)
-        , noConflicts(noConflicts_) {
+        , noConflicts(noConflicts_)
+        , owner(owner_) {
         if ( deleted_ ) flags |= kRevDeleted;
     }
 
