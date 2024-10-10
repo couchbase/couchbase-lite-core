@@ -129,7 +129,7 @@ namespace litecore {
         void        setLastSequence(sequence_t seq);
         void        incrementPurgeCount();
         void   createTrigger(std::string_view triggerName, std::string_view triggerSuffix, std::string_view operation,
-                             std::string when, std::string_view statements);
+                             std::string when, std::string_view statements, std::string_view parentTable = "");
         bool   createValueIndex(const IndexSpec&);
         bool   createIndex(const IndexSpec&, const std::string& sourceTableName,
                            fleece::impl::ArrayIterator& expressions);

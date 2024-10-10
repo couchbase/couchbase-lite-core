@@ -117,8 +117,8 @@ namespace litecore {
         /// Returns the column name of an FTS table to use for a MATCH expression.
         static string FTSColumnName(const Value* expression);
 
-        pair<string, string> unnestedTableName(const Value* key) const;
-        static string        parentUnnestedTableName(const string& unnestedTable);
+        string        unnestedTableName(const Value* key) const;
+        static string parentUnnestedTableName(const string& unnestedTable);
 
         string predictiveIdentifier(const Value*) const;
         string predictiveTableName(const Value*) const;

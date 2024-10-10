@@ -13,6 +13,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
+#include "SecureDigest.hh"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "Array.hh"
@@ -31,7 +32,7 @@ namespace litecore {
                     createUnnestedTable(itPath.value(), plainTableName, unnestTableName);
         }
         Array::iterator iExprs(spec.what());
-        return createIndex(spec, unnestTableName, iExprs);
+        return createIndex(spec, plainTableName, iExprs);
     }
 
     std::pair<string, string> SQLiteKeyStore::createUnnestedTable(const Value* expression, string plainParentTable,
@@ -39,7 +40,9 @@ namespace litecore {
         // Derive the table name from the expression it unnests:
         if ( plainParentTable.empty() ) plainParentTable = parentTable = tableName();
         QueryParser qp(db(), "", plainParentTable);
-        auto [plainTableName, unnestTableName] = qp.unnestedTableName(expression);
+        string      plainTableName    = qp.unnestedTableName(expression);
+        string      unnestTableName   = hexName(plainTableName);
+        string      quotedParentTable = CONCAT(sqlIdentifier(parentTable));
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(unnestTableName)
@@ -81,19 +84,26 @@ namespace litecore {
                                                              << " (docid, i, body) "
                                                                 "SELECT new.rowid, _each.rowid, _each.value "
                                                              << "FROM " << eachExpr << " AS _each ");
-            createTrigger(unnestTableName, "ins", "AFTER INSERT", "WHEN (new.flags & 1) = 0", insertTriggerExpr);
-
             // ...on delete:
             string deleteTriggerExpr = CONCAT("DELETE FROM " << sqlIdentifier(unnestTableName)
                                                              << " "
                                                                 "WHERE docid = old.rowid");
-            createTrigger(unnestTableName, "del", "BEFORE DELETE", "WHEN (old.flags & 1) = 0", deleteTriggerExpr);
 
-            // ...on update:
-            createTrigger(unnestTableName, "preupdate", "BEFORE UPDATE OF body, flags", "WHEN (old.flags & 1) = 0",
-                          deleteTriggerExpr);
-            createTrigger(unnestTableName, "postupdate", "AFTER UPDATE OF body, flags", "WHEN (new.flags & 1 = 0)",
-                          insertTriggerExpr);
+            if ( !nested ) {
+                createTrigger(unnestTableName, "ins", "AFTER INSERT", "WHEN (new.flags & 1) = 0", insertTriggerExpr,
+                              quotedParentTable);
+                createTrigger(unnestTableName, "del", "BEFORE DELETE", "WHEN (old.flags & 1) = 0", deleteTriggerExpr,
+                              quotedParentTable);
+
+                // ...on update:
+                createTrigger(unnestTableName, "preupdate", "BEFORE UPDATE OF body, flags", "WHEN (old.flags & 1) = 0",
+                              deleteTriggerExpr, quotedParentTable);
+                createTrigger(unnestTableName, "postupdate", "AFTER UPDATE OF body, flags", "WHEN (new.flags & 1 = 0)",
+                              insertTriggerExpr, quotedParentTable);
+            } else {
+                createTrigger(unnestTableName, "ins", "AFTER INSERT", "", insertTriggerExpr, quotedParentTable);
+                createTrigger(unnestTableName, "del", "BEFORE DELETE", "", deleteTriggerExpr, quotedParentTable);
+            }
         }
         return {plainTableName, unnestTableName};
     }

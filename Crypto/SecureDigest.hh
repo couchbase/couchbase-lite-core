@@ -117,4 +117,8 @@ namespace litecore {
       private:
         uint8_t _context[110]{};  // big enough to hold any platform's context struct
     };
+
+    [[nodiscard]] static inline std::string hexName(std::string_view name) {
+        return (SHA1Builder{} << name).finish().asSlice().hexString();
+    }
 }  // namespace litecore
