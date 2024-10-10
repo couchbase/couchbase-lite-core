@@ -179,7 +179,7 @@ namespace litecore {
             {
                 stringstream sql;
                 for ( int i = 0; triggerSuffixes[i]; ++i ) {
-                    sql << "DROP TRIGGER IF EXISTS \"" << tableName << "::" << triggerSuffixes[i] << "\";";
+                    sql << "DROP TRIGGER IF EXISTS " << sqlIdentifier(tableName + "::" + triggerSuffixes[i]) << ";";
                 }
                 exec(sql.str());
             }
