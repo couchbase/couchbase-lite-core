@@ -23,6 +23,7 @@
 #include <numeric>
 #include "date/date.h"
 #include "ParseDate.hh"
+#include "SecureDigest.hh"
 #include <functional>
 
 using namespace fleece::impl;
