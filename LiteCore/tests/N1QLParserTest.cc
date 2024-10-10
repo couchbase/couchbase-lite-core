@@ -48,6 +48,23 @@ class N1QLParserTest : public QueryParserTest {
     }
 };
 
+TEST_CASE_METHOD(N1QLParserTest, "CBL-6245", "[Query][N1QL][C]") {
+    tableNames.insert("kv_.adminDB");
+    tableNames.insert("kv_.userRecipients");
+
+    CHECK(translate("SELECT META().id FROM adminDB WHERE (type = 'conversation') AND ANY v in userRecipients SATISFIES "
+                    "LOWER(v.firstName) LIKE '%rado%' OR LOWER(v.lastName) LIKE '%rado%' END")
+          == "{'FROM':[{'COLLECTION':'adminDB'}],'WHAT':[['_.',['meta()'],'.id']],'WHERE':['AND',['=',['.type'],'"
+             "conversation'],['ANY','v',['.userRecipients'],['OR',['LIKE',['LOWER()',['?v.firstName']],'%rado%'],['"
+             "LIKE',['LOWER()',['?v.lastName']],'%rado%']]]]}");
+
+    // This doesn't compile without brackets around the `SATISFIES` expression.
+    // Should be fixed by CBL-6324.
+    //CHECK(translate("SELECT META().id FROM adminDB WHERE type = 'file' AND ANY v in versions SATISFIES "
+    //                "v.docGuid IN ('docGuidExample') END")
+    //      == "q");
+}
+
 // NOTE: the translate() method converts `"` to `'` in its output, to make the string literals
 // in the tests below less cumbersome to type (and read).
 
