@@ -473,7 +473,7 @@ namespace litecore {
                 } else {
                     require(!entry.on, "cannot use ON and UNNEST together");
                     string plainUnnestTable = unnestedTableName(entry.unnest);
-                    string unnestTable      = KeyStore::hexName(plainUnnestTable);
+                    string unnestTable      = hexName(plainUnnestTable);
                     if ( _delegate.tableExists(unnestTable) ) {
                         entry.type           = kUnnestTableAlias;
                         entry.tableName      = unnestTable;
@@ -545,7 +545,7 @@ namespace litecore {
                             });
                             require(parentIt != _aliases.end(), "parent table \"%s\" must be in the FROM clause.",
                                     parentTable.c_str());
-                            string unnestTable = KeyStore::hexName(plainUnnestTable);
+                            string unnestTable = hexName(plainUnnestTable);
                             _sql << " JOIN " << sqlIdentifier(unnestTable) << " AS " << sqlIdentifier(entry.alias)
                                  << " ON " << sqlIdentifier(entry.alias) << ".docid=" << sqlIdentifier(parentIt->first)
                                  << ".rowid";
@@ -2117,7 +2117,7 @@ namespace litecore {
         auto parentTable = unnestTable.substr(0, pos);
         if ( parentTable.find(KeyStore::kUnnestSeparator) == string::npos ) return parentTable;
         else
-            return KeyStore::hexName(parentTable);
+            return hexName(parentTable);
     }
 
 #pragma mark - PREDICTIVE QUERY:

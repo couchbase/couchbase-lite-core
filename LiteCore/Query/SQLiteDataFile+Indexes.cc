@@ -100,7 +100,7 @@ namespace litecore {
                         same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
                         break;
                     case IndexSpec::kArray:
-                        same = schemaExistsWithSQL(spec.name, "index", KeyStore::hexName(indexTableName), indexSQL);
+                        same = schemaExistsWithSQL(spec.name, "index", hexName(indexTableName), indexSQL);
                         break;
                     default:
                         same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
@@ -142,7 +142,7 @@ namespace litecore {
                     unnestTables.push_back(tableName);
                 }
             }
-            // Assertion: unnestTables.back() == tableName
+            DebugAssert(unnestTables.back() == tableName);
         }
 
         size_t unnestLevel = unnestTables.size();
@@ -162,7 +162,7 @@ namespace litecore {
                 // This table has child table. Don't delete it and its parent
                 if ( stmt.executeStep() ) return;
 
-                tableName = KeyStore::hexName(tableName);  // Now, it's the true table name, hashed.
+                tableName = hexName(tableName);  // Now, it's the true table name, hashed.
                 // Move on to delete the unused tables.
             }
 

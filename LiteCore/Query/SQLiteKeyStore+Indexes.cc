@@ -88,7 +88,7 @@ namespace litecore {
     bool SQLiteKeyStore::createIndex(const IndexSpec& spec, const string& sourceTableName,
                                      Array::iterator& expressions) {
         Assert(spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector);
-        string      hexName{spec.type == IndexSpec::kArray ? KeyStore::hexName(sourceTableName) : ""};
+        string      hexName{spec.type == IndexSpec::kArray ? litecore::hexName(sourceTableName) : ""};
         QueryParser qp(db(), "", hexName.empty() ? sourceTableName : hexName);
         qp.writeCreateIndex(spec.name, hexName.empty() ? sourceTableName : hexName, expressions, spec.where(),
                             (spec.type != IndexSpec::kValue));

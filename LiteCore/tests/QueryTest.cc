@@ -104,8 +104,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Q
 
     // The KV table that unnest tables starts from.
     string      kv          = "kv_" + SQLiteKeyStore::transformCollectionName(store->name(), true);
-    string      unnestHash1 = KeyStore::hexName(kv + ":unnest:students");
-    string      unnestHash2 = KeyStore::hexName(kv + ":unnest:students[].interests");
+    string      unnestHash1 = hexName(kv + ":unnest:students");
+    string      unnestHash2 = hexName(kv + ":unnest:students[].interests");
     const char* triggers[]  = {"ins", "del", "preupdate", "postupdate"};
 
     // The triggers installed on the KV table. There are 4 triggers

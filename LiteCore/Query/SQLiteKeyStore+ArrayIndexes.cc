@@ -40,14 +40,14 @@ namespace litecore {
         if ( plainParentTable.empty() ) plainParentTable = parentTable = tableName();
         QueryParser qp(db(), "", plainParentTable);
         string      plainTableName    = qp.unnestedTableName(expression);
-        string      unnestTableName   = KeyStore::hexName(plainTableName);
+        string      unnestTableName   = hexName(plainTableName);
         string      quotedParentTable = CONCAT(sqlIdentifier(parentTable));
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(unnestTableName)
                                             << " "
                                                "(docid INTEGER NOT NULL REFERENCES "
-                                            << quotedParentTable
+                                            << sqlIdentifier(parentTable)
                                             << "(rowid), "
                                                " i INTEGER NOT NULL,"
                                                " body BLOB NOT NULL, "
