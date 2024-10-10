@@ -138,9 +138,7 @@ indexName       = IDENTIFIER
 ######## EXPRESSIONS:
 
 
-expression =
-    '(' _ '(' _ x:expression _ ')' _ ')' { $$ = (x) }
-    | expr9
+expression = expr9
 
 
 caseExpression =
@@ -317,8 +315,12 @@ baseExpr_ =
   | '$' IDENTIFIER                      { $$ = op(string("$") + yytext); }
   | function
   | property
-  | '(' _ expression _ ')'
+  | multiParenExprs
 baseExpr = baseExpr_ _                  # baseExpr to absorb all trailing white space
+
+multiParenExprs =
+    '(' _ x:multiParenExprs _ ')'       { $$ = x; }
+  | '(' _ x:expression _ ')'            { $$ = x; }
 
 OP_PREFIX =
     <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
