@@ -72,6 +72,10 @@ namespace litecore {
                                                const std::string& tableName, const std::string& sql) const;
 
         fleece::alloc_slice rawQuery(const std::string& query) override;
+        alloc_slice         rawScalarQuery(const string& query) override;
+
+        /* Internal-only. The default value used for the SQLite PRAGMA config `mmap_size`. */
+        static int defaultMmapSize();
 
         class Factory final : public DataFile::Factory {
           public:
