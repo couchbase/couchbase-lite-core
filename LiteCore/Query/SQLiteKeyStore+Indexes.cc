@@ -15,6 +15,7 @@
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
 #include "Error.hh"
+#include "SecureDigest.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
 #include "Array.hh"

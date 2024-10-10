@@ -15,6 +15,7 @@
 #include "SQLite_Internal.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "SecureDigest.hh"
 #include "SQLiteCpp/Database.h"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"

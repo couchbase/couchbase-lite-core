@@ -16,7 +16,6 @@
 #endif
 #include "IndexSpec.hh"
 #include "RecordEnumerator.hh"
-#include "SecureDigest.hh"
 #include <optional>
 #include <utility>
 #include <vector>

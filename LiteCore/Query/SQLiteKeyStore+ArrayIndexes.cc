@@ -13,6 +13,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
+#include "SecureDigest.hh"
 #include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "Array.hh"
@@ -66,7 +67,7 @@ namespace litecore {
                 db().exec(CONCAT("INSERT INTO " << sqlIdentifier(unnestTableName)
                                                 << " (docid, i, body) "
                                                    "SELECT new.rowid, _each.rowid, _each.value "
-                                                << "FROM " << quotedParentTable << " as new, " << eachExpr
+                                                << "FROM " << sqlIdentifier(parentTable) << " as new, " << eachExpr
                                                 << " AS _each "
                                                    "WHERE (new.flags & 1) = 0"));
             } else {
