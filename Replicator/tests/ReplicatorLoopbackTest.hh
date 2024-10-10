@@ -85,10 +85,10 @@ class ReplicatorLoopbackTest
     }
 
     ~ReplicatorLoopbackTest() override {
-        if ( _parallelThread ) _parallelThread->join();
+        CHECK(!_parallelThread);
         _replClient = _replServer = nullptr;
         C4Error error;
-        REQUIRE(c4db_delete(db2, WITH_ERROR(&error)));
+        CHECK(c4db_delete(db2, WITH_ERROR(&error)));
         c4db_release(db2);
     }
 
@@ -147,6 +147,11 @@ class ReplicatorLoopbackTest
                            [&] { return _replicatorClientFinished && _replicatorServerFinished; });
             if ( !(_replicatorClientFinished && _replicatorServerFinished) ) {
                 FAIL("Replication timed out after " << timeoutMins << " minutes...");
+            }
+
+            if ( _parallelThread ) {
+                _parallelThread->join();
+                _parallelThread = nullptr;
             }
 
             Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
