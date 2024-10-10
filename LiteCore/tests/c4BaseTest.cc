@@ -19,6 +19,7 @@
 #include "NumConversion.hh"
 #include "Actor.hh"
 #include "URLTransformer.hh"
+#include "SQLiteDataFile.hh"
 #include <exception>
 #include <chrono>
 #include <thread>
@@ -26,7 +27,6 @@
 #    include "Error.hh"
 #    include <winerror.h>
 #endif
-#include <SQLiteDataFile.hh>
 #include <sstream>
 
 using namespace fleece;
@@ -72,7 +72,7 @@ TEST_CASE("C4Error messages") {
                          WSAENOTSOCK,     WSAEOPNOTSUPP,    WSAEPROTONOSUPPORT, WSAEPROTOTYPE,   WSAETIMEDOUT,
                          WSAEWOULDBLOCK};
     for ( const auto err : errs ) {
-        litecore::error errObj(error::Domain::POSIX, int(err));
+        litecore::error errObj(litecore::error::Domain::POSIX, int(err));
         string          msg = errObj.what();
         CHECK(msg.find("Unknown error") == -1);  // Should have a valid error message
         CHECK(errObj.code != err);               // Should be remapped to standard POSIX code
