@@ -12,6 +12,7 @@
 
 #include "c4Test.hh"
 #include "c4Internal.hh"
+#include "c4Collection.h"
 #include "c4ExceptionUtils.hh"
 #include "fleece/InstanceCounted.hh"
 #include "catch.hpp"
@@ -27,7 +28,6 @@
 #    include "Error.hh"
 #    include <winerror.h>
 #endif
-#include <c4Collection.h>
 #include <future>
 #include <sstream>
 
@@ -142,22 +142,22 @@ TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
 }
 
 TEST_CASE_METHOD(C4Test, "Create collection concurrently", "[Database][C]") {
-    const slice dbName = db->getName();
+    const slice             dbName = db->getName();
     const C4DatabaseConfig2 config = db->getConfiguration();
 
     c4::ref db2 = c4db_openNamed(dbName, &config, ERROR_INFO());
     REQUIRE(db2);
 
-    char buf[6] {};
-    for(int i = 0; i < 5; i++) {
-        C4Error err {};
-        C4Error err2 {};
+    char buf[6]{};
+    for ( int i = 0; i < 5; i++ ) {
+        C4Error err{};
+        C4Error err2{};
 
         snprintf(buf, 6, "coll%i", i);
 
         {
-            slice collName { buf };
-            const C4CollectionSpec spec { collName, "scope"_sl };
+            slice                  collName{buf};
+            const C4CollectionSpec spec{collName, "scope"_sl};
 
             auto a1 = std::async(std::launch::async, c4db_createCollection, db, spec, ERROR_INFO(&err));
             auto a2 = std::async(std::launch::async, c4db_createCollection, db2.get(), spec, ERROR_INFO(&err2));
