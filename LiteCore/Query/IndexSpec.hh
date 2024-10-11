@@ -51,7 +51,7 @@ namespace litecore {
         struct ArrayOptions {
             alloc_slice unnestPath;
 
-            ArrayOptions(const char* unnestPath_) : unnestPath(unnestPath_) {}
+            ArrayOptions(string_view unnestPath_) : unnestPath(alloc_slice::nullPaddedString(unnestPath_)) {}
         };
 
         /// Options for a vector index.

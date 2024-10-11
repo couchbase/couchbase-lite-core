@@ -309,7 +309,15 @@ namespace litecore {
         }
 #endif
 
-        if ( type == IndexSpec::kArray ) { options.emplace<IndexSpec::ArrayOptions>(""); }
+        if ( type == IndexSpec::kArray ) {
+            auto        pos = indexTableName.find(KeyStore::kUnnestSeparator);
+            string_view path{""};
+            if ( pos != string::npos )
+                path = string_view{indexTableName.data() + pos + KeyStore::kUnnestSeparator.size,
+                                   indexTableName.length() - pos - KeyStore::kUnnestSeparator.size};
+            options.emplace<IndexSpec::ArrayOptions>(IndexSpec::ArrayOptions{path});
+        }
+
         SQLiteIndexSpec spec{name, type, expression, queryLanguage, options, keyStoreName, indexTableName};
         if ( auto col5 = stmt.getColumn(5); col5.isText() ) spec.indexedSequences = col5.getText();
         return spec;
