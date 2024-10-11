@@ -918,6 +918,13 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
             indexOpts.unnestPath = "students[].interests";
             REQUIRE(c4db_createIndex2(db, C4STR("students_interests"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
                                       &indexOpts, nullptr));
+
+            auto           coll  = c4db_getDefaultCollection(db, nullptr);
+            C4Index*       index = c4coll_getIndex(coll, C4STR("students_interests"), nullptr);
+            C4IndexOptions c4opts{};
+            bool           succ = c4index_getOptions(index, &c4opts);
+            CHECK((succ && "students[].interests"s == c4opts.unnestPath));
+            c4index_release(index);
         }
 
         compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'],"
