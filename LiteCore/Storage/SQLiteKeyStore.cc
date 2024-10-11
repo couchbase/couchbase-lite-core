@@ -522,10 +522,12 @@ namespace litecore {
 
     // Adds the 'expiration' column to the table.
     void SQLiteKeyStore::addExpiration() {
-        if ( mayHaveExpiration() ) return;
-        db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
-        db().execWithLock(subst("ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
-                                "CREATE INDEX \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
+        db().withFileLock([=]() {
+            if ( mayHaveExpiration() ) return;
+            db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
+            db().execWithLock(subst("ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
+                                    "CREATE INDEX \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
+        });
         _hasExpirationColumn         = true;
         _uncommittedExpirationColumn = true;
     }
