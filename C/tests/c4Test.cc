@@ -348,8 +348,11 @@ void C4Test::createRev(C4Database* db, C4Slice docID, C4Slice revID, C4Slice bod
 void C4Test::createRev(C4Collection* collection, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     C4Database*       db = c4coll_getDatabase(collection);
     TransactionHelper t(db);
-    auto              curDoc = c4coll_getDoc(collection, docID, false, kDocGetAll, ERROR_INFO());
-    REQUIRE(curDoc != nullptr);
+    C4Error           error;
+    auto              curDoc = c4coll_getDoc(collection, docID, false, kDocGetAll, &error);
+    
+    // This function is called on background threads sometimes, so can't use REQUIRE
+    Assert(curDoc != nullptr, "createRev failed: %s", c4error_descriptionStr(error));
     alloc_slice parentID;
     if ( isRevTrees(db) ) parentID = curDoc->revID;
     else
