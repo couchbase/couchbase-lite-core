@@ -581,7 +581,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "
             createRev(_collDB1, c4str("docA"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             createRev(_collDB1, c4str("docB"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             bool ok = c4coll_purgeDoc(_collDB1, c4str("docA"), ERROR_INFO());
-            REQUIRE(ok);
+            Require(ok);
         }
         sleepFor(1s);  // give replicator a moment to detect the latest revs
         stopWhenIdle();
@@ -884,7 +884,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push
     pullOptions.collectionOpts[0].callbackContext = &validationCount;
     pullOptions.collectionOpts[0].pullFilter      = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
                                                   C4RevisionFlags flags, FLDict body, void* context) -> bool {
-        assert_always(flags == 0);  // can't use CHECK on a bg thread
+        Check(flags == 0);
         ++(*(atomic<int>*)context);
         return (Dict(body)["birthday"].asstring() < "1993");
     };
@@ -1516,7 +1516,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]
         collOpts.callbackContext = &validationCount;
         collOpts.pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID, C4RevisionFlags flags,
                                  FLDict body, void* context) -> bool {
-            assert_always(flags == 0);  // can't use CHECK on a bg thread
+            Check(flags == 0);
             ++(*(atomic<int>*)context);
             return true;
         };
