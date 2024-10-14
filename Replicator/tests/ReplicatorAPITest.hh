@@ -212,13 +212,13 @@ class ReplicatorAPITest : public C4Test {
 
         _callbackStatus = s;
         ++_numCallbacks;
-        C4Assert(s.level != kC4Stopping);  // No internal state allowed
+        Require(s.level != kC4Stopping);  // No internal state allowed
         _numCallbacksWithLevel[(int)s.level]++;
         if ( s.level == kC4Offline ) {
-            C4Assert(_mayGoOffline);
+            Require(_mayGoOffline);
             _wentOffline = true;
-            CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrorsAfterOffline));
-            CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrorsAfterOffline));
+            Check(asVector(_docPullErrors) == asVector(_expectedDocPullErrorsAfterOffline));
+            Check(asVector(_docPushErrors) == asVector(_expectedDocPushErrorsAfterOffline));
             _docPullErrors.clear();
             _docPushErrors.clear();
         }
@@ -229,7 +229,7 @@ class ReplicatorAPITest : public C4Test {
             _sg.remoteCert = c4cert_retain(c4repl_getPeerTLSCertificate(_repl, &err));
             if ( !_sg.remoteCert && err.code != 0 ) {
                 WARN("Failed to get remote TLS certificate: error " << err.domain << "/" << err.code);
-                C4Assert(err.code == 0);
+                Check(err.code == 0);
             }
         }
 #endif
@@ -245,7 +245,7 @@ class ReplicatorAPITest : public C4Test {
         if ( !_socketFactory && !db2 ) {  // i.e. this is a real WebSocket connection
             if ( (s.level > kC4Connecting && s.error.code == 0)
                  || (s.level == kC4Stopped && s.error.domain == WebSocketDomain) )
-                C4Assert(_headers);
+                Require(_headers);
         }
 
         if ( s.level == kC4Idle ) {
@@ -381,7 +381,7 @@ class ReplicatorAPITest : public C4Test {
 
     void replicate(const std::variant<PushPull, C4ParamsSetter>& params, bool expectSuccess = true) {
         if ( !startReplicator(params, &_errorBeforeStart) ) {
-            DebugAssert(_repl == nullptr);
+            CHECK(_repl == nullptr);
             if ( expectSuccess ) { CHECK(_errorBeforeStart.code == 0); }
             return;
         }
@@ -417,7 +417,7 @@ class ReplicatorAPITest : public C4Test {
 
     bool requireSG3() const {
         alloc_slice serverName{_sg.getServerName()};
-        REQUIRE(serverName.hasPrefix("Couchbase Sync Gateway/"));
+        Require(serverName.hasPrefix("Couchbase Sync Gateway/"));
         if ( serverName >= "Couchbase Sync Gateway/3" ) {
             return true;
         } else {
