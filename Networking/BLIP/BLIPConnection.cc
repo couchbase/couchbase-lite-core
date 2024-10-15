@@ -162,11 +162,12 @@ namespace litecore::blip {
 
       protected:
         ~BLIPIO() override {
+            double outboxDepth = (_countOutboxDepth != 0) ? (static_cast<double>(_totalOutboxDepth) / static_cast<double>(_countOutboxDepth)) : 0.0;
             LogTo(SyncLog,
                   "BLIP sent %zu msgs (%" PRIu64 " bytes), rcvd %" PRIu64 " msgs (%" PRIu64
                   " bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
                   _countOutboxDepth, _totalBytesWritten, _numRequestsReceived, _totalBytesRead, _timeOpen.elapsed(),
-                  _maxOutboxDepth, _totalOutboxDepth / (double)_countOutboxDepth);
+                  _maxOutboxDepth, outboxDepth);
             logStats();
         }
 
@@ -439,7 +440,7 @@ namespace litecore::blip {
                                     receivedAck(msgNo, (type == kAckResponseType), payload);
                                     break;
                                 default:
-                                    warn("  Unknown BLIP frame type received");
+                                    warn("Unknown BLIP frame type received");
                                     // For forward compatibility let's just ignore this instead of closing
                                     break;
                             }
@@ -651,7 +652,7 @@ namespace litecore::blip {
         if ( _compressionLevel == 0 ) msg->dontCompress();
         if ( BLIPMessagesLog.effectiveLevel() <= LogLevel::Info ) {
             stringstream dump;
-            bool         withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
+            bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
             msg->dump(dump, withBody);
             BLIPMessagesLog.log(LogLevel::Info, "SENDING: %s", dump.str().c_str());
         }
