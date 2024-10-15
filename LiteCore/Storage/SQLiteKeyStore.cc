@@ -525,11 +525,11 @@ namespace litecore {
         db().withFileLock([=]() {
             if ( mayHaveExpiration() ) return;
             db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
-            db().execWithLock(subst("ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
-                                    "CREATE INDEX \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
+            db().exec(subst("ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
+                            "CREATE INDEX \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
+            _uncommittedExpirationColumn = true;
         });
-        _hasExpirationColumn         = true;
-        _uncommittedExpirationColumn = true;
+        _hasExpirationColumn = true;
     }
 
     bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
