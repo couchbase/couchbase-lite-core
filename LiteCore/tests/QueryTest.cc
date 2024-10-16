@@ -145,6 +145,366 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Q
     CHECK(!succAll);
 }
 
+namespace {
+
+    void AddDocWithJSON(KeyStore* store, slice docID, ExclusiveTransaction& t, const char* jsonBody) {
+        DataFileTestFixture::writeDoc(
+                *store, docID, DocumentFlags::kNone, t,
+                [=](Encoder& enc) {
+                    impl::JSONConverter jc(enc);
+                    if ( !jc.encodeJSON(slice(jsonBody)) ) {
+                        enc.reset();
+                        error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
+                    }
+                },
+                false);
+    }
+
+    inline char nextLetter(char a, unsigned n = 1) { return (char)(a + n); }
+
+    // Turning the state as represented by letters into string. It will be used to generate
+    // the property value of the array property.
+    string concat(std::vector<std::pair<char, unsigned>>& letters, int top, const string& docID) {
+        std::stringstream ss;
+        for ( int i = 0; i <= top; ++i ) {
+            if ( i == 0 && !docID.empty() ) ss << docID << "-";
+            if ( i > 0 ) ss << "-";
+            ss << letters[i].first << letters[i].second;
+        }
+        return ss.str();
+    }
+
+    string multiLevelArrayIter(std::vector<std::pair<char, unsigned>>& letters, int& letter, int arrDim,
+                               const string& docID) {
+        string ret{};
+        if ( letter < 0 ) return ret;
+
+        int  j     = letters[letter].second;
+        bool atTop = letter + 1 == letters.size();
+        if ( j < arrDim ) {
+            if ( j == 0 ) ret = "\"" + string{letters[letter].first} + "\":[";
+            else
+                ret = ",";
+            if ( atTop ) {
+                ret += "\"" + concat(letters, letter, docID) + "\"";
+                letters[letter].second++;
+            } else if ( letter + 1 < letters.size() ) {
+                if ( j == 0 ) {
+                    // We are in the curly brace, and we start the letter property and
+                    // open a curly brace for the next level.
+                    ret                      = "\"" + string{letters[letter].first} + "\":[{";
+                    letters[++letter].second = 0;
+                } else {
+                    ret                      = "},{";
+                    letters[++letter].second = 0;
+                }
+            }
+        } else {
+            ret = atTop ? "]" : "}]";
+            if ( --letter >= 0 ) { letters[letter].second++; }
+        }
+        return ret;
+    }
+
+    string multiLevelArray(std::vector<std::pair<char, unsigned>>& letters, int letter, int arrDim,
+                           const string& docID) {
+        string ret{};
+        for ( string s = multiLevelArrayIter(letters, letter, arrDim, docID); !s.empty();
+              s        = multiLevelArrayIter(letters, letter, arrDim, docID) ) {
+            ret = ret + s;
+        }
+        return ret;
+    }
+
+    // build a json of nested arrays, like:
+    // {"a":[{"b":["doc001-a0-b0","doc001-a0-b1"]},{"b":["doc001-a1-b0","doc001-a1-b1"]}]}
+    // Pre-conditions: 'a' <= a && letterDim <= 'a' +26 - a
+    string buildMultiLevelArray(char a, int letterDim, int arrDim, const string& docID) {
+        std::vector<std::pair<char, unsigned>> stack;
+        for ( short i = 0; i < letterDim; ++i ) { stack.emplace_back(nextLetter(a, i), 0); }
+        int top = 0;
+        return "{" + multiLevelArray(stack, top, arrDim, docID) + "}";
+    }
+
+    vector<string> addJSONDocs(KeyStore* store, std::function<string(const string&)>& jsonBuilder, int start, int count,
+                               const string& docPrefix = "doc") {
+        vector<string>       ret;
+        constexpr size_t     bufSize = 20;
+        ExclusiveTransaction t(store->dataFile());
+        for ( int i = 0; i < count; ++i ) {
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%s%03u", docPrefix.c_str(), start + i);
+            string json = jsonBuilder(docID);
+            ret.push_back(docID);
+            AddDocWithJSON(store, docID, t, json.c_str());
+        }
+        t.commit();
+        return ret;
+    }
+
+    // Pre-conditions: 'a' <= a && letterDim <= 'a' +26 - a
+    // Example output:  "doc001-a0-b0", "doc001-a0-b1", "doc001-a1-b0", "doc001-a1-b1", "doc002-a0-b0"
+    // , "doc002-a0-b1", "doc002-a1-b0", "doc002-a1-b1", ...
+    vector<string> unnestedElements(const vector<string>& docs, char a, unsigned letterDim, unsigned arrDim) {
+        vector<string>                    ret;
+        vector<std::pair<char, unsigned>> letters;
+        for ( short i = 0; i < letterDim; ++i ) letters.emplace_back(nextLetter(a, i), 0);
+        if ( letters.empty() ) return ret;
+
+        for ( auto& doc : docs ) {
+            int letter             = 0;
+            letters[letter].second = 0;
+            while ( true ) {
+                int  j     = letters[letter].second;
+                bool atTop = letter + 1 == letters.size();
+                if ( j < arrDim ) {
+                    if ( atTop ) {
+                        ret.push_back(concat(letters, letter, doc));
+                        letters[letter].second++;
+                        continue;
+                    } else if ( letter + 1 < letters.size() ) {
+                        letters[++letter].second = 0;
+                        continue;
+                    }
+                } else if ( letter == 0 ) {
+                    break;
+                } else {
+                    letters[--letter].second++;
+                    continue;
+                }
+            }
+        }
+        return ret;
+    }
+
+    string unnestClause(char a, unsigned depth) {
+        if ( depth == 0 ) return "";
+        std::stringstream ss;
+        for ( unsigned i = 0; i < depth; ++i ) {
+            if ( i > 0 ) ss << " ";
+            ss << "UNNEST ";
+            if ( i == 0 ) ss << "doc";
+            else
+                ss << nextLetter(a, i - 1);
+            ss << "." << nextLetter(a, i) << " AS " << nextLetter(a, i);
+        }
+        return ss.str();
+    };
+
+    string unnestPath(char a, unsigned depth) {
+        if ( depth == 0 ) return "";
+        std::stringstream ss;
+        for ( unsigned i = 0; i < depth; ++i ) {
+            if ( i > 0 ) ss << "[].";
+            ss << nextLetter(a, i);
+        }
+        return ss.str();
+    };
+
+    string arrayElement(char a, unsigned depth, const string& docID, unsigned arrayIndex) {
+        if ( depth == 0 || arrayIndex > 2 ) return string{};
+        std::stringstream ss;
+        ss << docID;
+        for ( unsigned i = 0; i < depth; ++i ) { ss << "-" << nextLetter(a, i) << arrayIndex; }
+        return ss.str();
+    };
+
+}  // anonymous namespace
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayIndex]") {
+    // 5 documents of 10 levels deep.
+    constexpr int depth = 10;
+
+    std::function<string(const string&)> jsonBuilder =
+            std::bind(buildMultiLevelArray, 'a', depth, 2, std::placeholders::_1);
+    vector<string> docs = addJSONDocs(store, jsonBuilder, 1, 5, "doc");
+    REQUIRE(store->recordCount() == 5);
+
+    string unnestSuffix  = unnestClause('a', depth);
+    string unnestedArray = unnestSuffix.substr(unnestSuffix.length() - 1);
+    string queryStr      = "SELECT " + unnestedArray + " FROM " + collectionName + " AS doc " + unnestSuffix;
+
+    // queryStr = "SELECT j FROM _default AS doc UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c
+    // UNNEST c.d AS d UNNEST d.e AS e UNNEST e.f AS f UNNEST f.g AS g UNNEST g.h AS h UNNEST h.i AS i
+    // UNNEST i.j AS j"
+    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+
+    string explanation = query->explain();
+    CHECK(explanation.find("SCAN") != string::npos);
+
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    vector<string>            results;
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    vector<string> expected = unnestedElements(docs, 'a', depth, 2);
+    CHECK(results == expected);
+
+    string unnestPathc = unnestPath('a', depth).c_str();
+    REQUIRE(store->createIndex("array_index"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
+                               IndexSpec::ArrayOptions{unnestPathc.c_str()}));
+    string arrayElem1 = arrayElement('a', depth, "doc002", 0);
+    string arrayElem2 = arrayElement('a', depth, "doc003", 1);
+
+    queryStr = "SELECT META(doc).id, " + unnestSuffix.substr(unnestSuffix.length() - 1) + " FROM " + collectionName
+               + " AS doc " + unnestSuffix + " WHERE " + unnestedArray + " = \"" + arrayElem1 + "\" OR " + unnestedArray
+               + " = \"" + arrayElem2 + "\"";
+
+    // "SELECT META(doc).id, j FROM _default AS doc UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c UNNEST c.d AS d
+    // UNNEST d.e AS e UNNEST e.f AS f UNNEST f.g AS g UNNEST g.h AS h UNNEST h.i AS i UNNEST i.j AS j
+    // WHERE j = \"doc002-a0-b0-c0-d0-e0-f0-g0-h0-i0-j0\" OR j = \"doc003-a1-b1-c1-d1-e1-f1-g1-h1-i1-j1\""
+    query       = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    explanation = query->explain();
+    CHECK(explanation.find("SCAN") == string::npos);
+
+    expected.resize(0);
+    expected.push_back("doc002"s + "," + arrayElem1);
+    expected.push_back("doc003"s + "," + arrayElem2);
+
+    e = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) {
+        results.push_back(e->columns()[0]->asString().asString() + "," + e->columns()[1]->asString().asString());
+    }
+    CHECK(results == expected);
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]") {
+    constexpr int depth = 3;
+
+    std::function<string(const string&)> jsonBuilder =
+            std::bind(buildMultiLevelArray, 'a', depth, 2, std::placeholders::_1);
+    // Adding two docs starting from 1
+    vector<string> docs = addJSONDocs(store, jsonBuilder, 1, 2, "doc");
+    REQUIRE(store->recordCount() == 2);
+
+    string unnestSuffix  = unnestClause('a', depth);
+    string unnestedArray = unnestSuffix.substr(unnestSuffix.length() - 1);
+    string queryStr      = "SELECT " + unnestedArray + " FROM " + collectionName + " AS doc " + unnestSuffix;
+
+    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+
+    // Create Index
+    string unnestPathc = unnestPath('a', depth).c_str();
+    REQUIRE(store->createIndex("array_index"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
+                               IndexSpec::ArrayOptions{unnestPathc.c_str()}));
+
+    vector<string>            expected = unnestedElements(docs, 'a', depth, 2);
+    Retained<QueryEnumerator> e        = query->createEnumerator();
+    vector<string>            results;
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    // expected =
+    CHECK(results.size() == 16);  // 2 docs x 2^3 each doc
+    CHECK(results == expected);
+
+    //
+    // Test the insertion triggers
+    //
+
+    // Insert 5 documents, from 3 to 7
+    vector<string> docs_inserted     = addJSONDocs(store, jsonBuilder, 3, 5, "doc");
+    vector<string> expected_inserted = unnestedElements(docs_inserted, 'a', depth, 2);
+    CHECK(expected_inserted.size() == 40);
+
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    e     = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+
+    vector<string> expected2 = expected;
+    for ( const auto& a : expected_inserted ) expected2.push_back(a);
+    CHECK(results.size() == 56);  // 16 + 40
+    CHECK(expected2 == results);
+
+    //
+    // Test the deletion triggers
+    //
+
+    // We now have 7 documents, from doc001 to doc007
+    // Let's delete doc002 and doc005, doc007, with one soft, one hard, and one soft delete
+    // soft delete is done by setting the delete flag and hard delete is to delete it from the kv-store
+    deleteDoc("doc002"_sl, false);
+    deleteDoc("doc005"_sl, true);
+    deleteDoc("doc007"_sl, false);
+
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    e     = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    vector<string> expected3;
+    for ( const auto& a : expected2 ) {
+        if ( a.find("doc002-") == string::npos && a.find("doc005-") == string::npos
+             && a.find("doc007-") == string::npos )
+            expected3.push_back(a);
+    }
+    CHECK(expected3.size() == 32);
+    CHECK(results == expected3);
+
+    // Undo the soft delete of the last doc, doc007
+    undeleteDoc("doc007"_sl);
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    e     = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    // putting back doc007-
+    for ( const auto& a : expected2 ) {
+        if ( a.find("doc007-") != string::npos ) expected3.push_back(a);
+    }
+    CHECK(expected3.size() == 40);
+    CHECK(results == expected3);
+
+    //
+    // Test the update triggers
+    //
+
+    // We now have 5 docs: doc001, doc003, doc004, doc006, doc007
+    // Update doc006
+
+    string updateDocID{"doc006"};
+    string updateJson = jsonBuilder(updateDocID);
+    // '{"a":[{"b":[{"c":["doc006-a0-b0-c0","doc006-a0-b0-c1"]},{"c":["doc006-a0-b1-c0",
+    //  "doc006-a0-b1-c1"]}]},{"b":[{"c":["doc006-a1-b0-c0","doc006-a1-b0-c1"]},
+    //  {"c":["doc006-a1-b1-c0","doc006-a1-b1-c1"]}]}]}'
+    size_t         pos = 0;
+    vector<string> arrayElements;
+    // Change doc006-a0-b0-c0 to doc006-A0-B0-C0, lower case a to c to upper case.
+    while ( pos < updateJson.length() ) {
+        pos = updateJson.find("\"doc006-", pos);
+        if ( pos != string::npos ) {
+            auto pos2 = updateJson.find("\"", pos + 1);
+            Assert(pos2 != string::npos);
+            ++pos2;
+            for ( size_t i = pos + 8; i < pos2; ++i ) {
+                if ( 'a' <= updateJson[i] && updateJson[i] <= 'z' ) { updateJson[i] = 'A' + updateJson[i] - 'a'; }
+            }
+            arrayElements.push_back(updateJson.substr(pos + 1, pos2 - pos - 2));
+            pos = pos2;
+        }
+    }
+    REQUIRE(arrayElements.size() == 8);
+
+    // Update the doc
+    {
+        ExclusiveTransaction t(store->dataFile());
+        AddDocWithJSON(store, updateDocID, t, updateJson.c_str());
+        t.commit();
+    }
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    e     = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    vector<string> expected4;
+    for ( unsigned i = 0; i < expected3.size(); ++i ) {
+        auto p = expected3[i].find(updateDocID);
+        // Only take those docs in expected3 that have docID not equaling updadeDocID
+        if ( p == string::npos ) expected4.push_back(expected3[i]);
+    }
+    // expected3.size() == 40
+    REQUIRE(expected4.size() == 32);
+    // Upcased docs come at the end of the query results.
+    for ( const auto& a : arrayElements ) expected4.push_back(a);
+    REQUIRE(expected4.size() == 40);
+    CHECK(results == expected4);
+}
+
 TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);
     addArrayDocs(101, 100);
@@ -3060,22 +3420,6 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
     }
 }
 
-namespace {
-    void AddDocWithJSON(KeyStore* store, slice docID, ExclusiveTransaction& t, const char* jsonBody) {
-        DataFileTestFixture::writeDoc(
-                *store, docID, DocumentFlags::kNone, t,
-                [=](Encoder& enc) {
-                    impl::JSONConverter jc(enc);
-                    if ( !jc.encodeJSON(slice(jsonBody)) ) {
-                        enc.reset();
-                        error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
-                    }
-                },
-                false);
-        t.commit();
-    }
-}  // anonymous namespace
-
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
     const char* json = R"==(
 {
@@ -3106,6 +3450,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         AddDocWithJSON(store, "doc01"_sl, t, json);
+        t.commit();
     }
 
     // Case 1, Single level UNNEST

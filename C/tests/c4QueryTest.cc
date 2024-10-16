@@ -911,7 +911,7 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
             "Univ of Pennsylvania, student_112, 3, piano",  "Univ of Pennsylvania, student_112, 3, swimming",
             "Univ of Pennsylvania, student_189, 2, violin", "Univ of Pennsylvania, student_189, 2, movies"};
 
-    for ( int withIndex = 1; withIndex <= 1; ++withIndex ) {
+    for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
             C4IndexOptions indexOpts{};
@@ -982,6 +982,48 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
         }
         checkExplanation(withIndex);
         CHECK(run2(nullptr, 3) == violins);
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST - Missing Array", "[Query][C]") {
+    deleteDatabase();
+    db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    std::stringstream documents{R"(
+[
+{"name": "Jonh Doe", "contacts": ["Contact1", "Contact2"]},
+{"name": "Scott Tiger", "contacts": []},
+{"name": "Foo Bar"},
+{"name": "Harry Potter", "contacts": "my contacts" }
+]
+)"};
+    importJSONFile(documents, c4db_getDefaultCollection(db, nullptr));
+    for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
+        if ( withIndex ) {
+            C4Log("-------- Repeating with index --------");
+            C4IndexOptions indexOpts{};
+            indexOpts.unnestPath = "contacts";
+            REQUIRE(c4db_createIndex2(db, C4STR("contacts"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex, &indexOpts,
+                                      nullptr));
+        }
+
+        const char* queryStr = "SELECT doc.name, contact FROM _default AS doc UNNEST doc.contacts AS contact";
+
+        // For the above query, server returns
+        //         vector<string> results {
+        // "Jonh Doe, Contact1",
+        // "Jonh Doe, Contact2"
+        // }
+        // But we return the following. The third row comes from the 4th document, of which
+        // property "contacts" is a scalar, "my contacts". We treat it as an array of one element.
+        // Pasin has found the responsible code. In SQLiteFleeceEach.cc, line 251, if we change it 1 to 0,
+        // we will get the same result as what the server get.
+        vector<string> results{"Jonh Doe, Contact1", "Jonh Doe, Contact2", "Harry Potter, my contacts"};
+
+        C4Error error{};
+        c4query_release(query);
+        query = c4query_new2(db, kC4N1QLQuery, c4str(queryStr), nullptr, ERROR_INFO(error));
+        REQUIRE(query);
+        CHECK(run2(nullptr, 2) == results);
     }
 }
 
