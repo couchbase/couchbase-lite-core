@@ -990,10 +990,10 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST - Missing Array",
     db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
     std::stringstream documents{R"(
 [
-{"name": "Jonh Doe", "contacts": ["Contact1", "Contact2"]},
-{"name": "Scott Tiger", "contacts": []},
-{"name": "Foo Bar"},
-{"name": "Harry Potter", "contacts": "my contacts" }
+  {"name": "Jonh Doe",     "contacts": ["Contact1", "Contact2"]},
+  {"name": "Scott Tiger",  "contacts": []                      },
+  {"name": "Foo Bar"                                           },
+  {"name": "Harry Potter", "contacts": "my contacts"           }
 ]
 )"};
     importJSONFile(documents, c4db_getDefaultCollection(db, nullptr));
@@ -1009,9 +1009,9 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST - Missing Array",
         const char* queryStr = "SELECT doc.name, contact FROM _default AS doc UNNEST doc.contacts AS contact";
 
         // For the above query, server returns
-        //         vector<string> results {
-        // "Jonh Doe, Contact1",
-        // "Jonh Doe, Contact2"
+        // results {
+        //   "Jonh Doe, Contact1",
+        //   "Jonh Doe, Contact2"
         // }
         // But we return the following. The third row comes from the 4th document, of which
         // property "contacts" is a scalar, "my contacts". We treat it as an array of one element.

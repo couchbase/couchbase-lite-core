@@ -174,6 +174,9 @@ namespace {
         return ss.str();
     }
 
+    // This is a heper function used by multiLevelArray. It yields a succession of strings adding up to
+    // a JSON of a multi-leveled array (minus the outer braces), based on the state in letters and letter
+    // whhich is updated after each invocation.
     string multiLevelArrayIter(std::vector<std::pair<char, unsigned>>& letters, int& letter, int arrDim,
                                const string& docID) {
         string ret{};
@@ -206,6 +209,8 @@ namespace {
         return ret;
     }
 
+    // This is helper function used by buildMulteLevelArray. It accumulates the returns from
+    // multiLevelArrayIter like a trail-recursion.
     string multiLevelArray(std::vector<std::pair<char, unsigned>>& letters, int letter, int arrDim,
                            const string& docID) {
         string ret{};
@@ -216,8 +221,25 @@ namespace {
         return ret;
     }
 
-    // build a json of nested arrays, like:
-    // {"a":[{"b":["doc001-a0-b0","doc001-a0-b1"]},{"b":["doc001-a1-b0","doc001-a1-b1"]}]}
+    // build a json of nested arrays by calliing multiLevelArray. And example with the following
+    // parameters,
+    //   a = 'a',
+    //   letterDim = 3, corresponding to 'a', 'b', 'c'
+    //   arrDim = 2,    corresponding to the suffixes of each letter.
+    //   docID = "doc001"
+    // is
+    // {"a": [ {"b": [ {"c": ["doc001-a0-b0-c0", "doc001-a0-b0-c1"]},
+    //                 {"c": ["doc001-a0-b1-c0", "doc001-a0-b1-c1"]}
+    //               ]
+    //         },
+    //         {"b": [ {"c": ["doc001-a1-b0-c0", "doc001-a1-b0-c1"]},
+    //                {"c": ["doc001-a1-b1-c0", "doc001-a1-b1-c1"]}
+    //               ]
+    //         }
+    //       ]
+    // }
+    // It corresponds to the unnest path: a[].b[].c
+    //
     // Pre-conditions: 'a' <= a && letterDim <= 'a' +26 - a
     string buildMultiLevelArray(char a, int letterDim, int arrDim, const string& docID) {
         std::vector<std::pair<char, unsigned>> stack;
@@ -245,6 +267,7 @@ namespace {
     // Pre-conditions: 'a' <= a && letterDim <= 'a' +26 - a
     // Example output:  "doc001-a0-b0", "doc001-a0-b1", "doc001-a1-b0", "doc001-a1-b1", "doc002-a0-b0"
     // , "doc002-a0-b1", "doc002-a1-b0", "doc002-a1-b1", ...
+    // in the order of JSON built by buildMultiLevelArray
     vector<string> unnestedElements(const vector<string>& docs, char a, unsigned letterDim, unsigned arrDim) {
         vector<string>                    ret;
         vector<std::pair<char, unsigned>> letters;
@@ -277,6 +300,7 @@ namespace {
         return ret;
     }
 
+    // E.g:  UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c
     string unnestClause(char a, unsigned depth) {
         if ( depth == 0 ) return "";
         std::stringstream ss;
@@ -291,6 +315,7 @@ namespace {
         return ss.str();
     };
 
+    // E.g. a[].b[].c
     string unnestPath(char a, unsigned depth) {
         if ( depth == 0 ) return "";
         std::stringstream ss;
@@ -301,6 +326,8 @@ namespace {
         return ss.str();
     };
 
+    // E.g. doc001-a0-b0-c0 for arrayIndex=0
+    //      doc001-a1-b1-c1 for arrayIndex=1
     string arrayElement(char a, unsigned depth, const string& docID, unsigned arrayIndex) {
         if ( depth == 0 || arrayIndex > 2 ) return string{};
         std::stringstream ss;
@@ -313,44 +340,56 @@ namespace {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayIndex]") {
     // 5 documents of 10 levels deep.
-    constexpr int depth = 10;
+    constexpr int depth    = 10;
+    constexpr int docCount = 5;
+    constexpr int arrayDim = 2;
+    auto          pow      = [](int base, unsigned exp) {
+        int ret = 1;
+        for ( unsigned i = 0; i < exp; ++i ) ret *= base;
+        return ret;
+    };
+    constexpr int totalUnnested = docCount * pow(arrayDim, depth);
 
     std::function<string(const string&)> jsonBuilder =
-            std::bind(buildMultiLevelArray, 'a', depth, 2, std::placeholders::_1);
-    vector<string> docs = addJSONDocs(store, jsonBuilder, 1, 5, "doc");
-    REQUIRE(store->recordCount() == 5);
+            std::bind(buildMultiLevelArray, 'a', depth, arrayDim, std::placeholders::_1);
+    vector<string> docs = addJSONDocs(store, jsonBuilder, 1, docCount, "doc");
+    REQUIRE(store->recordCount() == docCount);
 
     string unnestSuffix  = unnestClause('a', depth);
-    string unnestedArray = unnestSuffix.substr(unnestSuffix.length() - 1);
+    string unnestedArray = unnestSuffix.substr(unnestSuffix.length() - 1);  // The last component in the unnestPath.
     string queryStr      = "SELECT " + unnestedArray + " FROM " + collectionName + " AS doc " + unnestSuffix;
-
     // queryStr = "SELECT j FROM _default AS doc UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c
     // UNNEST c.d AS d UNNEST d.e AS e UNNEST e.f AS f UNNEST f.g AS g UNNEST g.h AS h UNNEST h.i AS i
     // UNNEST i.j AS j"
-    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
 
-    string explanation = query->explain();
+    // Query without index will run a SCAN.
+    Retained<Query> query       = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    string          explanation = query->explain();
     CHECK(explanation.find("SCAN") != string::npos);
 
     Retained<QueryEnumerator> e(query->createEnumerator());
     vector<string>            results;
     while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
-    vector<string> expected = unnestedElements(docs, 'a', depth, 2);
+    vector<string> expected = unnestedElements(docs, 'a', depth, arrayDim);
+    REQUIRE(expected.size() == totalUnnested);
     CHECK(results == expected);
 
+    // Create the array index
     string unnestPathc = unnestPath('a', depth).c_str();
     REQUIRE(store->createIndex("array_index"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
                                IndexSpec::ArrayOptions{unnestPathc.c_str()}));
     string arrayElem1 = arrayElement('a', depth, "doc002", 0);
     string arrayElem2 = arrayElement('a', depth, "doc003", 1);
 
+    // Query with WHERE
     queryStr = "SELECT META(doc).id, " + unnestSuffix.substr(unnestSuffix.length() - 1) + " FROM " + collectionName
                + " AS doc " + unnestSuffix + " WHERE " + unnestedArray + " = \"" + arrayElem1 + "\" OR " + unnestedArray
                + " = \"" + arrayElem2 + "\"";
-
     // "SELECT META(doc).id, j FROM _default AS doc UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c UNNEST c.d AS d
     // UNNEST d.e AS e UNNEST e.f AS f UNNEST f.g AS g UNNEST g.h AS h UNNEST h.i AS i UNNEST i.j AS j
     // WHERE j = \"doc002-a0-b0-c0-d0-e0-f0-g0-h0-i0-j0\" OR j = \"doc003-a1-b1-c1-d1-e1-f1-g1-h1-i1-j1\""
+
+    // Query with the index won't run SCAN
     query       = store->compileQuery(queryStr, QueryLanguage::kN1QL);
     explanation = query->explain();
     CHECK(explanation.find("SCAN") == string::npos);
@@ -381,15 +420,19 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     string queryStr      = "SELECT " + unnestedArray + " FROM " + collectionName + " AS doc " + unnestSuffix;
 
     Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    // The query uses fl_each when there is no unnest table for the indexing.
+    REQUIRE(query->explain().find("fl_each") != string::npos);
 
-    // Create Index
+    // Create Index, where are 2 documnets
     string unnestPathc = unnestPath('a', depth).c_str();
     REQUIRE(store->createIndex("array_index"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
                                IndexSpec::ArrayOptions{unnestPathc.c_str()}));
 
     vector<string>            expected = unnestedElements(docs, 'a', depth, 2);
     Retained<QueryEnumerator> e        = query->createEnumerator();
-    vector<string>            results;
+    // The same query will continue to use virtual tables, fl_each, even though after the index is created.
+    REQUIRE(query->explain().find("fl_each") != string::npos);
+    vector<string> results;
     while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
     // expected =
     CHECK(results.size() == 16);  // 2 docs x 2^3 each doc
@@ -402,10 +445,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     // Insert 5 documents, from 3 to 7
     vector<string> docs_inserted     = addJSONDocs(store, jsonBuilder, 3, 5, "doc");
     vector<string> expected_inserted = unnestedElements(docs_inserted, 'a', depth, 2);
-    CHECK(expected_inserted.size() == 40);
+    CHECK(expected_inserted.size() == 40);  // 40 == 5 * 2^3
 
     query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    e     = query->createEnumerator();
+    // Newly query, after the index is created, uses the unnest tables.
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
     results.resize(0);
     while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
 
@@ -426,7 +471,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     deleteDoc("doc007"_sl, false);
 
     query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    e     = query->createEnumerator();
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
     results.resize(0);
     while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
     vector<string> expected3;
@@ -435,18 +481,20 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
              && a.find("doc007-") == string::npos )
             expected3.push_back(a);
     }
-    CHECK(expected3.size() == 32);
+    CHECK(expected3.size() == 32);  // We are left with 4 documents. 32 == 4 * 8
     CHECK(results == expected3);
 
     // Undo the soft delete of the last doc, doc007
     undeleteDoc("doc007"_sl);
     query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    e     = query->createEnumerator();
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
     results.resize(0);
     while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
     // putting back doc007-
     for ( const auto& a : expected2 ) {
-        if ( a.find("doc007-") != string::npos ) expected3.push_back(a);
+        if ( a.find("doc007-") != string::npos )
+            expected3.push_back(a);  // The undeleted doc shows up at the end of query result.
     }
     CHECK(expected3.size() == 40);
     CHECK(results == expected3);
@@ -465,7 +513,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     //  {"c":["doc006-a1-b1-c0","doc006-a1-b1-c1"]}]}]}'
     size_t         pos = 0;
     vector<string> arrayElements;
-    // Change doc006-a0-b0-c0 to doc006-A0-B0-C0, lower case a to c to upper case.
+    // Change doc006-a0-b0-c0 to doc006-A0-B0-C0, lower case of a to c to upper case.
     while ( pos < updateJson.length() ) {
         pos = updateJson.find("\"doc006-", pos);
         if ( pos != string::npos ) {
@@ -479,6 +527,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
             pos = pos2;
         }
     }
+    // updateJson after updated:
+    // '{"a":[{"b":[{"c":["doc006-A0-B0-C0","doc006-A0-B0-C1"]},{"c":["doc006-A0-B1-C0",
+    // "doc006-A0-B1-C1"]}]},{"b":[{"c":["doc006-A1-B0-C0","doc006-A1-B0-C1"]},
+    // {"c":["doc006-A1-B1-C0","doc006-A1-B1-C1"]}]}]}'
     REQUIRE(arrayElements.size() == 8);
 
     // Update the doc
@@ -488,7 +540,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
         t.commit();
     }
     query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    e     = query->createEnumerator();
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
     results.resize(0);
     while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
     vector<string> expected4;
