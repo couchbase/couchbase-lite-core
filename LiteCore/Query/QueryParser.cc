@@ -208,6 +208,8 @@ namespace litecore {
 #pragma mark - SELECT STATEMENT
 
     void QueryParser::writeSelect(const Dict* operands) {
+        _hasGroupBy = getCaseInsensitive(operands, "GROUP_BY"_sl);
+
         // Find all the joins in the FROM clause first, to populate alias info. This has to be done
         // before writing the WHAT clause, because that will depend on the aliases.
         auto from = getCaseInsensitive(operands, "FROM"_sl);
@@ -264,8 +266,11 @@ namespace litecore {
         writeWhereClause(where);
 
         // GROUP_BY clause:
-        bool grouped = (writeSelectListClause(operands, "GROUP_BY"_sl, " GROUP BY ") > 0);
-        if ( grouped ) _isAggregateQuery = true;
+        bool grouped = false;
+        if ( _hasGroupBy ) {
+            grouped           = (writeSelectListClause(operands, "GROUP_BY"_sl, " GROUP BY ") > 0);
+            _isAggregateQuery = true;
+        }
 
         // HAVING clause:
         auto having = getCaseInsensitive(operands, "HAVING"_sl);
@@ -1888,7 +1893,8 @@ namespace litecore {
             if ( property.empty() ) {
                 _sql << tablePrefix << "value";
             } else {
-                _sql << kNestedValueFnName << "(" << tablePrefix << "body, " << sqlString(spec) << ")";
+                _sql << kNestedValueFnName << "(" << tablePrefix << (_hasGroupBy ? "data, " : "body, ")
+                     << sqlString(spec) << ")";
             }
         } else {
             _sql << kUnnestedValueFnName << "(" << tablePrefix << "body";

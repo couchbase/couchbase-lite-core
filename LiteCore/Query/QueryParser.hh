@@ -293,6 +293,7 @@ namespace litecore {
         Collation _collation;                      // Collation in use during parse
         bool      _collationUsed{true};            // Emitted SQL "COLLATION" yet?
         bool      _functionWantsCollation{false};  // Current fn wants collation param in its arg list
+        bool      _hasGroupBy{false};              // the query has "group_by" clause.
     };
 
 }  // namespace litecore

@@ -423,7 +423,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     // The query uses fl_each when there is no unnest table for the indexing.
     REQUIRE(query->explain().find("fl_each") != string::npos);
 
-    // Create Index, where are 2 documnets
+    // Create Index, when there are 2 documnets
     string unnestPathc = unnestPath('a', depth).c_str();
     REQUIRE(store->createIndex("array_index"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
                                IndexSpec::ArrayOptions{unnestPathc.c_str()}));
@@ -448,7 +448,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     CHECK(expected_inserted.size() == 40);  // 40 == 5 * 2^3
 
     query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    // Newly query, after the index is created, uses the unnest tables.
+    // New query, after the index is created, uses the unnest tables.
     REQUIRE(query->explain().find("fl_each") == string::npos);
     e = query->createEnumerator();
     results.resize(0);
@@ -3671,7 +3671,42 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
     //    FROM profiles
     //    UNNEST contacts AS c
     //    GROUP BY c.address.state, c.address.city
-    //
-    // "Group By" does not work yet with pure virtual table, fl_each.
-    // c.f. test "C4Query UNNEST objects" in C4QueryTest.cc
+
+    queryStr = "{WHAT: [['AS', ['.c.address.state'], 'state'],"s + "['AS', ['count()', ['.c.address.city']], 'num']"
+               + "], " + "FROM: [{COLLECTION: '" + collectionName + "'}, " + "{UNNEST: ['." + collectionName
+               + ".contacts'], AS: 'c'}], " + "GROUP_BY: [['.c.address.state'], ['.c.address.city']]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "CA"_sl);  // for city San Pedro
+    CHECK(e->columns()[1]->asInt() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "CA"_sl);  // for city Santa Clara
+    CHECK(e->columns()[1]->asInt() == 1);
+    CHECK(!e->next());
+
+    // Test 7, Unnest with Group-by and Order-by
+    // -------------------------
+    //    SELECT p.type AS 'phone-type', count(number) AS num
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+    //    UNNEST p.number AS number
+    //    GROUP BY 'phone-type'
+    //    ORDER BY num DESC
+
+    queryStr = "{WHAT: ["s + "['AS', ['.p.type'], 'phone-type'], " + "['AS', ['count()', ['.number']], 'num']], "
+               + "FROM: [{COLLECTION: '" + collectionName + "'}, " + "{UNNEST: ['." + collectionName
+               + ".contacts'], AS: 'c'}, " + "{UNNEST: ['.c.phones'], AS: 'p'}, "
+               + "{UNNEST: ['.p.numbers'], AS: 'number'}]," + "GROUP_BY: ['.phone-type'], "
+               + "ORDER_BY: [['DESC', ['.num']]]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "home"_sl);
+    CHECK(e->columns()[1]->asInt() == 4);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "mobile"_sl);
+    CHECK(e->columns()[1]->asInt() == 3);
+    CHECK(!e->next());
 }
