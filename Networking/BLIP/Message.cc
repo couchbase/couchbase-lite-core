@@ -90,8 +90,12 @@ namespace litecore::blip {
                 key = endOfVal + 1;
             }
             if ( body.size > 0 ) {
+#if DEBUG
                 out << "\n\tBODY: ";
                 dumpSlice(out, body);
+#else
+                out << "\n\tBODY: { ... }";
+#endif
             }
             out << " }";
         }
