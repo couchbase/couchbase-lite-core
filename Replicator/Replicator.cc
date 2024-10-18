@@ -104,7 +104,6 @@ namespace litecore::repl {
                 DatabaseImpl* impl = asInternal(db);
                 return impl->dataFile()->loggingName();
             });
-            logInfo("DB=%s Instantiated %s", dbLogName.c_str(), string(*options).c_str());
 
             _remoteURL = webSocket->url();
             if ( _options->isActive() ) { prepareWorkers(); }
