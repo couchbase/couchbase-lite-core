@@ -792,7 +792,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") 
     C4Log("-------- status.total=%lld, status.completed=%lld, status.docCount=%lld, number of documents in the "
           "database=%lld\n",
           status.progress.unitsTotal, status.progress.unitsCompleted, status.progress.documentCount,
-          c4db_getDocumentCount(db));
+          c4coll_getDocumentCount(defaultColl));
 
     CHECK(status.progress.unitsTotal == status.progress.unitsCompleted);
 }
@@ -1565,7 +1565,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Remove Attachment in SGW", "[.SyncServer]") 
     }
 
     C4Error             error;
-    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
+    c4::ref<C4Document> doc =
+            c4coll_getDoc(db->getDefaultCollection(), "att1"_sl, true, kDocGetCurrentRev, ERROR_INFO(error));
     REQUIRE(doc);
     alloc_slice before = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
     CHECK(before);
@@ -1603,6 +1604,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Remove Attachment in SGW", "[.SyncServer]") 
     alloc_slice res = _sg.sendRemoteRequest("PUT", "/scratch/att1", rev1.toJSON(), false, HTTPStatus::Created);
 
     bool docDeleted = false;
+
     SECTION("Remove attachment in SGW before rev1 is synced") {
         C4Log("-------- Deleting and re-creating database --------");
         // Simulate the case where attachment is deleted in SGW before the rev is synced.
@@ -1621,7 +1623,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Remove Attachment in SGW", "[.SyncServer]") 
     _expectedDocPullErrors = {"att1"};
     replicate(kC4Disabled, kC4OneShot);
 
-    doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
+    doc = c4coll_getDoc(db->getDefaultCollection(), "att1"_sl, true, kDocGetCurrentRev, ERROR_INFO(error));
     if ( docDeleted ) {
         CHECK(!doc);
     } else {
@@ -1637,14 +1639,14 @@ TEST_CASE_METHOD(ReplicatorSGTest, "KeepBody of Latest Synced Rev", "[.SyncServe
         revID = createNewRev(db, docID, nullslice, kFleeceBody);
     }
 
-    c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    c4::ref<C4Document> doc = c4coll_getDoc(db->getDefaultCollection(), docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     REQUIRE(c4rev_getGeneration(doc->revID) == 1);
     CHECK(doc->selectedRev.flags == kRevLeaf);
 
     // Push rev 1-
     replicate(kC4OneShot, kC4Disabled);
-    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(db->getDefaultCollection(), docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     REQUIRE(std::string(doc->revID) == revID);
     CHECK(doc->selectedRev.flags == (kRevLeaf | kRevKeepBody));  // After push, we have kRevKeepBody
@@ -1679,7 +1681,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "KeepBody of Latest Synced Rev", "[.SyncServe
 
     // Pull to get rev2
     replicate(kC4Disabled, kC4OneShot);
-    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(db->getDefaultCollection(), docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     REQUIRE(c4rev_getGeneration(doc->revID) == 2);
     CHECK(doc->selectedRev.flags == (kRevLeaf | kRevKeepBody));
@@ -1688,7 +1690,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "KeepBody of Latest Synced Rev", "[.SyncServe
     CHECK(doc->selectedRev.flags == 0);  // rev-1's KeepBody is cleared.
 
     replicate(kC4OneShot, kC4Disabled);
-    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
+    doc = c4coll_getDoc(db->getDefaultCollection(), docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     REQUIRE(c4rev_getGeneration(doc->revID) == 2);
     CHECK(doc->selectedRev.flags == (kRevLeaf | kRevKeepBody));

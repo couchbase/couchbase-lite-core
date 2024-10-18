@@ -287,6 +287,7 @@ namespace {
     TEST_CASE("URL Transformation") {
         slice       withPort, unaffected;
         alloc_slice withoutPort;
+
         SECTION("Plain") {
             withPort    = "ws://duckduckgo.com:80/search"_sl;
             withoutPort = "ws://duckduckgo.com/search"_sl;
