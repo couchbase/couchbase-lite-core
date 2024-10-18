@@ -28,11 +28,9 @@ using namespace fleece;
 
 class C4QueryTest : public C4Test {
   public:
-    C4QueryTest(int which, const std::string& filename) : C4Test(which) {
+    explicit C4QueryTest(int which, const std::string& filename = "names_100.json") : C4Test(which) {
         if ( !filename.empty() ) importJSONLines(sFixturesDir + filename);
     }
-
-    explicit C4QueryTest(int which) : C4QueryTest(which, "names_100.json") {}
 
     ~C4QueryTest() { c4query_release(query); }
 
@@ -59,7 +57,7 @@ class C4QueryTest : public C4Test {
     void checkExplanation(bool indexed = false) {
         alloc_slice explanation = c4query_explain(query);
         C4Log("Explanation: %.*s", SPLAT(explanation));
-        INFO("Explanation: " << string_view(explanation));
+        INFO("Explanation: " << std::string_view(explanation));
         if ( indexed ) CHECK(explanation.find("SCAN"_sl) == nullslice);  // should be no linear table scans
     }
 

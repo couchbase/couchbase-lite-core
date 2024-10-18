@@ -140,7 +140,7 @@ TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
 #endif
 }
 
-TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {
     // Ensure that, by default, diskSyncFull is false.
     CHECK(!litecore::asInternal(db)->dataFile()->options().diskSyncFull);
 
