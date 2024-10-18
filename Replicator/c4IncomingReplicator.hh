@@ -25,7 +25,9 @@ namespace litecore {
         C4IncomingReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params,
                              WebSocket* openSocket NONNULL, slice logPrefix)
             : C4ReplicatorImpl(db, params), _openSocket(openSocket) {
-            if ( !logPrefix.empty() ) { _logPrefix = logPrefix; }
+            std::string logName = "C4IncomingRepl";
+            if ( !logPrefix.empty() ) logName = logPrefix.asString() + "/" + logName;
+            setLoggingName(logName);
         }
 
         alloc_slice URL() const noexcept override { return _openSocket->url(); }
@@ -48,16 +50,6 @@ namespace litecore {
         bool _unsuspend() noexcept override {
             // Restarting doesn't make sense; do nothing
             return true;
-        }
-
-      protected:
-        std::string loggingClassName() const override {
-            static std::string logName{};
-            if ( logName.empty() ) {
-                logName = "C4IncomingRepl";
-                if ( !_logPrefix.empty() ) { logName = _logPrefix.asString() + "/" + logName; }
-            }
-            return logName;
         }
 
       private:

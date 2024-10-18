@@ -215,7 +215,8 @@ namespace litecore {
             , _options(new Options(params))
             , _onStatusChanged(params.onStatusChanged)
             , _onDocumentsEnded(params.onDocumentsEnded)
-            , _onBlobProgress(params.onBlobProgress) {
+            , _onBlobProgress(params.onBlobProgress)
+            , _loggingName("C4Repl") {
             _status.flags |= kC4HostReachable;
             _options->verify();
         }
@@ -228,14 +229,7 @@ namespace litecore {
             if ( _replicator ) _replicator->terminate();
         }
 
-        std::string loggingClassName() const override {
-            static std::string logName{};
-            if ( logName.empty() ) {
-                logName = "C4Repl";
-                if ( !_logPrefix.empty() ) { logName = _logPrefix.asString() + "/" + logName; }
-            }
-            return logName;
-        }
+        std::string loggingClassName() const override { return _loggingName; }
 
         bool continuous(unsigned collectionIndex = 0) const noexcept {
             return _options->push(collectionIndex) == kC4Continuous || _options->pull(collectionIndex) == kC4Continuous;
@@ -513,9 +507,10 @@ namespace litecore {
         bool                 _cancelStop{false};
 
       protected:
-        alloc_slice _logPrefix;
+        void setLoggingName(const string& loggingName) { _loggingName = loggingName; }
 
       private:
+        std::string _loggingName;
         alloc_slice _responseHeaders;
 #ifdef COUCHBASE_ENTERPRISE
         mutable alloc_slice      _peerTLSCertificateData;
