@@ -46,12 +46,14 @@ namespace litecore {
             : C4ReplicatorImpl(db, params)
             , _url(effectiveURL(serverAddress, remoteDatabaseName))
             , _retryTimer([this] { retry(false); }) {
+            std::string logName = "C4RemoteRepl";
+            if ( !logPrefix.empty() ) { logName = logPrefix.asString() + "/" + logName; }
+            setLoggingName(logName);
             if ( params.socketFactory ) {
                 // Keep a copy of the C4SocketFactory struct in case original is invalidated:
                 _customSocketFactory = *params.socketFactory;
                 _socketFactory       = &_customSocketFactory;
             }
-            if ( !logPrefix.empty() ) { _logPrefix = logPrefix; }
         }
 
         void start(bool reset) noexcept override {
@@ -108,15 +110,6 @@ namespace litecore {
 
 
       protected:
-        std::string loggingClassName() const override {
-            static std::string logName{};
-            if ( logName.empty() ) {
-                logName = "C4RemoteRepl";
-                if ( !_logPrefix.empty() ) { logName = _logPrefix.asString() + "/" + logName; }
-            }
-            return logName;
-        }
-
         alloc_slice URL() const noexcept override { return _url; }
 
         void createReplicator() override {
