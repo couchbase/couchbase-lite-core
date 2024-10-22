@@ -56,6 +56,7 @@ namespace litecore {
         query->visitTree([&](Node& node, unsigned /*depth*/) {
             if ( auto source = dynamic_cast<SourceNode*>(&node) ) {
                 // Set the SQLite table name for each SourceNode:
+                printf("Window Debug - visitTree source = %p\n", source);
                 assignTableNameToSource(source, ctx);
             } else if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
                 // Capture the parameter names:
@@ -106,11 +107,14 @@ namespace litecore {
     void QueryTranslator::assignTableNameToSource(SourceNode* source, ParseContext& ctx) {
         if ( source->tableName().empty() ) {
             string tableName = tableNameForSource(source, ctx);
-            printf("Windows Debug - assignTableNameToSource, tableName = %s\n", tableName.c_str());
+            printf("Windows Debug - assignTableNameToSource, tableName = %s, source = %p\n", tableName.c_str(), source);
             if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) ) {
                 printf("Windows Debug - going to setTableName()\n");
                 source->setTableName(ctx.newString(tableName));
             }
+        } else {
+            printf("Windows Debug - assignTableNameToSource(not empty) tableName = %.*s, source = %p\n",
+                   (int)source->tableName().size(), source->tableName().data(), source);
         }
     }
 
