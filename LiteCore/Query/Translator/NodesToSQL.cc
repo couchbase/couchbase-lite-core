@@ -324,6 +324,7 @@ namespace litecore::qt {
             ctx << "FROM ";
         }
         if ( auto index = dynamic_cast<IndexSourceNode const*>(this) ) {
+            printf("Windows Debug - writeSQL |%s| %p %p\n", string(_tableName).c_str(), this, index->indexedNode());
             index->indexedNode()->writeSourceTable(ctx, _tableName);
         } else {
             Assert(!_tableName.empty(), "QueryTranslator client didn't set Source's tableName");

@@ -56,6 +56,7 @@ namespace litecore {
         query->visitTree([&](Node& node, unsigned /*depth*/) {
             if ( auto source = dynamic_cast<SourceNode*>(&node) ) {
                 // Set the SQLite table name for each SourceNode:
+                printf("Window Debug - visitTree source = %p\n", source);
                 assignTableNameToSource(source, ctx);
             } else if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
                 // Capture the parameter names:
@@ -106,8 +107,14 @@ namespace litecore {
     void QueryTranslator::assignTableNameToSource(SourceNode* source, ParseContext& ctx) {
         if ( source->tableName().empty() ) {
             string tableName = tableNameForSource(source, ctx);
-            if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) )
+            printf("Windows Debug - assignTableNameToSource, tableName = %s, source = %p\n", tableName.c_str(), source);
+            if ( !tableName.empty() && (tableName == _defaultTableName || _delegate.tableExists(tableName)) ) {
+                printf("Windows Debug - going to setTableName()\n");
                 source->setTableName(ctx.newString(tableName));
+            }
+        } else {
+            printf("Windows Debug - assignTableNameToSource(not empty) tableName = %.*s, source = %p\n",
+                   (int)source->tableName().size(), source->tableName().data(), source);
         }
     }
 
@@ -136,7 +143,10 @@ namespace litecore {
             if ( auto index = dynamic_cast<IndexSourceNode*>(source) ) {
                 switch ( index->indexType() ) {
                     case IndexType::FTS:
+                        printf("Windows Debug - tableName(I)/ID = %s/%s\n", tableName.c_str(),
+                               string(index->indexID()).c_str());
                         tableName = _delegate.FTSTableName(tableName, string(index->indexID()));
+                        printf("Windows Debug - tableName(II) = %s\n", tableName.c_str());
                         _ftsTables.push_back(tableName);
                         break;
 #ifdef COUCHBASE_ENTERPRISE

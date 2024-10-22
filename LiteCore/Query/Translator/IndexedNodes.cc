@@ -40,7 +40,8 @@ namespace litecore::qt {
     }
 
     void IndexedNode::writeSourceTable(SQLWriter& ctx, string_view tableName) const {
-        require(!tableName.empty(), "missing %s index", kIndexTypeName[int(_type)]);
+        printf("Windows Debug - missing %s index (%p), tableName = %.*s\n", kIndexTypeName[int(_type)], this, (int)tableName.size(), tableName.data());
+        require(!tableName.empty(), "missing %s index (%p)", kIndexTypeName[int(_type)], this);
         ctx << sqlIdentifier(tableName);
     }
 
@@ -49,10 +50,12 @@ namespace litecore::qt {
     // Initializes using the index name as the first argument (for FTS)
     FTSNode::FTSNode(Array::iterator& args, ParseContext& ctx, const char* name) : IndexedNode(IndexType::FTS) {
         slice pathStr = args[0].asString();
+        printf("Windows Debug - FTSNode::FTSNode (%p), pathStr = %.*s\n", this, (int)pathStr.size, (char*)pathStr.buf);
         require(!pathStr.empty(), "first arg of %s() must be an index name", name);
         KeyPath path = parsePath(pathStr);
         // Find the source collection and property name/path:
         auto source = dynamic_cast<SourceNode*>(resolvePropertyPath(path, ctx, true));
+        printf("Windows Debug - FTSNode::FTSNode (%p), source = %p(%.*s)\n", this, source, (int)source->collection().size(), source->collection().data());
         require(source, "unknown source collection for %s()", name);
         require(source->isCollection(), "invalid source collection for %s()", name);
         require(path.count() > 0, "missing property after collection alias in %s()", name);
