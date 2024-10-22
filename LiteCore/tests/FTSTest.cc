@@ -36,13 +36,13 @@ class FTSTest : public DataFileTestFixture {
 
     vector<string> _stringsInDB;
 
-    static DataFile::Options* dbOptions() {
+    static DataFile::Options& dbOptions() {
         static DataFile::Options sOptions = DataFile::Options::defaults;
         sOptions.keyStores.sequences      = false;  // make it easier to overwrite docs in this test
-        return &sOptions;
+        return sOptions;
     }
 
-    FTSTest() : DataFileTestFixture(0, dbOptions()) {
+    FTSTest() : DataFileTestFixture(dbOptions()) {
         ExclusiveTransaction t(store->dataFile());
         for ( int i = 0; i < std::size(kStrings); i++ ) createDoc(t, i, kStrings[i]);
         t.commit();

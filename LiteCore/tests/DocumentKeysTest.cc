@@ -19,8 +19,6 @@ using namespace std;
 
 class DocumentKeysTestFixture : public DataFileTestFixture {
   public:
-    DocumentKeysTestFixture() : DataFileTestFixture(0, &DataFile::Options::defaults) {}
-
     alloc_slice convertJSON(const char* json) {
         Encoder enc;
         enc.setSharedKeys(db->documentKeys());

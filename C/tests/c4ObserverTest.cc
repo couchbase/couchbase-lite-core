@@ -36,13 +36,14 @@ class C4ObserverTest : public C4Test {
             kDocERev1        = "1@EnidEnidEnidEnidEnidEA";
             kDocARev2        = "1@BobBobBobBobBobBobBobA";
             kDocBRev2        = "1@NorbertNorbertNorbertA";
-            kDocBRev2History = "1@NorbertNorbertNorbertA,1@BobBobBobBobBobBobBobA";
+            kDocBRev2History = "1@NorbertNorbertNorbertA; 1@BobBobBobBobBobBobBobA";
         }
     }
+
 #if SkipVersionVectorTest
-    static const int numberOfOptions = 1;
+    static constexpr int numberOfOptions = 1;
 #else
-    static const int numberOfOptions = 2;  // rev-tree, vector; no need to test encryption
+    static constexpr int numberOfOptions = 2;  // rev-tree, vector; no need to test encryption
 #endif
 
     ~C4ObserverTest() {
