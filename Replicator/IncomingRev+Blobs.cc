@@ -69,7 +69,8 @@ namespace litecore::repl {
                 } else if ( progress.reply ) {
                     if ( progress.reply->isError() ) {
                         auto err = progress.reply->getError();
-                        logError("Got error response: %.*s %d '%.*s'", SPLAT(err.domain), err.code, SPLAT(err.message));
+                        logError("Blob request got error response: %.*s %d '%.*s'", SPLAT(err.domain), err.code,
+                                 SPLAT(err.message));
                         blobGotError(blipToC4Error(err));
                     } else {
                         bool complete = progress.state == MessageProgress::kComplete;
