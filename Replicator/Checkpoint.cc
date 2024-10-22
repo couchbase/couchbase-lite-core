@@ -97,7 +97,7 @@ namespace litecore::repl {
 
     bool Checkpoint::validateWith(const Checkpoint& remoteSequences) {
         // If _completed or _remote changes in any way because of this method, this method must
-        // return false.  Currently the only way this remains true is if neither of the below if
+        // return false.  Currently the only way this remains true is if neither of the below
         // blocks are entered, or if we ignore the fact that the only difference in the local
         // and remote checkpoint documents are that the INTEGRAL (i.e. NOT a backfill checkpoint)
         // remote sequence on the local side is older than on the remote side and all we need
