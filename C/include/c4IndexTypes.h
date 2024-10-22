@@ -118,6 +118,11 @@ typedef struct C4IndexOptions {
         separated by spaces. */
     const char* C4NULLABLE stopWords;
 
+    /** The property path to the array property to be unnested.  If this property is nested in a
+        parent array property, e.g. interests in students[i].interests[j],  the unnestPath would
+        be represented by students[].interests */
+    const char* C4NULLABLE unnestPath;
+
 #ifdef COUCHBASE_ENTERPRISE
     /** Options for vector indexes. */
     C4VectorIndexOptions vector;
