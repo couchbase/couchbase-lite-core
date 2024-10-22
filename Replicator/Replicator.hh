@@ -109,6 +109,8 @@ namespace litecore::repl {
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const { return connection().webSocket(); }
 
+        slice remoteURL() const { return _remoteURL; }
+
         C4Collection* collection(CollectionIndex i) const {
             Assert(i < _subRepls.size());
             return _subRepls[i].collection;
