@@ -96,15 +96,6 @@ NODISCARD CBL_CORE_API bool c4coll_deleteIndex(C4Collection* collection, C4Strin
     @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
 CBL_CORE_API C4SliceResult c4coll_getIndexesInfo(C4Collection* collection, C4Error* C4NULLABLE outError) C4API;
 
-/** Returns information about all indexes in the database.
-    The result is a Fleece-encoded array of dictionaries, one per index.
-    Each dictionary has keys `"name"`, `"type"` (a `C4IndexType`), and `"expr"` (the source expression).
-    \note The caller must use a lock for Database when this function is called.
-    @param database  The database to check
-    @param outError  On failure, will be set to the error status.
-    @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
-CBL_CORE_API C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* C4NULLABLE outError) C4API;
-
 //======== C4Index Methods:
 
 /** Returns the name of this index.
@@ -119,7 +110,7 @@ CBL_CORE_API C4Collection* c4index_getCollection(C4Index* index) C4API;
     \note This function is thread-safe. */
 CBL_CORE_API C4IndexType c4index_getType(C4Index*) C4API;
 
-/** Returns the index's query language (JSON or N1QL). 
+/** Returns the index's query language (JSON or N1QL).
     \note This function is thread-safe. */
 CBL_CORE_API C4QueryLanguage c4index_getQueryLanguage(C4Index*) C4API;
 
@@ -227,19 +218,6 @@ CBL_CORE_API bool c4indexupdater_skipVectorAt(C4IndexUpdater* updater, size_t i)
               that need to be updated. */
 CBL_CORE_API bool c4indexupdater_finish(C4IndexUpdater* updater, C4Error* outError) C4API;
 
-#endif
-
-
-#ifndef C4_STRICT_COLLECTION_API
-//======== SEMI-DEPRECATED DATABASE METHODS:
-NODISCARD CBL_CORE_API bool c4db_createIndex(C4Database* database, C4String name, C4String indexSpecJSON,
-                                             C4IndexType indexType, const C4IndexOptions* C4NULLABLE indexOptions,
-                                             C4Error* C4NULLABLE outError) C4API;
-NODISCARD CBL_CORE_API bool c4db_createIndex2(C4Database* database, C4String name, C4String indexSpec,
-                                              C4QueryLanguage queryLanguage, C4IndexType indexType,
-                                              const C4IndexOptions* C4NULLABLE indexOptions,
-                                              C4Error* C4NULLABLE              outError) C4API;
-NODISCARD CBL_CORE_API bool c4db_deleteIndex(C4Database* database, C4String name, C4Error* C4NULLABLE outError) C4API;
 #endif
 
 /** Returns whether a vector index has been trained yet or not.

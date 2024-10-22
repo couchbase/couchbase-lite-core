@@ -133,44 +133,19 @@ NODISCARD CBL_CORE_API bool c4_shutdown(C4Error* C4NULLABLE outError) C4API;
 
 
 /** Returns the name of the database, as given to `c4db_openNamed`.
-        This is the filename _without_ the ".cblite2" extension. 
+        This is the filename _without_ the ".cblite2" extension.
         \note This function is thread-safe. */
 CBL_CORE_API C4String c4db_getName(C4Database*) C4API;
 
-/** Returns the path of the database. 
+/** Returns the path of the database.
     \note This function is thread-safe. */
 CBL_CORE_API C4StringResult c4db_getPath(C4Database*) C4API;
 
-/** Returns the configuration the database was opened with. 
+/** Returns the configuration the database was opened with.
     \note This function is thread-safe. */
 CBL_CORE_API const C4DatabaseConfig2* c4db_getConfig2(C4Database* database) C4API C4_RETURNS_NONNULL;
 
-#ifndef C4_STRICT_COLLECTION_API
-
-/** Returns the number of (undeleted) documents in the database. 
-    \note The caller must use a lock for Database when this function is called. */
-CBL_CORE_API uint64_t c4db_getDocumentCount(C4Database* database) C4API;
-
-/** Returns the latest sequence number allocated to a revision. 
-    \note The caller must use a lock for Database when this function is called. */
-CBL_CORE_API C4SequenceNumber c4db_getLastSequence(C4Database* database) C4API;
-
-/** Returns the timestamp at which the next document expiration should take place,
-        or 0 if there are no documents with expiration times.
-    \note The caller must use a lock for Database when this function is called. */
-CBL_CORE_API C4Timestamp c4db_nextDocExpiration(C4Database* database) C4API;
-
-/** Purges all documents that have expired.
-        \note The caller must use a lock for Database when this function is called.
-        \warning This is generally unnecessary, since the background housekeeping task will do it.
-        You might want to call this if you require the purge to happen synchronously, just before
-        copying the database file or something like that.)
-        @return  The number of documents purged, or -1 on error. */
-NODISCARD CBL_CORE_API int64_t c4db_purgeExpiredDocs(C4Database* db, C4Error* C4NULLABLE) C4API;
-
-#endif  // C4_STRICT_COLLECTION_API
-
-/** Returns the database's public and/or private UUIDs. (Pass NULL for ones you don't want.) 
+/** Returns the database's public and/or private UUIDs. (Pass NULL for ones you don't want.)
     \note The caller must use a lock for Database when this function is called. */
 NODISCARD CBL_CORE_API bool c4db_getUUIDs(C4Database* database, C4UUID* C4NULLABLE publicUUID,
                                           C4UUID* C4NULLABLE privateUUID, C4Error* C4NULLABLE outError) C4API;
@@ -179,11 +154,11 @@ NODISCARD CBL_CORE_API bool c4db_getUUIDs(C4Database* database, C4UUID* C4NULLAB
         For example, this could be a reference to the higher-level object wrapping the database.
 
         The `destructor` field of the `C4ExtraInfo` can be used to provide a function that will be
-        called when the C4Database is freed, so it can free any resources associated with the pointer. 
+        called when the C4Database is freed, so it can free any resources associated with the pointer.
         \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API void c4db_setExtraInfo(C4Database* database, C4ExtraInfo) C4API;
 
-/** Returns the C4ExtraInfo associated with this db reference 
+/** Returns the C4ExtraInfo associated with this db reference
     \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4ExtraInfo c4db_getExtraInfo(C4Database* database) C4API;
 
@@ -216,7 +191,7 @@ NODISCARD CBL_CORE_API bool c4db_beginTransaction(C4Database* database, C4Error*
     \note The caller must use a lock for Database when this function is called. */
 NODISCARD CBL_CORE_API bool c4db_endTransaction(C4Database* database, bool commit, C4Error* C4NULLABLE outError) C4API;
 
-/** Is a transaction active? 
+/** Is a transaction active?
     \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API bool c4db_isInTransaction(C4Database* database) C4API;
 
@@ -237,7 +212,7 @@ CBL_CORE_API bool c4db_isInTransaction(C4Database* database) C4API;
 NODISCARD CBL_CORE_API C4RawDocument* c4raw_get(C4Database* database, C4String storeName, C4String docID,
                                                 C4Error* C4NULLABLE outError) C4API;
 
-/** Writes a raw document to the database, or deletes it if both meta and body are NULL. 
+/** Writes a raw document to the database, or deletes it if both meta and body are NULL.
     \note The caller must use a lock for Database when this function is called. */
 NODISCARD CBL_CORE_API bool c4raw_put(C4Database* database, C4String storeName, C4String key, C4String meta,
                                       C4String body, C4Error* C4NULLABLE outError) C4API;
