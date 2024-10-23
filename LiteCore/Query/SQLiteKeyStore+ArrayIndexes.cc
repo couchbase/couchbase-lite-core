@@ -25,8 +25,26 @@ using namespace fleece::impl;
 namespace litecore {
 
     bool SQLiteKeyStore::createArrayIndex(const IndexSpec& spec) {
+        // the following will throw if !spec.arrayOptions() || !spec.arrayOpeionts()->unnestPath
         Array::iterator itPath(spec.unnestPaths());
-        string          plainTableName, unnestTableName;
+
+        auto currSpec = db().getIndex(spec.name);
+        if ( currSpec ) {
+            // If there is already index with the index name,
+            // eiher delete the current one, or use it (return false)
+            while ( true ) {
+                if ( currSpec->type != IndexSpec::kArray ) break;
+                if ( !currSpec->arrayOptions() ) break;
+                if ( currSpec->arrayOptions()->unnestPath != spec.arrayOptions()->unnestPath ) break;
+                if ( !currSpec->what() || !spec.what() ) break;
+                if ( currSpec->what()->toJSONString() != spec.what()->toJSONString() ) break;
+                // Same index spec and unnestPath
+                return false;
+            }
+            db().deleteIndex(*currSpec);
+        }
+
+        string plainTableName, unnestTableName;
         for ( ; itPath; ++itPath ) {
             std::tie(plainTableName, unnestTableName) =
                     createUnnestedTable(itPath.value(), plainTableName, unnestTableName);

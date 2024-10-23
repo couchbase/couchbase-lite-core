@@ -831,6 +831,51 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     }
 }
 
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST Recreate Index", "[Query][C]") {
+    auto           defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    C4IndexOptions indexOpts{};
+    indexOpts.unnestPath = "shapes";
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("shapes"), C4STR("color"), kC4N1QLQuery, kC4ArrayIndex, &indexOpts,
+                               nullptr));
+
+    const char* query1 = "{WHAT: ['.doc._id'],\
+                          FROM: [{as: 'doc'}, \
+                                 {as: 'shape', unnest: ['.doc.shapes']}],\
+                      WHERE: ['=', ['.shape.color'], 'red']}";
+
+    compileSelect(json5(query1));
+    checkExplanation(true);  // index is used
+    CHECK(run() == (vector<string>{"0000001", "0000003"}));
+
+    SECTION("Same UnnestPath and Spec") {
+        // Create the array index with the same name and same spec and options.
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("shapes"), C4STR("color"), kC4N1QLQuery, kC4ArrayIndex,
+                                   &indexOpts, nullptr));
+
+        compileSelect(json5(query1));
+        checkExplanation(true);
+        CHECK(run() == (vector<string>{"0000001", "0000003"}));
+    }
+
+    SECTION("Different Spec") {
+        // Create the array index with same name, but different spec.
+        // The old index with the same name will be deleted.
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("shapes"), C4STR("concat(color, to_string(size))"), kC4N1QLQuery,
+                                   kC4ArrayIndex, &indexOpts, nullptr));
+
+        compileSelect(json5(query1));
+        checkExplanation(false);  // the old index is deleted, so the query1 takes a scan.
+        CHECK(run() == (vector<string>{"0000001", "0000003"}));
+
+        compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}],\
+                             WHERE: ['=', ['concat()', ['.shape.color'], ['to_string()',['.shape.size']]], 'red3']}"));
+        checkExplanation(true);  // the new index is working.
+        CHECK(run() == (vector<string>{"3"}));
+    }
+}
+
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
