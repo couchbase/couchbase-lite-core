@@ -48,7 +48,9 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
     set(CMAKE_OSX_SYSROOT macosx)
 endif()
 
-if (NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
+option(LITECORE_MACOS_FAT_DEBUG "Builds all architectures for a debug build (off by default for speed)" OFF)
+
+if (NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR LITECORE_MACOS_FAT_DEBUG)
     set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
 endif()
 

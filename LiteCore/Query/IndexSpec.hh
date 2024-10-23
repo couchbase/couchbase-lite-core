@@ -43,13 +43,20 @@ namespace litecore {
             const char* stopWords{};         ///< NULL for default, or comma-delimited string, or empty
         };
 
+        /// Options for an ArrayIndex
+        struct ArrayOptions {
+            alloc_slice unnestPath;
+
+            ArrayOptions(string_view unnestPath_) : unnestPath(alloc_slice::nullPaddedString(unnestPath_)) {}
+        };
+
         /// Options for a vector index.
         using VectorOptions = vectorsearch::IndexSpec;
 
         static constexpr vectorsearch::SQEncoding DefaultEncoding{8};
 
         /// Index options. If not empty (the first state), must match the index type.
-        using Options = std::variant<std::monostate, FTSOptions, VectorOptions>;
+        using Options = std::variant<std::monostate, FTSOptions, VectorOptions, ArrayOptions>;
 
         /// Constructs an index spec.
         /// @param name_  Name of the index (must be unique in its collection.)
@@ -75,6 +82,8 @@ namespace litecore {
         const FTSOptions* ftsOptions() const { return std::get_if<FTSOptions>(&options); }
 
         const VectorOptions* vectorOptions() const { return std::get_if<VectorOptions>(&options); }
+
+        const ArrayOptions* arrayOptions() const { return std::get_if<ArrayOptions>(&options); }
 
         /** The required WHAT clause: the list of expressions to index */
         FLArray what() const;
