@@ -72,15 +72,16 @@ class ArrayIndexTest : public C4Test {
         {  // debug log the actual and expected query rows
             const std::string_view* expected = expectedResults.begin();
             std::stringstream       ss{};
-            while ( c4queryenum_next(queryenum, nullptr) || expected ) {
+            bool                    hasExpected = expected != expectedResults.end();
+            while ( c4queryenum_next(queryenum, nullptr) ) {
                 FLArrayIterator columnsIter = queryenum->columns;
                 for ( int col = 0; col < FLArrayIterator_GetCount(&columnsIter); col++ ) {
                     FLValue val = FLArrayIterator_GetValueAt(&columnsIter, col);
                     if ( col > 0 ) ss << ", ";
                     ss << Value(val).toJSONString();
                 }
-                ss << " <- ACTUAL | EXPECTED -> " << (expected ? expected->data() : "") << '\n';
-                if ( expected ) { expected = expected + 1 == expectedResults.end() ? nullptr : expected + 1; }
+                ss << " <- ACTUAL | EXPECTED -> " << (hasExpected ? expected->data() : "") << '\n';
+                if ( hasExpected ) hasExpected = ++expected != expectedResults.end();
             }
             std::string sstr = ss.str();
             C4Log("VALIDATING ARRAY INDEX QUERY:\n%s", sstr.c_str());
@@ -409,6 +410,12 @@ TEST_CASE_METHOD(ArrayIndexTest, "Array Index Empty Array", "[C][ArrayIndex]") {
     bool created = createArrayIndex(coll, "contacts"_sl, R"([".address.state"])", "contacts", ERROR_INFO());
     REQUIRE(created);
 
+    query = c4query_new2(
+            db, kC4N1QLQuery,
+            R"(SELECT p.pid, c.address.city, c.address.state FROM profiles AS p UNNEST p.contacts AS c WHERE c.address.state = "CA")"_sl,
+            nullptr, ERROR_INFO());
+    REQUIRE(query);
+
     queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
     validateQuery(queryenum, {});
 }
@@ -434,6 +441,11 @@ TEST_CASE_METHOD(ArrayIndexTest, "Array Index Missing Array", "[C][ArrayIndex]")
 
     bool created = createArrayIndex(coll, "contacts"_sl, R"([".address.state"])", "contacts", ERROR_INFO());
     REQUIRE(created);
+
+    query = c4query_new2(db, kC4N1QLQuery,
+                         "SELECT p.pid, c.address.city, c.address.state FROM profiles AS p UNNEST p.contacts AS c"_sl,
+                         nullptr, ERROR_INFO());
+    REQUIRE(query);
 
     queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
     validateQuery(queryenum, {});
