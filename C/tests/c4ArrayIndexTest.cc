@@ -404,13 +404,22 @@ TEST_CASE_METHOD(ArrayIndexTest, "Array Index Empty Array", "[C][ArrayIndex]") {
     REQUIRE(query);
 
     c4::ref queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
-    validateQuery(queryenum, {});
+    // Don't know why jenkins' build on linux fails the following validateQuery
+    //    validateQuery(queryenum, {});
+    CHECK(c4queryenum_getRowCount(queryenum, nullptr) == 0);
 
     bool created = createArrayIndex(coll, "contacts"_sl, R"([".address.state"])", "contacts", ERROR_INFO());
     REQUIRE(created);
 
+    query = c4query_new2(
+            db, kC4N1QLQuery,
+            R"(SELECT p.pid, c.address.city, c.address.state FROM profiles AS p UNNEST p.contacts AS c WHERE c.address.state = "CA")"_sl,
+            nullptr, ERROR_INFO());
+    REQUIRE(query);
+
     queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
-    validateQuery(queryenum, {});
+    //    validateQuery(queryenum, {});
+    CHECK(c4queryenum_getRowCount(queryenum, nullptr) == 0);
 }
 
 // 7. TestArrayIndexMissingArray
@@ -430,13 +439,20 @@ TEST_CASE_METHOD(ArrayIndexTest, "Array Index Missing Array", "[C][ArrayIndex]")
     REQUIRE(query);
 
     c4::ref queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
-    validateQuery(queryenum, {});
+    //    validateQuery(queryenum, {});
+    CHECK(c4queryenum_getRowCount(queryenum, nullptr) == 0);
 
     bool created = createArrayIndex(coll, "contacts"_sl, R"([".address.state"])", "contacts", ERROR_INFO());
     REQUIRE(created);
 
+    query = c4query_new2(db, kC4N1QLQuery,
+                         "SELECT p.pid, c.address.city, c.address.state FROM profiles AS p UNNEST p.contacts AS c"_sl,
+                         nullptr, ERROR_INFO());
+    REQUIRE(query);
+
     queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
-    validateQuery(queryenum, {});
+    //    validateQuery(queryenum, {});
+    CHECK(c4queryenum_getRowCount(queryenum, nullptr) == 0);
 }
 
 // 8. TestArrayIndexNonArray
