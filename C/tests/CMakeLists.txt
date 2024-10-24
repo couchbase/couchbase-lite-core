@@ -40,9 +40,11 @@ else()
     message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}")
 endif()
 
+file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 add_executable(
     C4Tests
     c4AllDocsPerformanceTest.cc
+    c4ArrayIndexTest.cc
     c4BlobStoreTest.cc
     c4CollectionTest.cc
     c4DatabaseInternalTest.cc

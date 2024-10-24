@@ -543,6 +543,9 @@
 		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		EA4740D22CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA4740D12CC80C6D00401B68 /* c4ArrayIndexTest.cc */; };
+		EA4740D32CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA4740D12CC80C6D00401B68 /* c4ArrayIndexTest.cc */; };
+		EA4740D42CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA4740D12CC80C6D00401B68 /* c4ArrayIndexTest.cc */; };
 		EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */; };
 		EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
 		EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
@@ -1706,6 +1709,7 @@
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
 		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
+		EA4740D12CC80C6D00401B68 /* c4ArrayIndexTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4ArrayIndexTest.cc; sourceTree = "<group>"; };
 		EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSG30Test.cc; sourceTree = "<group>"; };
 		EA6AB8122979A0D1009751A1 /* ReplicatorSG30Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorSG30Test.hh; sourceTree = "<group>"; };
 		EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplParams.cc; sourceTree = "<group>"; };
@@ -2233,6 +2237,7 @@
 		274D03FF1BA7554700FF7C35 /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				EA4740D12CC80C6D00401B68 /* c4ArrayIndexTest.cc */,
 				2757DE5A1B9FC5C7002EE261 /* c4.c */,
 				27B8425B1E5BC8380094903E /* c4CppUtils.hh */,
 				27F6F51B1BAA0482003FD798 /* c4Test.cc */,
@@ -4166,6 +4171,7 @@
 				271925172396FE2C0053DDA6 /* PredictiveQueryTest.cc in Sources */,
 				2719252B23970BE40053DDA6 /* CoreMLPredictiveModel.mm in Sources */,
 				2719253A23970EEF0053DDA6 /* ReplicatorLoopbackTest.cc in Sources */,
+				EA4740D42CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */,
 				2719253923970EEA0053DDA6 /* ReplicatorAPITest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4197,6 +4203,7 @@
 				27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */,
 				42030A402498444900283CE8 /* Error.cc in Sources */,
 				42030A3F2498443D00283CE8 /* StringUtil.cc in Sources */,
+				EA4740D22CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */,
 				42030A412498445600283CE8 /* FilePath.cc in Sources */,
 				273F481725A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				2700BB5B217005A900797537 /* CoreMLPredictiveModel.mm in Sources */,
@@ -4308,6 +4315,7 @@
 				27FE0CFE24BE817A00A36EC2 /* CookieStoreTest.cc in Sources */,
 				2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */,
 				27FE0CFF24BE817B00A36EC2 /* RESTClientTest.cc in Sources */,
+				EA4740D32CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */,
 				2740A7522B321120003387E9 /* SGTestUser.cc in Sources */,
 				27FE0D0024BE817B00A36EC2 /* RESTListenerTest.cc in Sources */,
 				27FE0D0124BE817B00A36EC2 /* SyncListenerTest.cc in Sources */,
