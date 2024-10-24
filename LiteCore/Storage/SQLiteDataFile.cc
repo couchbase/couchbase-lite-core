@@ -334,6 +334,12 @@ namespace litecore {
                 // Add the 'expiration' column to every KeyStore:
                 for ( string& name : allKeyStoreNames() ) {
                     if ( name.find("::") == string::npos ) {
+                        string sql;
+                        // We need to check for existence of the expiration column first.
+                        // Do not add it if it already exists in the table.
+                        if ( getSchema("kv_" + name, "table", "kv_" + name, sql)
+                             && sql.find("expiration") != string::npos )
+                            continue;
                         // Only update data tables, not FTS index tables
                         _exec(format(
                                 "ALTER TABLE \"kv_%s\" ADD COLUMN expiration INTEGER; "
