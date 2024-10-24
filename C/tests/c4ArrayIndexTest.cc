@@ -642,8 +642,6 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Without Alias", "[C][Unnest]") {
 
 // 7. TestUnnestArrayLiteralNotSupport
 TEST_CASE_METHOD(ArrayIndexTest, "Unnest Array Literal Not Supported", "[C][Unnest]") {
-    C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
-
     C4Error err{};
     c4::ref query = c4query_new2(
             db, kC4N1QLQuery,
