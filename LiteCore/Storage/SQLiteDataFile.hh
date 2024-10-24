@@ -174,12 +174,12 @@ namespace litecore {
 
             WithNewDocs = 400,  // New document/revision storage (CBL 3.0)
 
-            WithExpirationColumn = 490,  // Added 'expiration' column to KeyStore
             WithDeletedTable     = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
             WithIndexesLastSeq   = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
+            WithExpirationColumn = 502,  // Added 'expiration' column to KeyStore
             MaxReadable          = 599,  // Cannot open versions newer than this
 
-            Current = WithDeletedTable
+            Current = WithExpirationColumn
         };
 
         void reopenSQLiteHandle();
