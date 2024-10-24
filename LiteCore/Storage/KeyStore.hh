@@ -164,8 +164,6 @@ namespace litecore {
         /** Does this KeyStore potentially have records that expire? (May return false positives.) */
         virtual bool mayHaveExpiration() = 0;
 
-        virtual void addExpiration() = 0;
-
         /** Sets a record's expiration time. Zero means 'never'.
             @return  true if the time was set, false if no record with that key exists. */
         virtual bool setExpiration(slice key, expiration_t) = 0;
@@ -210,7 +208,7 @@ namespace litecore {
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore() = default;
 
-        KeyStore(const KeyStore&)            = delete;  // not copyable
+                  KeyStore(const KeyStore&)  = delete;  // not copyable
         KeyStore& operator=(const KeyStore&) = delete;
 
       protected:

@@ -174,9 +174,10 @@ namespace litecore {
 
             WithNewDocs = 400,  // New document/revision storage (CBL 3.0)
 
-            WithDeletedTable   = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
-            WithIndexesLastSeq = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
-            MaxReadable        = 599,  // Cannot open versions newer than this
+            WithExpirationColumn = 490,  // Added 'expiration' column to KeyStore
+            WithDeletedTable     = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
+            WithIndexesLastSeq   = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
+            MaxReadable          = 599,  // Cannot open versions newer than this
 
             Current = WithDeletedTable
         };

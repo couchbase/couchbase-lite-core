@@ -90,9 +90,6 @@ namespace litecore {
         void createConflictsIndex();
         void createBlobsIndex();
 
-        /// Adds the `expiration` column to the table. Called only by SQLiteQuery.
-        void addExpiration() override;
-
         void shareSequencesWith(KeyStore&) override;
 
       protected:
@@ -161,7 +158,6 @@ namespace litecore {
         mutable std::optional<sequence_t> _lastSequence;
         mutable std::atomic<uint64_t>     _purgeCount{0};
         bool                              _hasExpirationColumn{false};
-        bool                              _uncommittedExpirationColumn{false};
         bool                              _uncommitedTable{false};
         SQLiteKeyStore*                   _sequencesOwner{nullptr};
     };
