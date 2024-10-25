@@ -110,11 +110,6 @@ namespace litecore {
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }
 
-            // If expiration is queried, ensure the table(s) have the expiration column:
-            if ( qp.usesExpiration() ) {
-                for ( auto ks : _keyStores ) ks->addExpiration();
-            }
-
             LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
             _statement = dataFile.compile(sql.c_str());
 

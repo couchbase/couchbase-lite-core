@@ -337,6 +337,25 @@ namespace litecore {
                     if ( sql.find("lastSeq") == string::npos ) { _exec("ALTER TABLE indexes ADD COLUMN lastSeq TEXT"); }
                 }
             });
+
+            (void)upgradeSchema(SchemaVersion::WithExpirationColumn, "Adding `expiration` column", [&] {
+                // Add the 'expiration' column to every KeyStore:
+                for ( string& name : allKeyStoreNames() ) {
+                    if ( name.find("::") == string::npos ) {
+                        string sql;
+                        // We need to check for existence of the expiration column first.
+                        // Do not add it if it already exists in the table.
+                        if ( getSchema("kv_" + name, "table", "kv_" + name, sql)
+                             && sql.find("expiration") != string::npos )
+                            continue;
+                        // Only update data tables, not FTS index tables
+                        _exec(format(
+                                "ALTER TABLE \"kv_%s\" ADD COLUMN expiration INTEGER; "
+                                "CREATE INDEX \"kv_%s_expiration\" ON \"kv_%s\" (expiration) WHERE expiration not null",
+                                name.c_str(), name.c_str(), name.c_str()));
+                    }
+                }
+            });
         });
 
         // Configure number of extra threads to be used by SQLite:
@@ -601,9 +620,6 @@ namespace litecore {
              && keyStoreNameIsCollection(name) ) {
             // Wrap the store in a BothKeyStore that manages it and the deleted store:
             auto deletedStore = new SQLiteKeyStore(*this, kDeletedKeyStorePrefix + name, options);
-
-            keyStore->addExpiration();
-            deletedStore->addExpiration();
 
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"

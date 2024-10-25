@@ -70,13 +70,16 @@ namespace litecore {
         // more efficient in SQLite to keep large columns at the end of a row.
         // Create the sequence and flags columns regardless of options, otherwise it's too
         // complicated to customize all the SQL queries to conditionally use them...
-        db().execWithLock(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
-                                "  key TEXT PRIMARY KEY,"
-                                "  sequence INTEGER,"
-                                "  flags INTEGER DEFAULT 0,"
-                                "  version BLOB,"
-                                "  body BLOB,"
-                                "  extra BLOB)"));
+        db().execWithLock(
+                subst("CREATE TABLE IF NOT EXISTS kv_@ ("
+                      "  key TEXT PRIMARY KEY,"
+                      "  sequence INTEGER,"
+                      "  flags INTEGER DEFAULT 0,"
+                      "  version BLOB,"
+                      "  body BLOB,"
+                      "  expiration INTEGER,"
+                      "  extra BLOB);"
+                      "CREATE INDEX IF NOT EXISTS \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
         _uncommitedTable = db().inTransaction();
     }
 
@@ -179,12 +182,10 @@ namespace litecore {
         _purgeCountValid = false;
 
         if ( !commit ) {
-            if ( _uncommittedExpirationColumn ) _hasExpirationColumn = false;
             if ( _uncommitedTable ) { close(); }
         }
 
-        _uncommittedExpirationColumn = false;
-        _uncommitedTable             = false;
+        _uncommitedTable = false;
     }
 
     /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column& col) {
@@ -520,19 +521,8 @@ namespace litecore {
         return _hasExpirationColumn;
     }
 
-    // Adds the 'expiration' column to the table.
-    void SQLiteKeyStore::addExpiration() {
-        if ( mayHaveExpiration() ) return;
-        db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
-        db().execWithLock(subst("ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
-                                "CREATE INDEX \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
-        _hasExpirationColumn         = true;
-        _uncommittedExpirationColumn = true;
-    }
-
     bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
         Assert(expTime >= expiration_t(0), "Invalid (negative) expiration time");
-        addExpiration();
         auto&          stmt = compileCached("UPDATE kv_@ SET expiration=? WHERE key=?");
         UsingStatement u(stmt);
         if ( expTime > expiration_t::None ) stmt.bind(1, (long long)expTime);
