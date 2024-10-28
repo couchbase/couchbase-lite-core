@@ -181,7 +181,7 @@ namespace litecore { namespace blip {
         }
 
         virtual void onWebSocketGotTLSCertificate(slice certData) override {
-            _connection->gotTLSCertificate(certData);
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotTLSCertificate), alloc_slice{certData});
         }
 
         // websocket::Delegate interface:
@@ -215,6 +215,10 @@ namespace litecore { namespace blip {
         void _gotHTTPResponse(int status, websocket::Headers headers) {
             // _connection is reset to nullptr in _closed.
             if ( _connection ) _connection->gotHTTPResponse(status, headers);
+        }
+
+        void _gotTLSCertificate(alloc_slice certData) {
+            if ( _connection ) _connection->gotTLSCertificate(certData);
         }
 
         void _onWebSocketConnect() {
