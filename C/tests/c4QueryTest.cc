@@ -1487,6 +1487,15 @@ TEST_CASE_METHOD(CollectionTest, "C4Query FTS Multiple collections", "[Query][C]
 
     CHECK(run().size() == 50);
     CHECK(runFTS().size() == 50);
+
+    auto deleted = c4coll_deleteIndex(names, C4STR("byStreet"), nullptr);
+    CHECK(deleted);
+    // The query won't run after the index is deleted. We should see following error in the log,
+    // 2024-10-29T20:57:00.896439 DB ERROR SQLite error (code 1): no such table: kv_.namedscope.names::by\Street in "SELECT "namedscope.names".rowid, offsets(fts1."kv_.namedscope.names::by\Street"), offsets(fts2."kv_.wiki::by\Text"), fl_result("namedscope.names".key), fl_result(wiki.key) FROM "kv_.namedscope.names" AS "namedscope.names" INNER JOIN "kv_.wiki" AS wiki ON (fl_value("namedscope.names".body, 'birthday') != fl_value(wiki.body, 'title')) JOIN "kv_.namedscope.names::by\Street" AS fts1 ON fts1.docid = "namedscope.names".rowid JOIN "kv_.wiki::by\Text" AS fts2 ON fts2.docid = wiki.rowid WHERE fts1."kv_.namedscope.names::by\Street" MATCH 'Hwy' AND fts2. This table is referenced by an FTS index, which may have been deleted.
+    C4Error error;
+    auto    qenum = c4query_run(query, c4str(nullptr), &error);
+    CHECK(!qenum);
+    CHECK((error.domain == SQLiteDomain && error.code == 1));
 }
 
 #pragma mark - OBSERVERS:
