@@ -124,7 +124,9 @@ build_binaries () {
     cmake -DEDITION=${EDITION} -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ..
     make -j8
     if [[ ${OS} == 'linux'  ]] || [[ ${OS} == 'centos6' ]]; then
-        ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh ${strip_dir}
+        if [[ ${!CMAKE_BUILD_TYPE_NAME} != "Debug" ]]; then
+            ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh ${strip_dir}
+        fi
     else
         pushd ${project_dir}
         dsymutil ${macosx_lib} -o libLiteCore.dylib.dSYM
