@@ -126,6 +126,10 @@ build_binaries () {
     if [[ ${OS} == 'linux'  ]] || [[ ${OS} == 'centos6' ]]; then
         if [[ ${!CMAKE_BUILD_TYPE_NAME} != "Debug" ]]; then
             ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh ${strip_dir}
+        else
+            pushd ${strip_dir}
+            touch libLiteCore.so.sym
+            popd
         fi
     else
         pushd ${project_dir}
