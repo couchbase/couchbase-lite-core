@@ -442,6 +442,8 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
     tableNames.emplace("kv_.scope.coll");
     tableNames.emplace("kv_.coll::fts\\Index");
     tableNames.emplace("kv_.scope.coll::fts\\Index");
+    tableNames.emplace("kv_.test.flowers");
+    tableNames.emplace("kv_.test.colors");
 
     CHECK(translate("SELECT x FROM coll ORDER BY y")
           == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
@@ -499,6 +501,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
           == "{'FROM':[{'COLLECTION':'coll','SCOPE':'scope'},{'COLLECTION':'coll','JOIN':'INNER',"
              "'ON':['=',['.scope.coll.name'],['.coll.y']]}],"
              "'WHAT':[['.scope.coll.x']],'WHERE':['MATCH()','scope\\\\.coll.ftsIndex',['.coll.y']]}");
+    CHECK(translate("SELECT flowers.name, colors.color FROM test.flowers JOIN test.colors "
+                    "ON flowers.cid = colors.cid ORDER BY flowers.name")
+          == "{'FROM':[{'COLLECTION':'flowers','SCOPE':'test'},"
+             "{'COLLECTION':'colors','JOIN':'INNER','ON':['=',['.flowers.cid'],['.colors.cid']],'SCOPE':'test'}],"
+             "'ORDER_BY':[['.flowers.name']],'WHAT':[['.flowers.name'],['.colors.color']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
