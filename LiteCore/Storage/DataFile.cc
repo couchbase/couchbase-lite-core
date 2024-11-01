@@ -78,7 +78,7 @@ namespace litecore {
 
     // collection utilities:
 
-    size_t DataFile::findCollectionPathSeparator(const string& collectionPath, size_t pos) {
+    size_t DataFile::findCollectionPathSeparator(string_view collectionPath, size_t pos) {
         for ( auto i = pos; i < collectionPath.length(); ++i ) {
             if ( collectionPath.at(i) == '\\' ) {
                 ++i;
