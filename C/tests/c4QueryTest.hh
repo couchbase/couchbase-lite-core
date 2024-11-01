@@ -59,7 +59,7 @@ class C4QueryTest : public C4Test {
     void checkExplanation(bool indexed = false) {
         alloc_slice explanation = c4query_explain(query);
         C4Log("Explanation: %.*s", SPLAT(explanation));
-        INFO("Explanation: " << string_view(explanation));
+        INFO("Explanation: " << std::string_view(explanation));
         if ( indexed ) CHECK(explanation.find("SCAN"_sl) == nullslice);  // should be no linear table scans
     }
 
