@@ -129,7 +129,7 @@ namespace litecore::qt {
       private:
         PredictionNode(Array::iterator& args, ParseContext& ctx, string_view indexID);
 
-        const char* _subProperty{};
+        const char* C4NULLABLE _subProperty{};
     };
 
 #endif

@@ -688,12 +688,12 @@ namespace litecore {
     string VectorRecord::dumpStorage() const {
         stringstream out;
         if ( _bodyDoc ) {
-            slice data = _bodyDoc.allocedData();
+            alloc_slice data = _bodyDoc.allocedData();
             out << "---BODY: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
         if ( _extraDoc ) {
-            slice data = _extraDoc.allocedData();
+            alloc_slice data = _extraDoc.allocedData();
             out << "---EXTRA: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
