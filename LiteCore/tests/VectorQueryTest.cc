@@ -949,7 +949,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Non-Hybrid
         string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
                           + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target))";
         // working with LIMIT
-        query = store->compileQuery(queryStr + " LIMIT 5", QueryLanguage::kN1QL);
+        query = store->compileQuery(queryStr + " LIMIT 10000", QueryLanguage::kN1QL);
         CHECK(query != nullptr);
 
         query = nullptr;
@@ -963,6 +963,34 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Non-Hybrid
                 CHECK("a LIMIT must be given when using APPROX_VECTOR_DISTANCE()"s == err.what());
             }
             CHECK(query == nullptr);
+        }
+
+        query = nullptr;
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr + "LIMIT 0", QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("LIMIT must be a positive integer when using APPROX_VECTOR_DISTANCE()"s == err.what());
+            }
+            CHECK(query == nullptr);
+            expectedWarningsLogged++;
+        }
+
+        query = nullptr;
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr + "LIMIT 10001", QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("LIMIT must not exceed 10000 when using APPROX_VECTOR_DISTANCE()"s == err.what());
+            }
+            CHECK(query == nullptr);
+            expectedWarningsLogged++;
         }
     }
 
