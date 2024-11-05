@@ -75,7 +75,9 @@ selectResult =
 
 from =
     FROM d:dataSource                   { d = arrayWith(d);}
-        (_ j:join                       { appendAny(d, j);}
+        (_ (j:join                      { appendAny(d, j);}
+          | u:unnest                    { appendAny(d, u);}
+           )
          )*                             { $$ = d;}
 
 dataSource =
@@ -97,6 +99,15 @@ joinOperator =
     <( LEFT (OUTER)? | INNER | CROSS )?> JOIN
                                         { string join = trim(yytext);
                                           $$ = join.empty() ? string("INNER") : join;}
+
+unnest =
+    UNNEST _ e:expression ( _ AS? ca:columnAlias )?
+                                        {
+                                          MutableDict dict = MutableDict::newDict();
+                                          setAny(dict, "UNNEST", e);
+                                          if (!ca.isNull()) setAny(dict, "AS", ca);
+                                          $$ = dict;
+                                        }
 
 groupBy =
     GROUP BY x:expression               { x = arrayWith(x);}
@@ -127,9 +138,7 @@ indexName       = IDENTIFIER
 ######## EXPRESSIONS:
 
 
-expression =
-    '(' _ '(' _ x:expression _ ')' _ ')' { $$ = (x) }
-    | expr9
+expression = expr9
 
 
 caseExpression =
@@ -306,8 +315,12 @@ baseExpr_ =
   | '$' IDENTIFIER                      { $$ = op(string("$") + yytext); }
   | function
   | property
-  | '(' _ expression _ ')'
+  | multiParenExprs
 baseExpr = baseExpr_ _                  # baseExpr to absorb all trailing white space
+
+multiParenExprs =
+    '(' _ x:multiParenExprs _ ')'       { $$ = x; }
+  | '(' _ x:expression _ ')'            { $$ = x; }
 
 OP_PREFIX =
     <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
@@ -375,13 +388,15 @@ parenExprs =
 
 # In N1QL, unlike SQL, `"` delimits a string, while "`" is used to quote identifiers.
 IDENTIFIER =
-  <[a-zA-Z_] [a-zA-Z0-9_$]*>           &{!isReservedWord(yytext)}
+  !reservedWord <[a-zA-Z_] [a-zA-Z0-9_$]*>
         _                               { $$ = string(yytext);}
   | "`"  <( [^`] | "``"   )*> "`"  _    { $$ = unquote(yytext, '`');}
 
-
 # Note: the 'i' suffix on strings makes them case-insensitive.
 # This feature is not in the stock peg-1.1.8 distribution, but is in the one on Github.
+
+# In the following list, ALL, EXITS, SOME, are not in  the list of
+# reservedWords defined in n1ql_parser_internal.hh of the parent commit
 
 ALL       = "ALL"i         WB
 AND       = "AND"i         WB
@@ -411,6 +426,7 @@ LEFT      = "LEFT"i        WB
 LIKE      = "LIKE"i        WB
 LIMIT     = "LIMIT"i       WB
 MISSING   = "MISSING"i     WB
+NATURAL   = "NATURAL"i     WB
 NOT       = "NOT"i         WB
 NULL      = "NULL"i        WB
 OFFSET    = "OFFSET"i      WB
@@ -418,15 +434,24 @@ ON        = "ON"i          WB
 OR        = "OR"i          WB
 ORDER     = "ORDER"i       WB
 OUTER     = "OUTER"i       WB
+RIGHT     = "RIGHT"i       WB
 SATISFIES = "SATISFIES"i   WB
 SELECT    = "SELECT"i      WB
 SOME      = "SOME"i        WB
 THEN      = "THEN"i        WB
 TRUE      = "TRUE"i        WB
+UNNEST    = "UNNEST"i      WB
+USING     = "USING"i       WB
 VALUED    = "VALUED"i      WB
 WHEN      = "WHEN"i        WB
 WHERE     = "WHERE"i       WB
 
+# The following reserved words match the list of reservedWords as defined in n1ql_parser_internal.hh of the parent commit,
+# except the additional new reserved word, UNNEST. Comparing with the above list, ALL, EXISTS, SOME, are absent in
+# the following list.
+# In summary, this commit includes all reserved words of the parent commit plus the new keyword UNNEST, but no more.
+
+reservedWord = AND | ANY | AS | ASC | BETWEEN | BY | CASE | COLLATE | CROSS | DESC | DISTINCT | ELSE | END | EVERY | FALSE | FROM | GROUP | HAVING | IN | INNER | IS | JOIN | LEFT | LIKE | LIMIT | MISSING | NATURAL | NOT | NULL | OFFSET | ON | OR | ORDER | OUTER | RIGHT | SATISFIES | SELECT | THEN | TRUE | UNNEST | USING | VALUED | WHEN | WHERE
 
 ######## COMPOUND LITERALS:
 

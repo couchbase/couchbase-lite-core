@@ -320,9 +320,12 @@ class C4Test {
     [[nodiscard]] std::string listSharedKeys(const std::string& delimiter = ", ") const;
 
     static fleece::alloc_slice readFile(const std::string& path);
+    static fleece::alloc_slice readFile(std::istream& istream);
     // NOLINTBEGIN(modernize-use-nodiscard)
     unsigned importJSONFile(const std::string& path, const std::string& idPrefix = "", double timeout = 0.0,
                             bool verbose = false) const;
+    unsigned importJSONFile(std::istream& istream, C4Collection*, const std::string& idPrefix = "",
+                            double timeout = 0.0, bool verbose = false) const;
     // NOLINTEND(modernize-use-nodiscard)
     static bool     readFileByLines(const std::string& path, function_ref<bool(FLSlice)>, size_t maxLines);
     static unsigned importJSONLines(const std::string& path, C4Collection*, double timeout = 0.0, bool verbose = false,

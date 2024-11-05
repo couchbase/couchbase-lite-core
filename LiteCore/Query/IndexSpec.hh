@@ -91,6 +91,9 @@ namespace litecore {
         /** The optional WHERE clause: the condition for a partial index */
         FLArray where() const;
 
+        /** The nested unnestPath from arrayOptions, as separated by "[]." is turned to an array. */
+        FLArray unnestPaths() const;
+
         std::string const name;           ///< Name of index
         Type const        type;           ///< Type of index
         alloc_slice const expression;     ///< The query expression
@@ -99,8 +102,10 @@ namespace litecore {
 
       private:
         FLDoc doc() const;
+        FLDoc unnestDoc() const;
 
         mutable FLDoc _doc = nullptr;
+        mutable FLDoc _unnestDoc = nullptr;
     };
 
 }  // namespace litecore

@@ -89,6 +89,9 @@ struct C4IndexImpl final : public C4Index {
             opts.vector.lazy = vecOpts->lazyEmbedding;
             return true;
 #endif
+        } else if ( auto arrOpts = _spec.arrayOptions() ) {
+            opts.unnestPath = (const char*)arrOpts->unnestPath.buf;
+            return true;
         } else {
             return false;
         }

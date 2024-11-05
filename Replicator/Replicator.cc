@@ -104,7 +104,6 @@ namespace litecore::repl {
                 DatabaseImpl* impl = asInternal(db);
                 return impl->dataFile()->loggingName();
             });
-            logInfo("DB=%s Instantiated %s", dbLogName.c_str(), string(*options).c_str());
 
 #ifdef LITECORE_CPPTEST
             _delayChangesResponse   = _options->delayChangesResponse();

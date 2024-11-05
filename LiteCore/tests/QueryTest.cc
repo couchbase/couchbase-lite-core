@@ -13,6 +13,7 @@
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
 #include "Benchmark.hh"
+#include "SQLiteKeyStore.hh"
 #include <cstdint>
 #include <ctime>
 #include <cfloat>
@@ -22,6 +23,7 @@
 #include <numeric>
 #include "date/date.h"
 #include "ParseDate.hh"
+#include "SecureDigest.hh"
 #include <functional>
 
 using namespace fleece::impl;
@@ -64,9 +66,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
 #ifndef SKIP_ARRAY_INDEXES
-    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
-    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, options));
-    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, options));
+    IndexSpec::ArrayOptions arrOpts{"numbers"};
+    CHECK(store->createIndex("array_1st"_sl, "[]"_sl, IndexSpec::kArray, arrOpts));
+    CHECK(!store->createIndex("array_1st"_sl, "[]"_sl, IndexSpec::kArray, arrOpts));
+    CHECK(store->createIndex("array_2nd"_sl, "[[\".key\"]]"_sl, IndexSpec::kArray, arrOpts));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
     CHECK(db->allKeyStoreNames() == allKeyStores);  // CBL-3824, CBL-5369
 #endif
@@ -83,10 +86,479 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 #ifndef SKIP_ARRAY_INDEXES
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
-    store->createIndex("nums"_sl, R"([[".numbers"]])", IndexSpec::kArray);
+    store->createIndex("nums"_sl, R"([])", IndexSpec::kArray, IndexSpec::ArrayOptions{"numbers"});
     store->deleteIndex("nums"_sl);
 }
 #endif
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Query][ArrayIndex]") {
+    addArrayDocs();
+
+    const SQLiteDataFile* sqlite = dynamic_cast<SQLiteDataFile*>(db.get());
+    REQUIRE(sqlite);
+
+    // Starts with no indexes
+    CHECK(store->getIndexes().size() == 0);
+
+    REQUIRE(store->createIndex("students_interests"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
+                               IndexSpec::ArrayOptions{"students[].interests"}));
+
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"students_interests"}));
+
+    // The KV table that unnest tables starts from.
+    string      kv          = "kv_" + SQLiteKeyStore::transformCollectionName(store->name(), true);
+    string      unnestHash1 = hexName(kv + ":unnest:students");
+    string      unnestHash2 = hexName(kv + ":unnest:students[].interests");
+    const char* triggers[]  = {"ins", "del", "preupdate", "postupdate"};
+
+    // The triggers installed on the KV table. There are 4 triggers
+    string trigger1s[4];
+    for ( int i = 0; i < 4; ++i ) trigger1s[i] = unnestHash1 + "::" + triggers[i];
+
+    // The triggers installed on 1st level array and applied to the 2nd array. There are two.
+    // No triggers for updates
+    string trigger2s[2];
+    for ( int i = 0; i < 2; ++i ) trigger2s[i] = unnestHash2 + "::" + triggers[i];
+
+    string sql;
+    bool   succ[8];
+    succ[0] = sqlite->getSchema(unnestHash1, "table", unnestHash1, sql);
+    succ[1] = sqlite->getSchema(unnestHash2, "table", unnestHash2, sql);
+    for ( int i = 0; i < 4; ++i ) succ[2 + i] = sqlite->getSchema(trigger1s[i], "trigger", kv, sql);
+    for ( int i = 0; i < 2; ++i ) succ[6 + i] = sqlite->getSchema(trigger2s[i], "trigger", unnestHash1, sql);
+
+    // Check that unnest tables are present and so are all the triggers.
+    bool succAll = succ[0];
+    for ( int i = 1; i < 8; ++i ) succAll = succAll && succ[i];
+    CHECK(succAll);
+
+    store->deleteIndex("students_interests"_sl);
+
+    CHECK(store->getIndexes().size() == 0);
+
+    succ[0] = sqlite->getSchema(unnestHash1, "table", unnestHash1, sql);
+    succ[1] = sqlite->getSchema(unnestHash2, "table", unnestHash2, sql);
+    for ( int i = 0; i < 4; ++i ) succ[2 + i] = sqlite->getSchema(trigger1s[i], "trigger", kv, sql);
+    for ( int i = 0; i < 2; ++i ) succ[6 + i] = sqlite->getSchema(trigger2s[i], "trigger", unnestHash1, sql);
+
+    // Check that all the above tables and triggers are dropped.
+    succAll = succ[0];
+    for ( int i = 1; i < 8; ++i ) succAll = succAll || succ[i];
+    CHECK(!succAll);
+}
+
+namespace {
+
+    void AddDocWithJSON(KeyStore* store, slice docID, ExclusiveTransaction& t, const char* jsonBody) {
+        DataFileTestFixture::writeDoc(
+                *store, docID, DocumentFlags::kNone, t,
+                [=](Encoder& enc) {
+                    impl::JSONConverter jc(enc);
+                    if ( !jc.encodeJSON(slice(jsonBody)) ) {
+                        enc.reset();
+                        error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
+                    }
+                },
+                false);
+    }
+
+    inline char nextLetter(char a, unsigned n = 1) { return (char)(a + n); }
+
+    // Turning the state as represented by letters into string. It will be used to generate
+    // the property value of the array property.
+    string concat(std::vector<std::pair<char, unsigned>>& letters, int top, const string& docID) {
+        std::stringstream ss;
+        for ( int i = 0; i <= top; ++i ) {
+            if ( i == 0 && !docID.empty() ) ss << docID << "-";
+            if ( i > 0 ) ss << "-";
+            ss << letters[i].first << letters[i].second;
+        }
+        return ss.str();
+    }
+
+    // This is a heper function used by multiLevelArray. It yields a succession of strings adding up to
+    // a JSON of a multi-leveled array (minus the outer braces), based on the state in letters and letter
+    // whhich is updated after each invocation.
+    string multiLevelArrayIter(std::vector<std::pair<char, unsigned>>& letters, int& letter, int arrDim,
+                               const string& docID) {
+        string ret{};
+        if ( letter < 0 ) return ret;
+
+        int  j     = letters[letter].second;
+        bool atTop = letter + 1 == letters.size();
+        if ( j < arrDim ) {
+            if ( j == 0 ) ret = "\"" + string{letters[letter].first} + "\":[";
+            else
+                ret = ",";
+            if ( atTop ) {
+                ret += "\"" + concat(letters, letter, docID) + "\"";
+                letters[letter].second++;
+            } else if ( letter + 1 < letters.size() ) {
+                if ( j == 0 ) {
+                    // We are in the curly brace, and we start the letter property and
+                    // open a curly brace for the next level.
+                    ret                      = "\"" + string{letters[letter].first} + "\":[{";
+                    letters[++letter].second = 0;
+                } else {
+                    ret                      = "},{";
+                    letters[++letter].second = 0;
+                }
+            }
+        } else {
+            ret = atTop ? "]" : "}]";
+            if ( --letter >= 0 ) { letters[letter].second++; }
+        }
+        return ret;
+    }
+
+    // This is helper function used by buildMulteLevelArray. It accumulates the returns from
+    // multiLevelArrayIter like a trail-recursion.
+    string multiLevelArray(std::vector<std::pair<char, unsigned>>& letters, int letter, int arrDim,
+                           const string& docID) {
+        string ret{};
+        for ( string s = multiLevelArrayIter(letters, letter, arrDim, docID); !s.empty();
+              s        = multiLevelArrayIter(letters, letter, arrDim, docID) ) {
+            ret = ret + s;
+        }
+        return ret;
+    }
+
+    // build a json of nested arrays by calliing multiLevelArray. And example with the following
+    // parameters,
+    //   a = 'a',
+    //   letterDim = 3, corresponding to 'a', 'b', 'c'
+    //   arrDim = 2,    corresponding to the suffixes of each letter.
+    //   docID = "doc001"
+    // is
+    // {"a": [ {"b": [ {"c": ["doc001-a0-b0-c0", "doc001-a0-b0-c1"]},
+    //                 {"c": ["doc001-a0-b1-c0", "doc001-a0-b1-c1"]}
+    //               ]
+    //         },
+    //         {"b": [ {"c": ["doc001-a1-b0-c0", "doc001-a1-b0-c1"]},
+    //                {"c": ["doc001-a1-b1-c0", "doc001-a1-b1-c1"]}
+    //               ]
+    //         }
+    //       ]
+    // }
+    // It corresponds to the unnest path: a[].b[].c
+    //
+    // Pre-conditions: 'a' <= a && letterDim <= 'a' +26 - a
+    string buildMultiLevelArray(char a, int letterDim, int arrDim, const string& docID) {
+        std::vector<std::pair<char, unsigned>> stack;
+        for ( short i = 0; i < letterDim; ++i ) { stack.emplace_back(nextLetter(a, i), 0); }
+        int top = 0;
+        return "{" + multiLevelArray(stack, top, arrDim, docID) + "}";
+    }
+
+    vector<string> addJSONDocs(KeyStore* store, std::function<string(const string&)>& jsonBuilder, int start, int count,
+                               const string& docPrefix = "doc") {
+        vector<string>       ret;
+        constexpr size_t     bufSize = 20;
+        ExclusiveTransaction t(store->dataFile());
+        for ( int i = 0; i < count; ++i ) {
+            char docID[bufSize];
+            snprintf(docID, bufSize, "%s%03u", docPrefix.c_str(), start + i);
+            string json = jsonBuilder(docID);
+            ret.push_back(docID);
+            AddDocWithJSON(store, docID, t, json.c_str());
+        }
+        t.commit();
+        return ret;
+    }
+
+    // Pre-conditions: 'a' <= a && letterDim <= 'a' +26 - a
+    // Example output:  "doc001-a0-b0", "doc001-a0-b1", "doc001-a1-b0", "doc001-a1-b1", "doc002-a0-b0"
+    // , "doc002-a0-b1", "doc002-a1-b0", "doc002-a1-b1", ...
+    // in the order of JSON built by buildMultiLevelArray
+    vector<string> unnestedElements(const vector<string>& docs, char a, unsigned letterDim, unsigned arrDim) {
+        vector<string>                    ret;
+        vector<std::pair<char, unsigned>> letters;
+        for ( short i = 0; i < letterDim; ++i ) letters.emplace_back(nextLetter(a, i), 0);
+        if ( letters.empty() ) return ret;
+
+        for ( auto& doc : docs ) {
+            int letter             = 0;
+            letters[letter].second = 0;
+            while ( true ) {
+                int  j     = letters[letter].second;
+                bool atTop = letter + 1 == letters.size();
+                if ( j < arrDim ) {
+                    if ( atTop ) {
+                        ret.push_back(concat(letters, letter, doc));
+                        letters[letter].second++;
+                        continue;
+                    } else if ( letter + 1 < letters.size() ) {
+                        letters[++letter].second = 0;
+                        continue;
+                    }
+                } else if ( letter == 0 ) {
+                    break;
+                } else {
+                    letters[--letter].second++;
+                    continue;
+                }
+            }
+        }
+        return ret;
+    }
+
+    // E.g:  UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c
+    string unnestClause(char a, unsigned depth) {
+        if ( depth == 0 ) return "";
+        std::stringstream ss;
+        for ( unsigned i = 0; i < depth; ++i ) {
+            if ( i > 0 ) ss << " ";
+            ss << "UNNEST ";
+            if ( i == 0 ) ss << "doc";
+            else
+                ss << nextLetter(a, i - 1);
+            ss << "." << nextLetter(a, i) << " AS " << nextLetter(a, i);
+        }
+        return ss.str();
+    };
+
+    // E.g. a[].b[].c
+    string unnestPath(char a, unsigned depth) {
+        if ( depth == 0 ) return "";
+        std::stringstream ss;
+        for ( unsigned i = 0; i < depth; ++i ) {
+            if ( i > 0 ) ss << "[].";
+            ss << nextLetter(a, i);
+        }
+        return ss.str();
+    };
+
+    // E.g. doc001-a0-b0-c0 for arrayIndex=0
+    //      doc001-a1-b1-c1 for arrayIndex=1
+    string arrayElement(char a, unsigned depth, const string& docID, unsigned arrayIndex) {
+        if ( depth == 0 || arrayIndex > 2 ) return string{};
+        std::stringstream ss;
+        ss << docID;
+        for ( unsigned i = 0; i < depth; ++i ) { ss << "-" << nextLetter(a, i) << arrayIndex; }
+        return ss.str();
+    };
+
+}  // anonymous namespace
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayIndex]") {
+    // 5 documents of 10 levels deep.
+    constexpr int depth    = 10;
+    constexpr int docCount = 5;
+    constexpr int arrayDim = 2;
+    auto          pow      = [](int base, unsigned exp) {
+        int ret = 1;
+        for ( unsigned i = 0; i < exp; ++i ) ret *= base;
+        return ret;
+    };
+    constexpr int totalUnnested = docCount * pow(arrayDim, depth);
+
+    std::function<string(const string&)> jsonBuilder =
+            std::bind(buildMultiLevelArray, 'a', depth, arrayDim, std::placeholders::_1);
+    vector<string> docs = addJSONDocs(store, jsonBuilder, 1, docCount, "doc");
+    REQUIRE(store->recordCount() == docCount);
+
+    string unnestSuffix  = unnestClause('a', depth);
+    string unnestedArray = unnestSuffix.substr(unnestSuffix.length() - 1);  // The last component in the unnestPath.
+    string queryStr      = "SELECT " + unnestedArray + " FROM " + collectionName + " AS doc " + unnestSuffix;
+    // queryStr = "SELECT j FROM _default AS doc UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c
+    // UNNEST c.d AS d UNNEST d.e AS e UNNEST e.f AS f UNNEST f.g AS g UNNEST g.h AS h UNNEST h.i AS i
+    // UNNEST i.j AS j"
+
+    // Query without index will run a SCAN.
+    Retained<Query> query       = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    string          explanation = query->explain();
+    CHECK(explanation.find("SCAN") != string::npos);
+
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    vector<string>            results;
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    vector<string> expected = unnestedElements(docs, 'a', depth, arrayDim);
+    REQUIRE(expected.size() == totalUnnested);
+    CHECK(results == expected);
+
+    // Create the array index
+    string unnestPathc = unnestPath('a', depth).c_str();
+    REQUIRE(store->createIndex("array_index"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
+                               IndexSpec::ArrayOptions{unnestPathc.c_str()}));
+    string arrayElem1 = arrayElement('a', depth, "doc002", 0);
+    string arrayElem2 = arrayElement('a', depth, "doc003", 1);
+
+    // Query with WHERE
+    queryStr = "SELECT META(doc).id, " + unnestSuffix.substr(unnestSuffix.length() - 1) + " FROM " + collectionName
+               + " AS doc " + unnestSuffix + " WHERE " + unnestedArray + " = \"" + arrayElem1 + "\" OR " + unnestedArray
+               + " = \"" + arrayElem2 + "\"";
+    // "SELECT META(doc).id, j FROM _default AS doc UNNEST doc.a AS a UNNEST a.b AS b UNNEST b.c AS c UNNEST c.d AS d
+    // UNNEST d.e AS e UNNEST e.f AS f UNNEST f.g AS g UNNEST g.h AS h UNNEST h.i AS i UNNEST i.j AS j
+    // WHERE j = \"doc002-a0-b0-c0-d0-e0-f0-g0-h0-i0-j0\" OR j = \"doc003-a1-b1-c1-d1-e1-f1-g1-h1-i1-j1\""
+
+    // Query with the index won't run SCAN
+    query       = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    explanation = query->explain();
+    CHECK(explanation.find("SCAN") == string::npos);
+
+    expected.resize(0);
+    expected.push_back("doc002"s + "," + arrayElem1);
+    expected.push_back("doc003"s + "," + arrayElem2);
+
+    e = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) {
+        results.push_back(e->columns()[0]->asString().asString() + "," + e->columns()[1]->asString().asString());
+    }
+    CHECK(results == expected);
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]") {
+    constexpr int depth = 3;
+
+    std::function<string(const string&)> jsonBuilder =
+            std::bind(buildMultiLevelArray, 'a', depth, 2, std::placeholders::_1);
+    // Adding two docs starting from 1
+    vector<string> docs = addJSONDocs(store, jsonBuilder, 1, 2, "doc");
+    REQUIRE(store->recordCount() == 2);
+
+    string unnestSuffix  = unnestClause('a', depth);
+    string unnestedArray = unnestSuffix.substr(unnestSuffix.length() - 1);
+    string queryStr      = "SELECT " + unnestedArray + " FROM " + collectionName + " AS doc " + unnestSuffix;
+
+    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    // The query uses fl_each when there is no unnest table for the indexing.
+    REQUIRE(query->explain().find("fl_each") != string::npos);
+
+    // Create Index, when there are 2 documnets
+    string unnestPathc = unnestPath('a', depth).c_str();
+    REQUIRE(store->createIndex("array_index"_sl, "", QueryLanguage::kN1QL, IndexSpec::kArray,
+                               IndexSpec::ArrayOptions{unnestPathc.c_str()}));
+
+    vector<string>            expected = unnestedElements(docs, 'a', depth, 2);
+    Retained<QueryEnumerator> e        = query->createEnumerator();
+    // The same query will continue to use virtual tables, fl_each, even though after the index is created.
+    REQUIRE(query->explain().find("fl_each") != string::npos);
+    vector<string> results;
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    // expected =
+    CHECK(results.size() == 16);  // 2 docs x 2^3 each doc
+    CHECK(results == expected);
+
+    //
+    // Test the insertion triggers
+    //
+
+    // Insert 5 documents, from 3 to 7
+    vector<string> docs_inserted     = addJSONDocs(store, jsonBuilder, 3, 5, "doc");
+    vector<string> expected_inserted = unnestedElements(docs_inserted, 'a', depth, 2);
+    CHECK(expected_inserted.size() == 40);  // 40 == 5 * 2^3
+
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    // New query, after the index is created, uses the unnest tables.
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+
+    vector<string> expected2 = expected;
+    for ( const auto& a : expected_inserted ) expected2.push_back(a);
+    CHECK(results.size() == 56);  // 16 + 40
+    CHECK(expected2 == results);
+
+    //
+    // Test the deletion triggers
+    //
+
+    // We now have 7 documents, from doc001 to doc007
+    // Let's delete doc002 and doc005, doc007, with one soft, one hard, and one soft delete
+    // soft delete is done by setting the delete flag and hard delete is to delete it from the kv-store
+    deleteDoc("doc002"_sl, false);
+    deleteDoc("doc005"_sl, true);
+    deleteDoc("doc007"_sl, false);
+
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    vector<string> expected3;
+    for ( const auto& a : expected2 ) {
+        if ( a.find("doc002-") == string::npos && a.find("doc005-") == string::npos
+             && a.find("doc007-") == string::npos )
+            expected3.push_back(a);
+    }
+    CHECK(expected3.size() == 32);  // We are left with 4 documents. 32 == 4 * 8
+    CHECK(results == expected3);
+
+    // Undo the soft delete of the last doc, doc007
+    undeleteDoc("doc007"_sl);
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    // putting back doc007-
+    for ( const auto& a : expected2 ) {
+        if ( a.find("doc007-") != string::npos )
+            expected3.push_back(a);  // The undeleted doc shows up at the end of query result.
+    }
+    CHECK(expected3.size() == 40);
+    CHECK(results == expected3);
+
+    //
+    // Test the update triggers
+    //
+
+    // We now have 5 docs: doc001, doc003, doc004, doc006, doc007
+    // Update doc006
+
+    string updateDocID{"doc006"};
+    string updateJson = jsonBuilder(updateDocID);
+    // '{"a":[{"b":[{"c":["doc006-a0-b0-c0","doc006-a0-b0-c1"]},{"c":["doc006-a0-b1-c0",
+    //  "doc006-a0-b1-c1"]}]},{"b":[{"c":["doc006-a1-b0-c0","doc006-a1-b0-c1"]},
+    //  {"c":["doc006-a1-b1-c0","doc006-a1-b1-c1"]}]}]}'
+    size_t         pos = 0;
+    vector<string> arrayElements;
+    // Change doc006-a0-b0-c0 to doc006-A0-B0-C0, lower case of a to c to upper case.
+    while ( pos < updateJson.length() ) {
+        pos = updateJson.find("\"doc006-", pos);
+        if ( pos != string::npos ) {
+            auto pos2 = updateJson.find("\"", pos + 1);
+            Assert(pos2 != string::npos);
+            ++pos2;
+            for ( size_t i = pos + 8; i < pos2; ++i ) {
+                if ( 'a' <= updateJson[i] && updateJson[i] <= 'z' ) { updateJson[i] = 'A' + updateJson[i] - 'a'; }
+            }
+            arrayElements.push_back(updateJson.substr(pos + 1, pos2 - pos - 2));
+            pos = pos2;
+        }
+    }
+    // updateJson after updated:
+    // '{"a":[{"b":[{"c":["doc006-A0-B0-C0","doc006-A0-B0-C1"]},{"c":["doc006-A0-B1-C0",
+    // "doc006-A0-B1-C1"]}]},{"b":[{"c":["doc006-A1-B0-C0","doc006-A1-B0-C1"]},
+    // {"c":["doc006-A1-B1-C0","doc006-A1-B1-C1"]}]}]}'
+    REQUIRE(arrayElements.size() == 8);
+
+    // Update the doc
+    {
+        ExclusiveTransaction t(store->dataFile());
+        AddDocWithJSON(store, updateDocID, t, updateJson.c_str());
+        t.commit();
+    }
+    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    REQUIRE(query->explain().find("fl_each") == string::npos);
+    e = query->createEnumerator();
+    results.resize(0);
+    while ( e->next() ) { results.push_back(e->columns()[0]->asString().asString()); }
+    vector<string> expected4;
+    for ( unsigned i = 0; i < expected3.size(); ++i ) {
+        auto p = expected3[i].find(updateDocID);
+        // Only take those docs in expected3 that have docID not equaling updadeDocID
+        if ( p == string::npos ) expected4.push_back(expected3[i]);
+    }
+    // expected3.size() == 40
+    REQUIRE(expected4.size() == 32);
+    // Upcased docs come at the end of the query results.
+    for ( const auto& a : arrayElements ) expected4.push_back(a);
+    REQUIRE(expected4.size() == 40);
+    CHECK(results == expected4);
+}
 
 TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);
@@ -2845,4 +3317,242 @@ TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
                 FAIL_CHECK("Wrong error: " << x.what());
         }
     }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
+    const char* json = R"==(
+{
+   "name":{"first":"Lue","last":"Laserna"},
+   "contacts":[
+     {
+       "type":"primary",
+       "address":{"street":"1 St","city":"San Pedro","state":"CA"},
+       "phones":[
+         {"type":"home","numbers":["310-123-4567","310-123-4568"]},
+         {"type":"mobile","numbers":["310-123-6789","310-222-1234"]}
+       ],
+       "emails":["lue@email.com","laserna@email.com"]
+     },
+     {
+       "type":"secondary",
+       "address":{"street":"5 St","city":"Santa Clara","state":"CA"},
+       "phones":[
+         {"type":"home","numbers":["650-123-4567","650-123-2120"]},
+         {"type":"mobile","numbers":["650-123-6789"]}
+       ],
+       "emails":["eul@email.com","laser@email.com"]
+     }
+   ],
+   "likes":["Soccer","Cat"]
+}
+)==";
+    {
+        ExclusiveTransaction t(store->dataFile());
+        AddDocWithJSON(store, "doc01"_sl, t, json);
+        t.commit();
+    }
+
+    // Case 1, Single level UNNEST
+    // ---------------------------
+    //    SELECT name.first as name, c.address.city as city
+    //    FROM profiles
+    //    UNNEST contacts AS c
+
+    string queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+                      + "['AS', ['.c.address.city'], 'city']], " + "FROM: [{COLLECTION: '" + collectionName + "'}, "
+                      + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}]}";
+    Retained<Query>           query{store->compileQuery(json5(queryStr), QueryLanguage::kJSON)};
+    Retained<QueryEnumerator> e{query->createEnumerator()};
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(!e->next());
+
+    // Case 2, Multiple Single level UNNESTs
+    // -------------------------------------
+    //    SELECT name.first as name, c.address.city as city, `like`
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST likes AS `like`
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+               + "['AS', ['.c.address.city'], 'city'], ['.like']], " + "FROM: [{COLLECTION: '" + collectionName + "'}, "
+               + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}, " + "{UNNEST: ['." + collectionName
+               + ".likes'], AS: 'like'}]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "Soccer"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "Cat"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "Soccer"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "Cat"_sl);
+    CHECK(!e->next());
+
+    // Case 3, 2-Level UNNEST
+    // ----------------------
+    //    SELECT name.first as name, c.address.city as city, p.numbers as phone
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+               + "['AS', ['.c.address.city'], 'city'], ['AS', ['.p.numbers'], 'phone']], " + "FROM: [{COLLECTION: '"
+               + collectionName + "'}, " + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}, "
+               + "{UNNEST: ['.c.phones'], AS: 'p'}]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"310-123-4567\",\"310-123-4568\"]");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"310-123-6789\",\"310-222-1234\"]");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"650-123-4567\",\"650-123-2120\"]");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->toJSONString() == "[\"650-123-6789\"]");
+    CHECK(!e->next());
+
+    // Case 4, 3-level UNNEST
+    // ----------------------
+    //    SELECT name.first as name, c.address.city as city, p.type as `phone-type`, number
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+    //    UNNEST p.numbers as number
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'], "
+               + "['AS', ['.c.address.city'], 'city'], ['AS', ['.p.type'], 'phone-type'], " + "['.number']], "
+               + "FROM: [{COLLECTION: '" + collectionName + "'}, " + "{UNNEST: ['." + collectionName
+               + ".contacts'], AS: 'c'}, " + "{UNNEST: ['.c.phones'], AS: 'p'}, "
+               + "{UNNEST: ['.p.numbers'], AS: 'number'}]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "310-123-4567"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "310-123-4568"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "mobile"_sl);
+    CHECK(e->columns()[3]->asString() == "310-123-6789"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "mobile"_sl);
+    CHECK(e->columns()[3]->asString() == "310-222-1234"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "650-123-4567"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "home"_sl);
+    CHECK(e->columns()[3]->asString() == "650-123-2120"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "mobile"_sl);
+    CHECK(e->columns()[3]->asString() == "650-123-6789"_sl);
+    CHECK(!e->next());
+
+    // Test 5, Unnest with Where & order by
+    // -------------------------
+    //    SELECT name.first as name, c.address.city as city, p.numbers[0] as phone
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+    //    WHERE p.type = "mobile"
+    //    ORDER BY c.address.city DESC
+
+    queryStr = "{WHAT: [['AS', ['."s + collectionName + ".name.first'], 'name'],"
+               + "['AS', ['.c.address.city'], 'city'], ['AS', ['.p.numbers[0]'], 'phone']], " + "FROM: [{COLLECTION: '"
+               + collectionName + "'}, " + "{UNNEST: ['." + collectionName + ".contacts'], AS: 'c'}, "
+               + "{UNNEST: ['.c.phones'], AS: 'p'}], " + "WHERE: ['=', ['.p.type'], 'mobile'], "
+               + "ORDER_BY: [['DESC', ['.c.address.city']]]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "Santa Clara"_sl);
+    CHECK(e->columns()[2]->asString() == "650-123-6789");
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "Lue"_sl);
+    CHECK(e->columns()[1]->asString() == "San Pedro"_sl);
+    CHECK(e->columns()[2]->asString() == "310-123-6789");
+    CHECK(!e->next());
+
+    // Test 6, Unnest with Group-by
+    // ----------------------------
+    //    SELECT DISTINCT c.address.state as state, count(c.address.city) as num
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    GROUP BY c.address.state, c.address.city
+
+    queryStr = "{WHAT: [['AS', ['.c.address.state'], 'state'],"s + "['AS', ['count()', ['.c.address.city']], 'num']"
+               + "], " + "FROM: [{COLLECTION: '" + collectionName + "'}, " + "{UNNEST: ['." + collectionName
+               + ".contacts'], AS: 'c'}], " + "GROUP_BY: [['.c.address.state'], ['.c.address.city']]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "CA"_sl);  // for city San Pedro
+    CHECK(e->columns()[1]->asInt() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "CA"_sl);  // for city Santa Clara
+    CHECK(e->columns()[1]->asInt() == 1);
+    CHECK(!e->next());
+
+    // Test 7, Unnest with Group-by and Order-by
+    // -------------------------
+    //    SELECT p.type AS 'phone-type', count(number) AS num
+    //    FROM profiles
+    //    UNNEST contacts AS c
+    //    UNNEST c.phones AS p
+    //    UNNEST p.number AS number
+    //    GROUP BY 'phone-type'
+    //    ORDER BY num DESC
+
+    queryStr = "{WHAT: ["s + "['AS', ['.p.type'], 'phone-type'], " + "['AS', ['count()', ['.number']], 'num']], "
+               + "FROM: [{COLLECTION: '" + collectionName + "'}, " + "{UNNEST: ['." + collectionName
+               + ".contacts'], AS: 'c'}, " + "{UNNEST: ['.c.phones'], AS: 'p'}, "
+               + "{UNNEST: ['.p.numbers'], AS: 'number'}]," + "GROUP_BY: ['.phone-type'], "
+               + "ORDER_BY: [['DESC', ['.num']]]}";
+    query = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+    e     = query->createEnumerator();
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "home"_sl);
+    CHECK(e->columns()[1]->asInt() == 4);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "mobile"_sl);
+    CHECK(e->columns()[1]->asInt() == 3);
+    CHECK(!e->next());
 }
