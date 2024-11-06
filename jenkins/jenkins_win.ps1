@@ -33,15 +33,17 @@ try {
         exit 1
     }
 
+    # TEMP: Using `list` not `quiet` due to Catch2 deadlock
     Set-Location LiteCore\tests\Debug
-    .\CppTests -r quiet
+    .\CppTests -r list
     if($LASTEXITCODE -ne 0) {
         Write-Host "C++ tests failed!" -ForegroundColor Red
         exit 1
     }
 
+    # TEMP: Using `list` not `quiet` due to Catch2 deadlock
     Set-Location ..\..\..\C\tests\Debug
-    .\C4Tests -r quiet
+    .\C4Tests -r list
     if($LASTEXITCODE -ne 0) {
         Write-Host "C tests failed!" -ForegroundColor Red
         exit 1

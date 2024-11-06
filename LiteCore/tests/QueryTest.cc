@@ -88,7 +88,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayInd
 }
 #endif
 
-TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);
     addArrayDocs(101, 100);
 
@@ -602,7 +602,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     CHECK(!e->next());
 }
 
-TEST_CASE_METHOD(QueryTest, "Column Title of unqualified star", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Column Title of unqualified star", "[Query]") {
     addNumberedDocs(1, 1);
     string           sqls[][2] = {{"SELECT *         FROM                 _default._default", "_default"},
                                   {"SELECT *         FROM                          _default", "_default"},
@@ -2065,7 +2065,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]")
 #endif
 
 
-TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
     addNumberedDocs(1, 10);
     {
         ExclusiveTransaction t(store->dataFile());
@@ -2178,7 +2178,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
     CHECK(e->columns()[0]->asDict()->get("bool_false"_sl)->asBool() == false);
 }
 
-TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     if ( GENERATE(false, true) ) {
         logSection("secondary collection");
         store = &db->getKeyStore(".secondary");
@@ -2541,6 +2541,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
 }
 
+//FIXME: This should be an N_WAY_TEST_CASE_METHOD, but the non-default-collection option triggers a N1QL parser bug (CBL-6302)
 TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
@@ -2757,7 +2758,7 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
     CHECK(e->columns()[1]->asInt() == 0);
 }
 
-TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
     addNumberedDocs(1, 10);
 
     auto checkType = [this](const string& jsonQuery) {
@@ -2814,7 +2815,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query nonexistent collection", "[Query][N1QL]
     });
 }
 
-TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
     string      tooLong(252, 'x');
     string      tooLong2 = "a." + tooLong, tooLong3 = tooLong + ".z";
     const char* kBadCollectionNames[] = {// "_",   <- nope, "_" happens to be legal (synonym for the default collection)

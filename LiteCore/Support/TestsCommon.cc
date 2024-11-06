@@ -56,7 +56,7 @@ FilePath GetTempDirectory() {
         snprintf(folderName, bufSize, "LiteCore_Tests_%" PRIms ".cblite2/",
                  chrono::milliseconds(time(nullptr)).count());
         kTempDir = GetSystemTempDirectory()[folderName];
-        kTempDir.mkdir();
+        (void)kTempDir.mkdir();  // it's OK if it already exists
     });
 
     return kTempDir;
@@ -71,7 +71,7 @@ void InitTestLogging() {
 
         if ( c4log_binaryFileLevel() == kC4LogNone ) {
             auto logDir = GetTempDirectory()["binaryLogs/"];
-            logDir.mkdir();
+            (void)logDir.mkdir();  // it's OK if it already exists
             string path = logDir.path();
             C4Log("Beginning binary logging to %s", path.c_str());
             C4Error error;
@@ -140,7 +140,7 @@ fleece::alloc_slice json5slice(string_view str) {
     FLError        err;
     auto           json = alloc_slice(FLJSON5_ToJSON(slice(str), &errorMsg, &errorPos, &err));
     INFO("JSON5 error: " << string(alloc_slice(errorMsg)) << ", input was: " << str);
-    REQUIRE(json.buf);
+    Require(json.buf);
     return json;
 }
 
@@ -169,9 +169,9 @@ bool WaitUntil(chrono::milliseconds timeout, function_ref<bool()> predicate) {
 }
 
 bool ReadFileByLines(const string& path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
-    INFO("Reading lines from " << path);
+    Info("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
-    REQUIRE(fd);
+    Require(fd);
     vector<char> buf(1000000);  // The Wikipedia dumps have verrry long lines
     size_t       lineCount = 0;
     while ( fd.good() ) {
@@ -182,10 +182,21 @@ bool ReadFileByLines(const string& path, function_ref<bool(FLSlice)> callback, s
         auto len = fd.gcount();
         if ( len <= 0 ) break;
         ++lineCount;
-        REQUIRE(buf[len - 1] == '\0');
+        Require(buf[len - 1] == '\0');
         --len;
         if ( !callback({buf.data(), (size_t)len}) ) return false;
     }
-    REQUIRE((fd.eof() || (maxLines > 0 && lineCount == maxLines)));
+    Require((fd.eof() || (maxLines > 0 && lineCount == maxLines)));
     return true;
+}
+
+// Static initializer will run on the main thread at startup
+static const std::thread::id sMainThreadID = std::this_thread::get_id();
+
+bool OnMainThread() noexcept { return std::this_thread::get_id() == sMainThreadID; }
+
+void C4AssertionFailed(const char* fn, const char* file, unsigned line, const char* expr, const char* message) {
+    if ( !message ) message = expr;
+    fprintf(stderr, "FATAL: Assertion failed: %s (%s:%u, in %s)\n", message, file, line, fn);
+    abort();
 }

@@ -94,6 +94,38 @@ std::ostream& operator<<(std::ostream& o, const std::set<T>& things) {
     return o;
 }
 
+#pragma mark - THREAD-SAFE CATCH2 ASSERTIONS:
+
+// `REQUIRE`, `CHECK` and other Catch macros can't be used on background threads because Check is not
+// thread-safe. In multithreaded code, use `Require`, `Check`, `Info` instead.
+// Warning: Don't use regular C `assert`, because if this is an optimized build it'll be ignored.
+
+#define Check(E)                                                                                                       \
+    do {                                                                                                               \
+        if ( OnMainThread() ) CHECK(E);                                                                                \
+        else                                                                                                           \
+            C4Assert(E);                                                                                               \
+    } while ( 0 )
+#define Require(E)                                                                                                     \
+    do {                                                                                                               \
+        if ( OnMainThread() ) REQUIRE(E);                                                                              \
+        else                                                                                                           \
+            C4Assert(E);                                                                                               \
+    } while ( 0 )
+#define Info(E) INFO(E)  //TODO: Not sure how to wrap INFO, with its weird scoping
+
+#define C4Assert(E, ...)                                                                                               \
+    do {                                                                                                               \
+        if ( !(E) ) [[unlikely]]                                                                                       \
+            C4AssertionFailed(__func__, __FILE__, __LINE__, #E, ##__VA_ARGS__);                                        \
+    } while ( 0 )
+
+/// True if running on the main thread.
+[[nodiscard]] bool OnMainThread() noexcept;
+
+[[noreturn]] void C4AssertionFailed(const char* func, const char* file, unsigned line, const char* expr,
+                                    const char* message = nullptr);
+
 #pragma mark - SUPPRESSING EXCEPTION WARNINGS:
 
 // RAII utility to suppress reporting C++ exceptions (or breaking at them, in the Xcode debugger.)

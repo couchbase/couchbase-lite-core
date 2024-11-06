@@ -164,10 +164,10 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options* newOptions) {
     store = &db->defaultKeyStore();
 }
 
-DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options* options) {
+DataFileTestFixture::DataFileTestFixture(const DataFile::Options& options) {
     auto dbPath = databasePath();
     deleteDatabase(dbPath);
-    db.reset(newDatabase(dbPath, options));
+    db.reset(newDatabase(dbPath, &options));
     store = &db->defaultKeyStore();
 }
 
