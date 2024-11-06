@@ -186,6 +186,22 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
     REQUIRE(num == 101);
 }
 
+TEST_CASE_METHOD(QueryTest, "Query SELECT Empty WHAT", "[Query][N1QL]") {
+    addNumberedDocs();
+    auto            str   = json5("{WHAT: [], WHERE: ['>', ['.num'], 10]}");
+    Retained<Query> query = store->compileQuery(str, QueryLanguage::kJSON);
+    CHECK(query->columnCount() == 2);
+    // When WHAT is empty, the parser will assign meta properties _id and _sequence
+    // and keep the underscores in the column titles.
+    CHECK(query->columnTitles() == (vector<string>{"_id", "_sequence"}));
+
+    // With explict WHAT
+    str   = json5("{WHAT: [['._id'], ['._sequence']], WHERE: ['>', ['.num'], 10]}");
+    query = store->compileQuery(str, QueryLanguage::kJSON);
+    CHECK(query->columnCount() == 2);
+    CHECK(query->columnTitles() == (vector<string>{"id", "sequence"}));
+}
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
     addNumberedDocs();
     Retained<Query> query1{store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: "

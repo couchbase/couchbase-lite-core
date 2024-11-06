@@ -272,7 +272,9 @@ namespace litecore::qt {
 
     string_view MetaNode::asColumnName() const {
         if ( _property != MetaProperty::none ) {
-            return kMetaPropertyNames[int(_property) - 1];
+            if ( _useMetaShortcutName ) return kMetaShortcutNames[int(_property) - 1];
+            else
+                return kMetaPropertyNames[int(_property) - 1];
         } else if ( _source ) {
             return _source->asColumnName();
         } else {
