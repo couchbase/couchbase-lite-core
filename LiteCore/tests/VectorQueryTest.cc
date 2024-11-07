@@ -26,9 +26,7 @@
 
 class SIFTVectorQueryTest : public VectorQueryTest {
   public:
-    SIFTVectorQueryTest(int which) : VectorQueryTest(which) {}
-
-    SIFTVectorQueryTest() : VectorQueryTest(0) {}
+    explicit SIFTVectorQueryTest(int which = 0) : VectorQueryTest(which) {}
 
     IndexSpec::VectorOptions vectorIndexOptions() const {
         return IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);
@@ -554,20 +552,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     // which is LiteCore_Tests_<random number> or something
     if ( collectionName == "db" ) collectionName = "_";
 
-    // N_WAY_TEST_CASE_METHOD is not compatible with section, so redo all the
-    // extra collections here
-
     SECTION("Insufficient docs") {
-        SECTION("As-is") {}
-        SECTION("Default scope") {
-            collectionName = "Secondary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-        SECTION("Custom scope / collection") {
-            collectionName = "scopey.subsidiary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-
         expectedTrained    = false;
         expectedPretrained = false;
         createVectorIndex();
@@ -575,16 +560,6 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     }
 
     SECTION("Sufficient docs, index first") {
-        SECTION("As-is") {}
-        SECTION("Default scope") {
-            collectionName = "Secondary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-        SECTION("Custom scope / collection") {
-            collectionName = "scopey.subsidiary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-
         expectedTrained    = true;
         expectedPretrained = true;
         createVectorIndex();
@@ -592,16 +567,6 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     }
 
     SECTION("Sufficient docs, load first") {
-        SECTION("As-is") {}
-        SECTION("Default scope") {
-            collectionName = "Secondary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-        SECTION("Custom scope / collection") {
-            collectionName = "scopey.subsidiary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-
         expectedTrained    = true;
         expectedPretrained = false;
         readVectorDocs(256 * 30);
