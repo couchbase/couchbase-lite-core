@@ -73,10 +73,11 @@ namespace litecore {
         static constexpr slice kCollectionNameCharacterSet =
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
         // Separator for an FTI keystore (i.e. <scope>.<collection>::<index>
-        static constexpr slice kIndexSeparator   = "::";
-        static constexpr slice kPredictSeparator = ":predict:";
-        static constexpr slice kVectorSeparator  = ":vector:";
-        static constexpr slice kUnnestSeparator  = ":unnest:";
+        static constexpr slice kIndexSeparator       = "::";
+        static constexpr slice kPredictSeparator     = ":predict:";
+        static constexpr slice kVectorSeparator      = ":vector:";
+        static constexpr slice kUnnestSeparator      = ":unnest:";
+        static constexpr slice kUnnestLevelSeparator = "[].";
 
         /// Returns true if this is a valid collection name. Does NOT recognize "_default"!
         [[nodiscard]] static bool isValidCollectionName(slice name);
@@ -162,8 +163,6 @@ namespace litecore {
 
         /** Does this KeyStore potentially have records that expire? (May return false positives.) */
         virtual bool mayHaveExpiration() = 0;
-
-        virtual void addExpiration() = 0;
 
         /** Sets a record's expiration time. Zero means 'never'.
             @return  true if the time was set, false if no record with that key exists. */

@@ -123,12 +123,9 @@ string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreguidelines-pro-type-member-init)
     constexpr static TestOptions numToTestOption[] = {
 #if SkipVersionVectorTest
-        RevTreeOption,
-        EncryptedRevTreeOption
+            RevTreeOption, EncryptedRevTreeOption
 #else
-        RevTreeOption,
-        VersionVectorOption,
-        EncryptedRevTreeOption
+            RevTreeOption, VersionVectorOption, EncryptedRevTreeOption
 #endif
     };
     static_assert(sizeof(numToTestOption) / sizeof(TestOptions) >= numberOfOptions);
@@ -555,10 +552,14 @@ void C4Test::checkAttachments(C4Database* inDB, vector<C4BlobKey> blobKeys, vect
 fleece::alloc_slice C4Test::readFile(const std::string& filepath) {
     std::ifstream inFile(filepath);
     Require(inFile.is_open());
+    return readFile(inFile);
+}
+
+fleece::alloc_slice C4Test::readFile(std::istream& istream) {
     std::stringstream outData;
     try {  // The << operator can throw if an I/O error occured
-        inFile.exceptions(std::ifstream::failbit);
-        outData << inFile.rdbuf();
+        istream.exceptions(std::ifstream::failbit);
+        outData << istream.rdbuf();
     } catch ( const std::ios_base::failure& f ) { Require(false); }
     alloc_slice result{outData.str()};
     return result;
@@ -570,14 +571,22 @@ bool C4Test::readFileByLines(const string& path, function_ref<bool(FLSlice)> cal
 
 unsigned C4Test::importJSONFile(const string& path, const string& idPrefix, double timeout, bool verbose) const {
     C4Log("Reading %s ...  ", path.c_str());
+    std::ifstream inFile(path);
+    REQUIRE(inFile.is_open());
+    return importJSONFile(inFile, c4db_getDefaultCollection(db, nullptr), idPrefix, timeout, verbose);
+}
+
+unsigned C4Test::importJSONFile(std::istream& istream, C4Collection* collection, const string& idPrefix, double timeout,
+                                bool verbose) const {
     fleece::Stopwatch st;
     FLError           error;
-    alloc_slice       fleeceData = FLData_ConvertJSON(readFile(path), &error);
+    alloc_slice       fleeceData = FLData_ConvertJSON(readFile(istream), &error);
     Require(fleeceData.buf != nullptr);
     Array root = FLValue_AsArray(FLValue_FromData((C4Slice)fleeceData, kFLTrusted));
     Require(root);
 
-    TransactionHelper t(db);
+    auto              database = c4coll_getDatabase(collection);
+    TransactionHelper t(database);
 
     FLArrayIterator  iter;
     FLValue          item;
@@ -593,12 +602,11 @@ unsigned C4Test::importJSONFile(const string& path, const string& idPrefix, doub
         FLSliceResult body = FLEncoder_Finish(enc, nullptr);
 
         // Save document:
-        C4DocPutRequest rq      = {};
-        rq.docID                = c4str(docID);
-        rq.allocedBody          = body;
-        rq.save                 = true;
-        auto        defaultColl = getCollection(db, kC4DefaultCollectionSpec);
-        C4Document* doc         = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO());
+        C4DocPutRequest rq = {};
+        rq.docID           = c4str(docID);
+        rq.allocedBody     = body;
+        rq.save            = true;
+        C4Document* doc    = c4coll_putDoc(collection, &rq, nullptr, ERROR_INFO());
         Require(doc != nullptr);
         c4doc_release(doc);
         FLSliceResult_Release(body);

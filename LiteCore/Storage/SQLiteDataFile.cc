@@ -87,8 +87,9 @@ namespace litecore {
     };
 
     // Amount of file to memory-map
+    // https://www.sqlite.org/mmap.html#:~:text=To%20disable%20memory%2Dmapped%20I,any%20content%20beyond%20N%20bytes.
 #if TARGET_OS_OSX || TARGET_OS_SIMULATOR
-    static const int kMMapSize = -1;  // Avoid possible file corruption hazard on macOS
+    static const int kMMapSize = 0;  // Avoid possible file corruption hazard on macOS
 #else
     static const int kMMapSize = 50 * MB;
 #endif
@@ -300,6 +301,8 @@ namespace litecore {
                 error::_throw(error::DatabaseTooNew);
             }
 
+            const Options& options = getOptions();
+
             _exec(stringprintf(
                     "PRAGMA cache_size=%d; "             // Memory cache
                     "PRAGMA mmap_size=%d; "              // Memory-mapped reads
@@ -307,8 +310,8 @@ namespace litecore {
                     "PRAGMA journal_size_limit=%lld; "   // Limit WAL disk usage
                     "PRAGMA case_sensitive_like=true; "  // Case sensitive LIKE, for N1QL compat
                     "PRAGMA fullfsync=ON",  // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
-                    -(int)kCacheSize / 1024, kMMapSize, getOptions().diskSyncFull ? "full" : "normal",
-                    (long long)kJournalSize));
+                    -(int)kCacheSize / 1024, options.mmapDisabled ? 0 : kMMapSize,
+                    options.diskSyncFull ? "full" : "normal", (long long)kJournalSize));
 
             (void)upgradeSchema(SchemaVersion::WithPurgeCount, "Adding purgeCnt column", [&] {
                 // Schema upgrade: Add the `purgeCnt` column to the kvmeta table.
@@ -334,6 +337,25 @@ namespace litecore {
                 if ( getSchema("indexes", "table", "indexes", sql) ) {
                     // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
                     if ( sql.find("lastSeq") == string::npos ) { _exec("ALTER TABLE indexes ADD COLUMN lastSeq TEXT"); }
+                }
+            });
+
+            (void)upgradeSchema(SchemaVersion::WithExpirationColumn, "Adding `expiration` column", [&] {
+                // Add the 'expiration' column to every KeyStore:
+                for ( string& name : allKeyStoreNames() ) {
+                    if ( name.find("::") == string::npos ) {
+                        string sql;
+                        // We need to check for existence of the expiration column first.
+                        // Do not add it if it already exists in the table.
+                        if ( getSchema("kv_" + name, "table", "kv_" + name, sql)
+                             && sql.find("expiration") != string::npos )
+                            continue;
+                        // Only update data tables, not FTS index tables
+                        _exec(format(
+                                "ALTER TABLE \"kv_%s\" ADD COLUMN expiration INTEGER; "
+                                "CREATE INDEX \"kv_%s_expiration\" ON \"kv_%s\" (expiration) WHERE expiration not null",
+                                name.c_str(), name.c_str(), name.c_str()));
+                    }
                 }
             });
         });
@@ -600,9 +622,6 @@ namespace litecore {
              && keyStoreNameIsCollection(name) ) {
             // Wrap the store in a BothKeyStore that manages it and the deleted store:
             auto deletedStore = new SQLiteKeyStore(*this, kDeletedKeyStorePrefix + name, options);
-
-            keyStore->addExpiration();
-            deletedStore->addExpiration();
 
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"
@@ -1050,5 +1069,34 @@ namespace litecore {
         enc.endArray();
         return enc.finish();
     }
+
+    alloc_slice SQLiteDataFile::rawScalarQuery(const string& query) {
+        SQLite::Statement stmt(*_sqlDb, query);
+        std::stringstream ss;
+
+        if ( !stmt.executeStep() ) return nullslice;
+
+        switch ( SQLite::Column col = stmt.getColumn(0); col.getType() ) {
+            case SQLITE_NULL:
+                return nullslice;
+            case SQLITE_INTEGER:
+                ss << col.getInt64();
+                break;
+            case SQLITE_FLOAT:
+                ss << col.getDouble();
+                break;
+            case SQLITE_TEXT:
+                return alloc_slice(col.getString());
+            case SQLITE_BLOB:
+                return {col.getBlob(), static_cast<size_t>(col.getBytes())};
+            default:
+                break;
+        }
+
+        std::string res = ss.str();
+        return alloc_slice(res);
+    }
+
+    int SQLiteDataFile::defaultMmapSize() { return kMMapSize; }
 
 }  // namespace litecore

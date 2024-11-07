@@ -54,6 +54,23 @@ class N1QLParserTest : public QueryTranslatorTest {
     }
 };
 
+TEST_CASE_METHOD(N1QLParserTest, "CBL-6245", "[Query][N1QL][C]") {
+    tableNames.insert("kv_.adminDB");
+    tableNames.insert("kv_.userRecipients");
+
+    CHECK(translate("SELECT META().id FROM adminDB WHERE (type = 'conversation') AND ANY v in userRecipients SATISFIES "
+                    "LOWER(v.firstName) LIKE '%rado%' OR LOWER(v.lastName) LIKE '%rado%' END")
+          == "{'FROM':[{'COLLECTION':'adminDB'}],'WHAT':[['_.',['meta()'],'.id']],'WHERE':['AND',['=',['.type'],'"
+             "conversation'],['ANY','v',['.userRecipients'],['OR',['LIKE',['LOWER()',['?v.firstName']],'%rado%'],['"
+             "LIKE',['LOWER()',['?v.lastName']],'%rado%']]]]}");
+
+    // This doesn't compile without brackets around the `SATISFIES` expression.
+    // Should be fixed by CBL-6324.
+    //CHECK(translate("SELECT META().id FROM adminDB WHERE type = 'file' AND ANY v in versions SATISFIES "
+    //                "v.docGuid IN ('docGuidExample') END")
+    //      == "q");
+}
+
 // NOTE: the translate() method converts `"` to `'` in its output, to make the string literals
 // in the tests below less cumbersome to type (and read).
 
@@ -419,6 +436,62 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
              "{'AS':'c','COLLECTION':'x','JOIN':'INNER','ON':['=',['.b.m'],['.c.m']]}],"
              "'WHAT':[['.a'],['.b'],['.c']],"
              "'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
+}
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL UNNEST", "[Query][N1QL][C]") {
+    tableNames.insert("kv_.store.customers");
+    tableNames.insert("kv_.store2.customers");
+
+    // UNNEST is a keyword
+    CHECK(translate("SELECT * FROM _ WHERE unnest = true").empty());
+    CHECK(translate("SELECT * FROM _ WHERE `unnest` = true")
+          == "{'FROM':[{'COLLECTION':'_'}],'WHAT':[['.']],'WHERE':['=',['.unnest'],true]}");
+
+    // This example is used in c4QueryTest
+    CHECK(translate("SELECT META(person).id, `like` FROM _default AS person "
+                    "UNNEST person.`like` AS `like` "
+                    "WHERE `like` > \"snowboarding\" ORDER BY `like`, META(person).id")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'AS':'like','UNNEST':['.person.like']}],"
+             "'ORDER_BY':[['.like'],['_.',['meta()','person'],'.id']],"
+             "'WHAT':[['_.',['meta()','person'],'.id'],['.like']],'WHERE':['>',['.like'],'snowboarding']}");
+
+    // Unnest expression with collection name as data source
+    CHECK(translate("SELECT store.customers.name, notes FROM store.customers UNNEST customers.notes")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+             "{'UNNEST':['.customers.notes']}],'WHAT':[['.store.customers.name'],['.notes']]}");
+
+    // Unnest in conjunction with join
+    CHECK(translate("SELECT notes.date, complaints FROM store.customers "
+                    "JOIN store2.customers ON store.customers.name = store2.customers.name "
+                    "UNNEST store.customers.notes UNNEST notes.complaints")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+             "{'COLLECTION':'customers','JOIN':'INNER',"
+             "'ON':['=',['.store.customers.name'],['.store2.customers.name']],'SCOPE':'store2'},"
+             "{'UNNEST':['.store.customers.notes']},"
+             "{'UNNEST':['.notes.complaints']}],'WHAT':[['.notes.date'],['.complaints']]}");
+
+    CHECK(translate("SELECT META(person).id FROM _default AS person "
+                    "UNNEST person.`interests.music`")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'UNNEST':['.person.interests\\\\.music']}],'WHAT':[['_.',['meta()','person'],'.id']]}");
+
+    // Unnest property includes escaped dot.
+    CHECK(translate("SELECT META(person).id FROM _default AS person "
+                    "UNNEST person.`interests.music` music_interest")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'AS':'music_interest','UNNEST':['.person.interests\\\\.music']}],'WHAT':[['_.',['meta()','person'],'.id'"
+             "]]}");
+
+    // Unnest an array literal
+    {
+        ExpectingExceptions x;
+        CHECK_THROWS_WITH(translate("SELECT store.customers.name, phone "
+                                    "FROM store.customers "
+                                    "UNNEST [customers.phones[0], customers.phones[1]] AS phone"),
+                          "the use of a general expression as the object of UNNEST is not supported; "
+                          "only a property path is allowed.");
+    }
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Query][N1QL][C]") {

@@ -12,6 +12,7 @@
 
 #include "c4Test.hh"
 #include "c4Internal.hh"
+#include "c4Collection.h"
 #include "c4ExceptionUtils.hh"
 #include "fleece/InstanceCounted.hh"
 #include "catch.hpp"
@@ -19,6 +20,7 @@
 #include "NumConversion.hh"
 #include "Actor.hh"
 #include "URLTransformer.hh"
+#include "SQLiteDataFile.hh"
 #include <exception>
 #include <chrono>
 #include <thread>
@@ -26,6 +28,7 @@
 #    include "Error.hh"
 #    include <winerror.h>
 #endif
+#include <future>
 #include <sstream>
 
 using namespace fleece;
@@ -73,8 +76,8 @@ TEST_CASE("C4Error messages") {
                          WSAENOTSOCK,     WSAEOPNOTSUPP,    WSAEPROTONOSUPPORT, WSAEPROTOTYPE,   WSAETIMEDOUT,
                          WSAEWOULDBLOCK};
     for ( const auto err : errs ) {
-        error  errObj(error::Domain::POSIX, int(err));
-        string msg = errObj.what();
+        litecore::error errObj(litecore::error::Domain::POSIX, int(err));
+        string          msg = errObj.what();
         CHECK(msg.find("Unknown error") == -1);  // Should have a valid error message
         CHECK(errObj.code != err);               // Should be remapped to standard POSIX code
     }
@@ -85,7 +88,7 @@ TEST_CASE("C4Error exceptions") {
     ++gC4ExpectExceptions;
     C4Error err;
     try {
-        throw error(error::LiteCore, error::InvalidParameter, "Oops");
+        throw litecore::error(litecore::error::LiteCore, litecore::error::InvalidParameter, "Oops");
         FAIL("Exception wasn't thrown");
     }
     catchError(&err);
@@ -140,6 +143,33 @@ TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
 #endif
 }
 
+TEST_CASE_METHOD(C4Test, "Create collection concurrently", "[Database][C]") {
+    const slice             dbName = db->getName();
+    const C4DatabaseConfig2 config = db->getConfiguration();
+
+    c4::ref db2 = c4db_openNamed(dbName, &config, ERROR_INFO());
+    REQUIRE(db2);
+
+    char buf[6]{};
+    for ( int i = 0; i < 5; i++ ) {
+        C4Error err{};
+        C4Error err2{};
+
+        snprintf(buf, 6, "coll%i", i);
+
+        {
+            slice                  collName{buf};
+            const C4CollectionSpec spec{collName, "scope"_sl};
+
+            auto a1 = std::async(std::launch::async, c4db_createCollection, db, spec, ERROR_INFO(&err));
+            auto a2 = std::async(std::launch::async, c4db_createCollection, db2.get(), spec, ERROR_INFO(&err2));
+        }
+
+        CHECK(err.code == 0);
+        CHECK(err2.code == 0);
+    }
+}
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {
     // Ensure that, by default, diskSyncFull is false.
     CHECK(!litecore::asInternal(db)->dataFile()->options().diskSyncFull);
@@ -161,6 +191,59 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {
     c4::ref<C4Database> againConnection = c4db_openAgain(dbWithFullSync, ERROR_INFO());
     // The flag is passed to database opened by openAgain.
     CHECK(litecore::asInternal(againConnection)->dataFile()->options().diskSyncFull);
+
+    // https://www.sqlite.org/pragma.html#pragma_synchronous
+    // 1 == "normal"
+    // 2 == "full"
+
+    alloc_slice defaultSyncPragma =
+            litecore::asInternal(otherConnection)->dataFile()->rawScalarQuery("PRAGMA synchronous");
+    CHECK(defaultSyncPragma == "1");
+
+    alloc_slice fullSyncPragma = litecore::asInternal(dbWithFullSync)->dataFile()->rawScalarQuery("PRAGMA synchronous");
+    CHECK(fullSyncPragma == "2");
+}
+
+// https://www.sqlite.org/mmap.html#:~:text=To%20disable%20memory%2Dmapped%20I,any%20content%20beyond%20N%20bytes.
+TEST_CASE_METHOD(C4Test, "Database Flag MMap", "[Database][C]") {
+    // Ensure that, by default, mmapDisabled is false.
+    CHECK(!litecore::asInternal(db)->dataFile()->options().mmapDisabled);
+
+    C4DatabaseConfig2 config = *c4db_getConfig2(db);
+    config.flags |= kC4DB_MmapDisabled;
+
+    std::stringstream ss;
+    ss << std::string(c4db_getName(db)) << "_" << c4_now();
+
+    c4::ref dbWithMmapDisabled = c4db_openNamed(slice(ss.str().c_str()), &config, ERROR_INFO());
+    CHECK(litecore::asInternal(dbWithMmapDisabled)->dataFile()->options().mmapDisabled);
+
+    config.flags ^= kC4DB_MmapDisabled;
+
+    c4::ref dbWithDefaultConfig = c4db_openNamed(slice(ss.str().c_str()), &config, ERROR_INFO());
+    // Another connection opened to the same database with `openNamed` and the default config will have mmap enabled.
+    CHECK(!litecore::asInternal(dbWithDefaultConfig)->dataFile()->options().mmapDisabled);
+
+    c4::ref dbAgain = c4db_openAgain(dbWithMmapDisabled, ERROR_INFO());
+    // The flag is passed to the database opened by openAgain.
+    CHECK(litecore::asInternal(dbAgain)->dataFile()->options().mmapDisabled);
+
+#if TARGET_OS_OSX || TARGET_OS_SIMULATOR
+    // Mmap is disabled on iOS Simulator and MacOS
+    const auto defaultMmapStr = alloc_slice("0");
+#else
+    ss = std::stringstream{};
+    ss << litecore::SQLiteDataFile::defaultMmapSize();
+    const auto defaultMmapStr = alloc_slice(ss.str());
+#endif
+
+    alloc_slice defaultPragma =
+            litecore::asInternal(dbWithDefaultConfig)->dataFile()->rawScalarQuery("PRAGMA mmap_size");
+    CHECK(defaultPragma == defaultMmapStr);
+
+    alloc_slice disabledPragma =
+            litecore::asInternal(dbWithMmapDisabled)->dataFile()->rawScalarQuery("PRAGMA mmap_size");
+    CHECK(disabledPragma == "0");
 }
 
 #pragma mark - INSTANCECOUNTED:
