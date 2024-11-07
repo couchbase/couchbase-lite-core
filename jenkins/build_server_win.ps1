@@ -116,7 +116,7 @@ function Run-UnitTest() {
 
     Pop-Location
     Push-Location $directory\LiteCore\tests\MinSizeRel
-    & .\CppTests -r quiet
+    & .\CppTests -r list
 
     $env:LiteCoreTestsQuiet=0
     if($LASTEXITCODE -ne 0) {
@@ -125,7 +125,7 @@ function Run-UnitTest() {
 
     Pop-Location
     Push-Location $directory\C\tests\MinSizeRel
-    & .\C4Tests -r quiet
+    & .\C4Tests -r list
     $env:LiteCoreTestsQuiet=0
     if($LASTEXITCODE -ne 0) {
         throw "C4Tests failed"
