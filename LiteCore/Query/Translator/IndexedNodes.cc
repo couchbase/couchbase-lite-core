@@ -196,7 +196,6 @@ namespace litecore::qt {
                 optional<int64_t> limitInt = literalLimit->asInt();
                 if ( limitInt.has_value() ) {
                     int64_t maxResults = *limitInt;
-                    require(maxResults > 0, "LIMIT must be a positive integer when using APPROX_VECTOR_DISTANCE()");
                     require(maxResults <= kMaxMaxResults,
                             "LIMIT must not exceed %u when using APPROX_VECTOR_DISTANCE()", kMaxMaxResults);
                 }

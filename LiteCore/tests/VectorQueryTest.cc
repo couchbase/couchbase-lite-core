@@ -228,6 +228,38 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
                              {0, 10549, 29275, 32025, 65417});
     }
 
+    {
+        // 0 results with LIMIT = 0
+        queryStr = R"(
+         ['SELECT', {
+            WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['$target']], 'distance'] ],
+            ORDER_BY: [ ['.distance'] ],
+            LIMIT:    0
+         }] )";
+        query    = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+
+        Log("---- Querying with $target = data");
+        Query::Options            options = optionsWithTargetVector(kTargetVector, kData);
+        Retained<QueryEnumerator> e       = query->createEnumerator(&options);
+        CHECK((e && e->getRowCount() == 0));
+    }
+
+    {
+        // 0 results with LIMIT = -1
+        queryStr = R"(
+         ['SELECT', {
+            WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['$target']], 'distance'] ],
+            ORDER_BY: [ ['.distance'] ],
+            LIMIT:    -1
+         }] )";
+        query    = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+
+        Log("---- Querying with $target = data");
+        Query::Options            options = optionsWithTargetVector(kTargetVector, kData);
+        Retained<QueryEnumerator> e       = query->createEnumerator(&options);
+        CHECK((e && e->getRowCount() == 0));
+    }
+
     reopenDatabase();
 }
 
@@ -928,20 +960,6 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Non-Hybrid
                 CHECK("a LIMIT must be given when using APPROX_VECTOR_DISTANCE()"s == err.what());
             }
             CHECK(query == nullptr);
-        }
-
-        query = nullptr;
-        {
-            ExpectingExceptions e;
-            try {
-                query = store->compileQuery(queryStr + "LIMIT 0", QueryLanguage::kN1QL);
-            } catch ( error& err ) {
-                CHECK(err.domain == error::LiteCore);
-                CHECK(err.code == error::InvalidQuery);
-                CHECK("LIMIT must be a positive integer when using APPROX_VECTOR_DISTANCE()"s == err.what());
-            }
-            CHECK(query == nullptr);
-            expectedWarningsLogged++;
         }
 
         query = nullptr;
