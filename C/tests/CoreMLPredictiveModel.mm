@@ -306,6 +306,12 @@ namespace cbl {
                     feature = [MLFeatureValue featureValueWithDictionary: dict error: nullptr];
                 break;
             }
+            case MLFeatureTypeImage:
+            case MLFeatureTypeMultiArray:
+#ifdef SDK_HAS_SEQUENCES
+            case MLFeatureTypeSequence:
+#endif
+            case MLFeatureTypeInvalid:
             default:
                 reportError(outError, "MLModel input feature '%s' is of unsupported type %s; sorry!",
                             name.UTF8String, kMLFeatureTypeName[desc.type]);

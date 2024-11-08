@@ -66,7 +66,7 @@ namespace litecore::repl {
         uint32_t i         = 0;  // Collection index
         for ( auto& c : collectionOpts ) {
             if ( !firstline ) {
-                s << ",\n";
+                s << ", ";
             } else {
                 firstline = false;
             }
@@ -79,7 +79,7 @@ namespace litecore::repl {
             writeRedacted(c.properties, s);
             s << "}";
         }
-        s << "}\n";
+        s << "} ";
 
         s << "Options=";
         writeRedacted(properties, s);

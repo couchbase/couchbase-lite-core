@@ -72,6 +72,10 @@ namespace litecore {
                                                const std::string& tableName, const std::string& sql) const;
 
         fleece::alloc_slice rawQuery(const std::string& query) override;
+        alloc_slice         rawScalarQuery(const string& query) override;
+
+        /* Internal-only. The default value used for the SQLite PRAGMA config `mmap_size`. */
+        static int defaultMmapSize();
 
         class Factory final : public DataFile::Factory {
           public:
@@ -170,11 +174,12 @@ namespace litecore {
 
             WithNewDocs = 400,  // New document/revision storage (CBL 3.0)
 
-            WithDeletedTable   = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
-            WithIndexesLastSeq = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
-            MaxReadable        = 599,  // Cannot open versions newer than this
+            WithDeletedTable     = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
+            WithIndexesLastSeq   = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
+            WithExpirationColumn = 502,  // Added 'expiration' column to KeyStore
+            MaxReadable          = 599,  // Cannot open versions newer than this
 
-            Current = WithIndexesLastSeq
+            Current = WithExpirationColumn
         };
 
         void reopenSQLiteHandle();
@@ -190,7 +195,7 @@ namespace litecore {
         void                         registerIndex(const litecore::IndexSpec&, const std::string& keyStoreName,
                                                    const std::string& indexTableName);
         void                         unregisterIndex(slice indexName);
-        void                         garbageCollectIndexTable(const std::string& tableName);
+        void                         garbageCollectIndexTable(const SQLiteIndexSpec&);
         SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt) const;
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr) const;
 
