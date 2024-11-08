@@ -117,7 +117,7 @@ namespace litecore {
         friend class SQLiteEnumerator;
         friend class LazyIndexUpdate;
 
-             SQLiteKeyStore(SQLiteDataFile&, const std::string& name, KeyStore::Capabilities options);
+        SQLiteKeyStore(SQLiteDataFile&, const std::string& name, KeyStore::Capabilities options);
         void createTable();
 
         SQLiteDataFile& db() const { return (SQLiteDataFile&)dataFile(); }
