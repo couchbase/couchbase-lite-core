@@ -605,7 +605,7 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Nested Non-Scalar Array", "[C][Un
 // 5. TestUnnestSingleLevelArrayWithGroupBy
 // Disabled until group-by is fixed
 // See https://jira.issues.couchbase.com/browse/CBL-6327
-#if 0
+#    if 0
 TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Array With Group By", "[C][Unnest]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
@@ -616,7 +616,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Array With Group By", "[C]
     c4::ref queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
     validateQuery(queryenum, {});
 }
-#endif
+#    endif
 
 // 6. TestUnnestWithoutAlias
 N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Without Alias", "[C][Unnest]") {

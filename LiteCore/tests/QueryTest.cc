@@ -85,13 +85,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 
 // Disabled pending CBL-6400
 #if 0
-#ifndef SKIP_ARRAY_INDEXES
+#    ifndef SKIP_ARRAY_INDEXES
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
     store->createIndex("nums"_sl, R"([])", IndexSpec::kArray, IndexSpec::ArrayOptions{"numbers"});
     store->deleteIndex("nums"_sl);
 }
-#endif
+#    endif
 #endif
 
 // Disabled pending CBL-6400
@@ -151,7 +151,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Q
     for ( int i = 1; i < 8; ++i ) succAll = succAll || succ[i];
     CHECK(!succAll);
 }
-#endif
 
 namespace {
 
@@ -346,8 +345,6 @@ namespace {
 
 }  // anonymous namespace
 
-// Disabled pending CBL-6400
-#if 0
 N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayIndex]") {
     // 5 documents of 10 levels deep.
     constexpr int depth    = 10;

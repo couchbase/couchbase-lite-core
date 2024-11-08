@@ -117,7 +117,7 @@ namespace litecore {
         friend class SQLiteEnumerator;
         friend class LazyIndexUpdate;
 
-        SQLiteKeyStore(SQLiteDataFile&, const std::string& name, KeyStore::Capabilities options);
+             SQLiteKeyStore(SQLiteDataFile&, const std::string& name, KeyStore::Capabilities options);
         void createTable();
 
         SQLiteDataFile& db() const { return (SQLiteDataFile&)dataFile(); }
@@ -136,7 +136,7 @@ namespace litecore {
         bool   createVectorIndex(const IndexSpec&);
         string findVectorIndexNameFor(const string& property);
         static std::optional<IndexSpec::VectorOptions> parseVectorSearchTableSQL(string_view sql);
-        string                createUnnestedTable(const fleece::impl::Value* expression);
+        string                                         createUnnestedTable(const fleece::impl::Value* expression);
 
 #ifdef COUCHBASE_ENTERPRISE
         bool        createPredictiveIndex(const IndexSpec&);
