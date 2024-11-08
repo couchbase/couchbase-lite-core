@@ -143,7 +143,7 @@ TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
 #endif
 }
 
-TEST_CASE_METHOD(C4Test, "Create collection concurrently", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Create collection concurrently", "[Database][C]") {
     const slice             dbName = db->getName();
     const C4DatabaseConfig2 config = db->getConfiguration();
 
@@ -205,7 +205,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {
 }
 
 // https://www.sqlite.org/mmap.html#:~:text=To%20disable%20memory%2Dmapped%20I,any%20content%20beyond%20N%20bytes.
-TEST_CASE_METHOD(C4Test, "Database Flag MMap", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag MMap", "[Database][C]") {
     // Ensure that, by default, mmapDisabled is false.
     CHECK(!litecore::asInternal(db)->dataFile()->options().mmapDisabled);
 
@@ -257,7 +257,7 @@ namespace {
 
     class Virt {
       public:
-        int64_t foo{};
+        int64_t  foo{};
         virtual ~Virt() = default;
     };
 
@@ -370,7 +370,7 @@ namespace {
     TEST_CASE("URL Transformation") {
         slice       withPort, unaffected;
         alloc_slice withoutPort;
-        SECTION("Plain") {
+                    SECTION("Plain") {
             withPort    = "ws://duckduckgo.com:80/search"_sl;
             withoutPort = "ws://duckduckgo.com/search"_sl;
             unaffected  = "ws://duckduckgo.com:4984/search"_sl;

@@ -351,7 +351,7 @@ namespace litecore {
                              && sql.find("expiration") != string::npos )
                             continue;
                         // Only update data tables, not FTS index tables
-                        _exec(format(
+                        _exec(stringprintf(
                                 "ALTER TABLE \"kv_%s\" ADD COLUMN expiration INTEGER; "
                                 "CREATE INDEX \"kv_%s_expiration\" ON \"kv_%s\" (expiration) WHERE expiration not null",
                                 name.c_str(), name.c_str(), name.c_str()));

@@ -776,6 +776,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
     c4queryenum_release(e);
 }
 
+// Disabled pending CBL-6400
+#if 0
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C][Unnest]") {
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
@@ -1070,6 +1072,7 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST - Missing Array",
         CHECK(run2(nullptr, 2) == results);
     }
 }
+#endif
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));

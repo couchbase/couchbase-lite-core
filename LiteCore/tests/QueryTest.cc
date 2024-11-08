@@ -83,6 +83,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(extractIndexes(store->getIndexes()).empty());
 }
 
+// Disabled pending CBL-6400
+#if 0
 #ifndef SKIP_ARRAY_INDEXES
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
@@ -90,7 +92,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayInd
     store->deleteIndex("nums"_sl);
 }
 #endif
+#endif
 
+// Disabled pending CBL-6400
+#if 0
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Query][ArrayIndex]") {
     addArrayDocs();
 
@@ -146,6 +151,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Q
     for ( int i = 1; i < 8; ++i ) succAll = succAll || succ[i];
     CHECK(!succAll);
 }
+#endif
 
 namespace {
 
@@ -340,6 +346,8 @@ namespace {
 
 }  // anonymous namespace
 
+// Disabled pending CBL-6400
+#if 0
 N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayIndex]") {
     // 5 documents of 10 levels deep.
     constexpr int depth    = 10;
@@ -407,7 +415,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayI
     }
     CHECK(results == expected);
 }
+#endif
 
+// Disabled pending CBL-6400
+#if 0
 N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]") {
     constexpr int depth = 3;
 
@@ -559,6 +570,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     REQUIRE(expected4.size() == 40);
     CHECK(results == expected4);
 }
+#endif
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);

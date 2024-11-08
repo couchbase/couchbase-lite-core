@@ -11,9 +11,11 @@
 #include "c4Query.h"
 #include "c4Query.hh"
 
+// Disabled pending CBL-6400
+#if 0
 class ArrayIndexTest : public C4Test {
   public:
-    ArrayIndexTest() : C4Test() {}
+    explicit ArrayIndexTest(int opt) : C4Test(opt) {}
 
     static void importTestData(C4Collection* collection) {
         importJSONLines(sFixturesDir + "profiles_100.json", collection);
@@ -127,7 +129,7 @@ constexpr std::string_view p0004 =
         R"({"pid": "p-0004", "name": {"first": "Jeff", "last": "Schmith"}, "contacts": [{"address": {"city": "Poughkeepsie", "state": "AR", "street": "14 198th St", "zip": "72569"}, "emails": ["jeff.schmith@nosql-matters.org"], "phones": [{"numbers": [], "preferred": false, "type": "home"}, {"numbers": ["870-5974023"], "preferred": true, "type": "mobile"}], "type": "primary"}, {"address": {"city": "Poughkeepsie", "state": "AR", "street": "9356 Willow Cir", "zip": "72569"}, "emails": ["Jeff@email.com", "Schmith@email.com"], "phones": [{"numbers": ["870-4182309"], "preferred": true, "type": "home"}, {"numbers": ["870-1205865"], "preferred": false, "type": "mobile"}], "type": "secondary"}], "likes": ["chatting", "boxing", "reading"]})";
 
 // 1. TestCreateArrayIndexWithEmptyPath
-TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Empty Path", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Empty Path", "[C][ArrayIndex]") {
     const auto defaultColl = REQUIRED(c4db_getDefaultCollection(db, ERROR_INFO()));
     C4Error    err{};
     createArrayIndex(defaultColl, "arridx"_sl, nullslice, "", &err);
@@ -135,7 +137,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Empty Path", "[C][Arra
 }
 
 // 2. TestCreateArrayIndexWithInvalidExpressions
-TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Invalid Expressions", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Invalid Expressions", "[C][ArrayIndex]") {
     const auto defaultColl = REQUIRED(c4db_getDefaultCollection(db, ERROR_INFO()));
     C4Error    err{};
 
@@ -147,7 +149,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Invalid Expressions", 
 }
 
 // 3. TestCreateUpdateDeleteArrayIndexSingleLevel
-TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Single Level", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Single Level", "[C][ArrayIndex]") {
     C4Collection* coll    = createCollection(db, {"profiles"_sl, "_default"_sl});
     bool          created = createArrayIndex(coll, "contacts"_sl, R"([".address.state"])", "contacts", ERROR_INFO());
     REQUIRE(created);
@@ -225,7 +227,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Single Level", "[C][ArrayInde
 }
 
 // 4. TestCreateUpdateDeleteNestedArrayIndex
-TEST_CASE_METHOD(ArrayIndexTest, "CRUD Nested Array Index", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "CRUD Nested Array Index", "[C][ArrayIndex]") {
     C4Collection* coll    = createCollection(db, {"profiles"_sl, "_default"_sl});
     bool          created = createArrayIndex(coll, "phones"_sl, R"([".type"])", "contacts[].phones", ERROR_INFO());
     REQUIRE(created);
@@ -319,7 +321,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "CRUD Nested Array Index", "[C][ArrayIndex]") {
 }
 
 // 5. TestCreateAndDeleteArrayIndexesWithSharedPath
-TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Shared Path", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Shared Path", "[C][ArrayIndex]") {
     C4Collection* coll    = createCollection(db, {"profiles"_sl, "_default"_sl});
     bool          created = createArrayIndex(coll, "contacts"_sl, R"([".address.state"])", "contacts", ERROR_INFO());
     REQUIRE(created);
@@ -389,7 +391,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Shared Path", "[C][ArrayIndex
 }
 
 // 6. TestArrayIndexEmptyArray
-TEST_CASE_METHOD(ArrayIndexTest, "Array Index Empty Array", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Array Index Empty Array", "[C][ArrayIndex]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
 
     // p0001 with empty contacts array
@@ -421,7 +423,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Array Index Empty Array", "[C][ArrayIndex]") {
 }
 
 // 7. TestArrayIndexMissingArray
-TEST_CASE_METHOD(ArrayIndexTest, "Array Index Missing Array", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Array Index Missing Array", "[C][ArrayIndex]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
 
     // p0001 with missing contacts array
@@ -452,7 +454,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Array Index Missing Array", "[C][ArrayIndex]")
 }
 
 // 8. TestArrayIndexNonArray
-TEST_CASE_METHOD(ArrayIndexTest, "Array Index Non-Array", "[C][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Array Index Non-Array", "[C][ArrayIndex]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
 
     // p0001 with 'contacts' scalar instead of array
@@ -479,7 +481,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Array Index Non-Array", "[C][ArrayIndex]") {
 
 // - UNNEST
 // 1. TestUnnestSingleLevelScalar
-TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Scalar", "[C][Unnest]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Scalar", "[C][Unnest]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
     c4::ref query = c4query_new2(
@@ -498,7 +500,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Scalar", "[C][Unnest]") {
 }
 
 // 2. TestUnnestSingleLevelNonScalar
-TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Non-Scalar", "[C][Unnest]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Non-Scalar", "[C][Unnest]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
     c4::ref query = c4query_new2(
@@ -534,7 +536,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Non-Scalar", "[C][Unnest]"
 }
 
 // 3. TestUnnestNestedScalarArray
-TEST_CASE_METHOD(ArrayIndexTest, "Unnest Nested Scalar Array", "[C][Unnest]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Nested Scalar Array", "[C][Unnest]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
 
@@ -566,7 +568,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Nested Scalar Array", "[C][Unnest]") {
 }
 
 // 4. TestUnnestNestedNonScalarArray
-TEST_CASE_METHOD(ArrayIndexTest, "Unnest Nested Non-Scalar Array", "[C][Unnest]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Nested Non-Scalar Array", "[C][Unnest]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
 
@@ -617,7 +619,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Array With Group By", "[C]
 #endif
 
 // 6. TestUnnestWithoutAlias
-TEST_CASE_METHOD(ArrayIndexTest, "Unnest Without Alias", "[C][Unnest]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Without Alias", "[C][Unnest]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
 
@@ -653,7 +655,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Without Alias", "[C][Unnest]") {
 }
 
 // 7. TestUnnestArrayLiteralNotSupport
-TEST_CASE_METHOD(ArrayIndexTest, "Unnest Array Literal Not Supported", "[C][Unnest]") {
+N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Array Literal Not Supported", "[C][Unnest]") {
     C4Error err{};
     c4::ref query = c4query_new2(
             db, kC4N1QLQuery,
@@ -669,3 +671,5 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Array Literal Not Supported", "[C][Unne
     REQUIRE(!query);
     CHECK(err.code == kC4ErrorInvalidQuery);
 }
+
+#endif

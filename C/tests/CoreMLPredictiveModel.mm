@@ -306,12 +306,16 @@ namespace cbl {
                     feature = [MLFeatureValue featureValueWithDictionary: dict error: nullptr];
                 break;
             }
+            case MLFeatureTypeImage:
+            case MLFeatureTypeMultiArray:
+#ifdef SDK_HAS_SEQUENCES
+            case MLFeatureTypeSequence:
+#endif
+            case MLFeatureTypeInvalid:
             default:
                 reportError(outError, "MLModel input feature '%s' is of unsupported type %s; sorry!",
                             name.UTF8String, kMLFeatureTypeName[desc.type]);
                 return nil;
-            default:
-                break;
         }
         if (!feature) {
             reportError(nullptr, "input property '%s' has wrong type; should be %s",
@@ -471,9 +475,6 @@ namespace cbl {
                 enc.writeNull();
                 break;
             case MLFeatureTypeInvalid:
-            default:
-                enc.writeNull();
-                break;
             default:
                 enc.writeNull();
                 break;
