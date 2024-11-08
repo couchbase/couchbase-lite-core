@@ -74,6 +74,9 @@ namespace litecore::qt {
 
         SourceNode* source() const override;
         string_view asColumnName() const override;
+
+        void useMetaShortcutName() { _useMetaShortcutName = true; }
+
         OpFlags     opFlags() const override;
         void        writeSQL(SQLWriter&) const override;
         static void writeMetaSQL(string_view aliasDot, MetaProperty, SQLWriter&);
@@ -81,6 +84,7 @@ namespace litecore::qt {
       private:
         MetaProperty           _property = MetaProperty::none;  // The property of `meta()` being accessed
         SourceNode* C4NULLABLE _source{};                       // The collection
+        bool                   _useMetaShortcutName{false};
     };
 
     /** A query parameter (`$foo`) in an expression. */
