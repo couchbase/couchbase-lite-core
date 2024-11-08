@@ -62,7 +62,7 @@ std::ostream& operator<<(std::ostream& out, C4Error);
 
     Example:
     ```
-        C4Document *doc = c4db_getDocument(db, docID, ERROR_INFO());
+        C4Document *doc = c4coll_getDocument(coll, docID, ERROR_INFO());
         REQUIRE(doc != nullptr);
     ```
 

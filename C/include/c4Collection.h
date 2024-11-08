@@ -62,16 +62,6 @@ C4API_BEGIN_DECLS
     There are no API calls to create or delete Scopes. A Scope is created implicitly when you create
     the first Collection inside it, and deleted implicitly when you delete its last Collection.
 
-    ## Legacy `C4Database` Functions
-    Pre-existing functions that refer to documents / sequences / indexes without referring to
-    Collections -- such as \ref c4doc_get and \ref c4db_getLastSequence -- still exist, but implicitly
-    operate on the default Collection. In other words, they behave exactly the way they used to,
-    but Collection-aware code should avoid them and use the new Collection API instead.
-
-    These functions will eventually be deprecated, then removed. As an aid in updating your code,
-    you can define the C preprocessor symbol `C4_STRICT_COLLECTION_API` to suppress the definitions
-    of those functions, which will turn all calls to them into errors.
-
     ## `C4Collection` Lifespan
      `C4Collection` is ref-counted, but most of the time you don't need to retain or release it.
     The `C4Database` owns its collections, so a `C4Collection` reference remains valid until either
