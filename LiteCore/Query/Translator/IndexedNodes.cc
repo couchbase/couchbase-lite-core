@@ -192,6 +192,14 @@ namespace litecore::qt {
             if ( _numProbes > 0 ) { sql << " AND vectorsearch_probes(vector, " << _numProbes << ")"; }
             Node const* limit = _select->limit();
             require(limit, "a LIMIT must be given when using APPROX_VECTOR_DISTANCE()");
+            if ( LiteralNode const* literalLimit = dynamic_cast<const LiteralNode*>(limit); literalLimit != nullptr ) {
+                optional<int64_t> limitInt = literalLimit->asInt();
+                if ( limitInt.has_value() ) {
+                    int64_t maxResults = *limitInt;
+                    require(maxResults <= kMaxMaxResults,
+                            "LIMIT must not exceed %u when using APPROX_VECTOR_DISTANCE()", kMaxMaxResults);
+                }
+            }
             sql << " LIMIT " << limit << ")";
         } else {
             IndexedNode::writeSourceTable(sql, tableName);

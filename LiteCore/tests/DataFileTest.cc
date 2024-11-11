@@ -31,10 +31,11 @@ using namespace std;
 
 class KeyStoreTestFixture : public DataFileTestFixture {
   public:
-    static const int numberOfOptions = 2;
+    static constexpr int         numberOfOptions               = 2;
+    static constexpr const char* nameOfOption[numberOfOptions] = {"SQLiteKeyStore", "BothKeyStore"};
 
-    explicit KeyStoreTestFixture(int option) {
-        if ( option == 0 ) {
+    KeyStoreTestFixture(int option) {
+        if ( int(option) == 0 ) {
             // On the first pass use a non-Both KeyStore
             keyStoreName = "test";
             store        = &db->getKeyStore(keyStoreName);
@@ -524,7 +525,7 @@ N_WAY_TEST_CASE_METHOD(KeyStoreTestFixture, "DataFile Conditional Write", "[Data
     CHECK(rec5.body() == "recreated");
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Move Record", "[DataFile]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile Move Record", "[DataFile]") {
     {
         ExclusiveTransaction t(db);
         createDoc("xxx", "x", t);
@@ -588,13 +589,13 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Move Record", "[DataFile]"
     }
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
     alloc_slice key("key");
     db->close();
     ExpectException(error::LiteCore, error::NotOpen, [&] { Record rec = store->get(key); });
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
     {
         ExclusiveTransaction t(db);
         createDoc("key"_sl, "value"_sl, t);
@@ -621,7 +622,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!th
                     [&] { (void)newDatabase(FilePath("/tmp/db_non_existent"), &options); });
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     createNumberedDocs(store, 10000, false);
 
     {
@@ -711,7 +712,7 @@ TEST_CASE("ParentDir") {
 #ifdef COUCHBASE_ENTERPRISE
 
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Unsupported Encryption", "[DataFile][Encryption][!throws]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile Unsupported Encryption", "[DataFile][Encryption][!throws]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     REQUIRE(!factory().encryptionEnabled((EncryptionAlgorithm)2));
     DataFile::Options options   = db->options();
@@ -720,7 +721,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Unsupported Encryption", "
     ExpectException(error::LiteCore, error::UnsupportedEncryption, [&] { reopenDatabase(&options); });
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     DataFile::Options options   = db->options();
     options.encryptionAlgorithm = kAES256;
@@ -728,7 +729,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Open Unencrypted With Key"
     ExpectException(error::LiteCore, error::NotADatabaseFile, [&] { reopenDatabase(&options); });
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws]") {
     REQUIRE(factory().encryptionEnabled(kAES256));
     DataFile::Options options   = db->options();
     options.encryptionAlgorithm = kAES256;
@@ -766,7 +767,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Encryption", "[DataFile][E
     deleteDatabase(dbPath);
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryption]") {
+TEST_CASE_METHOD(DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryption]") {
     REQUIRE(factory().encryptionEnabled(kAES256));
     auto dbPath  = db->filePath();
     auto options = db->options();
@@ -815,7 +816,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryp
 #else  //!COUCHBASE_ENTERPRISE
 
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Verify Encryption Unsupported", "[DataFile][Encryption][!throws]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Verify Encryption Unsupported", "[DataFile][Encryption][!throws]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     REQUIRE(!factory().encryptionEnabled(kAES256));
 
@@ -831,7 +832,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Verify Encryption Unsupported", "[D
 
 #pragma mark - MISC.
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "JSON null chars", "[Upgrade]") {
+TEST_CASE_METHOD(DataFileTestFixture, "JSON null chars", "[Upgrade]") {
     // For https://github.com/couchbase/couchbase-lite-core/issues/528
     Encoder       enc;
     JSONConverter converter(enc);
@@ -846,7 +847,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "JSON null chars", "[Upgrade]") {
     CHECK(root->asDict()->get("foo"_sl)->asString() == "Hello\0There"_sl);
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Index table creation", "[Upgrade]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Index table creation", "[Upgrade]") {
     // https://issues.couchbase.com/browse/CBL-550
 
     // Create an index, which triggers the logic to upgrade to version 301, which should not happen (and was)
@@ -858,7 +859,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Index table creation", "[Upgrade]")
     reopenDatabase();
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Case-sensitive collections", "[DataFile]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Case-sensitive collections", "[DataFile]") {
     auto& lower = db->getKeyStore("keystore");
     CHECK(db->keyStoreExists("keystore"));
     CHECK(!db->keyStoreExists("KEYSTORE"));
@@ -937,7 +938,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Case-sensitive collections", "[Data
     CHECK(!db->keyStoreExists("KEYSTORE"));
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Check name mangling", "[DataFile]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Check name mangling", "[DataFile]") {
     string input, expectedOutput, expectedFinal;
 
     SECTION("All lower case is unchanged") {

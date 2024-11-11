@@ -382,9 +382,15 @@ namespace litecore::qt {
 
         if ( _what.empty() ) {
             // Default WHAT is id and sequence, for historical reasons:
-            auto f = from();
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::id, f)));
-            addChild(_what, new (ctx) WhatNode(new (ctx) MetaNode(MetaProperty::sequence, f)));
+            auto      f            = from();
+            MetaNode* metaID       = new (ctx) MetaNode(MetaProperty::id, f);
+            MetaNode* metaSequence = new (ctx) MetaNode(MetaProperty::sequence, f);
+            // To match V3.2, with empty _what, we fill it with meta ID and meta sequence,
+            // but use the shortcut names as the column titles (_id vs is, _sequence vs sequence).
+            metaID->useMetaShortcutName();
+            metaSequence->useMetaShortcutName();
+            addChild(_what, new (ctx) WhatNode(metaID));
+            addChild(_what, new (ctx) WhatNode(metaSequence));
         }
 
         Assert(!_sources.empty());

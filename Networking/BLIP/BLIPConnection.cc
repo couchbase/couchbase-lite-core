@@ -162,11 +162,15 @@ namespace litecore::blip {
 
       protected:
         ~BLIPIO() override {
+            double outboxDepth =
+                    (_countOutboxDepth != 0)
+                            ? (static_cast<double>(_totalOutboxDepth) / static_cast<double>(_countOutboxDepth))
+                            : 0.0;
             LogTo(SyncLog,
                   "BLIP sent %zu msgs (%" PRIu64 " bytes), rcvd %" PRIu64 " msgs (%" PRIu64
                   " bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
                   _countOutboxDepth, _totalBytesWritten, _numRequestsReceived, _totalBytesRead, _timeOpen.elapsed(),
-                  _maxOutboxDepth, _totalOutboxDepth / (double)_countOutboxDepth);
+                  _maxOutboxDepth, outboxDepth);
             logStats();
         }
 
@@ -174,7 +178,9 @@ namespace litecore::blip {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotHTTPResponse), status, headers);
         }
 
-        void onWebSocketGotTLSCertificate(slice certData) override { _connection->gotTLSCertificate(certData); }
+        virtual void onWebSocketGotTLSCertificate(slice certData) override {
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotTLSCertificate), alloc_slice{certData});
+        }
 
         // websocket::Delegate interface:
         void onWebSocketConnect() override {
@@ -204,6 +210,11 @@ namespace litecore::blip {
         void _gotHTTPResponse(int status, websocket::Headers headers) {
             // _connection is reset to nullptr in _closed.
             if ( _connection ) _connection->gotHTTPResponse(status, headers);
+        }
+
+        void _gotTLSCertificate(alloc_slice certData) {
+            // _connection is reset to nullptr in _closed.
+            if ( _connection ) _connection->gotTLSCertificate(certData);
         }
 
         void _onWebSocketConnect() {
@@ -439,7 +450,7 @@ namespace litecore::blip {
                                     receivedAck(msgNo, (type == kAckResponseType), payload);
                                     break;
                                 default:
-                                    warn("  Unknown BLIP frame type received");
+                                    warn("Unknown BLIP frame type received");
                                     // For forward compatibility let's just ignore this instead of closing
                                     break;
                             }

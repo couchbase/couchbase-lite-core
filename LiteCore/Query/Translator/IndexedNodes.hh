@@ -101,6 +101,8 @@ namespace litecore::qt {
     /** A `vector_distance(property, vector, [metric], [numProbes], [accurate])` function call. */
     class VectorDistanceNode final : public IndexedNode {
       public:
+        static constexpr unsigned kMaxMaxResults = 10000;
+
         VectorDistanceNode(Array::iterator& args, ParseContext& ctx);
 
         string_view metric() const;
@@ -129,7 +131,7 @@ namespace litecore::qt {
       private:
         PredictionNode(Array::iterator& args, ParseContext& ctx, string_view indexID);
 
-        const char* _subProperty{};
+        const char* C4NULLABLE _subProperty{};
     };
 
 #endif

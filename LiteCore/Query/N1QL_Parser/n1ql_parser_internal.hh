@@ -287,16 +287,6 @@ namespace litecore::n1ql {
         _substituteVariable(slice("." + var), std::move(expr));
     }
 
-    // Recognizing reserved words & function names:
-
-
-    static const char* kReservedWords[] = {
-            "AND",      "ANY",     "AS",     "ASC",   "BETWEEN", "BY",    "CASE",    "CROSS",   "DESC",
-            "DISTINCT", "ELSE",    "END",    "EVERY", "FALSE",   "FROM",  "GROUP",   "HAVING",  "IN",
-            "INNER",    "IS",      "JOIN",   "LEFT",  "LIKE",    "LIMIT", "MISSING", "NATURAL", "NOT",
-            "NULL",     "MISSING", "OFFSET", "ON",    "OR",      "ORDER", "OUTER",   "RIGHT",   "SATISFIES",
-            "SELECT",   "THEN",    "TRUE",   "USING", "VALUED",  "WHEN",  "WHERE",   "COLLATE", nullptr};
-
     static const char* kFunctions[] = {  // (copied from LiteCore's QueryParserTables.hh)
             // Array:
             "array_agg", "array_avg", "array_contains", "array_count", "array_ifnull", "array_length", "array_max",
@@ -332,8 +322,6 @@ namespace litecore::n1ql {
             if ( strcasecmp(ident, list[i]) == 0 ) return true;
         return false;
     }
-
-    inline bool isReservedWord(const char* ident) { return findIdentifier(ident, kReservedWords); }
 
     inline bool isFunction(const char* fn) { return findIdentifier(fn, kFunctions); }
 

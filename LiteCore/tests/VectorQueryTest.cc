@@ -26,9 +26,7 @@
 
 class SIFTVectorQueryTest : public VectorQueryTest {
   public:
-    SIFTVectorQueryTest(int which) : VectorQueryTest(which) {}
-
-    SIFTVectorQueryTest() : VectorQueryTest(0) {}
+    explicit SIFTVectorQueryTest(int which = 0) : VectorQueryTest(which) {}
 
     IndexSpec::VectorOptions vectorIndexOptions() const {
         return IndexSpec::VectorOptions(128, vectorsearch::FlatClustering{256}, IndexSpec::DefaultEncoding);
@@ -228,6 +226,38 @@ N_WAY_TEST_CASE_METHOD(SIFTVectorQueryTest, "Query Vector Index", "[Query][.Vect
         checkExpectedResults(query->createEnumerator(&options),
                              {"rec-0010", "rec-0022", "rec-0012", "rec-0020", "rec-0076"},
                              {0, 10549, 29275, 32025, 65417});
+    }
+
+    {
+        // 0 results with LIMIT = 0
+        queryStr = R"(
+         ['SELECT', {
+            WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['$target']], 'distance'] ],
+            ORDER_BY: [ ['.distance'] ],
+            LIMIT:    0
+         }] )";
+        query    = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+
+        Log("---- Querying with $target = data");
+        Query::Options            options = optionsWithTargetVector(kTargetVector, kData);
+        Retained<QueryEnumerator> e       = query->createEnumerator(&options);
+        CHECK((e && e->getRowCount() == 0));
+    }
+
+    {
+        // 0 results with LIMIT = -1
+        queryStr = R"(
+         ['SELECT', {
+            WHAT:     [ ['._id'], ['AS', ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['$target']], 'distance'] ],
+            ORDER_BY: [ ['.distance'] ],
+            LIMIT:    -1
+         }] )";
+        query    = store->compileQuery(json5(queryStr), QueryLanguage::kJSON);
+
+        Log("---- Querying with $target = data");
+        Query::Options            options = optionsWithTargetVector(kTargetVector, kData);
+        Retained<QueryEnumerator> e       = query->createEnumerator(&options);
+        CHECK((e && e->getRowCount() == 0));
     }
 
     reopenDatabase();
@@ -554,20 +584,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     // which is LiteCore_Tests_<random number> or something
     if ( collectionName == "db" ) collectionName = "_";
 
-    // N_WAY_TEST_CASE_METHOD is not compatible with section, so redo all the
-    // extra collections here
-
     SECTION("Insufficient docs") {
-        SECTION("As-is") {}
-        SECTION("Default scope") {
-            collectionName = "Secondary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-        SECTION("Custom scope / collection") {
-            collectionName = "scopey.subsidiary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-
         expectedTrained    = false;
         expectedPretrained = false;
         createVectorIndex();
@@ -575,16 +592,6 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     }
 
     SECTION("Sufficient docs, index first") {
-        SECTION("As-is") {}
-        SECTION("Default scope") {
-            collectionName = "Secondary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-        SECTION("Custom scope / collection") {
-            collectionName = "scopey.subsidiary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-
         expectedTrained    = true;
         expectedPretrained = true;
         createVectorIndex();
@@ -592,16 +599,6 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "Index isTrained API", "[Query][.VectorSea
     }
 
     SECTION("Sufficient docs, load first") {
-        SECTION("As-is") {}
-        SECTION("Default scope") {
-            collectionName = "Secondary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-        SECTION("Custom scope / collection") {
-            collectionName = "scopey.subsidiary";
-            store          = &db->getKeyStore(string(".") + collectionName);
-        }
-
         expectedTrained    = true;
         expectedPretrained = false;
         readVectorDocs(256 * 30);
@@ -949,7 +946,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Non-Hybrid
         string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
                           + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE(a.vector, $target))";
         // working with LIMIT
-        query = store->compileQuery(queryStr + " LIMIT 5", QueryLanguage::kN1QL);
+        query = store->compileQuery(queryStr + " LIMIT 10000", QueryLanguage::kN1QL);
         CHECK(query != nullptr);
 
         query = nullptr;
@@ -963,6 +960,20 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Non-Hybrid
                 CHECK("a LIMIT must be given when using APPROX_VECTOR_DISTANCE()"s == err.what());
             }
             CHECK(query == nullptr);
+        }
+
+        query = nullptr;
+        {
+            ExpectingExceptions e;
+            try {
+                query = store->compileQuery(queryStr + "LIMIT 10001", QueryLanguage::kN1QL);
+            } catch ( error& err ) {
+                CHECK(err.domain == error::LiteCore);
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("LIMIT must not exceed 10000 when using APPROX_VECTOR_DISTANCE()"s == err.what());
+            }
+            CHECK(query == nullptr);
+            expectedWarningsLogged++;
         }
     }
 

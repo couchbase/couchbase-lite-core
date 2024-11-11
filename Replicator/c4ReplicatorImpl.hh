@@ -290,8 +290,8 @@ namespace litecore {
             }
 
             setStatusFlag(kC4Suspended, false);
-            logInfo("Starting Replicator %s with config: {%s}\n", _replicator->loggingName().c_str(),
-                    std::string(*_options).c_str());
+            logInfo("Starting Replicator %s with config: {%s} and endpoint: %.*s", _replicator->loggingName().c_str(),
+                    std::string(*_options).c_str(), SPLAT(_replicator->remoteURL()));
             _selfRetain = this;  // keep myself alive till Replicator stops
             updateStatusFromReplicator(_replicator->status());
             _responseHeaders = nullptr;

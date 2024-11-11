@@ -67,11 +67,6 @@ namespace litecore {
 
         bool mayHaveExpiration() override { return _liveStore->mayHaveExpiration() || _deadStore->mayHaveExpiration(); }
 
-        void addExpiration() override {
-            _liveStore->addExpiration();
-            _deadStore->addExpiration();
-        }
-
         bool setExpiration(slice key, expiration_t exp) override {
             return _liveStore->setExpiration(key, exp) || _deadStore->setExpiration(key, exp);
         }

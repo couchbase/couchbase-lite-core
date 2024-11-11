@@ -40,9 +40,11 @@ else()
     message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}")
 endif()
 
+file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 add_executable(
     C4Tests
     c4AllDocsPerformanceTest.cc
+    c4ArrayIndexTest.cc
     c4BlobStoreTest.cc
     c4CollectionTest.cc
     c4DatabaseInternalTest.cc
@@ -58,7 +60,6 @@ add_executable(
     c4DatabaseEncryptionTest.cc
     c4CertificateTest.cc
     
-    ${TOP}LiteCore/tests/main.cpp
     ${TOP}Crypto/SecureRandomize.cc
     ${TOP}LiteCore/Support/FilePath.cc
     ${TOP}LiteCore/Support/LogDecoder.cc
@@ -67,6 +68,9 @@ add_executable(
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}LiteCore/Support/Error.cc
     ${TOP}vendor/fleece/ObjC/slice+CoreFoundation.cc
+
+    ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
+    ${TOP}vendor/fleece/vendor/catch/CaseListReporter.cc
 )
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)

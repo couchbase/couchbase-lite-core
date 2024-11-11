@@ -76,6 +76,7 @@ namespace litecore {
             bool                   useDocumentKeys : 1;  ///< Use SharedKeys for Fleece docs
             bool                   upgradeable : 1;      ///< DB schema can be upgraded
             bool                   diskSyncFull : 1;     ///< SQLite PRAGMA synchronous
+            bool                   mmapDisabled : 1;     ///< Disable MMAP in SQLite
             EncryptionAlgorithm    encryptionAlgorithm;  ///< What encryption (if any)
             alloc_slice            encryptionKey;        ///< Encryption key, if encrypting
             DatabaseTag            dbTag;
@@ -142,6 +143,15 @@ namespace litecore {
 
         /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
         virtual fleece::alloc_slice rawQuery(const std::string& query) = 0;
+
+        /**
+         * Private API to run a raw SQL query.
+         * Intended for queries which return a single value (i.e. PRAGMA).
+         * Returns a single value encoded into a slice, for convenience.
+         *
+         * Strings and blobs are returned as-is. Null is returned as nullslice. Numbers are encoded as strings.
+         */
+        virtual alloc_slice rawScalarQuery(const std::string& query) = 0;
 
         // to be called only by Query:
         void registerQuery(Query* query);
