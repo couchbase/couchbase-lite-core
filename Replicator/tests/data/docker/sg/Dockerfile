@@ -1,3 +1,7 @@
+FROM golang:1.22 AS build
+RUN git clone -b release/anemone https://github.com/couchbase/sync_gateway.git
+RUN SG_EDITION=CE ./sync_gateway/build.sh
+
 FROM ubuntu:22.04
 
 ARG SG_DEB_ARM64
@@ -30,6 +34,8 @@ WORKDIR /opt/sg
 
 RUN apt -yqq install systemctl
 RUN dpkg -i ./couchbase-sync-gateway.deb
+
+COPY --from=build /go/sync_gateway/bin/sync_gateway_ce /opt/couchbase-sync-gateway/bin/sync_gateway
 
 EXPOSE 4984
 EXPOSE 4985
