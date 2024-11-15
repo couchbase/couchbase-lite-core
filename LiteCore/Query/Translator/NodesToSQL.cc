@@ -117,7 +117,8 @@ namespace litecore::qt {
         } else {
             string aliasDot;
             if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
-            if ( _source && _source->type() == SourceType::unnest && _source->tableName().empty() && _path.empty() ) {
+            bool isSourceUnnested = _source && _source->type() == SourceType::unnest && _source->tableName().empty();
+            if ( isSourceUnnested && _path.empty() ) {
                 // Accessing the outer item of a `fl_each` table-valued function:
                 ctx << aliasDot << "value";
             } else {
@@ -132,7 +133,16 @@ namespace litecore::qt {
                         extraCloseParen = true;
                     }
                 }
-                ctx << sqliteFnName << '(' << aliasDot << ctx.bodyColumnName;
+                ctx << sqliteFnName << '(' << aliasDot;
+                if ( sqliteFnName == kEachFnName && isSourceUnnested ) {
+                    ctx << "value";
+                } else if ( sqliteFnName == kNestedValueFnName && ctx.hasGroupBy ) {
+                    // group_by may parse the virtual table of fl_each second time when "value"
+                    // loses the context. Use the original "data" instead.
+                    ctx << "data";
+                } else {
+                    ctx << ctx.bodyColumnName;
+                }
                 if ( !_path.empty() ) ctx << ", " << sqlString(_path);
                 if ( param ) ctx << ", " << *param;
                 ctx << ")";

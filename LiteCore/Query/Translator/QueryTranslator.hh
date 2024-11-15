@@ -143,6 +143,7 @@ namespace litecore {
         string              _bodyColumnName;           // Name of the `body` column
         bool                _isAggregateQuery{false};  // Is this an aggregate query?
         bool                _usesExpiration{false};    // Has query accessed _expiration meta-property?
+        bool                _hasGroupBy{false};
     };
 
 }  // namespace litecore

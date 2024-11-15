@@ -89,13 +89,15 @@ namespace litecore::qt {
         ParseContext(ParseContext&&) = default;
 
         ParseDelegate&                           delegate;
-        Arena<>&                                 arena;                    // The arena allocator
-        SelectNode* C4NULLABLE                   select{};                 // The enclosing SELECT, if any
-        std::unordered_map<string, AliasedNode*> aliases;                  // All of the sources & named results
-        std::vector<SourceNode*>                 sources;                  // All sources
-        SourceNode* C4NULLABLE                   from{};                   // The main source
-        Collation                                collation;                // Current collation in effect
-        bool                                     collationApplied = true;  // False if no COLLATE node generated
+        Arena<>&                                 arena;                     // The arena allocator
+        SelectNode* C4NULLABLE                   select{};                  // The enclosing SELECT, if any
+        std::unordered_map<string, AliasedNode*> aliases;                   // All of the sources & named results
+        std::vector<SourceNode*>                 sources;                   // All sources
+        SourceNode* C4NULLABLE                   from{};                    // The main source
+        Collation                                collation;                 // Current collation in effect
+        bool                                     collationApplied = true;   // False if no COLLATE node generated
+        bool                                     hasGroupBy       = false;  // Current SELECT include GROUP_BY
+        std::unordered_map<string, string> hashedTables;  // hexName(tableName) -> tableName. Used for Unnest tables.
 
         const char* newString(string_view);  ///< Allocates a string in the arena
     };

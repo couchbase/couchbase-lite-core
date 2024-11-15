@@ -136,7 +136,9 @@ namespace litecore {
         bool   createVectorIndex(const IndexSpec&);
         string findVectorIndexNameFor(const string& property);
         static std::optional<IndexSpec::VectorOptions> parseVectorSearchTableSQL(string_view sql);
-        string                                         createUnnestedTable(const fleece::impl::Value* expression);
+        std::pair<std::string, std::string>            createUnnestedTable(const fleece::impl::Value* arrayPath,
+                                                                           std::string                parentTableName = "",
+                                                                           std::string                hashedParentTableName = "");
 
 #ifdef COUCHBASE_ENTERPRISE
         bool        createPredictiveIndex(const IndexSpec&);
