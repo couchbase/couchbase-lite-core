@@ -15,6 +15,7 @@
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "Batcher.hh"
+#include "DatabasePool.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "Timer.hh"
@@ -32,12 +33,8 @@ namespace litecore::repl {
     class ReplicatedRev;
     class UseCollection;
 
-    using AccessLockedDB = access_lock<Retained<C4Database>>;
-
     /** Thread-safe access to a C4Database. */
-    class DBAccess
-        : public AccessLockedDB
-        , public Logging {
+    class DBAccess : public Logging {
       public:
         using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
@@ -52,13 +49,25 @@ namespace litecore::repl {
             }
         }
 
+        /// Returns a temporary object convertible to C4Database*. Use it only briefly.
+        BorrowedDatabase useLocked() const { return _pool.borrow(); }
+
+        // deprecated; kept for compatibility purposes
+        auto useLocked(auto callback) const {auto db = _pool.borrow(); return callback(db.get());}
+
+        /// Returns a writeable database. Use only when you need to write.
+        BorrowedDatabase useWriteable() {return _pool.borrowWriteable();}
+
+
+        /// Returns a temporary object convertible to C4Collection*. Use it only briefly.
+        BorrowedCollection useCollection(C4CollectionSpec const& spec) const {
+            return BorrowedCollection(_pool.borrow(), spec);
+        }
+
+
         /** Shuts down the DBAccess and makes further use of it invalid.  Any attempt to use
             it after this point is considered undefined behavior. */
         void close();
-
-        /** Check the C4Collection inside the lock and returns a holder object that hodes this->useLocked().*/
-        UseCollection useCollection(C4Collection*);
-        UseCollection useCollection(C4Collection*) const;
 
         /** Looks up the remote DB identifier of this replication. */
         C4RemoteID lookUpRemoteDBID(slice key);
@@ -75,16 +84,16 @@ namespace litecore::repl {
         //////// DOCUMENTS:
 
         /** Gets a document by ID */
-        Retained<C4Document> getDoc(C4Collection* NONNULL, slice docID, C4DocContentLevel content) const;
+        Retained<C4Document> getDoc(C4CollectionSpec const&, slice docID, C4DocContentLevel content) const;
 
         /** Returns the remote ancestor revision ID of a document. */
         alloc_slice getDocRemoteAncestor(C4Document* doc NONNULL) const;
 
         /** Updates the remote ancestor revision ID of a document, to an existing revision. */
-        void setDocRemoteAncestor(C4Collection* NONNULL, slice docID, slice revID);
+        void setDocRemoteAncestor(C4CollectionSpec const&, slice docID, slice revID);
 
         /** Returns the document enumerator for all unresolved docs present in the DB */
-        std::unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(C4Collection* NONNULL, bool orderByID);
+        static std::unique_ptr<C4DocEnumerator> unresolvedDocsEnumerator(C4Collection*, bool orderByID);
 
         /** Mark this revision as synced (i.e. the server's current revision) soon.
              NOTE: While this is queued, calls to C4Document::getRemoteAncestor() for this doc won't
@@ -95,17 +104,19 @@ namespace litecore::repl {
 
         /** Synchronously fulfills all markRevSynced requests. */
         void markRevsSyncedNow();
+        void markRevsSyncedNow(C4Database* db);
 
         //////// DELTAS:
 
         /** Applies a delta to an existing revision. Never returns NULL;
-            errors decoding or applying the delta are thrown as Fleece exceptions. */
-        fleece::Doc applyDelta(C4Document* doc NONNULL, slice deltaJSON, bool useDBSharedKeys);
+            errors decoding or applying the delta are thrown as Fleece exceptions.
+            If `db` is non-null, the doc will be re-encoded with its SharedKeys. */
+        fleece::Doc applyDelta(C4Document* doc NONNULL, slice deltaJSON, C4Database* db);
 
         /** Reads a document revision and applies a delta to it.
             Returns NULL if the baseRevID no longer exists or its body is not known.
             Other errors (including doc-not-found) are thrown as exceptions. */
-        fleece::Doc applyDelta(C4Collection* NONNULL, slice docID, slice baseRevID, slice deltaJSON);
+        fleece::Doc applyDelta(C4CollectionSpec const&, slice docID, slice baseRevID, slice deltaJSON);
 
         //////// BLOBS / ATTACHMENTS:
 
@@ -133,27 +144,23 @@ namespace litecore::repl {
         /** Takes a document produced by tempEncodeJSON and re-encodes it if necessary with the
             database's real SharedKeys, so it's suitable for saving. This can only be called
             inside a transaction. */
-        alloc_slice reEncodeForDatabase(fleece::Doc);
+        alloc_slice reEncodeForDatabase(fleece::Doc, C4Database*);
 
-        /** A separate C4Database instance used for insertions, to avoid blocking the main
-            C4Database. */
-        AccessLockedDB& insertionDB();
-
-        /** Manages a transaction safely. The begin() method calls beginTransaction, then commit()
-             or abort() end it. If the object exits scope when it's been begun but not yet
-             ended, it aborts the transaction. */
+        /** Manages a transaction safely. Call commit() to commit, abort() to abort.
+            If the object exits scope when it's been begun but not yet ended, it aborts the transaction. */
         class Transaction {
           public:
-            explicit Transaction(AccessLockedDB& dba) : _dba(dba.useLocked()), _t(_dba) {}
-
+            explicit Transaction(DBAccess& dba) : _db(dba.useWriteable()), _t(_db) {}
+            C4Database* db() { return _db.get(); }
             void commit() { _t.commit(); }
 
             void abort() { _t.abort(); }
 
           private:
-            AccessLockedDB::access<Retained<C4Database>&> _dba;
+            BorrowedDatabase _db;
             C4Database::Transaction                       _t;
         };
+        
 
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
@@ -165,6 +172,7 @@ namespace litecore::repl {
         fleece::SharedKeys tempSharedKeys();
         fleece::SharedKeys updateTempSharedKeys();
 
+        DatabasePool mutable _pool;
         C4BlobStore* const            _blobStore;                      // Database's BlobStore
         fleece::SharedKeys            _tempSharedKeys;                 // Keys used in tempEncodeJSON()
         std::mutex                    _tempSharedKeysMutex;            // Mutex for replacing _tempSharedKeys
@@ -174,25 +182,9 @@ namespace litecore::repl {
         bool const                    _disableBlobSupport;             // Does replicator support blobs?
         actor::Batcher<ReplicatedRev> _revsToMarkSynced;               // Pending revs to be marked as synced
         actor::Timer                  _timer;                          // Implements Batcher delay
-        std::optional<AccessLockedDB> _insertionDB;                    // DB handle to use for insertions
         std::string                   _mySourceID;
         const bool                    _usingVersionVectors;  // True if DB uses version vectors
         std::atomic_flag              _closed = ATOMIC_FLAG_INIT;
     };
 
-    class UseCollection {
-        DBAccess&                       _dbAccess;
-        decltype(_dbAccess.useLocked()) _access;
-        C4Collection*                   _collection;
-
-      public:
-        UseCollection(DBAccess& db_, C4Collection* collection)
-            : _dbAccess(db_), _access(_dbAccess.useLocked()), _collection(collection) {
-            Assert(_access.get() == _collection->getDatabase());
-        }
-
-        C4Collection* operator->() { return _collection; }
-
-        const C4Collection* operator->() const { return _collection; }
-    };
 }  // namespace litecore::repl

@@ -102,6 +102,8 @@ namespace litecore::repl {
         Delegate&              _delegate;
         RetainedConst<Options> _options;
         DBAccess&              _db;
+        C4CollectionSpec const        _collectionSpec;
+        CollectionIndex const _collectionIndex;
         bool                   _getForeignAncestors{false};  // True in propose-changes mode
       private:
         Checkpointer*                       _checkpointer;
@@ -114,8 +116,6 @@ namespace litecore::repl {
         bool                                _isCheckpointValid{true};
         bool                                _caughtUp{false};         // Delivered all historical changes
         std::atomic<bool>                   _notifyOnChanges{false};  // True if expecting change notification
-        CollectionIndex
-                _collectionIndex;  // Identifies the collection index (in the replicator) of the collection being used
     };
 
     class ReplicatorChangesFeed final : public ChangesFeed {

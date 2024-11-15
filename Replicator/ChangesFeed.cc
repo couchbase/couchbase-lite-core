@@ -38,13 +38,10 @@ namespace litecore::repl {
         , _delegate(delegate)
         , _options(options)
         , _db(db)
+        ,_collectionSpec (checkpointer->collectionSpec())
+        , _collectionIndex(CollectionIndex(_options->collectionSpecToIndex().at(checkpointer->collectionSpec())))
         , _checkpointer(checkpointer)
         , _skipDeleted(_options->skipDeleted()) {
-        DebugAssert(_checkpointer);
-
-        // JIM: This breaks tons of encapsulation, and should be reworked
-        _collectionIndex =
-                (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
         _continuous = _options->push(_collectionIndex) == kC4Continuous;
         filterByDocIDs(_options->docIDs(_collectionIndex));
     }
@@ -72,7 +69,8 @@ namespace litecore::repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _changeObserver = C4DatabaseObserver::create(_checkpointer->collection(),
+            auto coll = _db.useCollection(_collectionSpec);
+            _changeObserver = C4DatabaseObserver::create(coll,
                                                          [this](C4DatabaseObserver*) { this->_dbChanged(); });
         }
 
@@ -100,19 +98,17 @@ namespace litecore::repl {
         if ( _db.usingVersionVectors() ) options.flags |= kC4IncludeRevHistory;
 
         try {
-            _db.useLocked([&](C4Database* db) {
-                Assert(db == _checkpointer->collection()->getDatabase());
-                C4DocEnumerator e(_checkpointer->collection(), _maxSequence, options);
-                changes.revs.reserve(limit);
-                while ( e.next() && limit > 0 ) {
-                    C4DocumentInfo info = e.documentInfo();
-                    auto           rev  = makeRevToSend(info, &e);
-                    if ( rev ) {
-                        changes.revs.push_back(rev);
-                        --limit;
-                    }
+            auto collection = _db.useCollection(_collectionSpec);
+            C4DocEnumerator e(collection, _maxSequence, options);
+            changes.revs.reserve(limit);
+            while ( e.next() && limit > 0 ) {
+                C4DocumentInfo info = e.documentInfo();
+                auto           rev  = makeRevToSend(info, &e);
+                if ( rev ) {
+                    changes.revs.push_back(rev);
+                    --limit;
                 }
-            });
+            }
         } catch ( ... ) { changes.err = C4Error::fromCurrentException(); }
 
         if ( limit > 0 && !_caughtUp ) {
@@ -212,7 +208,7 @@ namespace litecore::repl {
                     (_docIDs != nullptr && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) ) {
             return nullptr;
         } else {
-            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec(),
+            auto rev = make_retained<RevToSend>(info, _checkpointer->collectionSpec(),
                                                 _options->collectionCallbackContext(_collectionIndex));
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
@@ -227,13 +223,12 @@ namespace litecore::repl {
             C4Error              error;
             Retained<C4Document> doc;
             try {
-                _db.useLocked([&](C4Database* db) {
-                    if ( e ) doc = e->getDocument();
-                    else
-                        doc = _checkpointer->collection()->getDocument(
-                                rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
-                    if ( !doc ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
-                });
+                auto db = _db.useLocked();
+                if ( e ) doc = e->getDocument();
+                else
+                    doc = db->getCollection(_collectionSpec)->getDocument(
+                            rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
+                if ( !doc ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
             } catch ( ... ) { error = C4Error::fromCurrentException(); }
             if ( !doc ) {
                 _delegate.failedToGetChange(rev, error, false);
@@ -249,7 +244,7 @@ namespace litecore::repl {
             }
             if ( _options->pushFilter(_collectionIndex) ) {
                 // If there's a push filter, ask it whether to push the doc:
-                if ( !_options->pushFilter(_collectionIndex)(_checkpointer->collection()->getSpec(), doc->docID(),
+                if ( !_options->pushFilter(_collectionIndex)(_checkpointer->collectionSpec(), doc->docID(),
                                                              doc->selectedRev().revID, doc->selectedRev().flags,
                                                              doc->getProperties(),
                                                              _options->collectionCallbackContext(_collectionIndex)) ) {

@@ -61,7 +61,7 @@ namespace litecore::repl {
         _rev                = new RevToInsert(this, _revMessage->property("id"_sl), _revMessage->property("rev"_sl),
                                               _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
                                               _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
-                                              getCollection()->getSpec(), _options->collectionCallbackContext(collectionIndex()));
+                                              collectionSpec(), _options->collectionCallbackContext(collectionIndex()));
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr   = _revMessage->property(slice("sequence"));
         _remoteSequence     = RemoteSequence(sequenceStr);
@@ -222,7 +222,7 @@ namespace litecore::repl {
             // have properties to decrypt.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...", SPLAT(_rev->docID), SPLAT(_rev->revID));
             try {
-                fleeceDoc = _db->applyDelta(getCollection(), _rev->docID, _rev->deltaSrcRevID, jsonBody);
+                fleeceDoc = _db->applyDelta(collectionSpec(), _rev->docID, _rev->deltaSrcRevID, jsonBody);
                 if ( !fleeceDoc ) {
                     // Don't have the body of the source revision. This might be because I'm in
                     // no-conflict mode and the peer is trying to push me a now-obsolete revision.
@@ -372,7 +372,7 @@ namespace litecore::repl {
     // Calls the custom pull validator if available.
     bool IncomingRev::performPullValidation(Dict body) {
         if ( _options->pullFilter(collectionIndex()) ) {
-            if ( !_options->pullFilter(collectionIndex())(getCollection()->getSpec(), _rev->docID, _rev->revID,
+            if ( !_options->pullFilter(collectionIndex())(collectionSpec(), _rev->docID, _rev->revID,
                                                           _rev->flags, body,
                                                           _options->collectionCallbackContext(collectionIndex())) ) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);

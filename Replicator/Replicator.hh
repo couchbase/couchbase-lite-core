@@ -109,9 +109,9 @@ namespace litecore::repl {
 
         slice remoteURL() const { return _remoteURL; }
 
-        C4Collection* collection(CollectionIndex i) const {
+        C4CollectionSpec collectionSpec(CollectionIndex i) const {
             Assert(i < _subRepls.size());
-            return _subRepls[i].collection;
+            return _subRepls[i].collectionSpec;
         }
 
       protected:
@@ -214,7 +214,7 @@ namespace litecore::repl {
             alloc_slice              checkpointJSONToSave;              // JSON waiting to be saved to the checkpts
             alloc_slice              remoteCheckpointDocID;             // Checkpoint docID to use with peer
             alloc_slice              remoteCheckpointRevID;             // Latest revID of remote checkpoint
-            Retained<C4Collection>   collection;
+            C4CollectionSpec         collectionSpec;
         };
 
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;

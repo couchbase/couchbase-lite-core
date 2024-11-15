@@ -393,6 +393,7 @@ namespace litecore {
         _db.beginTransactionScope(this);
         if ( active ) {
             _db._logVerbose("begin transaction");
+            DebugAssert(_db.options().writeable, "ExclusiveTransaction on read-only db");
             Signpost::begin(Signpost::transaction, uintptr_t(this));
             _db._beginTransaction(this);
             _active = true;

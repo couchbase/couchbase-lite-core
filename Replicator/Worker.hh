@@ -84,6 +84,10 @@ namespace litecore::repl {
 
         C4ReplicatorProgressLevel progressNotificationLevel() const { return _options->progressLevel; }
 
+        C4CollectionSpec collectionSpec() const {
+            DebugAssert(_collectionIndex != kNotCollectionIndex);
+            return _collectionSpec;
+        }
         CollectionIndex collectionIndex() const { return _collectionIndex; }
 
         /// My current status.
@@ -237,10 +241,6 @@ namespace litecore::repl {
         // 'errorSlice' describes the nature of the violation.
         std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg) const;
 
-        C4Collection* getCollection() { return const_cast<C4Collection*>(((const Worker*)this)->getCollection()); }
-
-        const C4Collection* getCollection() const;
-
         void addLoggingKeyValuePairs(std::stringstream& output) const override;
 
         RetainedConst<Options>    _options;        // The replicator options
@@ -253,6 +253,7 @@ namespace litecore::repl {
         int                                    _pendingResponseCount{0};  // # of responses I'm awaiting
         Status                                 _status{kC4Idle};          // My status
         bool                                   _statusChanged{false};     // Status changed during this event
+        C4CollectionSpec const _collectionSpec;
         const CollectionIndex                  _collectionIndex;
         static std::unordered_set<std::string> _formatCache;  // Store collection format strings for LogEncoders benefit
         static std::shared_mutex               _formatMutex;  // Ensure thread-safety for cache insert
