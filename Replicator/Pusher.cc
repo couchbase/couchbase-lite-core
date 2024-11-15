@@ -412,7 +412,7 @@ namespace litecore::repl {
     bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend* rev, slice receivedRevID) {
         if ( !_proposeChanges ) return false;
         try {
-            Retained<C4Document> doc = _db->getDoc(getCollection(), rev->docID, kDocGetAll);
+            Retained<C4Document> doc = _db->getDoc(collectionSpec(), rev->docID, kDocGetAll);
             if ( doc && C4Document::equalRevIDs(doc->revID(), rev->revID) ) {
                 if ( receivedRevID && receivedRevID != rev->remoteAncestorRevID ) {
                     // Remote ancestor received in proposeChanges response, so try with
@@ -470,20 +470,20 @@ namespace litecore::repl {
             // See if the doc is unchanged, by getting it by sequence:
             Retained<RevToSend> rev = i->second;
             _conflictsIMightRetry.erase(i);
-            auto*                collection = getCollection();
-            Retained<C4Document> doc        = _db->useCollection(collection)->getDocumentBySequence(rev->sequence);
+            auto coll = _db->useCollection(collectionSpec());
+            Retained<C4Document> doc        = coll->getDocumentBySequence(rev->sequence);
             if ( !doc || !C4Document::equalRevIDs(doc->revID(), rev->revID) ) {
                 // Local document has changed, so stop working on this revision:
                 logVerbose("Notified that remote rev of '%.*s' of '%.*s.%.*s' is now #%.*s, "
                            "but local doc has changed",
-                           SPLAT(docID), SPLAT(collection->getSpec().scope), SPLAT(collection->getSpec().name),
+                           SPLAT(docID), SPLAT(collectionSpec().scope), SPLAT(collectionSpec().name),
                            SPLAT(foreignAncestor));
             } else if ( doc->selectRevision(foreignAncestor, false) && !(doc->selectedRev().flags & kRevIsConflict) ) {
                 // The remote rev is an ancestor of my revision, so retry it:
                 doc->selectCurrentRevision();
                 logInfo("Notified that remote rev of '%.*s' of '%.*s.%.*s' is now #%.*s; "
                         "retrying push of #%.*s",
-                        SPLAT(docID), SPLAT(collection->getSpec().scope), SPLAT(collection->getSpec().name),
+                        SPLAT(docID), SPLAT(collectionSpec().scope), SPLAT(collectionSpec().name),
                         SPLAT(foreignAncestor), SPLAT(doc->revID()));
                 rev->remoteAncestorRevID = foreignAncestor;
                 gotOutOfOrderChange(rev);

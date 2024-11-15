@@ -31,15 +31,13 @@ namespace litecore::repl {
         std::string loggingClassName() const override { return "Inserter"; }
 
       private:
-        C4Collection* insertionCollection();  // Get the collection from the insertionDB
-
         void          _insertRevisionsNow(int gen);
-        bool          insertRevisionNow(RevToInsert* NONNULL, C4Error*);
+        bool          insertRevisionNow(RevToInsert* NONNULL, C4Collection*, C4Error*);
         C4SliceResult applyDeltaCallback(C4Document* doc NONNULL, C4Slice deltaJSON, C4RevisionFlags* revFlags,
                                          C4Error* outError);
 
         actor::ActorBatcher<Inserter, RevToInsert> _revsToInsert;  // Pending revs to be added to db
-        C4Collection*                              _insertionCollection{nullptr};
+        C4Collection* _callbackCollection {}; // A kludge used by the delta callback
     };
 
 }  // namespace litecore::repl

@@ -121,6 +121,7 @@ function(set_litecore_source_base)
         Replicator/Worker.cc
         LiteCore/Support/Arena.cc
         LiteCore/Support/Logging.cc
+        LiteCore/Support/DatabasePool.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc
         LiteCore/Support/EncryptedStream.cc
