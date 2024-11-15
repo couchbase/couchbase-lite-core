@@ -213,10 +213,11 @@ namespace litecore {
             : Logging(SyncLog)
             , _database(db)
             , _options(new Options(params))
+            , _loggingName("C4Repl")
             , _onStatusChanged(params.onStatusChanged)
             , _onDocumentsEnded(params.onDocumentsEnded)
             , _onBlobProgress(params.onBlobProgress)
-            , _loggingName("C4Repl") {
+        {
             _status.flags |= kC4HostReachable;
             _options->verify();
         }
@@ -460,7 +461,7 @@ namespace litecore {
                     error::_throw(error::NotOpen, "collection not in the Replicator's config");
                 }
 
-                checkpointer.emplace(repl->_options, repl->URL(), collection);
+                checkpointer.emplace(repl->_options, repl->URL(), collection->getSpec());
                 database = repl->_database;
             }
 

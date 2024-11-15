@@ -1421,7 +1421,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][C
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
     validateCheckpoints(db, db2, "{\"remote\":7}");
 
-    auto e = DBAccessTestWrapper::unresolvedDocsEnumerator(_collDB1);
+    c4::ref<C4DocEnumerator> e = DBAccessTestWrapper::unresolvedDocsEnumerator(_collDB1);
     REQUIRE(e);
 
     // verify only returns the conflicted documents, including the deleted ones.
@@ -1443,7 +1443,6 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][C
         CHECK(deleted == deleteds[count]);
     }
     CHECK(!c4enum_next(e, WITH_ERROR(&err)));
-    c4enum_free(e);
 }
 
 #pragma mark - DELTA:
