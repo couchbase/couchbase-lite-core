@@ -19,6 +19,7 @@
 #include "n1ql_parser.hh"
 #include "Query.hh"
 #include "MutableDict.hh"
+#include "StringUtil.hh"
 
 namespace litecore {
     using namespace fleece;
@@ -43,7 +44,10 @@ namespace litecore {
         spec._doc = nullptr;
     }
 
-    IndexSpec::~IndexSpec() { FLDoc_Release(_doc); }
+    IndexSpec::~IndexSpec() {
+        FLDoc_Release(_doc);
+        FLDoc_Release(_unnestDoc);
+    }
 
     void IndexSpec::validateName() const {
         if ( name.empty() ) { error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty"); }
@@ -129,28 +133,13 @@ namespace litecore {
         // Precondition: arrayOptions() && arrayOptions()->unnestPath
         if ( !_unnestDoc ) {
             try {
-                string_view unnestPath = arrayOptions()->unnestPath;
-                // Split unnestPath from the options by "[]."
-                std::vector<std::string_view> splitPaths;
-                for ( size_t pos = 0; pos != string::npos && pos < unnestPath.length(); ) {
-                    size_t next = unnestPath.find(KeyStore::kUnnestLevelSeparator, pos);
-                    if ( next == string::npos ) {
-                        splitPaths.push_back(unnestPath.substr(pos));
-                        pos = string::npos;
-                    } else {
-                        splitPaths.push_back(unnestPath.substr(pos, next - pos));
-                        pos = next + KeyStore::kUnnestLevelSeparator.size;
-                    }
-                }
-                if ( splitPaths.empty() )
+                string n1qlUnnestPaths{arrayOptions()->unnestPath};
+                if ( n1qlUnnestPaths.empty() )
                     error::_throw(error::InvalidParameter,
                                   "IndexOptions for ArrayIndex must have non-empty unnestPath.");
 
-                string n1qlUnnestPaths = string(splitPaths[0]);
-                for ( unsigned i = 1; i < splitPaths.size(); ++i ) {
-                    n1qlUnnestPaths += ", ";
-                    n1qlUnnestPaths += splitPaths[i];
-                }
+                // Turning "students[].interests" to "students, interests"
+                litecore::replace(n1qlUnnestPaths, KeyStore::kUnnestLevelSeparator, ", ");
                 int           errPos;
                 FLMutableDict result = n1ql::parse(n1qlUnnestPaths, &errPos);
                 if ( !result ) {

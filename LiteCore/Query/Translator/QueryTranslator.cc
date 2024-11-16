@@ -61,14 +61,14 @@ namespace litecore {
             } else if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
                 // Capture the parameter names:
                 _parameters.emplace(p->name());
+            } else if ( auto prop = dynamic_cast<PropertyNode*>(&node) ) {
+                if ( ctx.hasGroupBy ) prop->hasGroupBy();
             } else if ( !_usesExpiration ) {
                 // Detect whether the query uses the `expiration` column:
                 if ( auto m = dynamic_cast<MetaNode*>(&node); m && m->property() == MetaProperty::expiration )
                     _usesExpiration = true;
             }
         });
-
-        _hasGroupBy = ctx.hasGroupBy;
 
         // Get the column titles:
         for ( WhatNode* what : query->what() ) _columnTitles.emplace_back(what->columnName());
@@ -88,7 +88,6 @@ namespace litecore {
     string QueryTranslator::writeSQL(function_ref<void(SQLWriter&)> callback) {
         std::stringstream out;
         SQLWriter         writer(out);
-        writer.hasGroupBy     = _hasGroupBy;
         writer.bodyColumnName = _bodyColumnName;
         callback(writer);
         return out.str();

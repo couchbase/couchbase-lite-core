@@ -124,6 +124,8 @@ namespace litecore::qt {
 
         void writeSQL(SQLWriter&, slice sqliteFnName, ExprNode* C4NULLABLE param) const;
 
+        void hasGroupBy() { _hasGroupBy = true; }
+
       private:
         PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, string_view path,
                      string_view lastComponent, string_view fn);
@@ -133,6 +135,7 @@ namespace litecore::qt {
         string_view            _path;           // The path (possibly empty)
         string_view            _lastComponent;  // Last component of path
         string_view            _sqliteFn;       // SQLite function to emit; usually `fl_value`
+        bool                   _hasGroupBy{false};
     };
 
     /** A local variable (`?foo`) used in an ANY/EVERY expression. */

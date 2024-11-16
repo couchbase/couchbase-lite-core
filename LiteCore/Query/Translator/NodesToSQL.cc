@@ -136,7 +136,7 @@ namespace litecore::qt {
                 ctx << sqliteFnName << '(' << aliasDot;
                 if ( sqliteFnName == kEachFnName && isSourceUnnested ) {
                     ctx << "value";
-                } else if ( sqliteFnName == kNestedValueFnName && ctx.hasGroupBy ) {
+                } else if ( sqliteFnName == kNestedValueFnName && _hasGroupBy ) {
                     // group_by may parse the virtual table of fl_each second time when "value"
                     // loses the context. Use the original "data" instead.
                     ctx << "data";

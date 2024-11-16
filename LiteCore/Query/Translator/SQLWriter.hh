@@ -53,8 +53,6 @@ namespace litecore::qt {
         /// usually when generating SQL for triggers.
         string bodyColumnName = "body";
 
-        bool hasGroupBy = false;
-
       private:
         friend class WithPrecedence;
         std::ostream& _out;             // Output stream

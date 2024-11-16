@@ -28,24 +28,25 @@ namespace litecore {
         if ( currSpec ) {
             // If there is already index with the index name,
             // eiher delete the current one, or use it (return false)
-            while ( true ) {
-                if ( currSpec->type != IndexSpec::kArray ) break;
-                if ( !currSpec->arrayOptions() ) break;
-                if ( currSpec->arrayOptions()->unnestPath != spec.arrayOptions()->unnestPath ) break;
-                if ( !currSpec->what() || !spec.what() ) break;
+            bool same = true;
+            if ( currSpec->type != IndexSpec::kArray || !currSpec->arrayOptions()
+                 || currSpec->arrayOptions()->unnestPath != spec.arrayOptions()->unnestPath || !currSpec->what()
+                 || !spec.what() )
+                same = false;
+            else {
                 alloc_slice currWhat = FLValue_ToJSON(FLValue(currSpec->what()));
                 alloc_slice specWhat = FLValue_ToJSON(FLValue(spec.what()));
-                if ( currWhat != specWhat ) break;
-                // Same index spec and unnestPath
-                return false;
+                if ( currWhat != specWhat ) same = false;
             }
-            db().deleteIndex(*currSpec);
+
+            if ( same ) return false;
+            else
+                db().deleteIndex(*currSpec);
         }
 
-        // the following will throw if !spec.arrayOptions() || !spec.arrayOpeionts()->unnestPath
-        Array::iterator itPath((const Array*)spec.unnestPaths());
-        string          plainTableName, unnestTableName;
-        for ( ; itPath; ++itPath ) {
+        string plainTableName, unnestTableName;
+        // the following will throw if !spec.arrayOptions() || !spec.arrayOptions()->unnestPath
+        for ( Array::iterator itPath((const Array*)spec.unnestPaths()); itPath; ++itPath ) {
             std::tie(plainTableName, unnestTableName) =
                     createUnnestedTable(itPath.value(), plainTableName, unnestTableName);
         }
