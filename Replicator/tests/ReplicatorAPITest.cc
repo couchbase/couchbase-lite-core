@@ -15,6 +15,7 @@
 #include "ReplicatorAPITest.hh"
 #include "c4Collection.h"
 #include "c4ReplicatorHelpers.hh"
+#include "c4ReplicatorImpl.hh"
 #include "StringUtil.hh"
 #include "c4Socket.h"
 #include "c4Socket.hh"
@@ -983,18 +984,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
 }
 
 // NOLINTEND(cppcoreguidelines-slicing)
-
-#    include "c4ReplicatorImpl.hh"
-
-struct C4TestReplicator : public litecore::C4ReplicatorImpl {
-    C4TestReplicator(C4Database* db, C4ReplicatorParameters params) : C4ReplicatorImpl(db, params) {}
-
-    alloc_slice propertiesMemory() const { return _options->properties.data(); }
-
-    void createReplicator() override {}
-
-    alloc_slice URL() const override { return nullslice; }
-};
 
 #endif
 
