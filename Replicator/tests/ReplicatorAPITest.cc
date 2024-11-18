@@ -17,11 +17,9 @@
 #include "c4ReplicatorHelpers.hh"
 #include "StringUtil.hh"
 #include "c4Socket.h"
-//#include "c4Socket+Internal.hh"
 #include "c4Socket.hh"
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
-#include "c4ReplicatorImpl.hh"
 #include "SequenceSet.hh"
 
 using namespace fleece;

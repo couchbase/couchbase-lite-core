@@ -38,7 +38,7 @@ namespace litecore::repl {
         , _delegate(delegate)
         , _options(options)
         , _db(db)
-        ,_collectionSpec (checkpointer->collectionSpec())
+        , _collectionSpec(checkpointer->collectionSpec())
         , _collectionIndex(CollectionIndex(_options->collectionSpecToIndex().at(checkpointer->collectionSpec())))
         , _checkpointer(checkpointer)
         , _skipDeleted(_options->skipDeleted()) {
@@ -69,9 +69,8 @@ namespace litecore::repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            auto coll = _db.useCollection(_collectionSpec);
-            _changeObserver = C4DatabaseObserver::create(coll,
-                                                         [this](C4DatabaseObserver*) { this->_dbChanged(); });
+            BorrowedCollection coll(_db.useWriteable(), _collectionSpec);
+            _changeObserver = C4DatabaseObserver::create(coll, [this](C4DatabaseObserver*) { this->_dbChanged(); });
         }
 
         Changes changes       = {};
@@ -92,14 +91,14 @@ namespace litecore::repl {
 
         // Run a by-sequence enumerator to find the changed docs:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        // TBD: pushFilter should be collection-aware.
+        // TODO: pushFilter should be collection-aware.
         if ( !_getForeignAncestors && !_options->pushFilter(_collectionIndex) ) options.flags &= ~kC4IncludeBodies;
         if ( !_skipDeleted ) options.flags |= kC4IncludeDeleted;
         if ( _db.usingVersionVectors() ) options.flags |= kC4IncludeRevHistory;
 
         try {
-            auto collection = _db.useCollection(_collectionSpec);
-            C4DocEnumerator e(collection, _maxSequence, options);
+            BorrowedCollection collection = _db.useCollection(_collectionSpec);
+            C4DocEnumerator    e(collection, _maxSequence, options);
             changes.revs.reserve(limit);
             while ( e.next() && limit > 0 ) {
                 C4DocumentInfo info = e.documentInfo();
@@ -133,13 +132,6 @@ namespace litecore::repl {
             uint32_t nChanges = nextObservation.numChanges;
             if ( nChanges == 0 ) break;
 
-            if ( !nextObservation.external && !_echoLocalChanges ) {
-                logDebug("Observed %u of my own db changes #%" PRIu64 " ... #%" PRIu64 " (ignoring)", nChanges,
-                         static_cast<uint64_t>(c4changes[0].sequence),
-                         static_cast<uint64_t>(c4changes[nChanges - 1].sequence));
-                _maxSequence = c4changes[nChanges - 1].sequence;
-                continue;  // ignore changes I made myself
-            }
             logVerbose("Observed %u db changes #%" PRIu64 " ... #%" PRIu64, nChanges, (uint64_t)c4changes[0].sequence,
                        (uint64_t)c4changes[nChanges - 1].sequence);
 
@@ -223,11 +215,10 @@ namespace litecore::repl {
             C4Error              error;
             Retained<C4Document> doc;
             try {
-                auto db = _db.useLocked();
                 if ( e ) doc = e->getDocument();
                 else
-                    doc = db->getCollection(_collectionSpec)->getDocument(
-                            rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
+                    doc = _db.useCollection(_collectionSpec)
+                                  ->getDocument(rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
                 if ( !doc ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
             } catch ( ... ) { error = C4Error::fromCurrentException(); }
             if ( !doc ) {

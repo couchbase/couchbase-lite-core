@@ -34,36 +34,31 @@ namespace litecore::repl {
     class UseCollection;
 
     /** Thread-safe access to a C4Database. */
-    class DBAccess : public Logging {
+    class DBAccess final : public Logging {
       public:
         using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
         using Dict        = fleece::Dict;
 
-        DBAccess(C4Database* db, bool disableBlobSupport);
+        DBAccess(DatabasePool*, bool disableBlobSupport);
+        DBAccess(C4Database*, bool disableBlobSupport);
         ~DBAccess() override;
 
-        static void AssertDBOpen(const Retained<C4Database>& db) {
-            if ( !db ) {
-                litecore::error::_throw(litecore::error::Domain::LiteCore, litecore::error::LiteCoreError::NotOpen);
-            }
-        }
-
         /// Returns a temporary object convertible to C4Database*. Use it only briefly.
-        BorrowedDatabase useLocked() const { return _pool.borrow(); }
-
-        // deprecated; kept for compatibility purposes
-        auto useLocked(auto callback) const {auto db = _pool.borrow(); return callback(db.get());}
-
-        /// Returns a writeable database. Use only when you need to write.
-        BorrowedDatabase useWriteable() {return _pool.borrowWriteable();}
-
+        BorrowedDatabase useLocked() const { return _pool->borrow(); }
 
         /// Returns a temporary object convertible to C4Collection*. Use it only briefly.
         BorrowedCollection useCollection(C4CollectionSpec const& spec) const {
-            return BorrowedCollection(_pool.borrow(), spec);
+            return BorrowedCollection(_pool->borrow(), spec);
         }
 
+        auto useLocked(auto callback) const {
+            BorrowedDatabase db = _pool->borrow();
+            return callback(db.get());
+        }
+
+        /// Returns a writeable database. Use only when you need to write.
+        BorrowedDatabase useWriteable() { return _pool->borrowWriteable(); }
 
         /** Shuts down the DBAccess and makes further use of it invalid.  Any attempt to use
             it after this point is considered undefined behavior. */
@@ -78,8 +73,6 @@ namespace litecore::repl {
         bool usingVersionVectors() const { return _usingVersionVectors; }
 
         std::string convertVersionToAbsolute(slice revID);
-
-        // (The "use" method is inherited from access_lock)
 
         //////// DOCUMENTS:
 
@@ -151,16 +144,17 @@ namespace litecore::repl {
         class Transaction {
           public:
             explicit Transaction(DBAccess& dba) : _db(dba.useWriteable()), _t(_db) {}
+
             C4Database* db() { return _db.get(); }
+
             void commit() { _t.commit(); }
 
             void abort() { _t.abort(); }
 
           private:
-            BorrowedDatabase _db;
-            C4Database::Transaction                       _t;
+            BorrowedDatabase        _db;
+            C4Database::Transaction _t;
         };
-        
 
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
@@ -172,8 +166,8 @@ namespace litecore::repl {
         fleece::SharedKeys tempSharedKeys();
         fleece::SharedKeys updateTempSharedKeys();
 
-        DatabasePool mutable _pool;
-        C4BlobStore* const            _blobStore;                      // Database's BlobStore
+        Retained<DatabasePool>        _pool;                           // Pool of C4Databases
+        C4BlobStore*                  _blobStore{};                    // Database's BlobStore
         fleece::SharedKeys            _tempSharedKeys;                 // Keys used in tempEncodeJSON()
         std::mutex                    _tempSharedKeysMutex;            // Mutex for replacing _tempSharedKeys
         unsigned                      _tempSharedKeysInitialCount{0};  // Count when copied from db's keys
@@ -182,9 +176,10 @@ namespace litecore::repl {
         bool const                    _disableBlobSupport;             // Does replicator support blobs?
         actor::Batcher<ReplicatedRev> _revsToMarkSynced;               // Pending revs to be marked as synced
         actor::Timer                  _timer;                          // Implements Batcher delay
-        std::string                   _mySourceID;
-        const bool                    _usingVersionVectors;  // True if DB uses version vectors
-        std::atomic_flag              _closed = ATOMIC_FLAG_INIT;
+        std::string                   _mySourceID;                     // Version vector sourceID
+        const bool                    _usingVersionVectors;            // True if DB uses version vectors
+        bool                          _ownsPool = false;               // True if I created _pool
+        std::atomic_flag              _closed   = ATOMIC_FLAG_INIT;    // True after closed
     };
 
 }  // namespace litecore::repl

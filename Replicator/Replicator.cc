@@ -177,13 +177,13 @@ namespace litecore::repl {
 
     void Replicator::_findExistingConflicts() {
         // Active replicator
-        Stopwatch st;
+        Stopwatch        st;
         BorrowedDatabase db = _db->useLocked();
         for ( CollectionIndex i = 0; i < _subRepls.size(); ++i ) {
             SubReplicator& sub = _subRepls[i];
             try {
-                C4Collection* collection = db->getCollection(sub.collectionSpec);
-                unique_ptr<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(collection, false);
+                C4Collection*               collection = db->getCollection(sub.collectionSpec);
+                unique_ptr<C4DocEnumerator> e          = _db->unresolvedDocsEnumerator(collection, false);
                 cLogInfo(i, "Scanning for pre-existing conflicts...");
                 unsigned nConflicts = 0;
                 while ( e->next() ) {
@@ -979,17 +979,14 @@ namespace litecore::repl {
         if ( !db ) { return false; }
 
         try {
-            bool attempted = false;
-            db->useLocked([this, spec, callback, &attempted](const Retained<C4Database>& db) {
-                for ( auto& _subRepl : _subRepls ) {
-                    if ( _subRepl.collectionSpec == spec ) {
-                        _subRepl.checkpointer->pendingDocumentIDs(db, callback);
-                        attempted = true;
-                        break;
-                    }
+            BorrowedDatabase c4db = db->useLocked();
+            for ( auto& _subRepl : _subRepls ) {
+                if ( _subRepl.collectionSpec == spec ) {
+                    _subRepl.checkpointer->pendingDocumentIDs(c4db, callback);
+                    return true;
                 }
-            });
-            return attempted;
+            }
+            return false;
         } catch ( const error& err ) {
             if ( error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err ) {
                 return false;
@@ -1007,9 +1004,7 @@ namespace litecore::repl {
         try {
             auto db = dbAccess->useLocked();
             for ( auto& _subRepl : _subRepls ) {
-                if ( _subRepl.collectionSpec == spec ) {
-                    return _subRepl.checkpointer->isDocumentPending(db, docID);
-                }
+                if ( _subRepl.collectionSpec == spec ) { return _subRepl.checkpointer->isDocumentPending(db, docID); }
             }
             throw error(error::LiteCore, error::NotFound,
                         stringprintf("collection '%*s' not found", SPLAT(Options::collectionSpecToPath(spec))));
@@ -1090,8 +1085,8 @@ namespace litecore::repl {
         alloc_slice newRevID;
         try {
             BorrowedDatabase db = _db->useWriteable();
-            ok = Checkpointer::savePeerCheckpoint(db, checkpointID, request->body(),
-                                                  request->property("rev"_sl), newRevID);
+            ok = Checkpointer::savePeerCheckpoint(db, checkpointID, request->body(), request->property("rev"_sl),
+                                                  newRevID);
         } catch ( ... ) {
             request->respondWithError(c4ToBLIPError(C4Error::fromCurrentException()));
             return;
@@ -1231,8 +1226,6 @@ namespace litecore::repl {
         // Retained C4Collection object may become invalid if the underlying collection
         // is deleted. By spec, all collections must exist when replication starts,
         // and it is an error if any collection is deleted while in progress.
-        // Note: retained C4Collection* may blow up if it is used after becoming invalid,
-        // and this is expected.
         _db->useLocked([this](C4Database* db) {
             for ( CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i ) {
                 C4CollectionSpec spec = _options->collectionSpec(i);

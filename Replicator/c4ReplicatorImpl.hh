@@ -216,8 +216,7 @@ namespace litecore {
             , _loggingName("C4Repl")
             , _onStatusChanged(params.onStatusChanged)
             , _onDocumentsEnded(params.onDocumentsEnded)
-            , _onBlobProgress(params.onBlobProgress)
-        {
+            , _onBlobProgress(params.onBlobProgress) {
             _status.flags |= kC4HostReachable;
             _options->verify();
         }

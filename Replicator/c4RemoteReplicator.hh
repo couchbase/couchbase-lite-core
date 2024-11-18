@@ -17,6 +17,7 @@
 #include "c4ReplicatorImpl.hh"
 #include "c4Socket+Internal.hh"
 #include "Address.hh"
+#include "DBAccess.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
 #include <algorithm>
