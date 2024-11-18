@@ -15,6 +15,7 @@
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
 #include "CookieStore.hh"
+#include "DBAccess.hh"
 #include "c4Database.hh"
 #include "c4ReplicatorTypes.h"
 #include "c4Socket+Internal.hh"
@@ -332,7 +333,7 @@ namespace litecore::websocket {
 
     void BuiltInWebSocket::setCookie(const Address& addr, slice cookieHeader) {
         bool acceptParentDomain = options()[kC4ReplicatorOptionAcceptParentDomainCookies].asBool();
-        _database->useLocked()->setCookie(cookieHeader, addr.hostname(), addr.path(), acceptParentDomain);
+        _database->useWriteable()->setCookie(cookieHeader, addr.hostname(), addr.path(), acceptParentDomain);
     }
 
 #pragma mark - I/O:

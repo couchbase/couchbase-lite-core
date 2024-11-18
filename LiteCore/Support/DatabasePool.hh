@@ -12,6 +12,7 @@
 
 #pragma once
 #include "c4Database.hh"
+#include "Error.hh"
 #include "fleece/RefCounted.hh"
 #include <condition_variable>
 #include <functional>
@@ -23,41 +24,75 @@ namespace litecore {
     class FilePath;
     class BorrowedDatabase;
 
-    /** A thread-safe pool of databases, for multi-threaded use. */
+    /** A concurrent pool of C4Database instances on a single file.
+        A thread wanting to use the database can temporarily "borrow" an instance, wrapped in a
+        `BorrowedDatabase` smart-pointer. The database is returned to the pool when the
+        `BorrwedDatabase` object exits scope.
+
+        The databases in the pool are opened read-only, except for one writeable instance.
+        (Since SQLite allows concurrent readers but only a single writer, this ensures that no two
+        borrowed databases will block each other.) Therefore, if there is a possibility you need
+        to write to the database, you must call `borrowWriteable` or else you'll get database-
+        locked errors. (The writeable database is _only_ checked out by borrowWriteable, to improve
+        availability.)
+
+        If you try to borrow but all matching databases are checked out, the method blocks until
+        one is returned; but after waiting ten seconds it will throw a `Busy` exception.
+        If you don't want to block, call one of the `tryBorrow` methods, which return an empty/null
+        `BorrowedDatabase` instead of blocking.
+
+        @warning Watch out for nested borrows! If you borrow a database, then call another function
+        that also borrows from the same pool, you've now borrowed two instances, which is wasteful.
+        If you borrow the _writeable_ database twice, the second/nested call will deadlock until
+        it times out and throws a `Busy` exception. */
+
     class DatabasePool : public fleece::RefCounted {
       public:
+        /// Constructs a pool that will manage multiple instances of the given database file.
+        /// If the `kC4DB_ReadOnly` flag is set, no writeable instances will be provided.
+        /// @note  This method does not attempt to open a database. If the database can't be opened,
+        ///         you won't get an exception until you try to borrow it.
         explicit DatabasePool(fleece::slice name, C4DatabaseConfig2 const&);
 
-        /// Constructs a pool that will manage multiple instances of the given database.
-        /// This database is now owned by the pool and shouldn't be used directly.
-        /// If this database is opened read-only, then no writeable instances will be provided.
+        /// Constructs a pool that will manage multiple instances of the given database file.
+        /// If this database was opened read-only, then no writeable instances will be provided.
+        /// @warning  The C4Database is now owned by the pool and shouldn't be used directly.
         explicit DatabasePool(C4Database*);
 
-        /// The destructor waits until all borrowed databases have been returned.
-        ~DatabasePool();
+        /// Closes all databases, waiting until all borrowed ones have been returned.
+        /// No more databases can be borrowed after this method begins.
+        void close();
+
+        /// Closes all databases the pool has opened that aren't currently in use.
+        /// (The pool can still re-open more databases on demand, up to its capacity.)
+        void closeUnused();
+
+        /// The database configuration.
+        C4DatabaseConfig2 const& getConfiguration() const { return _dbConfig; }
 
         /// The filesystem path of the database.
         FilePath databasePath() const;
 
-        /// The maximum number of databases the pool will create, including one writeable one.
-        /// Defaults to 5. Minimum value is 2 (otherwise why are you using a pool at all?)
+        /// True if it's possible to get a writeable database.
+        bool writeable() const noexcept { return _readWrite.capacity > 0; }
+
+        /// The maximum number of databases the pool will create.
+        /// Defaults to 5, or 4 if not writeable.
         unsigned capacity() const noexcept;
 
-        /// Sets the maximum number of databases the pool will create, including one writeable one.
-        /// The default is 6. Minimum value is 2 (otherwise why are you using a pool at all?)
+        /// Sets the maximum number of databases the pool will create, including any writeable one.
+        /// Minimum value is 2 (otherwise why are you using a pool at all?)
         void setCapacity(unsigned capacity);
-
-        /// True if it's possible to get a writeable database.
-        bool writeable() const noexcept { return _rwTotal > 0; }
 
         /// True if this pool manages the same file as this database.
         bool sameAs(C4Database* db) const noexcept;
 
-        /// Registers a function that will be called just after a `C4Database` is opened,
-        /// and can make connection-level changes.
-        /// If `callNow` is true, the function will be called on the already-open databases
-        /// (except for ones currently borrowed.)
-        void onOpen(std::function<void(C4Database*)>, bool callNow = true) noexcept;
+        /// Registers a function that will be called just after a new `C4Database` is opened.
+        /// Or if `nullptr` is passed, it clears any already-set function.
+        /// The function may make connection-level changes.
+        /// If `callNow` is true, the function will be immediately be called on the databases
+        /// already in the pool, _except_ for ones currently borrowed.
+        void onOpen(std::function<void(C4Database*)>, bool callNow = true);
 
         /// The number of databases open, both borrowed and available.
         unsigned openCount() const noexcept;
@@ -65,127 +100,131 @@ namespace litecore {
         /// The number of databases currently borrowed. Ranges from 0 up to `capacity`.
         unsigned borrowedCount() const noexcept;
 
-        /// Returns a `Retained` to a **read-only** database a client can use.
+        /// Returns a smart-pointer to a **read-only** C4Database a client can use.
         /// When the `BorrowedDatabase` goes out of scope, the database is returned to the pool.
+        /// You must not use the C4Database reference after that!
         /// @note  If all read-only databases are checked out, waits until one is returned.
+        /// @throws litecore::error `NotOpen` if `close` has been called.
+        /// @throws litecore::error `Timeout` after waiting ten seonds.
         BorrowedDatabase borrow();
 
         /// Same as `borrow`, except returns an empty `BorrowedDatabase` instead of waiting.
+        /// You must check the returned object to see if the C4Database it's holding is `nullptr`.
         BorrowedDatabase tryBorrow();
 
-        /// Returns a `Retained` to a **writeable** database a client can use.
-        /// There is only one of these per pool, since LiteCore only supports one writer at a time.
-        /// When the `BorrowedDatabase` goes out of scope, the database is returned to
-        /// the pool.
+        /// Returns a smart-pointer to a **writeable** database a client can use.
+        /// (There is only one of these per pool, since LiteCore only supports one writer at a time.)
+        /// When the `BorrowedDatabase` goes out of scope, the database is returned to the pool.
+        /// You must not use the C4Database reference after that!
         /// @note  If the writeable database is checcked out, waits until it's returned.
-        /// @throws NotWriteable if there is no writeable database.
+        /// @throws litecore::error `NotWriteable` if `writeable()` is false.
+        /// @throws litecore::error `NotOpen` if `close` has been called.
+        /// @throws litecore::error `Timeout` after waiting ten seonds.
         BorrowedDatabase borrowWriteable();
 
         /// Same as `borrowWriteable`, except returns an empty `BorrowedDatabase` instead of waiting.
-        /// @throws NotWriteable if there is no writeable database.
+        /// You must check the returned object to see if the C4Database it's holding is `nullptr`.
+        /// @throws litecore::error `NotWriteable` if `writeable()` is false.
+        /// @throws litecore::error `NotOpen` if `close` has been called.
         BorrowedDatabase tryBorrowWriteable();
 
-        /// Blocks until all borrowed databases have been returned, then closes them.
-        /// (The destructor also does this.)
-        void closeAll();
-
-        /// Closes all databases the pool has opened that aren't currently in use.
-        /// (The pool can still re-open more databases on demand, up to its capacity.)
-        void closeUnused();
+      protected:
+        ~DatabasePool() override;
 
       private:
         friend class BorrowedDatabase;
 
-        DatabasePool(DatabasePool&&)            = delete;
-        DatabasePool& operator=(DatabasePool&&) = delete;
-        unsigned      _borrowed_count() const;
+        /** A cache of available db instances, either read-only or read-write. */
+        struct Cache {
+            C4DatabaseFlags const                     flags;         // Flags for opening dbs
+            unsigned                                  capacity = 0;  /// Total capacity including borrowed dbs
+            unsigned                                  created  = 0;  /// Number of instantiated dbs including borrowed
+            std::vector<fleece::Retained<C4Database>> available;     /// Available dbs
 
-        unsigned _open_count() const { return _roTotal + _rwTotal; }
+            unsigned borrowedCount() const { return unsigned(created - available.size()); }
 
-        BorrowedDatabase             borrow(bool);
-        BorrowedDatabase             borrowWriteable(bool);
-        fleece::Retained<C4Database> newDB();
-        void                         returnDatabase(C4Database*);
-        void                         _closeUnused();
+            fleece::Retained<C4Database> pop();
+            void                         closeUnused();
+        };
 
-        std::string const                         _dbName;          // Name of database
-        C4DatabaseConfig2                         _dbConfig;        // Database config
-        fleece::alloc_slice                       _dbDir;           // Directory of database
-        mutable std::mutex                        _mutex;           // Magic thread-safety voodoo
-        mutable std::condition_variable           _cond;            // Magic thread-safety voodoo
-        std::function<void(C4Database*)>          _initializer;     // Init fn called on each new database
-        unsigned                                  _roCapacity = 5;  // Current capacity (of read-only dbs)
-        unsigned                                  _roTotal    = 0;  // Number of read-only DBs I created
-        unsigned                                  _rwCapacity = 1;  // Current capacity (of read-write dbs)
-        unsigned                                  _rwTotal    = 0;  // Number of read-write DBs I created (0, 1)
-        std::vector<fleece::Retained<C4Database>> _readonly;        // Stack of available RO DBs
-        fleece::Retained<C4Database>              _readwrite;       // The available RW DB, or null
+        DatabasePool(DatabasePool&&)                           = delete;
+        DatabasePool&                operator=(DatabasePool&&) = delete;
+        BorrowedDatabase             borrow(Cache& cache, bool orWait);
+        fleece::Retained<C4Database> newDB(Cache&);
+        void                         returnDatabase(fleece::Retained<C4Database>);
+        void                         _closeAll(Cache&);
+
+        std::string const                _dbName;          // Name of database
+        C4DatabaseConfig2                _dbConfig;        // Database config
+        fleece::alloc_slice              _dbDir;           // Parent directory of database
+        mutable std::mutex               _mutex;           // Thread-safety
+        mutable std::condition_variable  _cond;            // Used for waiting for a db
+        std::function<void(C4Database*)> _initializer;     // Init fn called on each new database
+        Cache                            _readOnly;        // Manages read-only databases
+        Cache                            _readWrite;       // Manages writeable databases
+        int                              _dbTag  = -1;     // C4DatabaseTag
+        bool                             _closed = false;  // Set by `close`
     };
 
     /** A wrapper around a C4Database "borrowed" from a DatabasePool.
         When it exits scope, the database is returned to the pool. */
     class BorrowedDatabase {
       public:
+        /// Constructs an empty BorrowedDatabase.
         BorrowedDatabase() : _pool(nullptr) {}
 
-        BorrowedDatabase(BorrowedDatabase&& b) noexcept : _db(b._db), _pool(b._pool) { b._db = nullptr; }
+        BorrowedDatabase(BorrowedDatabase&& b) noexcept : _db(std::move(b._db)), _pool(std::move(b._pool)) {}
 
         BorrowedDatabase& operator=(BorrowedDatabase&& b) noexcept;
 
         ~BorrowedDatabase() {
-            if ( _db ) _pool->returnDatabase(_db);
+            if ( _db ) _pool->returnDatabase(std::move(_db));
         }
 
+        /// Checks whether I am non-empty.
         explicit operator bool() const noexcept { return _db != nullptr; }
 
-        C4Database* get() & noexcept LIFETIMEBOUND { return _db; }
+        C4Database* get() & noexcept LIFETIMEBOUND {
+            DebugAssert(_db);
+            return _db;
+        }
 
-        C4Database* operator->() noexcept LIFETIMEBOUND { return _db; }
+        C4Database* operator->() noexcept LIFETIMEBOUND { return get(); }
 
-        operator C4Database* C4NULLABLE () & noexcept LIFETIMEBOUND { return _db; }
+        operator C4Database* C4NONNULL() & noexcept LIFETIMEBOUND { return get(); }
 
-        /// Returns the database to the pool.
+        /// Returns the database to the pool, leaving me empty.
         void reset();
 
       protected:
         friend class DatabasePool;
 
-        BorrowedDatabase(C4Database* C4NULLABLE db, DatabasePool& pool) : _db(db), _pool(&pool) {}
+        BorrowedDatabase(fleece::Retained<C4Database> db, DatabasePool* pool) : _db(std::move(db)), _pool(pool) {}
 
       private:
-        fleece::Retained<C4Database> _db;
-        DatabasePool* C4NULLABLE     _pool;
-    };
-
-    class BorrowedCollection {
-    public:
-        BorrowedCollection(BorrowedDatabase&& db, C4CollectionSpec const& spec)
-        :_bdb(std::move(db)), _collection(_bdb->getCollection(spec)) { }
-
-        C4Collection* get() & noexcept LIFETIMEBOUND { return _collection; }
-
-        C4Collection* operator->() noexcept LIFETIMEBOUND { return _collection; }
-
-        operator C4Collection* C4NONNULL () & noexcept LIFETIMEBOUND { return _collection; }
-
-    private:
-        BorrowedDatabase _bdb;
-        C4Collection* _collection;
-    };
-
-    class CollectionPool {
-    public:
-        CollectionPool(DatabasePool* pool, C4CollectionSpec const& spec)
-        :_pool(pool), _scope(spec.scope), _name(spec.name) {}
-
-        C4CollectionSpec spec() const {return {.name = _name, .scope = _scope};}
-
-        BorrowedCollection borrow() {return {_pool->borrow(), spec()};}
-        BorrowedCollection borrowWriteable() {return {_pool->borrowWriteable(), spec()};}
-
-    private:
+        fleece::Retained<C4Database>   _db;
         fleece::Retained<DatabasePool> _pool;
-        fleece::alloc_slice _scope, _name;
+    };
+
+    /** A wrapper around a `C4Collection` on a database "borrowed" from a `DatabasePool`.
+        When it exits scope, its database is returned to the pool. */
+    class BorrowedCollection {
+      public:
+        BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec)
+            : _bdb(std::move(bdb)), _collection(_bdb ? _bdb->getCollection(spec) : nullptr) {}
+
+        C4Collection* get() & noexcept LIFETIMEBOUND {
+            DebugAssert(_collection);
+            return _collection;
+        }
+
+        C4Collection* operator->() noexcept LIFETIMEBOUND { return get(); }
+
+        operator C4Collection* C4NONNULL() & noexcept LIFETIMEBOUND { return get(); }
+
+      private:
+        BorrowedDatabase _bdb;
+        C4Collection*    _collection;
     };
 
 }  // namespace litecore

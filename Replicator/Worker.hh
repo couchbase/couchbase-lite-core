@@ -88,6 +88,7 @@ namespace litecore::repl {
             DebugAssert(_collectionIndex != kNotCollectionIndex);
             return _collectionSpec;
         }
+
         CollectionIndex collectionIndex() const { return _collectionIndex; }
 
         /// My current status.
@@ -253,7 +254,7 @@ namespace litecore::repl {
         int                                    _pendingResponseCount{0};  // # of responses I'm awaiting
         Status                                 _status{kC4Idle};          // My status
         bool                                   _statusChanged{false};     // Status changed during this event
-        C4CollectionSpec const _collectionSpec;
+        C4CollectionSpec const                 _collectionSpec;
         const CollectionIndex                  _collectionIndex;
         static std::unordered_set<std::string> _formatCache;  // Store collection format strings for LogEncoders benefit
         static std::shared_mutex               _formatMutex;  // Ensure thread-safety for cache insert

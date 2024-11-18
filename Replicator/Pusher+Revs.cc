@@ -51,8 +51,8 @@ namespace litecore::repl {
         C4Error              c4err = {};
         Dict                 root;
         slice                replacementRevID = nullslice;
-        auto coll = _db->useCollection(collectionSpec());
-        Retained<C4Document> doc = coll->getDocument(request->docID, true, kDocGetAll);
+        auto                 coll             = _db->useCollection(collectionSpec());
+        Retained<C4Document> doc              = coll->getDocument(request->docID, true, kDocGetAll);
         if ( doc ) {
             if ( doc->selectRevision(request->revID, true) ) root = doc->getProperties();
             if ( root ) request->flags = doc->selectedRev().flags;

@@ -372,8 +372,7 @@ namespace litecore::repl {
     // Calls the custom pull validator if available.
     bool IncomingRev::performPullValidation(Dict body) {
         if ( _options->pullFilter(collectionIndex()) ) {
-            if ( !_options->pullFilter(collectionIndex())(collectionSpec(), _rev->docID, _rev->revID,
-                                                          _rev->flags, body,
+            if ( !_options->pullFilter(collectionIndex())(collectionSpec(), _rev->docID, _rev->revID, _rev->flags, body,
                                                           _options->collectionCallbackContext(collectionIndex())) ) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 return false;

@@ -472,8 +472,8 @@ namespace litecore::repl {
             // See if the doc is unchanged, by getting it by sequence:
             Retained<RevToSend> rev = i->second;
             _conflictsIMightRetry.erase(i);
-            auto coll = _db->useCollection(collectionSpec());
-            Retained<C4Document> doc        = coll->getDocumentBySequence(rev->sequence);
+            auto                 coll = _db->useCollection(collectionSpec());
+            Retained<C4Document> doc  = coll->getDocumentBySequence(rev->sequence);
             if ( !doc || !C4Document::equalRevIDs(doc->revID(), rev->revID) ) {
                 // Local document has changed, so stop working on this revision:
                 logVerbose("Notified that remote rev of '%.*s' of '%.*s.%.*s' is now #%.*s, "

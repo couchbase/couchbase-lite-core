@@ -36,8 +36,8 @@ namespace litecore::repl {
         C4SliceResult applyDeltaCallback(C4Document* doc NONNULL, C4Slice deltaJSON, C4RevisionFlags* revFlags,
                                          C4Error* outError);
 
-        actor::ActorBatcher<Inserter, RevToInsert> _revsToInsert;  // Pending revs to be added to db
-        C4Collection* _callbackCollection {}; // A kludge used by the delta callback
+        actor::ActorBatcher<Inserter, RevToInsert> _revsToInsert;          // Pending revs to be added to db
+        C4Collection*                              _callbackCollection{};  // A kludge used by the delta callback
     };
 
 }  // namespace litecore::repl

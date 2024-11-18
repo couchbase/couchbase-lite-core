@@ -177,7 +177,7 @@ namespace litecore::repl {
 
         Logging*                        _logger{};
         RetainedConst<Options>          _options;
-        C4CollectionSpec _collectionSpec;
+        C4CollectionSpec                _collectionSpec;
         alloc_slice const               _remoteURL;
         std::unordered_set<std::string> _docIDs;
 

@@ -12,6 +12,7 @@
 
 #include "DBAccess.hh"
 #include "DatabaseImpl.hh"
+#include "DatabasePool.hh"
 #include "ReplicatedRev.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
@@ -30,41 +31,43 @@ namespace litecore::repl {
     using namespace std;
     using namespace fleece;
 
-    DBAccess::DBAccess(C4Database* db, bool disableBlobSupport)
+    DBAccess::DBAccess(DatabasePool* pool, bool disableBlobSupport)
         : Logging(SyncLog)
-    , _pool(db)
-    , _blobStore(&db->getBlobStore())
+        , _pool(pool)
         , _disableBlobSupport(disableBlobSupport)
-        , _revsToMarkSynced([this](int){markRevsSyncedNow();}, bind(&DBAccess::markRevsSyncedLater, this),
+        , _revsToMarkSynced([this](int) { markRevsSyncedNow(); }, bind(&DBAccess::markRevsSyncedLater, this),
                             tuning::kInsertionDelay)
         , _timer([this] { markRevsSyncedNow(); })
-        , _usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0) {}
+        , _usingVersionVectors((pool->getConfiguration().flags & kC4DB_VersionVectors) != 0) {
+        BorrowedDatabase bdb = _pool->borrowWriteable();
+        if ( _usingVersionVectors ) _mySourceID = string(bdb->getSourceID());
+        // The BlobStore is thread-safe, so it can be used later without needing to borrow a db.
+        _blobStore = &bdb->getBlobStore();
+    }
+
+    DBAccess::DBAccess(C4Database* db, bool disableBlobSupport) : DBAccess(new DatabasePool(db), disableBlobSupport) {
+        _ownsPool = true;
+        _pool->setCapacity(2);
+    }
 
     DBAccess::~DBAccess() { close(); }
 
     void DBAccess::close() {
         if ( _closed.test_and_set() ) { return; }
-        _pool.closeAll();
         _timer.stop();
+        if ( _ownsPool ) _pool->close();
     }
 
     string DBAccess::convertVersionToAbsolute(slice revID) {
         string version(revID);
-        if ( _usingVersionVectors ) {
-            if ( _mySourceID.empty() ) {
-                useLocked([&](C4Database* c4db) {
-                    if ( _mySourceID.empty() ) _mySourceID = string(c4db->getSourceID());
-                });
-            }
-            replace(version, "*", _mySourceID);
-        }
+        if ( _usingVersionVectors ) replace(version, "*", _mySourceID);
         return version;
     }
 
     C4RemoteID DBAccess::lookUpRemoteDBID(slice key) {
         Assert(_remoteDBID == 0);
         // (Needs useWriteable because getRemoteDBID may write to the database)
-        auto db = useWriteable();
+        auto db     = useWriteable();
         _remoteDBID = db->getRemoteDBID(key, true);
         return _remoteDBID;
     }
@@ -85,7 +88,7 @@ namespace litecore::repl {
         logInfo("Updating remote #%u's rev of '%.*s' to %.*s of collection %.*s.%.*s", _remoteDBID, SPLAT(docID),
                 SPLAT(revID), SPLAT(spec.scope), SPLAT(spec.name));
         try {
-            BorrowedCollection coll(useWriteable(), spec);
+            BorrowedCollection      coll(useWriteable(), spec);
             C4Database::Transaction t(coll->getDatabase());
             Retained<C4Document>    doc = coll->getDocument(docID, true, kDocGetAll);
             if ( !doc ) error::_throw(error::NotFound);
@@ -235,8 +238,8 @@ namespace litecore::repl {
     }
 
     SharedKeys DBAccess::updateTempSharedKeys() {
-        SharedKeys result;
-        auto idb = _pool.borrow();
+        SharedKeys        result;
+        auto              idb  = _pool->borrow();
         SharedKeys        dbsk = idb->getFleeceSharedKeys();
         lock_guard<mutex> lock(_tempSharedKeysMutex);
         if ( !_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count() ) {
@@ -395,10 +398,10 @@ namespace litecore::repl {
                 C4CollectionSpec coll       = rev->collectionSpec;
                 C4Collection*    collection = db->getCollection(coll);
                 if ( collection == nullptr ) {
-                    C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen, "%s",
-                                   stringprintf("Failed to find collection '%*s.%*s'.", SPLAT(coll.scope),
-                                                SPLAT(coll.name))
-                                           .c_str());
+                    C4Error::raise(
+                            LiteCoreDomain, kC4ErrorNotOpen, "%s",
+                            stringprintf("Failed to find collection '%*s.%*s'.", SPLAT(coll.scope), SPLAT(coll.name))
+                                    .c_str());
                 }
                 logDebug("Marking rev '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
                          SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),

@@ -96,8 +96,7 @@ namespace litecore::repl {
         , _connection(connection)
         , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
         , _collectionSpec(coll != kNotCollectionIndex ? replicator()->collectionSpec(coll) : C4CollectionSpec{})
-        , _collectionIndex(coll)
-    {
+        , _collectionIndex(coll) {
         static std::once_flag f_once;
         std::call_once(f_once, [] {
             // Reserve in the format-string cache greater than the number of unique collection log strings, so

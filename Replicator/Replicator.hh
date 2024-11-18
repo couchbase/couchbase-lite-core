@@ -214,7 +214,8 @@ namespace litecore::repl {
             alloc_slice              checkpointJSONToSave;              // JSON waiting to be saved to the checkpts
             alloc_slice              remoteCheckpointDocID;             // Checkpoint docID to use with peer
             alloc_slice              remoteCheckpointRevID;             // Latest revID of remote checkpoint
-            C4CollectionSpec         collectionSpec;
+            C4CollectionSpec         collectionSpec;                    // Collection being replicated
+            alloc_slice              collectionName, collectionScope;
         };
 
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
