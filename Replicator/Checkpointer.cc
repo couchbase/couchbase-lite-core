@@ -328,9 +328,9 @@ namespace litecore::repl {
         }
 
         read(db, false);
-        C4Collection* collection = db->getCollection(_collectionSpec);
-        const auto dbLastSequence   = collection->getLastSequence();
-        const auto replLastSequence = this->localMinSequence();
+        C4Collection* collection       = db->getCollection(_collectionSpec);
+        const auto    dbLastSequence   = collection->getLastSequence();
+        const auto    replLastSequence = this->localMinSequence();
         if ( replLastSequence >= dbLastSequence ) {
             // No changes since the last checkpoint
             return;
@@ -379,8 +379,8 @@ namespace litecore::repl {
         }
 
         read(db, false);
-        C4Collection* collection = db->getCollection(_collectionSpec);
-        Retained<C4Document> doc = collection->getDocument(docId, false, kDocGetCurrentRev);
+        C4Collection*        collection = db->getCollection(_collectionSpec);
+        Retained<C4Document> doc        = collection->getDocument(docId, false, kDocGetCurrentRev);
         return doc && !_checkpoint->isSequenceCompleted(doc->sequence()) && isDocumentAllowed(doc);
     }
 

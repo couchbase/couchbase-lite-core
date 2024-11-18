@@ -213,9 +213,10 @@ namespace litecore::repl {
                 // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
                 // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
                 // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
-                auto mode     = (deletion < 4) ? RevocationMode::kRevokedAccess : RevocationMode::kRemovedFromChannel;
-                logInfo("SG revoked access to rev \"%.*s.%.*s.%.*s/%.*s\" with deletion %lld", SPLAT(collectionSpec().scope),
-                        SPLAT(collectionSpec().name), SPLAT(docID), SPLAT(revID), deletion);
+                auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess : RevocationMode::kRemovedFromChannel;
+                logInfo("SG revoked access to rev \"%.*s.%.*s.%.*s/%.*s\" with deletion %lld",
+                        SPLAT(collectionSpec().scope), SPLAT(collectionSpec().name), SPLAT(docID), SPLAT(revID),
+                        deletion);
                 revoked.emplace_back(new RevToInsert(docID, revID, mode, collectionSpec(),
                                                      _options->collectionCallbackContext(collectionIndex())));
                 sequences.push_back({RemoteSequence(change[0]), 0});
@@ -229,7 +230,7 @@ namespace litecore::repl {
         }
 
         // Ask the database to look up the ancestors:
-        vector<alloc_slice> ancestors  = _db->useCollection(collectionSpec())
+        vector<alloc_slice> ancestors = _db->useCollection(collectionSpec())
                                                 ->findDocAncestors(docIDs, revIDs, kMaxPossibleAncestors,
                                                                    !_options->disableDeltaSupport(),  // requireBodies
                                                                    _db->remoteDBID());

@@ -130,6 +130,8 @@ namespace litecore {
 
     DataFile::DataFile(const FilePath& path, Delegate* delegate, const DataFile::Options* options)
         : Logging(DBLog), _delegate(delegate), _path(path), _options(options ? *options : Options::defaults) {
+        if ( _options.create && !_options.writeable )  // SQLite will complain
+            error::_throw(error::InvalidParameter, "invalid database flags: create and read-only");
         // Do this last so I'm fully constructed before other threads can see me (#425)
         _shared = Shared::forPath(path, this);
     }

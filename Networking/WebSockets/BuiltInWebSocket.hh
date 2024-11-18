@@ -14,7 +14,6 @@
 #include "WebSocketImpl.hh"
 #include "TCPSocket.hh"
 #include "HTTPLogic.hh"
-#include "DBAccess.hh"
 #include <atomic>
 #include <exception>
 #include <memory>
@@ -33,7 +32,9 @@ void C4RegisterBuiltInWebSocket();
 namespace litecore::crypto {
     struct Identity;
 }
-
+namespace litecore::repl {
+    class DBAccess;
+}
 namespace litecore::websocket {
 
     /** WebSocket implementation using TCPSocket. */

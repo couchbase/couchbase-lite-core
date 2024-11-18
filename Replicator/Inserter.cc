@@ -47,7 +47,7 @@ namespace litecore::repl {
         C4Error transactionErr = {};
         try {
             DBAccess::Transaction transaction(*_db);
-            C4Collection* collection = transaction.db()->getCollection(collectionSpec());
+            C4Collection*         collection = transaction.db()->getCollection(collectionSpec());
             // Before updating docs, write all pending changes to remote ancestors, in case any
             // of them apply to the docs we're updating:
             _db->markRevsSyncedNow(transaction.db());
@@ -134,7 +134,7 @@ namespace litecore::repl {
                             return {};
                         }
                     };
-                    put.deltaCBContext = this;
+                    put.deltaCBContext  = this;
                     _callbackCollection = collection;
                 } else {
                     // If not a delta, encode doc body using database's real sharedKeys:
@@ -169,7 +169,7 @@ namespace litecore::repl {
     // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
     C4SliceResult Inserter::applyDeltaCallback(C4Document* c4doc, C4Slice deltaJSON, C4RevisionFlags* revFlags,
                                                C4Error* outError) {
-        C4Database* db = _callbackCollection->getDatabase();
+        C4Database*  db          = _callbackCollection->getDatabase();
         Doc          doc         = _db->applyDelta(c4doc, deltaJSON, db);
         alloc_slice  body        = doc.allocedData();
         Dict         root        = doc.root().asDict();
