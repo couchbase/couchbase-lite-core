@@ -16,7 +16,6 @@
 #include "c4Private.h"
 #include "c4ReplicatorImpl.hh"
 
-
 namespace litecore {
     using namespace litecore::websocket;
 
@@ -35,10 +34,8 @@ namespace litecore {
 
         void createReplicator() override {
             Assert(_openSocket);
-
-            auto dbOpenedAgain = _database->openAgain();
-            _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4IncomingReplicator);
-            _replicator = new Replicator(dbOpenedAgain.get(), _openSocket, *this, _options);
+            _replicator = new Replicator(makeDBAccess(_database, DatabaseTag_C4IncomingReplicator), _openSocket, *this,
+                                         _options);
 
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to

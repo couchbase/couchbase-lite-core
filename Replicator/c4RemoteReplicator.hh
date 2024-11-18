@@ -111,10 +111,15 @@ namespace litecore {
         alloc_slice URL() const noexcept override { return _url; }
 
         void createReplicator() override {
-            auto dbOpenedAgain = _database->openAgain();
-            _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
-            auto dbAccess =
-                    make_shared<DBAccess>(dbOpenedAgain, _options->properties["disable_blob_support"_sl].asBool());
+            bool                      disableBlobs = _options->properties["disable_blob_support"_sl].asBool();
+            std::shared_ptr<DBAccess> dbAccess;
+            if ( _database.index() == 0 ) {
+                auto dbOpenedAgain = std::get<0>(_database)->openAgain();
+                _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
+                dbAccess = make_shared<DBAccess>(dbOpenedAgain, disableBlobs);
+            } else {
+                dbAccess = std::make_shared<DBAccess>(std::get<1>(_database), disableBlobs);
+            }
             auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
             _replicator    = new Replicator(dbAccess, webSocket, *this, _options);
 

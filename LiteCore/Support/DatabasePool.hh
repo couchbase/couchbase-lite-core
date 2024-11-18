@@ -167,31 +167,40 @@ namespace litecore {
     };
 
     /** A wrapper around a C4Database "borrowed" from a DatabasePool.
-        When it exits scope, the database is returned to the pool. */
+        When it exits scope, the database is returned to the pool.
+        @note A `BorrowedDatabase`s lifetime should be kept short, and it should never
+              be used or modified on multiple threads. */
     class BorrowedDatabase {
       public:
-        /// Constructs an empty BorrowedDatabase.
+        /// Constructs an empty BorrowedDatabase. (Use `operator bool` to test for emptiness.)
         BorrowedDatabase() : _pool(nullptr) {}
+
+        /// Borrows a (read-only) database from a pool. Equivalent to calling `pool.borrow()`.
+        explicit BorrowedDatabase(DatabasePool* pool) : BorrowedDatabase(pool->borrow()) {}
+
+        /// "Borrows" a database without a pool -- simply retains the db and acts as a smart pointer
+        /// to it. This allows you to use `BorrowedDatabase` with or without a `DatabasePool`.
+        explicit BorrowedDatabase(C4Database* db) : _db(db) {}
 
         BorrowedDatabase(BorrowedDatabase&& b) noexcept : _db(std::move(b._db)), _pool(std::move(b._pool)) {}
 
         BorrowedDatabase& operator=(BorrowedDatabase&& b) noexcept;
 
-        ~BorrowedDatabase() {
-            if ( _db ) _pool->returnDatabase(std::move(_db));
-        }
+        ~BorrowedDatabase() { _return(); }
 
         /// Checks whether I am non-empty.
+        /// @note It's illegal to dereference an empty instance. But the only way to create such
+        ///       an instance is by `tryBorrow` or BorrowedDatabase's default constructor.
         explicit operator bool() const noexcept { return _db != nullptr; }
 
-        C4Database* get() & noexcept LIFETIMEBOUND {
+        C4Database* get() noexcept LIFETIMEBOUND {
             DebugAssert(_db);
             return _db;
         }
 
         C4Database* operator->() noexcept LIFETIMEBOUND { return get(); }
 
-        operator C4Database* C4NONNULL() & noexcept LIFETIMEBOUND { return get(); }
+        operator C4Database* C4NONNULL() noexcept LIFETIMEBOUND { return get(); }
 
         /// Returns the database to the pool, leaving me empty.
         void reset();
@@ -199,9 +208,12 @@ namespace litecore {
       protected:
         friend class DatabasePool;
 
+        // used by DatabasePool::borrow methods
         BorrowedDatabase(fleece::Retained<C4Database> db, DatabasePool* pool) : _db(std::move(db)), _pool(pool) {}
 
       private:
+        void _return();
+
         fleece::Retained<C4Database>   _db;
         fleece::Retained<DatabasePool> _pool;
     };
