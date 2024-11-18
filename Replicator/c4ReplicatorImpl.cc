@@ -182,6 +182,7 @@ namespace litecore {
         if ( _options->setProgressLevel(level) ) { logVerbose("Set progress notification level to %d", level); }
     }
 
+#ifdef COUCHBASE_ENTERPRISE
     C4Cert* C4ReplicatorImpl::getPeerTLSCertificate() const {
         LOCK(_mutex);
         if ( !_peerTLSCertificate && _peerTLSCertificateData ) {
@@ -190,6 +191,7 @@ namespace litecore {
         }
         return _peerTLSCertificate;
     }
+#endif
 
     BorrowedDatabase C4ReplicatorImpl::borrow(DatabaseOrPool const& dbp) {
         return std::visit([](auto d) { return BorrowedDatabase(d); }, dbp);
