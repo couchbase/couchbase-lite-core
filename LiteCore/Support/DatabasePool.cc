@@ -191,17 +191,20 @@ namespace litecore {
     }
 
     BorrowedDatabase& BorrowedDatabase::operator=(BorrowedDatabase&& b) noexcept {
-        std::swap(_pool, b._pool);
-        std::swap(_db, b._db);
+        _return();
+        _db   = std::move(b._db);
+        _pool = std::move(b._pool);
         return *this;
     }
 
     void BorrowedDatabase::reset() {
-        if ( _db ) {
-            _pool->returnDatabase(std::move(_db));
-            _db = nullptr;
-        }
+        _return();
+        _db   = nullptr;
         _pool = nullptr;
+    }
+
+    void BorrowedDatabase::_return() {
+        if ( _db && _pool ) _pool->returnDatabase(std::move(_db));
     }
 
 
