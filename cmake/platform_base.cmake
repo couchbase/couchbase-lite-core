@@ -100,6 +100,7 @@ function(set_litecore_source_base)
         vendor/vector_search/VectorIndexSpec.cc
         Replicator/c4Replicator.cc
         Replicator/c4Replicator_CAPI.cc
+        Replicator/c4ReplicatorImpl.cc
         Replicator/c4Socket.cc
         Replicator/ChangesFeed.cc
         Replicator/Checkpoint.cc

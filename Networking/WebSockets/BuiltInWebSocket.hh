@@ -32,9 +32,11 @@ void C4RegisterBuiltInWebSocket();
 namespace litecore::crypto {
     struct Identity;
 }
+
 namespace litecore::repl {
     class DBAccess;
 }
+
 namespace litecore::websocket {
 
     /** WebSocket implementation using TCPSocket. */
