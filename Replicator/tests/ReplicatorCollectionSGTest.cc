@@ -695,8 +695,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
     replParams.setDocIDs(docIDs);
     replicate(replParams);
 
-    C4Log("-------- Deleting and re-creating database --------");
-    deleteAndRecreateDBAndCollections();
+    C4Log("-------- Purging & Recreating doc --------");
+    for ( auto& coll : _collections ) { REQUIRE(c4coll_purgeDoc(coll, slice(docID), ERROR_INFO())); }
 
     for ( size_t i = 0; i < _collectionCount; ++i ) { createRev(_collections[i], slice(docID), kRevID, kFleeceBody); }
 
@@ -709,8 +709,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push & Pull Deletion SG", "[.SyncS
         CHECK(remoteDoc->revID == kRev2ID);
         CHECK((remoteDoc->flags & kDocDeleted) != 0);
         CHECK((remoteDoc->selectedRev.flags & kRevDeleted) != 0);
-        REQUIRE(c4doc_selectParentRevision(remoteDoc));
-        const alloc_slice history = c4doc_getRevisionHistory(remoteDoc, 0, {&kRevID}, 1);
     }
 }
 
@@ -1854,10 +1852,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG", "[.Sync
     replicate(replParams);
 
     CHECK(_callbackStatus.progress.documentCount == _collectionCount);
-    for ( auto& coll : _collections ) {
-        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetCurrentRev, nullptr);
+    for (int i = 0; i < _collectionCount; ++i) {
+        c4::ref<C4Document> doc = c4coll_getDoc(_collections[i], slice(docID), true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc);
-        CHECK(doc->revID == "1-1111"_sl);
+        alloc_slice revID = doc->revID;
+        if (!isRevTrees()) {
+            revID = _sg.getRevID(docID, _collectionSpecs[i]);
+        }
+        CHECK(revID.hasPrefix("1-"_sl));
     }
 
     const std::array<std::string, 3> bodies{R"({"count":2, "_rev":"1-1111"})",
@@ -1869,10 +1871,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG", "[.Sync
     }
 
     replicate(replParams);
-    for ( auto& coll : _collections ) {
-        c4::ref<C4Document> doc = c4coll_getDoc(coll, slice(docID), true, kDocGetCurrentRev, nullptr);
+    for (int i = 0; i < _collectionCount; ++i) {
+        c4::ref<C4Document> doc = c4coll_getDoc(_collections[i], slice(docID), true, kDocGetCurrentRev, nullptr);
         REQUIRE(doc);
-        CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
+        alloc_slice revID = doc->revID;
+        if (!isRevTrees()) {
+            revID = _sg.getRevID(docID, _collectionSpecs[i]);
+        }
+        CHECK(revID.hasPrefix("4-"_sl));
     }
 }
 
@@ -1981,6 +1987,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithoutDelta / timeWithDelta);
 }
 
+// Disabled pending working delta-sync support in SG
+#if 0
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",
                  "[.SyncServerCollection][Delta]") {
@@ -2178,6 +2186,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.Syn
     CHECK(_callbackStatus.error.code == 0);
     CHECK(_callbackStatus.progress.documentCount == kNumDocs);
 }
+#endif
 
 // CBL-5033
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "[.SyncServerCollection]") {

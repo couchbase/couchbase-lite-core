@@ -16,7 +16,7 @@
   "logging": {
     "console": {
       "enabled": true,
-      "log_level": "info",
+      "log_level": "debug",
       "log_keys": ["*"]
     }
   } 
