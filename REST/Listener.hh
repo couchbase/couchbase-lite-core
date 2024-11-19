@@ -62,8 +62,7 @@ namespace litecore::REST {
             Retains the C4Database; the caller does not need to keep a reference to it. */
         bool registerDatabase(C4Database* NONNULL, std::optional<std::string> name = std::nullopt);
 
-        /** Unregisters a database by name.
-            The C4Database will be closed if there are no other references to it. */
+        /** Unregisters a database by name. */
         bool unregisterDatabase(const std::string& name);
 
         bool unregisterDatabase(C4Database* db);

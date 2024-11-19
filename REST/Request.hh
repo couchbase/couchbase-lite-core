@@ -140,7 +140,7 @@ namespace litecore::REST {
 
         bool isValidWebSocketRequest();
 
-        void sendWebSocketResponse(const std::string& protocol);
+        void sendWebSocketResponse(std::string_view protocol);
 
         void onClose(std::function<void()>&& callback);
 

@@ -417,13 +417,13 @@ namespace litecore::REST {
                && header("Sec-WebSocket-Key").size >= 10;
     }
 
-    void RequestResponse::sendWebSocketResponse(const string& protocol) {
+    void RequestResponse::sendWebSocketResponse(string_view protocol) {
         string nonce(header("Sec-WebSocket-Key"));
         setStatus(HTTPStatus::Upgraded, "Upgraded");
         setHeader("Connection", "Upgrade");
         setHeader("Upgrade", "websocket");
         setHeader("Sec-WebSocket-Accept", HTTPLogic::webSocketKeyResponse(nonce).c_str());
-        if ( !protocol.empty() ) setHeader("Sec-WebSocket-Protocol", protocol.c_str());
+        if ( !protocol.empty() ) setHeader("Sec-WebSocket-Protocol", protocol);
         finish();
     }
 
