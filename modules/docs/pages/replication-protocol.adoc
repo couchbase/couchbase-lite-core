@@ -3,7 +3,7 @@
 :toclevels: 3
 
 [[couchbase-mobile-2.0-replication-protocol]]
-Couchbase Mobile 2.0 Replication Protocol
+Couchbase Mobile Replication Protocol
 -----------------------------------------
 
 Contributors: Jens Alfke, Traun Leyden, Ben Brooks, Jim Borden
@@ -12,30 +12,6 @@ Protocol version 3
 
 This document specifies the replication protocol in use by Couchbase Mobile
 2.0 and later. It supersedes the REST-based protocol inherited from CouchDB.
-
-Benefits of the new protocol are:
-
-* Faster and uses less bandwidth
-* Consumes fewer TCP ports on the server (a limited resource)
-* Opens a single TCP connection on the client instead of 4+ -- this
-prevents problems with the limited number of sockets the client HTTP
-library will open, which has led to deadlocks and performance problems
-* Cleaner error handling, because socket-level connectivity errors only
-happen on one socket instead of intermittently affecting some fraction
-of requests
-* Fully IANA compliant sparkly pony hooves (just checking to see if
-anyone is reading this)
-* Can be adapted to run over alternate transports like Bluetooth, or
-anything else we can send framed messages over
-* Less code (about 40% less in the iOS implementation)
-* Cleaner implementation, with the generic messaging layer separated
-from the replication-specific logic
-* Protocol is inherently symmetric between client/server, which means
-the two roles share a lot of common code
-* Supports “conflict-free” servers, which require clients to resolve
-conflicts before pushing changes.
-
-There is also a related https://blog.couchbase.com/data-replication-couchbase-mobile:[blog post] that is targeted towards end users.
 
 == Table of Contents
 
@@ -49,17 +25,17 @@ Contents
 1. Architecture
 ~~~~~~~~~~~~~~~
 
-The new replication protocol is built on the multiplexed
+The replication protocol is built on the multiplexed
 https://github.com/couchbaselabs/BLIP-Cocoa/blob/master/Docs/BLIP%20Protocol.md[BLIP
 messaging protocol], which itself is layered on WebSockets. The relevant
 aspects of the transport are:
 
-* Communication runs over a single socket.
-* Both client and server can send *messages*. The protocol is
+* Communication runs over a single TCP socket.
+* Both client and server can send *messages* at any time. The protocol is
 symmetrical.
 * Message delivery is reliable and ordered.
-* Messages are multiplexed -- any number can be in flight at once, and a
-large message does not block the ones behind it.
+* Messages are multiplexed -- messages over a certain length are split into frames. 
+Any number of messages can be in flight at once, and a large message does not block the ones behind it.
 * A message is similar to an HTTP request in that it contains an
 unlimited-size binary body plus a set of key/value properties.
 * An unsolicited message is called a *request*.
@@ -67,22 +43,31 @@ unlimited-size binary body plus a set of key/value properties.
 *response* message can contain either properties and a body, or an
 error.
 
-Other transport protocols could be used under the hood in some
-circumstances, for example Bluetooth, as long as the message semantics
-are preserved.
+BLIP is capable of running over other transport protocols, for example Bluetooth,
+as long as they support ordered delivery of framed binary messages.
 
 [[connecting]]
-2. Connecting
+2. Connecting and Versioning
 ~~~~~~~~~~~~~
 
 The client opens a WebSocket connection to the server at path
 `/`__dbname__`/_blipsync` (where _dbname_ is the name of the database.)
-This begins as an HTTP GET request, and goes through authentication as
+This begins as an HTTP UPGRADE request, and goes through authentication as
 usual, then upgrades to WebSocket protocol.
 
 The WebSocket sub-protocol name `BLIP_3+CBMobile_3`, sent in the
 `Sec-WebSocket-Protocol` header, is used to ensure that both client and
 server understand BLIP and the replicator protocol.
+
+* `BLIP_3` refers to the version of the BLIP messaging protocol.
+This has been quite stable over time.
+* `CBMobile_3` refers to the major version of the replication protocol.
+This increments when there are incompatible changes to the protocol,
+and generally matches the major version of Couchbase Mobile itself.
+* Smaller changes in the replication protocol are handled by adding
+message properties or defining new messages. These are called out
+individually; for instance, the changes to support scopes & collections
+are marked with "[3.1+]".
 
 [[message-types]]
 3. Message Types
@@ -96,6 +81,8 @@ assigned to the message body.
 Any response properties and/or body data are listed too. However, many
 messages don't require any data in the response, just a success/failure
 indication.
+
+Message bodies are JSON by default.
 
 Most of these messages are sent by both client and server. Their usage
 in the replication algorithm is described in the *Algorithm* section
