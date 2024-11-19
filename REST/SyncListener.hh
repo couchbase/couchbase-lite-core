@@ -12,8 +12,7 @@
 
 #pragma once
 #include "HTTPListener.hh"
-#include "Address.hh"
-#include "c4ReplicatorTypes.h"
+#include <span>
 #include <vector>
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -23,19 +22,24 @@ namespace litecore::REST {
 
     class SyncListener : public HTTPListener {
       public:
-        SyncListener(const Config&);
+        static constexpr int kAPIVersion = 2;
+
+        explicit SyncListener(const Config&);
         ~SyncListener();
 
-        virtual int activeConnectionCount() override;
-
+        int  connectionCount() override;
+        int  activeConnectionCount() override;
         void stop() override;
 
       private:
-        void handleSync(RequestResponse&, C4Database*);
-        void replicatorStatusChanged(C4Replicator* repl, C4ReplicatorStatus status);
+        void                   handleSync(RequestResponse&);
+        Retained<C4Replicator> startIncomingReplicator(DatabasePool*, std::span<const CollectionSpec>,
+                                                       websocket::WebSocket*);
+        void                   replicatorStatusChanged(C4Replicator* repl, C4ReplicatorStatus status);
 
-        bool const                                  _allowPush, _allowPull, _enableDeltaSync;
-        std::vector<fleece::Retained<C4Replicator>> _replicators;
+
+        bool const                          _allowPush, _allowPull, _enableDeltaSync;
+        std::vector<Retained<C4Replicator>> _replicators;
     };
 
 }  // namespace litecore::REST

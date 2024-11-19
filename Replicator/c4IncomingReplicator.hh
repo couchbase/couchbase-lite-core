@@ -22,8 +22,8 @@ namespace litecore {
     /** A passive replicator handling an incoming WebSocket connection, for P2P. */
     class C4IncomingReplicator final : public C4ReplicatorImpl {
       public:
-        C4IncomingReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params,
-                             WebSocket* openSocket NONNULL, slice logPrefix)
+        C4IncomingReplicator(DatabaseOrPool db, const C4ReplicatorParameters& params, WebSocket* openSocket NONNULL,
+                             slice logPrefix = {})
             : C4ReplicatorImpl(db, params), _openSocket(openSocket) {
             std::string logName = "C4IncomingRepl";
             if ( !logPrefix.empty() ) logName = logPrefix.asString() + "/" + logName;
