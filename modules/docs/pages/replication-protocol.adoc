@@ -4,7 +4,7 @@
 
 [[couchbase-mobile-2.0-replication-protocol]]
 Couchbase Mobile Replication Protocol
------------------------------------------
+-------------------------------------
 
 Contributors: Jens Alfke, Traun Leyden, Ben Brooks, Jim Borden
 
@@ -48,7 +48,7 @@ as long as they support ordered delivery of framed binary messages.
 
 [[connecting]]
 2. Connecting and Versioning
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The client opens a WebSocket connection to the server at path
 `/`__dbname__`/_blipsync` (where _dbname_ is the name of the database.)
