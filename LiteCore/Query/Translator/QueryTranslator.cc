@@ -61,8 +61,6 @@ namespace litecore {
             } else if ( auto p = dynamic_cast<ParameterNode*>(&node) ) {
                 // Capture the parameter names:
                 _parameters.emplace(p->name());
-            } else if ( auto prop = dynamic_cast<PropertyNode*>(&node) ) {
-                if ( ctx.hasGroupBy ) prop->hasGroupBy();
             } else if ( !_usesExpiration ) {
                 // Detect whether the query uses the `expiration` column:
                 if ( auto m = dynamic_cast<MetaNode*>(&node); m && m->property() == MetaProperty::expiration )
@@ -123,12 +121,12 @@ namespace litecore {
             auto unnestSrc = unnest->unnestExpression()->source();
             if ( !unnestSrc ) return "";
             string srcTableName = tableNameForSource(unnestSrc, ctx);
-            if ( auto iter = ctx.hashedTables.find(srcTableName); iter != ctx.hashedTables.end() )
+            if ( auto iter = _hashedTables.find(srcTableName); iter != _hashedTables.end() )
                 srcTableName = iter->second;
             string plainTableName = _delegate.unnestedTableName(srcTableName, unnest->unnestIdentifier());
             tableName             = hexName(plainTableName);
             // save the tableName in plain text for later use
-            ctx.hashedTables.emplace(tableName, plainTableName);
+            _hashedTables.emplace(tableName, plainTableName);
             if ( _delegate.tableExists(tableName) ) source->setTableName(ctx.newString(tableName));
         } else {
             string name(source->collection());

@@ -315,6 +315,8 @@ namespace litecore::qt {
         }
 
         if ( select ) {
+            _hasGroupBy = getCaseInsensitive(select, "GROUP_BY");
+
             // Parse FROM first, because it creates the SourceNodes that affect parsing of properties:
             if ( Value from = getCaseInsensitive(select, "FROM") ) {
                 for ( Value i : requiredArray(from, "FROM") ) {
@@ -378,7 +380,6 @@ namespace litecore::qt {
                     }
                     addChild(_groupBy, group);
                 }
-                ctx.hasGroupBy = true;
             }
 
             if ( Value having = getCaseInsensitive(select, "HAVING") ) {

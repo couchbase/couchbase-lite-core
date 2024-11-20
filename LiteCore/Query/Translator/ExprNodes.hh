@@ -124,11 +124,9 @@ namespace litecore::qt {
 
         void writeSQL(SQLWriter&, slice sqliteFnName, ExprNode* C4NULLABLE param) const;
 
-        void hasGroupBy() { _hasGroupBy = true; }
-
       private:
         PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, string_view path,
-                     string_view lastComponent, string_view fn);
+                     string_view lastComponent, string_view fn, bool hasGroupBy);
 
         SourceNode* C4NULLABLE _source{};       // Source I am relative to
         WhatNode* C4NULLABLE   _result{};       // Result I am relative to (only if _source is nullptr)
