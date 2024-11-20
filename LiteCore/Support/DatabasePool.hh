@@ -222,7 +222,7 @@ namespace litecore {
 
       protected:
         friend class DatabasePool;
-        BorrowedDatabase(BorrowedDatabase const&) = delete;
+        BorrowedDatabase(BorrowedDatabase const&)            = delete;
         BorrowedDatabase& operator=(BorrowedDatabase const&) = delete;
 
         // used by DatabasePool::borrow methods
@@ -264,21 +264,22 @@ namespace litecore {
         Remember to call `commit`!
         @note  Using this avoids the footgun `C4Database::Transaction t(pool.borrowWriteable());`
                which unintentionally returns the database to the pool immediately! */
-    class DatabasePool::Transaction : private BorrowedDatabase, public C4Database::Transaction {
-    public:
+    class DatabasePool::Transaction
+        : private BorrowedDatabase
+        , public C4Database::Transaction {
+      public:
         explicit Transaction(DatabasePool& pool)
-        : BorrowedDatabase(pool.borrowWriteable())
-        , C4Database::Transaction(db()) {}
+            : BorrowedDatabase(pool.borrowWriteable()), C4Database::Transaction(db()) {}
 
-        C4Database* db() const noexcept LIFETIMEBOUND {return get();}
+        C4Database* db() const noexcept LIFETIMEBOUND { return get(); }
     };
 
-    inline DatabasePool::Transaction DatabasePool::transaction() {return Transaction(*this);}
+    inline DatabasePool::Transaction DatabasePool::transaction() { return Transaction(*this); }
 
     inline auto DatabasePool::inTransaction(auto fn) {
         Transaction txn(*this);
         fn(txn.db());
-        if (txn.isActive()) txn.commit();
+        if ( txn.isActive() ) txn.commit();
     }
 
 
