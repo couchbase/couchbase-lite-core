@@ -214,8 +214,19 @@ namespace litecore {
 
         // Options to pass to the C4Socket
         alloc_slice socketOptions() const {
+            // Get the database flags and the push/pull modes:
+            auto             cfg      = std::visit([](auto db) { return db->getConfiguration(); }, _database);
+            C4ReplicatorMode pushMode = kC4Disabled, pullMode = kC4Disabled;
+            for ( ssize_t i = _options->collectionCount() - 1; i >= 0; i-- ) {
+                pushMode = std::max(pushMode, _options->push(i));
+                pullMode = std::max(pullMode, _options->pull(i));
+            }
+            // From those, determine the compatible WS protocols:
+            auto protocols = Replicator::compatibleProtocols(cfg.flags, pushMode, pullMode);
+
+            // Construct new Options including the protocols:
             Replicator::Options opts(kC4Disabled, kC4Disabled, _options->properties);
-            opts.setProperty(kC4SocketOptionWSProtocols, Replicator::ProtocolName().c_str());
+            opts.setProperty(kC4SocketOptionWSProtocols, join(protocols, ",").c_str());
             return opts.properties.data();
         }
 

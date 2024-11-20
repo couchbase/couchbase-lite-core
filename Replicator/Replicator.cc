@@ -65,11 +65,26 @@ namespace litecore::repl {
             {{WebSocketDomain, 503, 0}, false, "The server is over capacity"_sl},
             {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl}};
 
-    std::string Replicator::ProtocolName() {
-        stringstream result;
-        delimiter    delim(",");
-        for ( auto& name : kCompatProtocols ) result << delim << name;
-        return result.str();
+    string toString(ProtocolVersion version) {
+        return stringprintf("%s+CBMobile_%d", blip::Connection::kWSProtocolName, int(version));
+    }
+
+    vector<string> Replicator::compatibleProtocols(C4DatabaseFlags flags, Options::Mode pushMode,
+                                                   Options::Mode pullMode) {
+        bool v3, v4;
+        if ( flags & kC4DB_VersionVectors ) {
+            // Local db may have VVs. V4 is fine. V3 is OK if I don't push anything.
+            v4 = true;
+            v3 = (pushMode == kC4Disabled);
+        } else {
+            // Local db does not have VVs. V3 is fine. V4 is OK if I don't pull anything.
+            v3 = true;
+            v4 = (pullMode == kC4Disabled);
+        }
+        vector<string> result;
+        if ( v3 ) result.emplace_back(toString(ProtocolVersion::v3));
+        if ( v4 ) result.emplace_back(toString(ProtocolVersion::v4));
+        return result;
     }
 
     Replicator::Replicator(C4Database* db, websocket::WebSocket* webSocket, Delegate& delegate, Options* options)

@@ -26,7 +26,12 @@ namespace litecore::repl {
     class Puller;
     class ReplicatedRev;
 
-    static const array<string, 1> kCompatProtocols = {{string(blip::Connection::kWSProtocolName) + "+CBMobile_4"}};
+    enum class ProtocolVersion {
+        v3 = 3,
+        v4 = 4,
+    };
+
+    string toString(ProtocolVersion);
 
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
@@ -57,7 +62,8 @@ namespace litecore::repl {
 
         using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
 
-        static std::string ProtocolName();
+        /// A list of WebSocket subprotocol names supported by a Replicator with the given Options.
+        static std::vector<string> compatibleProtocols(C4DatabaseFlags, Options::Mode pushMode, Options::Mode pullMode);
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
