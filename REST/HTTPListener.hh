@@ -119,11 +119,13 @@ namespace litecore::REST {
 
       private:
         static std::pair<std::string, C4CollectionSpec> parseKeySpace(slice keySpace);
+        void                                            stopTasks();
 
         Retained<crypto::Identity> _identity;
         Retained<Server>           _server;
         C4Listener* C4NULLABLE     _delegate = nullptr;
         std::set<Retained<Task>>   _tasks;
+        std::condition_variable    _tasksCondition;
         unsigned                   _nextTaskID{1};
     };
 

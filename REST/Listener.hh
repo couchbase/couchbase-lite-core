@@ -77,6 +77,8 @@ namespace litecore::REST {
         /** Returns the database registered under the given name. */
         BorrowedDatabase databaseNamed(const std::string& name, bool writeable) const;
 
+        fleece::Retained<DatabasePool> databasePoolNamed(const std::string& name) const;
+
         /** Returns the name a database is registered under. */
         std::optional<std::string> nameOfDatabase(C4Database* NONNULL) const;
 
@@ -88,6 +90,8 @@ namespace litecore::REST {
 
         /** Returns the number of active client connections (for some definition of "active"). */
         virtual int activeConnectionCount() = 0;
+
+        void closeDatabases();
 
       protected:
         DatabasePool* _databasePoolNamed(const std::string& name) const;

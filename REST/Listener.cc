@@ -126,6 +126,11 @@ namespace litecore::REST {
         return i->second;
     }
 
+    fleece::Retained<DatabasePool> Listener::databasePoolNamed(const std::string& name) const {
+        lock_guard<mutex> lock(_mutex);
+        return _databasePoolNamed(name);
+    }
+
     optional<FilePath> Listener::pathOfDatabaseNamed(const std::string& name) {
         lock_guard<mutex> lock(_mutex);
         if ( auto pool = _databasePoolNamed(name) ) return pool->databasePath();
@@ -148,11 +153,19 @@ namespace litecore::REST {
     }
 
     vector<string> Listener::databaseNames() const {
-        lock_guard<mutex> lock(_mutex);
-        vector<string>    names;
+        lock_guard     lock(_mutex);
+        vector<string> names;
         names.reserve(_databases.size());
         for ( auto& d : _databases ) names.push_back(d.first);
         return names;
+    }
+
+    void Listener::closeDatabases() {
+        lock_guard lock(_mutex);
+        c4log(ListenerLog, kC4LogInfo, "Closing databases");
+        for ( auto& d : _databases ) d.second->close();
+        _databases.clear();
+        _allowedCollections.clear();
     }
 
 }  // namespace litecore::REST

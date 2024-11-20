@@ -27,19 +27,14 @@ namespace litecore::REST {
         explicit SyncListener(const Config&);
         ~SyncListener();
 
-        int  connectionCount() override;
-        int  activeConnectionCount() override;
-        void stop() override;
-
       private:
-        void                   handleSync(RequestResponse&);
-        Retained<C4Replicator> startIncomingReplicator(DatabasePool*, std::span<const CollectionSpec>,
-                                                       websocket::WebSocket*);
-        void                   replicatorStatusChanged(C4Replicator* repl, C4ReplicatorStatus status);
+        class SyncTask;
 
+        std::string findMatchingProtocol(DatabasePool*, std::string_view clientProtocols);
+        void        handleSync(RequestResponse&);
 
-        bool const                          _allowPush, _allowPull, _enableDeltaSync;
-        std::vector<Retained<C4Replicator>> _replicators;
+        C4ReplicatorMode const _pushMode, _pullMode;
+        bool const             _enableDeltaSync;
     };
 
 }  // namespace litecore::REST
