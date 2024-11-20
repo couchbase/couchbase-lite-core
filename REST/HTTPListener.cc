@@ -54,6 +54,8 @@ namespace litecore::REST {
 
     void HTTPListener::stop() {
         if ( _server ) _server->stop();
+        stopTasks();
+        closeDatabases();
     }
 
     vector<Address> HTTPListener::addresses(C4Database* dbOrNull, bool webSocketScheme) const {
@@ -145,11 +147,12 @@ namespace litecore::REST {
     void HTTPListener::unregisterTask(Task* task) {
         lock_guard<mutex> lock(_mutex);
         _tasks.erase(task);
+        _tasksCondition.notify_all();
     }
 
     vector<Retained<HTTPListener::Task>> HTTPListener::tasks() {
-        lock_guard<mutex>                    lock(_mutex);
-        vector<Retained<HTTPListener::Task>> result{_tasks.begin(), _tasks.end()};
+        lock_guard<mutex>      lock(_mutex);
+        vector<Retained<Task>> result{_tasks.begin(), _tasks.end()};
         // Clean up old finished tasks:
         time_t now;
         time(&now);
@@ -159,6 +162,17 @@ namespace litecore::REST {
                 ++i;
         }
         return result;
+    }
+
+    void HTTPListener::stopTasks() {
+        auto allTasks = tasks();
+        if ( !allTasks.empty() ) {
+            for ( auto& task : allTasks ) {
+                if ( !task->finished() ) task->stop();
+            }
+            unique_lock lock(_mutex);
+            _tasksCondition.wait(lock, [this] { return _tasks.empty(); });
+        }
     }
 
 #    pragma mark - UTILITIES:

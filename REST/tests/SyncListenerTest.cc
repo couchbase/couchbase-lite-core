@@ -40,11 +40,10 @@ class C4SyncListenerTest
         _sg.remoteDBName     = C4STR("db2");
     }
 
-    static constexpr C4ListenerConfig kConfig = [] {
-        C4ListenerConfig config = {};
-        config.allowPush = config.allowPull = true;
-        return config;
-    }();
+    static constexpr C4ListenerConfig kConfig = {
+            .allowPush = true,
+            .allowPull = true,
+    };
 
     void run(bool expectSuccess = true) {
         ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
@@ -233,6 +232,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
 }
 
 TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener][C]") {
+    // This method tests disabling push or pull in the listener.
+    // All these replications are expected to fail because the listener prevents them.
     C4ReplicatorMode pushMode = kC4Disabled;
     C4ReplicatorMode pullMode = kC4Disabled;
     SECTION("Push") {
@@ -309,6 +310,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]")
     _sg.address.port = c4listener_getPort(listener());
     REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
     waitForStatus(kC4Idle);
+    C4Log("  >>> Replicator is idle; stopping");
     stop();
     waitForStatus(kC4Stopped);
 }
