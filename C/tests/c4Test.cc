@@ -78,11 +78,24 @@ ostream& operator<<(ostream& out, C4Error error) {
 }
 
 ERROR_INFO::~ERROR_INFO() {
-    if ( _error->code && OnMainThread() ) UNSCOPED_INFO(*_error);
+    if ( _error->code && OnMainThread() ) {
+        if (OnMainThread())
+            UNSCOPED_INFO(*_error);
+        else
+            std::cerr << "ERROR_INFO: " << *_error << '\n';
+    }
 }
 
 WITH_ERROR::~WITH_ERROR() {
-    if ( _error->code ) std::cerr << "with error: " << *_error << '\n';
+    if ( _error->code ) {
+        // Unfortunately it's too late to use UNSCOPED_INFO; since WITH_ERROR is used inside the
+        // CHECK/REQUIRE macro, by the time it's destructed Catch has already registered the error.
+        // But we can tell Catch to warn about it, which will show up below its failure message.
+        if (OnMainThread())
+            WARN(*_error);
+        else
+            std::cerr << "WITH_ERROR: " << *_error << '\n';
+    }
 }
 
 void CheckError(C4Error error, C4ErrorDomain expectedDomain, int expectedCode, const char* expectedMessage) {
