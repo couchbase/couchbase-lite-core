@@ -392,10 +392,11 @@ namespace litecore {
     ExclusiveTransaction::ExclusiveTransaction(DataFile* db) : ExclusiveTransaction(db, true) {}
 
     ExclusiveTransaction::ExclusiveTransaction(DataFile* db, bool active) : _db(*db), _active(false) {
+        if (active && !_db.options().writeable)
+            error::_throw(error::NotWriteable, "Transaction on read-only database");
         _db.beginTransactionScope(this);
         if ( active ) {
             _db._logVerbose("begin transaction");
-            DebugAssert(_db.options().writeable, "ExclusiveTransaction on read-only db");
             Signpost::begin(Signpost::transaction, uintptr_t(this));
             _db._beginTransaction(this);
             _active = true;
