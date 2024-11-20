@@ -37,31 +37,30 @@ namespace litecore::REST {
       public:
         using HTTPStatus = net::HTTPStatus;
 
-        fleece::slice header(const char* name) const { return _headers[fleece::slice(name)]; }
+        slice header(const char* name) const { return _headers[slice(name)]; }
 
-        fleece::slice operator[](const char* name) const { return header(name); }
+        slice operator[](const char* name) const { return header(name); }
 
         std::optional<MIMEType> contentType() const;
 
-        bool                hasContentType(fleece::slice hasType) const;
-        fleece::alloc_slice body() const;
-        fleece::Value       bodyAsJSON() const;
+        bool        hasContentType(slice hasType) const;
+        alloc_slice body() const;
+        Value       bodyAsJSON() const;
 
       protected:
         Body() = default;
 
-        Body(websocket::Headers headers, fleece::alloc_slice body)
-            : _headers(std::move(headers)), _body(std::move(body)) {}
+        Body(websocket::Headers headers, alloc_slice body) : _headers(std::move(headers)), _body(std::move(body)) {}
 
         void setHeaders(const websocket::Headers& h) { _headers = h; }
 
-        void setBody(fleece::alloc_slice body) { _body = std::move(body); }
+        void setBody(alloc_slice body) { _body = std::move(body); }
 
         websocket::Headers              _headers;
         mutable std::optional<MIMEType> _contentType;
-        fleece::alloc_slice             _body;
+        alloc_slice                     _body;
         mutable bool                    _gotBodyFleece{false};
-        mutable fleece::Doc             _bodyFleece;
+        mutable Doc                     _bodyFleece;
     };
 
     /** An HTTP response from a server, created by specifying a request to send.
@@ -78,11 +77,11 @@ namespace litecore::REST {
 
         ~Response();
 
-        Response& setHeaders(const fleece::Doc& headers);
+        Response& setHeaders(const Doc& headers);
         Response& setHeaders(const websocket::Headers& headers);
 
-        Response& setAuthHeader(fleece::slice authHeader);
-        Response& setBody(fleece::slice body);
+        Response& setAuthHeader(slice authHeader);
+        Response& setBody(slice body);
         Response& setTLSContext(net::TLSContext*);
         Response& setProxy(const net::ProxySpec&);
 
@@ -93,8 +92,8 @@ namespace litecore::REST {
             return *this;
         }
 
-        Response& allowOnlyCert(fleece::slice certData);
-        Response& setRootCerts(fleece::slice certsData);
+        Response& allowOnlyCert(slice certData);
+        Response& setRootCerts(slice certsData);
 #ifdef COUCHBASE_ENTERPRISE
         Response& allowOnlyCert(C4Cert*);
         Response& setRootCerts(C4Cert*);
@@ -131,13 +130,13 @@ namespace litecore::REST {
         }
 
       private:
-        double                            _timeout{0};
-        std::unique_ptr<net::HTTPLogic>   _logic;
-        fleece::Retained<net::TLSContext> _tlsContext;
-        fleece::alloc_slice               _requestBody;
-        HTTPStatus                        _status{HTTPStatus::undefined};
-        std::string                       _statusMessage;
-        C4Error                           _error{};
+        double                          _timeout{0};
+        std::unique_ptr<net::HTTPLogic> _logic;
+        Retained<net::TLSContext>       _tlsContext;
+        alloc_slice                     _requestBody;
+        HTTPStatus                      _status{HTTPStatus::undefined};
+        std::string                     _statusMessage;
+        C4Error                         _error{};
     };
 
 }  // namespace litecore::REST
