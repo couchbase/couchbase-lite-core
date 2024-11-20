@@ -3038,7 +3038,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
 }
 
-//FIXME: This should be an N_WAY_TEST_CASE_METHOD, but the non-default-collection option triggers a N1QL parser bug (CBL-6302)
 N_WAY_TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
