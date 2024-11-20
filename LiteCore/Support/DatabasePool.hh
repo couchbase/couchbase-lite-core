@@ -111,7 +111,8 @@ namespace litecore {
         /// @throws litecore::error `Timeout` after waiting ten seonds.
         BorrowedDatabase borrow();
 
-        /// Same as `borrow`, except returns an empty `BorrowedDatabase` instead of waiting.
+        /// Same as `borrow`, except that if no databases are available to borrow it returns an
+        /// empty `BorrowedDatabase` instead of waiting.
         /// You must check the returned object to see if the C4Database it's holding is `nullptr`.
         BorrowedDatabase tryBorrow();
 
@@ -125,11 +126,21 @@ namespace litecore {
         /// @throws litecore::error `Timeout` after waiting ten seonds.
         BorrowedDatabase borrowWriteable();
 
-        /// Same as `borrowWriteable`, except returns an empty `BorrowedDatabase` instead of waiting.
+        /// Same as `borrowWriteable`, except that if no databases are available to borrow it returns an
+        /// empty `BorrowedDatabase` instead of waiting.
         /// You must check the returned object to see if the C4Database it's holding is `nullptr`.
         /// @throws litecore::error `NotWriteable` if `writeable()` is false.
         /// @throws litecore::error `NotOpen` if `close` has been called.
         BorrowedDatabase tryBorrowWriteable();
+
+        class Transaction;
+
+        /// Creates a Transaction. Equivalent to `DatabasePool::Transaction(*pool)`.
+        inline Transaction transaction();
+
+        /// Calls the function/lambda in a transaction, passing it the `C4Database*`.
+        /// The transaction automatically commits after `fn` returns, or aborts if it throws.
+        inline auto inTransaction(auto fn);
 
       protected:
         ~DatabasePool() override;
@@ -171,47 +182,48 @@ namespace litecore {
         bool                             _closed = false;  // Set by `close`
     };
 
-    /** A wrapper around a C4Database "borrowed" from a DatabasePool.
+    /** An RAII wrapper around a C4Database "borrowed" from a DatabasePool.
         When it exits scope, the database is returned to the pool.
-        @note A `BorrowedDatabase`s lifetime should be kept short, and it should never
-              be used or modified on multiple threads. */
+        @note A `BorrowedDatabase`s lifetime should be kept short, and limited to a single thread. */
     class BorrowedDatabase {
       public:
         /// Constructs an empty BorrowedDatabase. (Use `operator bool` to test for emptiness.)
-        BorrowedDatabase() : _pool(nullptr) {}
+        BorrowedDatabase() noexcept = default;
 
         /// Borrows a (read-only) database from a pool. Equivalent to calling `pool.borrow()`.
         explicit BorrowedDatabase(DatabasePool* pool) : BorrowedDatabase(pool->borrow()) {}
 
         /// "Borrows" a database without a pool -- simply retains the db and acts as a smart pointer
         /// to it. This allows you to use `BorrowedDatabase` with or without a `DatabasePool`.
-        explicit BorrowedDatabase(C4Database* db) : _db(db) {}
+        explicit BorrowedDatabase(C4Database* db) noexcept : _db(db) {}
 
-        BorrowedDatabase(BorrowedDatabase&& b) noexcept : _db(std::move(b._db)), _pool(std::move(b._pool)) {}
+        BorrowedDatabase(BorrowedDatabase&& b) noexcept = default;
 
         BorrowedDatabase& operator=(BorrowedDatabase&& b) noexcept;
 
         ~BorrowedDatabase() { _return(); }
 
         /// Checks whether I am non-empty.
-        /// @note It's illegal to dereference an empty instance. But the only way to create such
-        ///       an instance is by `tryBorrow` or BorrowedDatabase's default constructor.
+        /// @note It's illegal to dereference an empty instance. The only way to create such
+        ///       an instance is with the default constructor, or `DatabasePool::tryBorrow`.
         explicit operator bool() const noexcept { return _db != nullptr; }
 
-        C4Database* get() noexcept LIFETIMEBOUND {
+        C4Database* get() const noexcept LIFETIMEBOUND {
             DebugAssert(_db);
             return _db;
         }
 
-        C4Database* operator->() noexcept LIFETIMEBOUND { return get(); }
+        C4Database* operator->() const noexcept LIFETIMEBOUND { return get(); }
 
-        operator C4Database* C4NONNULL() noexcept LIFETIMEBOUND { return get(); }
+        operator C4Database* C4NONNULL() const noexcept LIFETIMEBOUND { return get(); }
 
         /// Returns the database to the pool, leaving me empty.
         void reset();
 
       protected:
         friend class DatabasePool;
+        BorrowedDatabase(BorrowedDatabase const&) = delete;
+        BorrowedDatabase& operator=(BorrowedDatabase const&) = delete;
 
         // used by DatabasePool::borrow methods
         BorrowedDatabase(fleece::Retained<C4Database> db, DatabasePool* pool) : _db(std::move(db)), _pool(pool) {}
@@ -223,26 +235,52 @@ namespace litecore {
         fleece::Retained<DatabasePool> _pool;
     };
 
-    /** A wrapper around a `C4Collection` on a database "borrowed" from a `DatabasePool`.
+    /** An RAII wrapper around a collection of a database "borrowed" from a `DatabasePool`.
         When it exits scope, its database is returned to the pool. */
     class BorrowedCollection {
       public:
-        BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec)
-            : _bdb(std::move(bdb)), _collection(_bdb ? _bdb->getCollection(spec) : nullptr) {}
+        /// Constructor.
+        /// @throws `error::NotFound` if there is a database but no such collection in it.
+        BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec);
 
-        C4Collection* get() & noexcept LIFETIMEBOUND {
+        /// Checks whether I am non-empty, i.e. I have a a collection.
+        explicit operator bool() const noexcept { return _collection != nullptr; }
+
+        C4Collection* get() const noexcept LIFETIMEBOUND {
             DebugAssert(_collection);
             return _collection;
         }
 
-        C4Collection* operator->() noexcept LIFETIMEBOUND { return get(); }
+        C4Collection* operator->() const noexcept LIFETIMEBOUND { return get(); }
 
-        operator C4Collection* C4NONNULL() & noexcept LIFETIMEBOUND { return get(); }
+        operator C4Collection* C4NONNULL() const noexcept LIFETIMEBOUND { return get(); }
 
       private:
         BorrowedDatabase _bdb;
         C4Collection*    _collection;
     };
+
+    /** Subclass of C4Database::Transaction : a transaction on a borrowed (writeable) database.
+        Remember to call `commit`!
+        @note  Using this avoids the footgun `C4Database::Transaction t(pool.borrowWriteable());`
+               which unintentionally returns the database to the pool immediately! */
+    class DatabasePool::Transaction : private BorrowedDatabase, public C4Database::Transaction {
+    public:
+        explicit Transaction(DatabasePool& pool)
+        : BorrowedDatabase(pool.borrowWriteable())
+        , C4Database::Transaction(db()) {}
+
+        C4Database* db() const noexcept LIFETIMEBOUND {return get();}
+    };
+
+    inline DatabasePool::Transaction DatabasePool::transaction() {return Transaction(*this);}
+
+    inline auto DatabasePool::inTransaction(auto fn) {
+        Transaction txn(*this);
+        fn(txn.db());
+        if (txn.isActive()) txn.commit();
+    }
+
 
 }  // namespace litecore
 

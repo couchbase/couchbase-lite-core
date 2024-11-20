@@ -204,6 +204,10 @@ namespace litecore {
         _cond.notify_all();  // wake up waiting `borrow` and `close` calls
     }
 
+
+#pragma mark - BORROWED DATABASE:
+
+
     BorrowedDatabase& BorrowedDatabase::operator=(BorrowedDatabase&& b) noexcept {
         _return();
         _db   = std::move(b._db);
@@ -219,6 +223,11 @@ namespace litecore {
 
     void BorrowedDatabase::_return() {
         if ( _db && _pool ) _pool->returnDatabase(std::move(_db));
+    }
+
+    BorrowedCollection::BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec)
+    : _bdb(std::move(bdb)), _collection(_bdb ? _bdb->getCollection(spec) : nullptr) {
+        if (_bdb && !_collection) error::_throw(error::NotFound, "no such collection");
     }
 
 
