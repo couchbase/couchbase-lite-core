@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Database.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include "fleece/RefCounted.hh"
 #include <condition_variable>
 #include <functional>
@@ -46,7 +47,9 @@ namespace litecore {
         If you borrow the _writeable_ database twice, the second/nested call will deadlock until
         it times out and throws a `Busy` exception. */
 
-    class DatabasePool : public fleece::RefCounted {
+    class DatabasePool
+        : public fleece::RefCounted
+        , public Logging {
       public:
         /// Constructs a pool that will manage multiple instances of the given database file.
         /// If the `kC4DB_ReadOnly` flag is set, no writeable instances will be provided.
@@ -130,6 +133,7 @@ namespace litecore {
 
       protected:
         ~DatabasePool() override;
+        std::string loggingIdentifier() const override;
 
       private:
         friend class BorrowedDatabase;
@@ -144,14 +148,15 @@ namespace litecore {
             unsigned borrowedCount() const { return unsigned(created - available.size()); }
 
             fleece::Retained<C4Database> pop();
-            void                         closeUnused();
         };
 
         DatabasePool(DatabasePool&&)                           = delete;
         DatabasePool&                operator=(DatabasePool&&) = delete;
         BorrowedDatabase             borrow(Cache& cache, bool orWait);
         fleece::Retained<C4Database> newDB(Cache&);
+        void                         closeDB(Retained<C4Database>) noexcept;
         void                         returnDatabase(fleece::Retained<C4Database>);
+        void                         _closeUnused(Cache&);
         void                         _closeAll(Cache&);
 
         std::string const                _dbName;          // Name of database
