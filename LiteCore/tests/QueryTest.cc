@@ -3039,7 +3039,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
 }
 
 //FIXME: This should be an N_WAY_TEST_CASE_METHOD, but the non-default-collection option triggers a N1QL parser bug (CBL-6302)
-TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string               docID = "doc1";

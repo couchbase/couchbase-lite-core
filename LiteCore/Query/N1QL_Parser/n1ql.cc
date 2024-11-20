@@ -3949,7 +3949,7 @@ YY_RULE(int) yyrfunction(yycontext *yy)
 {  int yypos0= yy->_pos, yythunkpos0= yy->_thunkpos;  yyDo(yy, yyPush, 6, 0);
   yyprintf((stderr, "%s\n", "function"));
   {  int yypos109= yy->_pos, yythunkpos109= yy->_thunkpos;  if (!yymatchIString(yy, "meta")) goto l110;  if (!yyr_(yy)) goto l110;  if (!yymatchChar(yy, '(')) goto l110;  if (!yyr_(yy)) goto l110;  yyDo(yy, yy_1_function, yy->_begin, yy->_end);
-  {  int yypos111= yy->_pos, yythunkpos111= yy->_thunkpos;  if (!yyrIDENTIFIER(yy)) goto l111;  yyDo(yy, yySet, -6, 0);  if (!yyr_(yy)) goto l111;  yyDo(yy, yy_2_function, yy->_begin, yy->_end);  goto l112;
+  {  int yypos111= yy->_pos, yythunkpos111= yy->_thunkpos;  if (!yyrpropertyPath(yy)) goto l111;  yyDo(yy, yySet, -6, 0);  if (!yyr_(yy)) goto l111;  yyDo(yy, yy_2_function, yy->_begin, yy->_end);  goto l112;
   l111:;	  yy->_pos= yypos111; yy->_thunkpos= yythunkpos111;
   }
   l112:;	  if (!yymatchChar(yy, ')')) goto l110;  if (!yyr_(yy)) goto l110;  yyDo(yy, yy_3_function, yy->_begin, yy->_end);  goto l109;
