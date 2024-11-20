@@ -11,7 +11,9 @@
 //
 
 #include "DatabasePool.hh"
+#include "DatabaseImpl.hh"  // for asInternal, dataFile
 #include "FilePath.hh"
+#include "Logging.hh"
 #include "c4ExceptionUtils.hh"
 #include <unistd.h>
 #include <sys/fcntl.h>
@@ -24,8 +26,11 @@ namespace litecore {
 
     static constexpr auto kTimeout = 10s;
 
+    static string nameOf(C4Database* db) { return asInternal(db)->dataFile()->loggingName(); }
+
     DatabasePool::DatabasePool(slice name, C4DatabaseConfig2 const& config)
-        : _dbName(name)
+        : Logging(DBLog)
+        , _dbName(name)
         , _dbConfig(config)
         , _dbDir(_dbConfig.parentDirectory)
         , _readOnly{.flags = (config.flags | kC4DB_ReadOnly) & ~kC4DB_Create}
@@ -40,24 +45,31 @@ namespace litecore {
         Cache& cache = writeable() ? _readWrite : _readOnly;
         cache.available.emplace_back(main);
         cache.created++;
+        logInfo("initial database is %s", nameOf(main).c_str());
     }
 
     DatabasePool::~DatabasePool() { close(); }
 
+    string DatabasePool::loggingIdentifier() const { return _dbName; }
+
     void DatabasePool::close() {
         unique_lock lock(_mutex);
         if ( !_closed ) {
+            logInfo("Closing pool...");
             _closed = true;
             _cond.notify_all();  // unblocks borrow() calls so they can throw NotOpen
         }
-        _readOnly.closeUnused();
-        _readWrite.closeUnused();
+        _closeUnused(_readOnly);
+        _closeUnused(_readWrite);
 
-        auto timeout = std::chrono::system_clock::now() + kTimeout;
-        bool ok      = _cond.wait_until(lock, timeout,
-                                        [&] { return _readOnly.borrowedCount() + _readWrite.borrowedCount() == 0; });
-        if ( !ok ) error::_throw(error::Busy, "Timed out closing DatabasePool");
-        Assert(_readOnly.created + _readWrite.created == 0);
+        if ( auto remaining = _readOnly.created + _readWrite.created ) {
+            logInfo("Waiting for %u borrowed dbs to be returned...", remaining);
+            auto timeout = std::chrono::system_clock::now() + kTimeout;
+            bool ok      = _cond.wait_until(lock, timeout, [&] { return _readOnly.created + _readWrite.created == 0; });
+            if ( !ok ) error::_throw(error::Busy, "Timed out closing DatabasePool");
+            Assert(_readOnly.created + _readWrite.created == 0);
+        }
+        logInfo("...all databases closed!");
     }
 
     FilePath DatabasePool::databasePath() const { return FilePath{_dbDir, _dbName + kC4DatabaseFilenameExtension}; }
@@ -65,13 +77,6 @@ namespace litecore {
     unsigned DatabasePool::capacity() const noexcept {
         unique_lock lock(_mutex);
         return _readOnly.capacity + _readWrite.capacity;
-    }
-
-    static void closeDB(Retained<C4Database> db) noexcept {
-        try {
-            db->close();
-        }
-        catchAndWarn();
     }
 
     void DatabasePool::setCapacity(unsigned newCapacity) {
@@ -110,16 +115,16 @@ namespace litecore {
 
     void DatabasePool::closeUnused() {
         unique_lock lock(_mutex);
-        _readOnly.closeUnused();
-        _readWrite.closeUnused();
+        _closeUnused(_readOnly);
+        _closeUnused(_readWrite);
     }
 
-    void DatabasePool::Cache::closeUnused() {
-        for ( auto& db : available ) {
+    void DatabasePool::_closeUnused(Cache& cache) {
+        for ( auto& db : cache.available ) {
             closeDB(std::move(db));
-            --created;
+            --cache.created;
         }
-        available.clear();
+        cache.available.clear();
     }
 
     // Allocates and opens a new C4Database instance.
@@ -136,7 +141,16 @@ namespace litecore {
                 throw;
             }
         }
+        logInfo("created %s", nameOf(db).c_str());
         return db;
+    }
+
+    void DatabasePool::closeDB(Retained<C4Database> db) noexcept {
+        logInfo("closing %s", nameOf(db).c_str());
+        try {
+            db->close();
+        }
+        catchAndWarn();
     }
 
     Retained<C4Database> DatabasePool::Cache::pop() {
