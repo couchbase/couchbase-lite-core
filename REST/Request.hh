@@ -33,7 +33,7 @@ namespace litecore::REST {
       public:
         using Method = net::Method;
 
-        explicit Request(fleece::slice httpData);
+        explicit Request(slice httpData);
 
         bool isValid() const { return _method != Method::None; }
 
@@ -62,10 +62,10 @@ namespace litecore::REST {
         bool keepAlive() const;
 
       protected:
-        Request(Method, std::string path, std::string queries, websocket::Headers headers, fleece::alloc_slice body);
+        Request(Method, std::string path, std::string queries, websocket::Headers headers, alloc_slice body);
         Request() = default;
 
-        bool readFromHTTP(fleece::slice httpData);  // data must extend at least to CRLF
+        bool readFromHTTP(slice httpData);  // data must extend at least to CRLF
 
         Method      _method{Method::None};
         std::string _path;
@@ -84,6 +84,11 @@ namespace litecore::REST {
         // Response status:
 
         void respondWithStatus(HTTPStatus, const char* message = nullptr);
+
+        void respondWithStatus(HTTPStatus status, std::string const& message) {
+            respondWithStatus(status, message.c_str());
+        }
+
         void respondWithError(C4Error);
 
         void setStatus(HTTPStatus status, const char* message);
@@ -94,9 +99,9 @@ namespace litecore::REST {
 
         // Response headers:
 
-        void setHeader(fleece::slice header, fleece::slice value);
+        void setHeader(slice header, slice value);
 
-        void setHeader(fleece::slice header, int64_t value) { setHeader(header, std::to_string(value)); }
+        void setHeader(slice header, int64_t value) { setHeader(header, std::to_string(value)); }
 
         void addHeaders(const std::map<std::string, std::string>&);
 
@@ -112,13 +117,13 @@ namespace litecore::REST {
         void setContentLength(uint64_t length);
         void uncacheable();
 
-        void write(fleece::slice);
+        void write(slice);
 
-        void write(const char* content) { write(fleece::slice(content)); }
+        void write(const char* content) { write(slice(content)); }
 
         void printf(const char* format, ...) __printflike(2, 3);
 
-        fleece::JSONEncoder& jsonEncoder();
+        JSONEncoder& jsonEncoder();
 
         void writeStatusJSON(HTTPStatus status, const char* message = nullptr);
         void writeErrorJSON(C4Error);
@@ -153,28 +158,28 @@ namespace litecore::REST {
       protected:
         void sendStatus();
         void sendHeaders();
-        void writeToSocket(fleece::slice);
+        void writeToSocket(slice);
         void _flush();
         void handleSocketError();
 
       private:
         std::unique_ptr<net::ResponderSocket> _socket;
         C4Error                               _error{};
-        std::vector<fleece::alloc_slice>      _requestBody;
+        std::vector<alloc_slice>              _requestBody;
         HTTPStatus                            _status{HTTPStatus::OK};  // Response status code
         std::string                           _statusMessage;           // Response custom status message
         bool                                  _sentStatus{false};       // Sent the response line yet?
-        fleece::Writer                        _responseHeaderWriter;
+        Writer                                _responseHeaderWriter;
         websocket::Headers                    _responseHeaders;
         bool                                  _sentHeaders{false};  // True after headers are ended
         int64_t                               _contentLength{-1};   // Content-Length, once it's set
-        bool           _streaming{false};  // If true, content is being streamed, no Content-Length header
-        bool           _chunked{false};    // True if using chunked transfer encoding
-        fleece::Writer _responseWriter;    // Output stream for response body
-        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;      // Used for writing JSON to response
-        fleece::alloc_slice                  _responseBody;     // Finished response body
-        fleece::slice                        _unsentBody;       // Unsent portion of _responseBody
-        bool                                 _finished{false};  // Finished configuring the response?
+        bool                         _streaming{false};  // If true, content is being streamed, no Content-Length header
+        bool                         _chunked{false};    // True if using chunked transfer encoding
+        Writer                       _responseWriter;    // Output stream for response body
+        std::unique_ptr<JSONEncoder> _jsonEncoder;       // Used for writing JSON to response
+        alloc_slice                  _responseBody;      // Finished response body
+        slice                        _unsentBody;        // Unsent portion of _responseBody
+        bool                         _finished{false};   // Finished configuring the response?
     };
 
 }  // namespace litecore::REST
