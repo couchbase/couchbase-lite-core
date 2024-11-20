@@ -195,7 +195,7 @@ namespace litecore::REST {
                 json.writeKey("error"_sl);
                 json.writeString(defaultMessage);
             }
-            if ( message && defaultMessage && 0 != strcasecmp(message, defaultMessage) ) {
+            if ( message && *message && defaultMessage && 0 != strcasecmp(message, defaultMessage) ) {
                 json.writeKey("reason"_sl);
                 json.writeString(message);
             }
@@ -223,7 +223,7 @@ namespace litecore::REST {
     void RequestResponse::respondWithError(C4Error err) {
         Assert(err.code != 0);
         alloc_slice message = c4error_getMessage(err);
-        respondWithStatus(errorToStatus(err), (message ? message.asString().c_str() : nullptr));
+        respondWithStatus(errorToStatus(err), message.asString());
     }
 
     HTTPStatus RequestResponse::errorToStatus(C4Error err) {
