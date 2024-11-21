@@ -304,9 +304,9 @@ namespace litecore::REST {
                 rq.setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
             }
         } catch ( const std::exception& ) {
-            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s",
-                  C4Error::fromCurrentException().description().c_str());
-            if ( !rq.finished() ) rq.respondWithStatus(HTTPStatus::ServerError, "Internal exception");
+            C4Error error = C4Error::fromCurrentException();
+            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", error.description().c_str());
+            if ( !rq.finished() ) rq.respondWithError(error);
         }
         rq.finish();
     }

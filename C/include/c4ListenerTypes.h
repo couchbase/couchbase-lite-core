@@ -69,6 +69,13 @@ typedef struct C4ListenerConfig {
     bool enableDeltaSync;  ///< Enable document-deltas optimization
 } C4ListenerConfig;
 
+/** Per-database configuration for a C4Listener. */
+typedef struct C4ListenerDatabaseConfig {
+    bool allowPush;        ///< Allow peers to push changes to local db
+    bool allowPull;        ///< Allow peers to pull changes from local db
+    bool enableDeltaSync;  ///< Enable document-deltas optimization
+} C4ListenerDatabaseConfig;
+
 /** @} */
 
 C4API_END_DECLS

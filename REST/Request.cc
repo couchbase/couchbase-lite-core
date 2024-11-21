@@ -44,7 +44,8 @@ namespace litecore::REST {
         : Body(std::move(headers), std::move(body))
         , _method(method)
         , _path(std::move(path))
-        , _queries(std::move(queries)) {}
+        , _queries(std::move(queries))
+        , _version(HTTP1_1) {}
 
     bool Request::readFromHTTP(slice httpData) {
         slice_istream in(httpData);

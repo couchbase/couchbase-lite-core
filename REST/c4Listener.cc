@@ -74,7 +74,7 @@ C4Listener::C4Listener(C4ListenerConfig const& config, Retained<HTTPListener> im
     c4log(ListenerLog, kC4LogInfo, "Listener config: %s", ss.str().c_str());
 }
 
-C4Listener::C4Listener(C4ListenerConfig config) : C4Listener(config, make_retained<SyncListener>(config)) {}
+C4Listener::C4Listener(C4ListenerConfig const& config) : C4Listener(config, make_retained<SyncListener>(config)) {}
 
 C4Listener::C4Listener(C4Listener&&) noexcept = default;
 
@@ -82,10 +82,10 @@ C4Listener::~C4Listener() {
     if ( _impl ) _impl->stop();
 }
 
-bool C4Listener::shareDB(slice name, C4Database* db) {
+bool C4Listener::shareDB(slice name, C4Database* db, C4ListenerDatabaseConfig const* dbConfig) {
     optional<string> nameStr;
     if ( name.buf ) nameStr = name;
-    return _impl->registerDatabase(db, nameStr);
+    return _impl->registerDatabase(db, nameStr, dbConfig);
 }
 
 bool C4Listener::unshareDB(C4Database* db) { return _impl->unregisterDatabase(db); }
