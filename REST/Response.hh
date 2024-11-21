@@ -37,9 +37,9 @@ namespace litecore::REST {
       public:
         using HTTPStatus = net::HTTPStatus;
 
-        slice header(const char* name) const { return _headers[slice(name)]; }
+        slice header(const char* name) const LIFETIMEBOUND { return _headers[slice(name)]; }
 
-        slice operator[](const char* name) const { return header(name); }
+        slice operator[](const char* name) const LIFETIMEBOUND { return header(name); }
 
         std::optional<MIMEType> contentType() const;
 

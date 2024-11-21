@@ -189,21 +189,8 @@ namespace litecore::REST {
         });
     }
 
-    pair<string, C4CollectionSpec> HTTPListener::parseKeySpace(slice keySpace) {
-        slice_istream in(keySpace);
-        slice         dbName = in.readToDelimiter(".");
-        if ( !dbName ) return {string(keySpace), {}};
-        C4CollectionSpec spec = {};
-        spec.name             = in.readToDelimiterOrEnd(".");
-        if ( in.size > 0 ) {
-            spec.scope = spec.name;
-            spec.name  = in;
-        }
-        return {string(dbName), spec};
-    }
-
     BorrowedDatabase HTTPListener::getDatabase(RequestResponse& rq, const string& dbName, bool writeable) {
-        BorrowedDatabase db = databaseNamed(dbName, writeable);
+        BorrowedDatabase db = borrowDatabaseNamed(dbName, writeable);
         if ( !db ) {
             if ( isValidDatabaseName(dbName) ) rq.respondWithStatus(HTTPStatus::NotFound, "No such database");
             else

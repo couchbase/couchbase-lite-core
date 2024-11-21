@@ -26,28 +26,57 @@ C4_ASSUME_NONNULL_BEGIN
 // ************************************************************************
 
 
+/** A lightweight server that shares databases over the network for replication. */
 struct C4Listener final
     : public fleece::InstanceCounted
     , C4Base {
-    explicit C4Listener(C4ListenerConfig config);
+    /// Constructor. Starts the listener (asynchronously) but does not share any databases.
+    explicit C4Listener(C4ListenerConfig const& config);
 
     ~C4Listener() override;
 
-    bool shareDB(slice name, C4Database* db);
+    /// Shares a database, and its default collection.
+    /// @param name  The URI name (first path component) in the HTTP API.
+    ///     If `nullslice`, the C4Database's name will be used (possibly URL-escaped).
+    ///     The name may not include '/', '.', control characters, or non-ASCII characters.
+    /// @param db  The database to share. On success this instance is now managed by the Listener
+    ///     and should not be used again by the caller.
+    /// @param dbConfig  Optional configuration for this database. Overrides the C4ListenerConfig.
+    /// @returns  True on success, false if the name is already in use.
+    [[nodiscard]] bool shareDB(slice name, C4Database* db, C4ListenerDatabaseConfig const* dbConfig = nullptr);
 
+    /// Stops sharing a database. `db` need not be the exact instance that was registered;
+    /// any instance on the same database file will work.
     bool unshareDB(C4Database* db);
 
-    bool shareCollection(slice name, C4Collection* coll);
+    /// Adds a collection to be shared.
+    /// @note  A database's default collection is automatically shared.
+    /// @param name  The URI name the database is registered by.
+    /// @param collection  The collection instance to share.
+    /// @returns  True on success, false if `name` is not registered. */
+    [[nodiscard]] bool shareCollection(slice name, C4Collection* collection);
 
-    bool unshareCollection(slice name, C4Collection* coll);
+    /// Stops sharing a collection.
+    /// @note  Call this after \ref registerDatabase if you don't want to share the default collection.
+    /// @param name  The URI name the database is registered by.
+    /// @param collection  The collection instance.
+    /// @returns  True on success, false if the database name or collection is not registered. */
+    bool unshareCollection(slice name, C4Collection* collection);
 
+    /// The TCP port number for incoming connections.
     [[nodiscard]] uint16_t port() const;
 
+    /// Returns first the number of connections, and second the number of active connections.
     [[nodiscard]] std::pair<unsigned, unsigned> connectionStatus() const;
 
-    std::vector<std::string> URLs(C4Database* C4NULLABLE db) const;
+    /// Returns the URL(s) of a database being shared, or of the root.
+    /// The URLs will differ only in their hostname -- there will be one for each IP address or known
+    /// hostname of the computer, or of the network interface.
+    [[nodiscard]] std::vector<std::string> URLs(C4Database* C4NULLABLE db) const;
 
-    static std::string URLNameFromPath(slice path);
+    /// A convenience that, given a filesystem path to a database, returns the database name
+    /// for use in an HTTP URI path.
+    [[nodiscard]] static std::string URLNameFromPath(slice path);
 
     C4Listener(const C4Listener&) = delete;
 
