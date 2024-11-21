@@ -239,6 +239,9 @@ namespace litecore {
         When it exits scope, its database is returned to the pool. */
     class BorrowedCollection {
       public:
+        /// Constructs an empty BorrowedCollection. (Use `operator bool` to test for emptiness.)
+        BorrowedCollection() noexcept = default;
+
         /// Constructor.
         /// @throws `error::NotFound` if there is a database but no such collection in it.
         BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec);

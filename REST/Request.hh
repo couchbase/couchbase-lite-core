@@ -105,7 +105,7 @@ namespace litecore::REST {
 
         void addHeaders(const std::map<std::string, std::string>&);
 
-        websocket::Headers const& responseHeaders() const { return _responseHeaders; }
+        websocket::Headers const& responseHeaders() const LIFETIMEBOUND { return _responseHeaders; }
 
         /// Enables HTTP 'chunked' transfer encoding.
         void setChunked();
@@ -123,7 +123,7 @@ namespace litecore::REST {
 
         void printf(const char* format, ...) __printflike(2, 3);
 
-        JSONEncoder& jsonEncoder();
+        JSONEncoder& jsonEncoder() LIFETIMEBOUND;
 
         void writeStatusJSON(HTTPStatus status, const char* message = nullptr);
         void writeErrorJSON(C4Error);

@@ -30,11 +30,11 @@ namespace litecore::REST {
       private:
         class SyncTask;
 
-        std::string findMatchingProtocol(DatabasePool*, std::string_view clientProtocols);
+        std::string findMatchingProtocol(DBShare const&, std::string_view clientProtocols);
         void        handleSync(RequestResponse&);
 
-        C4ReplicatorMode const _pushMode, _pullMode;
-        bool const             _enableDeltaSync;
+        bool const _allowPush, _allowPull;
+        bool const _enableDeltaSync;
     };
 
 }  // namespace litecore::REST

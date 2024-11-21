@@ -118,8 +118,7 @@ namespace litecore::REST {
         std::string _serverName, _serverVersion;
 
       private:
-        static std::pair<std::string, C4CollectionSpec> parseKeySpace(slice keySpace);
-        void                                            stopTasks();
+        void stopTasks();
 
         Retained<crypto::Identity> _identity;
         Retained<Server>           _server;
