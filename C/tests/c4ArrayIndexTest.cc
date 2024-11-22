@@ -11,8 +11,6 @@
 #include "c4Query.h"
 #include "c4Query.hh"
 
-// Disabled pending CBL-6400
-#if 0
 class ArrayIndexTest : public C4Test {
   public:
     explicit ArrayIndexTest(int opt) : C4Test(opt) {}
@@ -132,7 +130,10 @@ constexpr std::string_view p0004 =
 N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Empty Path", "[C][ArrayIndex]") {
     const auto defaultColl = REQUIRED(c4db_getDefaultCollection(db, ERROR_INFO()));
     C4Error    err{};
-    createArrayIndex(defaultColl, "arridx"_sl, nullslice, "", &err);
+    {
+        ExpectingExceptions x;
+        createArrayIndex(defaultColl, "arridx"_sl, nullslice, "", &err);
+    }
     CHECK(err.code == kC4ErrorInvalidQuery);
 }
 
@@ -140,12 +141,15 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Empty Path", "[C
 N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Create Array Index with Invalid Expressions", "[C][ArrayIndex]") {
     const auto defaultColl = REQUIRED(c4db_getDefaultCollection(db, ERROR_INFO()));
     C4Error    err{};
+    {
+        ExpectingExceptions x;
 
-    createArrayIndex(defaultColl, "arridx"_sl, R"([".address.state", "", ".address.city"])", "contacts", &err);
-    CHECK(err.code == kC4ErrorInvalidQuery);
+        createArrayIndex(defaultColl, "arridx"_sl, R"([".address.state", "", ".address.city"])", "contacts", &err);
+        CHECK(err.code == kC4ErrorInvalidQuery);
 
-    createArrayIndex(defaultColl, "arridx"_sl, R"([".address.state", , ".address.city"])", "contacts", &err);
-    CHECK(err.code == kC4ErrorInvalidQuery);
+        createArrayIndex(defaultColl, "arridx"_sl, R"([".address.state", , ".address.city"])", "contacts", &err);
+        CHECK(err.code == kC4ErrorInvalidQuery);
+    }
 }
 
 // 3. TestCreateUpdateDeleteArrayIndexSingleLevel
@@ -605,7 +609,7 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Nested Non-Scalar Array", "[C][Un
 // 5. TestUnnestSingleLevelArrayWithGroupBy
 // Disabled until group-by is fixed
 // See https://jira.issues.couchbase.com/browse/CBL-6327
-#    if 0
+#if 0
 TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Array With Group By", "[C][Unnest]") {
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
@@ -616,7 +620,7 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Array With Group By", "[C]
     c4::ref queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
     validateQuery(queryenum, {});
 }
-#    endif
+#endif
 
 // 6. TestUnnestWithoutAlias
 N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Without Alias", "[C][Unnest]") {
@@ -671,5 +675,3 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Array Literal Not Supported", "[C
     REQUIRE(!query);
     CHECK(err.code == kC4ErrorInvalidQuery);
 }
-
-#endif

@@ -437,8 +437,6 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
              "'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
 }
 
-// Disabled pending CBL-6400
-#if 0
 TEST_CASE_METHOD(N1QLParserTest, "N1QL UNNEST", "[Query][N1QL][C]") {
     tableNames.insert("kv_.store.customers");
     tableNames.insert("kv_.store2.customers");
@@ -494,7 +492,6 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL UNNEST", "[Query][N1QL][C]") {
                           "only a property path is allowed.");
     }
 }
-#endif
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT isarray(x),  isatom(x),  isboolean(x),  isnumber(x),  isobject(x),  isstring(x),  type(x)")

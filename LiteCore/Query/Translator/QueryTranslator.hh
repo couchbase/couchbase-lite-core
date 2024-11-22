@@ -15,6 +15,7 @@
 #include "fleece/function_ref.hh"
 #include "fleece/Fleece.h"
 #include <set>
+#include <unordered_map>
 #include <vector>
 
 C4_ASSUME_NONNULL_BEGIN
@@ -131,18 +132,19 @@ namespace litecore {
         string           predictiveIdentifier(FLValue expression) const;
         qt::RootContext  makeRootContext() const;
 
-        const Delegate&     _delegate;                 // delegate object (SQLiteKeyStore)
-        string              _defaultTableName;         // Name of the default table to use
-        string              _defaultCollectionName;    // Name of the default collection to use
-        string              _sql;                      // The generated SQL
-        std::set<string>    _parameters;               // Plug-in "$" parameters found in parsing
-        std::set<string>    _kvTables;                 // Collection tables referenced in this query
-        std::vector<string> _ftsTables;                // FTS virtual tables being used
-        unsigned            _1stCustomResultCol{0};    // Index of 1st result after _baseResultColumns
-        std::vector<string> _columnTitles;             // Pretty names of result columns
-        string              _bodyColumnName;           // Name of the `body` column
-        bool                _isAggregateQuery{false};  // Is this an aggregate query?
-        bool                _usesExpiration{false};    // Has query accessed _expiration meta-property?
+        const Delegate&                    _delegate;               // delegate object (SQLiteKeyStore)
+        string                             _defaultTableName;       // Name of the default table to use
+        string                             _defaultCollectionName;  // Name of the default collection to use
+        string                             _sql;                    // The generated SQL
+        std::set<string>                   _parameters;             // Plug-in "$" parameters found in parsing
+        std::set<string>                   _kvTables;               // Collection tables referenced in this query
+        std::vector<string>                _ftsTables;              // FTS virtual tables being used
+        unsigned                           _1stCustomResultCol{0};  // Index of 1st result after _baseResultColumns
+        std::vector<string>                _columnTitles;           // Pretty names of result columns
+        std::unordered_map<string, string> _hashedTables;    // hexName(tableName) -> tableName. Used for Unnest tables.
+        string                             _bodyColumnName;  // Name of the `body` column
+        bool                               _isAggregateQuery{false};  // Is this an aggregate query?
+        bool                               _usesExpiration{false};    // Has query accessed _expiration meta-property?
     };
 
 }  // namespace litecore

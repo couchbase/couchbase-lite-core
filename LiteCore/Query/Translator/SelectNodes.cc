@@ -250,6 +250,16 @@ namespace litecore::qt {
 
     void UnnestSourceNode::parseChildExprs(ParseContext& ctx) {
         setChild(_unnest, ExprNode::parse(_unnestFleeceExpression, ctx));
+        if ( _unnest ) {
+            require(dynamic_cast<PropertyNode*>(_unnest),
+                    "the use of a general expression as the object of UNNEST is not supported; "
+                    "only a property path is allowed.");
+            if ( _alias.empty() ) {
+                // If alias is not given explicitly, use the unnestIdentifier.
+                string alias = unnestIdentifier();
+                _alias       = ctx.newString(alias);
+            }
+        }
     }
 
     string UnnestSourceNode::unnestIdentifier() const {
@@ -305,6 +315,8 @@ namespace litecore::qt {
         }
 
         if ( select ) {
+            _hasGroupBy = getCaseInsensitive(select, "GROUP_BY");
+
             // Parse FROM first, because it creates the SourceNodes that affect parsing of properties:
             if ( Value from = getCaseInsensitive(select, "FROM") ) {
                 for ( Value i : requiredArray(from, "FROM") ) {
@@ -329,7 +341,13 @@ namespace litecore::qt {
             }
 
             // After all aliases are known, allow Source and What Nodes to parse their expressions:
-            for ( SourceNode* source : _sources ) source->parseChildExprs(ctx);
+            for ( SourceNode* source : _sources ) {
+                // For UnnestSourceNode, parseChildExprs() may assign an alias
+                // if not explicitly given.
+                auto emptyAlias = source->alias().empty();
+                source->parseChildExprs(ctx);
+                if ( emptyAlias && !source->alias().empty() ) { registerAlias(source, ctx); }
+            }
             for ( WhatNode* what : _what ) what->parseChildExprs(ctx);
 
             // Parse the WHERE clause:
@@ -448,9 +466,11 @@ namespace litecore::qt {
     }
 
     void SelectNode::registerAlias(AliasedNode* node, ParseContext& ctx) {
-        slice alias    = node->alias();
-        bool  inserted = ctx.aliases.insert({lowercase(string(alias)), node}).second;
-        require(inserted, "duplicate alias '%.*s'", FMTSLICE(alias));
+        slice alias = node->alias();
+        if ( !alias.empty() ) {
+            bool inserted = ctx.aliases.insert({lowercase(string(alias)), node}).second;
+            require(inserted, "duplicate alias '%.*s'", FMTSLICE(alias));
+        }
     }
 
     void SelectNode::addSource(SourceNode* source, ParseContext& ctx) {

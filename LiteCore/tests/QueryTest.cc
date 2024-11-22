@@ -30,8 +30,6 @@ using namespace fleece::impl;
 using namespace std;
 using namespace std::chrono;
 
-#define SKIP_ARRAY_INDEXES  // Array indexes aren't exposed in Couchbase Lite (yet?)
-
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
@@ -83,19 +81,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     CHECK(extractIndexes(store->getIndexes()).empty());
 }
 
-// Disabled pending CBL-6400
-#if 0
-#    ifndef SKIP_ARRAY_INDEXES
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
     store->createIndex("nums"_sl, R"([])", IndexSpec::kArray, IndexSpec::ArrayOptions{"numbers"});
     store->deleteIndex("nums"_sl);
 }
-#    endif
-#endif
 
-// Disabled pending CBL-6400
-#if 0
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index (Multi-level)", "[Query][ArrayIndex]") {
     addArrayDocs();
 
@@ -342,7 +333,6 @@ namespace {
         for ( unsigned i = 0; i < depth; ++i ) { ss << "-" << nextLetter(a, i) << arrayIndex; }
         return ss.str();
     };
-
 }  // anonymous namespace
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayIndex]") {
@@ -412,10 +402,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Deeply Nested Arrays", "[Query][ArrayI
     }
     CHECK(results == expected);
 }
-#endif
 
-// Disabled pending CBL-6400
-#if 0
 N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]") {
     constexpr int depth = 3;
 
@@ -567,7 +554,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "UNNEST Table Triggers", "[Query][ArrayIndex]"
     REQUIRE(expected4.size() == 40);
     CHECK(results == expected4);
 }
-#endif
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);
@@ -3345,8 +3331,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
     }
 }
 
-// Disabled pending CBL-6400
-#if 0
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
     const char* json = R"==(
 {
@@ -3584,4 +3568,3 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query with Unnest", "[Query]") {
     CHECK(e->columns()[1]->asInt() == 3);
     CHECK(!e->next());
 }
-#endif

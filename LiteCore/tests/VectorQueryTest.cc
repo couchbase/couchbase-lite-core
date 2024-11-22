@@ -692,19 +692,26 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Bad Metric
     Retained<Query> query;
 
     // c.f. kMetricNames in VectorIndexSpec.cc
-    const char*        kMetrics[]   = {"euclidean",
-                                       "L2",
-                                       "euclidean2",
-                                       "L2_squared",
-                                       "euclidean_squared",
-                                       "cosine",  //5
-                                       "dot",
-                                       "cosine_distance",
-                                       "cosine_similarity",
-                                       "dot_product_distance",
-                                       "dot_product_similarity",  //10
-                                       "default"};
-    constexpr unsigned kMetricCount = (unsigned)sizeof(kMetrics) / sizeof(char*);
+    const char*        kMetrics[]      = {"euclidean",
+                                          "L2",
+                                          "euclidean2",
+                                          "L2_squared",
+                                          "euclidean_squared",
+                                          "cosine",  //5
+                                          "dot",
+                                          "cosine_distance",
+                                          "cosine_similarity",
+                                          "dot_product_distance",
+                                          "dot_product_similarity",  //10
+                                          "default"};
+    constexpr unsigned kMetricCount    = (unsigned)sizeof(kMetrics) / sizeof(char*);
+    auto               stdNameOfMetric = [&](unsigned i) -> std::string_view {
+        DebugAssert(i < kMetricCount);
+        auto metric = vectorsearch::MetricNamed(kMetrics[i]);
+        DebugAssert(metric.has_value());
+        return vectorsearch::NameOfMetric(*metric);
+    };
+
 
     SECTION("Default Metric") {
         // Metric is not specified in the following index.
@@ -728,7 +735,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Bad Metric
                         } catch ( error& err ) {
                             CHECK(err.domain == error::LiteCore);
                             CHECK(err.code == error::InvalidQuery);
-                            CHECK("in 3rd argument to APPROX_VECTOR_DISTANCE, "s + kMetrics[i]
+                            CHECK("in 3rd argument to APPROX_VECTOR_DISTANCE, "s + string{stdNameOfMetric(i)}
                                           + " does not match the index's metric, euclidean2"s
                                   == err.what());
                         }
@@ -774,7 +781,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Bad Metric
                     } catch ( error& err ) {
                         CHECK(err.domain == error::LiteCore);
                         CHECK(err.code == error::InvalidQuery);
-                        CHECK("in 3rd argument to APPROX_VECTOR_DISTANCE, "s + kMetrics[i]
+                        CHECK("in 3rd argument to APPROX_VECTOR_DISTANCE, "s + string{stdNameOfMetric(i)}
                                       + " does not match the index's metric, "
                                       + string(vectorsearch::NameOfMetric(opts.metric))
                               == err.what());
@@ -861,8 +868,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Misc)", "[
                 } catch ( error& err ) {
                     CHECK(err.domain == error::LiteCore);
                     CHECK(err.code == error::InvalidQuery);
-                    CHECK("4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be a positive integer"s
-                          == err.what());
+                    CHECK("4th argument (numProbes) to APPROX_VECTOR_DISTANCE out of range"s == err.what());
                 }
                 CHECK(query == nullptr);
                 // Default WARNING Invalid LiteCore query: 4th argument (numProbes) to APPROX_VECTOR_DISTANCE must be a positive integer
@@ -914,7 +920,7 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Misc)", "[
     }
 
     SECTION("Invalid First Argument") {
-        // First argument must be an expression evaluate to a property in the databas instead of
+        // First argument must be an expression evaluate to a property in the database instead of
         // the name of the index.
         string queryStr = R"(SELECT META(a).id FROM )"s + collectionName
                           + R"( AS a ORDER BY APPROX_VECTOR_DISTANCE('vecIndex', $target) LIMIT 5)";
@@ -924,12 +930,12 @@ TEST_CASE_METHOD(SIFTVectorQueryTest, "APPROX_VECTOR_DISTANCE Errors (Misc)", "[
                 query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
             } catch ( error& err ) {
                 CHECK(err.domain == error::LiteCore);
-                CHECK(err.code == error::NoSuchIndex);
-                CHECK("vector search with APPROX_VECTOR_DISTANCE requires a vector index on \"vecIndex\""s
-                      == err.what());
+                CHECK(err.code == error::InvalidQuery);
+                CHECK("unknown source collection for APPROX_VECTOR_DISTANCE()"s == err.what());
             }
             CHECK(query == nullptr);
         }
+        expectedWarningsLogged++;
     }
 }
 
