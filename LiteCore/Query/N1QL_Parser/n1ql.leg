@@ -356,7 +356,7 @@ indexTable =                            { a = string(""); }
 
 function =
     "meta"i _ '(' _                    { f = op("meta()");}
-    (c:IDENTIFIER _                    { appendAny(f, c.as<string>());}
+    (c:propertyPath _                  { appendAny(f, c.as<string>());}
     )? ')' _                           { $$ = f;}
   | "match"i _ '(' _                   { f = op("MATCH()");}
     ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}
