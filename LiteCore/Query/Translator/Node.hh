@@ -20,7 +20,6 @@
 #include "fleece/Mutable.hh"
 #include <iosfwd>
 #include <queue>
-#include <unordered_map>
 
 C4_ASSUME_NONNULL_BEGIN
 

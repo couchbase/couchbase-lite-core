@@ -326,12 +326,18 @@ namespace litecore::qt {
 
         string_view lastComponent;
         if ( path.count() > 0 ) lastComponent = ctx.newString(path.get(path.count() - 1).first);
-        return new (ctx) PropertyNode(source, result, ctx.newString(string(path)), lastComponent, sqliteFn);
+        return new (ctx) PropertyNode(source, result, ctx.newString(string(path)), lastComponent, sqliteFn,
+                                      ctx.select ? ctx.select->hasGroupBy() : false);
     }
 
     PropertyNode::PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, string_view path,
-                               string_view lastComponent, string_view fn)
-        : _source(src), _result(result), _path(path), _lastComponent(lastComponent), _sqliteFn(fn) {}
+                               string_view lastComponent, string_view fn, bool hasGroupBy)
+        : _source(src)
+        , _result(result)
+        , _path(path)
+        , _lastComponent(lastComponent)
+        , _sqliteFn(fn)
+        , _hasGroupBy(hasGroupBy) {}
 
     string_view PropertyNode::asColumnName() const {
         if ( !_path.empty() ) return _lastComponent;

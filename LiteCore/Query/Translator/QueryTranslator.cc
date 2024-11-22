@@ -16,6 +16,7 @@
 #include "ExprNodes.hh"
 #include "IndexedNodes.hh"
 #include "Logging.hh"
+#include "SecureDigest.hh"
 #include "SelectNodes.hh"
 #include "SQLWriter.hh"
 #include "TranslatorTables.hh"
@@ -119,7 +120,13 @@ namespace litecore {
             // Check whether there's an array index we can use for an UNNEST:
             auto unnestSrc = unnest->unnestExpression()->source();
             if ( !unnestSrc ) return "";
-            tableName = _delegate.unnestedTableName(tableNameForSource(unnestSrc, ctx), unnest->unnestIdentifier());
+            string srcTableName = tableNameForSource(unnestSrc, ctx);
+            if ( auto iter = _hashedTables.find(srcTableName); iter != _hashedTables.end() )
+                srcTableName = iter->second;
+            string plainTableName = _delegate.unnestedTableName(srcTableName, unnest->unnestIdentifier());
+            tableName             = hexName(plainTableName);
+            // save the tableName in plain text for later use
+            _hashedTables.emplace(tableName, plainTableName);
             if ( _delegate.tableExists(tableName) ) source->setTableName(ctx.newString(tableName));
         } else {
             string name(source->collection());

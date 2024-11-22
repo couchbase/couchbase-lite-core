@@ -14,6 +14,7 @@
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
 #include "ExprNodes.hh"
+#include "SecureDigest.hh"
 #include "SelectNodes.hh"
 #include "StringUtil.hh"
 #include <iosfwd>
@@ -473,33 +474,50 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST", "[Query][
                      WHERE: ['>', ['.notes.page'], 100]}]"),
                 "SELECT fl_result(notes.value) FROM kv_default AS book JOIN fl_each(book.body, 'notes') AS notes WHERE "
                 "fl_nested_value(notes.body, 'page') > 100 AND (book.flags & 1 = 0)");
-    CHECK_equal(parseWhere("['SELECT', {\
+    //    CHECK_equal(parseWhere("['SELECT', {\
+//                      WHAT: ['.notes'], \
+//                      FROM: [{as: 'book'}, \
+//                             {as: 'notes', 'unnest': ['pi()']}],\
+//                     WHERE: ['>', ['.notes.page'], 100]}]"),
+    //                "SELECT fl_result(notes.value) FROM kv_default AS book JOIN fl_each(pi()) AS notes WHERE "
+    //                "fl_nested_value(notes.body, 'page') > 100 AND (book.flags & 1 = 0)");
+
+    // Unnest of literal array is not allowed for now.
+    ExpectException(error::LiteCore, error::InvalidQuery,
+                    "the use of a general expression as the object of UNNEST is not supported; "
+                    "only a property path is allowed.",
+                    [&] {
+                        parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['pi()']}],\
-                     WHERE: ['>', ['.notes.page'], 100]}]"),
-                "SELECT fl_result(notes.value) FROM kv_default AS book JOIN fl_each(pi()) AS notes WHERE "
-                "fl_nested_value(notes.body, 'page') > 100 AND (book.flags & 1 = 0)");
+                      WHERE: ['>', ['.notes.page'], 100]}]");
+                    });
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST optimized", "[Query][QueryTranslator][Unnest]") {
-    tableNames.insert("kv_default:unnest:notes");
+    string hashedUnnestTable = hexName("kv_default:unnest:notes");
+    tableNames.insert(hashedUnnestTable);
+    if ( '0' <= hashedUnnestTable[0] && hashedUnnestTable[0] <= '9' )
+        hashedUnnestTable = "\""s + hashedUnnestTable + "\"";
 
-    CHECK_equal(parseWhere("['SELECT', {\
+    CHECK_equal(
+            parseWhere("['SELECT', {\
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['=', ['.notes'], 'torn']}]"),
-                "SELECT book.key, book.sequence FROM kv_default AS book JOIN \"kv_default:unnest:notes\" AS notes ON "
-                "notes.docid=book.rowid WHERE fl_unnested_value(notes.body) = 'torn' AND (book.flags & 1 = 0)");
-    CHECK_equal(
-            parseWhere("['SELECT', {\
+            "SELECT book.key, book.sequence FROM kv_default AS book JOIN " + hashedUnnestTable
+                    + " AS notes ON "
+                      "notes.docid=book.rowid WHERE fl_unnested_value(notes.body) = 'torn' AND (book.flags & 1 = 0)");
+    CHECK_equal(parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]"),
-            "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN \"kv_default:unnest:notes\" "
-            "AS notes ON notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (book.flags & "
-            "1 = 0)");
+                "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN " + hashedUnnestTable
+                        + " AS notes ON notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND "
+                          "(book.flags & "
+                          "1 = 0)");
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collections",
@@ -518,13 +536,20 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collec
                 "fl_nested_value(notes.body, 'page') > 100 AND (library.flags & 1 = 0)");
 
     // Same, but optimized:
-    tableNames.insert("kv_.books:unnest:notes");
+    string hashedUnnestTable = hexName("kv_.books:unnest:notes");
+    tableNames.insert(hashedUnnestTable);
+    if ( '0' <= hashedUnnestTable[0] && hashedUnnestTable[0] <= '9' )
+        hashedUnnestTable = "\""s + hashedUnnestTable + "\"";
+
     CHECK_equal(
             parseWhere(str),
             "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS library INNER JOIN \"kv_.books\" AS "
-            "book ON fl_value(book.body, 'library') = library.key JOIN \"kv_.books:unnest:notes\" AS notes ON "
-            "notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (library.flags & 1 = "
-            "0)");
+            "book ON fl_value(book.body, 'library') = library.key JOIN "
+                    + hashedUnnestTable
+                    + " AS notes ON "
+                      "notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (library.flags & 1 "
+                      "= "
+                      "0)");
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Collate", "[Query][QueryTranslator][Collation]") {

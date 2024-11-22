@@ -126,13 +126,14 @@ namespace litecore::qt {
 
       private:
         PropertyNode(SourceNode* C4NULLABLE src, WhatNode* C4NULLABLE result, string_view path,
-                     string_view lastComponent, string_view fn);
+                     string_view lastComponent, string_view fn, bool hasGroupBy);
 
         SourceNode* C4NULLABLE _source{};       // Source I am relative to
         WhatNode* C4NULLABLE   _result{};       // Result I am relative to (only if _source is nullptr)
         string_view            _path;           // The path (possibly empty)
         string_view            _lastComponent;  // Last component of path
         string_view            _sqliteFn;       // SQLite function to emit; usually `fl_value`
+        bool                   _hasGroupBy{false};
     };
 
     /** A local variable (`?foo`) used in an ANY/EVERY expression. */

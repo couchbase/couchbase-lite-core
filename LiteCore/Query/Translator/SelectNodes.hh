@@ -173,6 +173,10 @@ namespace litecore::qt {
         /// Set during postprocessing.
         bool isAggregate() const { return _isAggregate; }
 
+        /// True if the query uses `GROUP BY
+        /// Set when start to parse the select statement.
+        bool hasGroupBy() const { return _hasGroupBy; }
+
         /// The number of columns that will automatically be prepended before the ones in `what()`.
         /// (This is a kludge introduced by the FTS query design ages ago.)
         unsigned numPrependedColumns() const { return _numPrependedColumns; }
@@ -201,6 +205,7 @@ namespace litecore::qt {
         uint8_t              _numPrependedColumns = 0;      // Columns added by FTS
         bool                 _distinct            = false;  // True if DISTINCT is given
         bool                 _isAggregate         = false;  // Uses aggregate fns?
+        bool                 _hasGroupBy          = false;  // Current SELECT include GROUP_BY
     };
 
 }  // namespace litecore::qt

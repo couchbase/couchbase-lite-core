@@ -101,6 +101,7 @@ N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
     checkQuery(12, 2);
 }
 
+#if 0  // v4.0 does not support UNNEST of expression
 N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query][Unnest]") {
     addArrayDocs(1, 90);
 
@@ -114,7 +115,7 @@ N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query][Unnes
 
     checkQuery(22, 2);
 
-#ifndef SKIP_ARRAY_INDEXES
+#    ifndef SKIP_ARRAY_INDEXES
     if ( GENERATE(0, 1) ) {
         Log("-------- Creating JSON index --------");
         store->createIndex("numbersIndex"_sl, json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"), IndexSpec::kArray);
@@ -127,5 +128,6 @@ N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query][Unnes
     checkOptimized(query);
 
     checkQuery(22, 2);
-#endif
+#    endif
 }
+#endif  // v4.0 does not support UNNEST of expression
