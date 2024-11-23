@@ -15,9 +15,11 @@
 #include "c4ExceptionUtils.hh"
 #include "c4Database.hh"
 #include "c4Collection.hh"
+#include "Address.hh"
 #include "HTTPListener.hh"
 #include "SyncListener.hh"
 #include <algorithm>
+#include <sstream>
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -31,7 +33,9 @@ namespace litecore::REST {
     C4LogDomain RESTLog;
 }  // namespace litecore::REST
 
-string C4Listener::URLNameFromPath(slice pathSlice) { return Listener::databaseNameFromPath(FilePath(pathSlice, "")); }
+string C4Listener::URLNameFromPath(slice pathSlice) {
+    return DatabaseRegistry::databaseNameFromPath(FilePath(pathSlice, ""));
+}
 
 namespace {
     std::stringstream& operator<<(std::stringstream& ss, const C4ListenerConfig& config) {

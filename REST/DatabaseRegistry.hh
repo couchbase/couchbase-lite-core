@@ -1,5 +1,5 @@
 //
-// Listener.hh
+// DatabaseRegistry.hh
 //
 // Copyright 2017-Present Couchbase, Inc.
 //
@@ -11,8 +11,6 @@
 //
 
 #pragma once
-#include "fleece/RefCounted.hh"
-#include "fleece/InstanceCounted.hh"
 #include "c4Database.hh"
 #include "c4ListenerTypes.h"
 #include "FilePath.hh"
@@ -24,6 +22,8 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore {
     class DatabasePool;
     class BorrowedCollection;
@@ -32,21 +32,9 @@ namespace litecore {
 
 namespace litecore::REST {
 
-    /** Abstract superclass of network listeners that can serve access to databases.
-        Subclassed by HTTPListener. */
-    class Listener
-        : public fleece::RefCounted
-        , public fleece::InstanceCountedIn<Listener> {
+    /** Tracks the databases and collections shared by a HTTPListener. */
+    class DatabaseRegistry {
       public:
-        using Config         = C4ListenerConfig;
-        using DatabaseConfig = C4ListenerDatabaseConfig;
-        using CollectionSpec = C4Database::CollectionSpec;
-
-        static constexpr uint16_t kDefaultPort = 4984;
-
-        explicit Listener(const Config& config);
-        ~Listener() override = default;
-
         /// Creates a "keyspace" string from a database name and collection spec.
         /// This is the database name, scope and collection name separated by ".".
         /// If the scope is default, it's omitted.
@@ -73,10 +61,10 @@ namespace litecore::REST {
         ///     and should not be used again by the caller.
         /// @param name  The URI name (first path component) in the HTTP API.
         ///     If not given, the C4Database's name will be used (possibly URL-escaped).
-        /// @param dbConfig  Optional configuration for this database. Oerrides the C4ListenerConfig.
+        /// @param dbConfig  Configuration for this database. Overrides the C4ListenerConfig.
         /// @returns  True on success, false if the name is already in use.
-        bool registerDatabase(C4Database* NONNULL db, std::optional<std::string> name = std::nullopt,
-                              C4ListenerDatabaseConfig const* dbConfig = nullptr);
+        bool registerDatabase(C4Database* db, std::optional<std::string> name,
+                              C4ListenerDatabaseConfig const& dbConfig);
 
         /// Unregisters a database by its registered URI name.
         bool unregisterDatabase(const std::string& name);
@@ -90,19 +78,19 @@ namespace litecore::REST {
         /// @param name  The URI name the database is registered by.
         /// @param collection  The C4CollectionSpec identifying the collection.
         /// @returns  True on success, false if the name is not registered. */
-        bool registerCollection(const std::string& name, CollectionSpec collection);
+        bool registerCollection(const std::string& name, C4CollectionSpec const& collection);
 
         /// Unregisters a collection.
         /// @note  You can use this after `registerDatabase` to unregister the default collection.
         /// @param name  The URI name the database is registered by.
         /// @param collection  The C4CollectionSpec identifying the collection.
         /// @returns  True on success, false if the database name or collection is not registered. */
-        bool unregisterCollection(const std::string& name, CollectionSpec collection);
+        bool unregisterCollection(const std::string& name, C4CollectionSpec const& collection);
 
         /// Returns the name a database is registered under.
         /// `db` need not be the exact instance that was registered;
         /// any instance on the same database file will work. */
-        std::optional<std::string> nameOfDatabase(C4Database* NONNULL) const;
+        std::optional<std::string> nameOfDatabase(C4Database*) const;
 
         /// Returns all registered database names.
         std::vector<std::string> databaseNames() const;
@@ -111,7 +99,7 @@ namespace litecore::REST {
         struct DBShare {
             fleece::Retained<DatabasePool> pool;       /// Pool of C4Database instances
             std::set<std::string>          keySpaces;  /// Shared collections
-            DatabaseConfig                 config;     /// Configuration
+            C4ListenerDatabaseConfig       config;     /// Configuration
         };
 
         /// Returns a copy of the sharing info for a database.
@@ -123,25 +111,18 @@ namespace litecore::REST {
         /// Returns a temporary C4Collection instance, by the shared db name and keyspace.
         BorrowedCollection borrowCollection(const std::string& keyspace, bool writeable) const;
 
-        /// Returns the number of client connections.
-        virtual int connectionCount() = 0;
-
-        /// Returns the number of active client connections (for some definition of "active").
-        virtual int activeConnectionCount() = 0;
-
         void closeDatabases();
 
-      protected:
-        mutable std::mutex _mutex;
-        Config             _config;
-
       private:
-        DBShare*       _getShare(std::string const& name);
-        DBShare const* _getShare(std::string const& name) const;
+        DBShare* C4NULLABLE      _getShare(std::string const& name);
+        DBShare const* C4NULLABLE _getShare(std::string const& name) const;
 
+        mutable std::mutex             _mutex;
         std::map<std::string, DBShare> _databases;
     };
 
 }  // namespace litecore::REST
+
+C4_ASSUME_NONNULL_END
 
 #endif

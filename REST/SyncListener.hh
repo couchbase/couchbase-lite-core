@@ -18,20 +18,22 @@
 #ifdef COUCHBASE_ENTERPRISE
 
 namespace litecore::REST {
-    class RequestResponse;
 
     class SyncListener : public HTTPListener {
       public:
         static constexpr int kAPIVersion = 2;
 
-        explicit SyncListener(const Config&);
+        explicit SyncListener(const C4ListenerConfig&);
         ~SyncListener();
+
+      protected:
+        HTTPStatus handleRequest(Request& rq, websocket::Headers& headers,
+                                 std::unique_ptr<ResponderSocket>& socket) override;
 
       private:
         class SyncTask;
 
-        std::string findMatchingProtocol(DBShare const&, std::string_view clientProtocols);
-        void        handleSync(RequestResponse&);
+        std::string findMatchingProtocol(DatabaseRegistry::DBShare const&, std::string_view clientProtocols);
 
         bool const _allowPush, _allowPull;
         bool const _enableDeltaSync;

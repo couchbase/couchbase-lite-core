@@ -63,6 +63,8 @@ namespace litecore::net {
 
     const char* StatusMessage(HTTPStatus);
 
+    HTTPStatus StatusFromError(C4Error);
+
     /// HTTP methods. These do NOT have consecutive values, rather they're powers of two
     /// so they can be used as bit-masks.
     enum Method : unsigned {

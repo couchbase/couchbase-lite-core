@@ -25,8 +25,8 @@ set(
     c4Listener.cc
     c4Listener_CAPI.cc
     CertRequest.cc
+    DatabaseRegistry.cc
     HTTPListener.cc
-    Listener.cc
     netUtils.cc
     Request.cc
     Response.cc

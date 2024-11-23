@@ -11,7 +11,6 @@
 //
 
 #include "Response.hh"
-#include "MIMEType.hh"
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
 #include "HTTPLogic.hh"
@@ -29,6 +28,7 @@ namespace litecore::REST {
     using namespace litecore::net;
     using namespace litecore::crypto;
 
+#if 0
     std::optional<MIMEType> Body::contentType() const {
         if ( !_contentType ) {
             if ( auto hdr = header("Content-Type") ) _contentType.emplace(hdr);  // will throw if 'hdr' is invalid
@@ -41,12 +41,13 @@ namespace litecore::REST {
         (void)contentType();
         return _contentType && _contentType.value() == string_view(hasType);
     }
+#endif
 
     alloc_slice Body::body() const { return _body; }
 
     Value Body::bodyAsJSON() const {
         if ( !_gotBodyFleece ) {
-            if ( hasContentType("application/json") ) {
+            if ( header("Content-Type") == "application/json" ) {
                 if ( alloc_slice b = body() ) {
                     FLError err;
                     _bodyFleece = Doc::fromJSON(b, &err);
