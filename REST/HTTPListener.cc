@@ -15,12 +15,17 @@
 #include "c4Certificate.hh"
 #include "c4Database.hh"
 #include "c4ListenerInternal.hh"
-#include "Server.hh"
+#include "Address.hh"
+#include "Headers.hh"
+#include "netUtils.hh"
+#include "Request.hh"
+#include "TCPSocket.hh"
 #include "TLSContext.hh"
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "fleece/Fleece.hh"
 #include "slice_stream.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -34,19 +39,11 @@ namespace litecore::REST {
 
     static int kTaskExpirationTime = 10;
 
-    HTTPListener::HTTPListener(const Config& config) : Listener(config) {
-        _server        = new Server();
-        _serverName    = config.serverName ? slice(config.serverName) : "CouchbaseLite"_sl;
-        _serverVersion = config.serverVersion ? slice(config.serverVersion) : alloc_slice(c4_getVersion());
-        _server->setExtraHeaders({{"Server", _serverName + "/" + _serverVersion}});
-
-        if ( auto callback = config.httpAuthCallback ) {
-            auto context = config.callbackContext;
-            _server->setAuthenticator([=, this](slice authHeader) -> bool {
-                return _delegate && callback(_delegate, authHeader, context);
-            });
-        }
-
+    HTTPListener::HTTPListener(const C4ListenerConfig& config)
+        : _config(config)
+        , _server(new Server(*this))
+        , _serverName(config.serverName ? slice(config.serverName) : "CouchbaseLite"_sl)
+        , _serverVersion(config.serverVersion ? slice(config.serverVersion) : alloc_slice(c4_getVersion())) {
         _server->start(config.port, config.networkInterface, createTLSContext(config.tlsConfig).get());
     }
 
@@ -55,14 +52,14 @@ namespace litecore::REST {
     void HTTPListener::stop() {
         if ( _server ) _server->stop();
         stopTasks();
-        closeDatabases();
+        _registry.closeDatabases();
     }
 
     vector<Address> HTTPListener::addresses(C4Database* dbOrNull, bool webSocketScheme) const {
         optional<string> dbNameStr;
         slice            dbName;
         if ( dbOrNull ) {
-            dbNameStr = nameOfDatabase(dbOrNull);
+            dbNameStr = _registry.nameOfDatabase(dbOrNull);
             if ( dbNameStr ) dbName = *dbNameStr;
         }
 
@@ -114,7 +111,81 @@ namespace litecore::REST {
         return tlsContext;
     }
 
+#    pragma mark - CONNECTIONS:
+
     int HTTPListener::connectionCount() { return _server->connectionCount(); }
+
+    bool HTTPListener::registerDatabase(C4Database* db, optional<string> name,
+                                        C4ListenerDatabaseConfig const* dbConfigP) {
+        C4ListenerDatabaseConfig dbConfig;
+        if ( !dbConfigP ) {
+            dbConfig  = {.allowPush       = _config.allowPush,
+                         .allowPull       = _config.allowPull,
+                         .enableDeltaSync = _config.enableDeltaSync};
+            dbConfigP = &dbConfig;
+        }
+        return _registry.registerDatabase(db, name, *dbConfigP);
+    }
+
+    bool HTTPListener::unregisterDatabase(C4Database* db) { return _registry.unregisterDatabase(db); }
+
+    bool HTTPListener::registerCollection(const std::string& name, C4CollectionSpec const& collection) {
+        return _registry.registerCollection(name, collection);
+    }
+
+    bool HTTPListener::unregisterCollection(const std::string& name, C4CollectionSpec const& collection) {
+        return _registry.unregisterCollection(name, collection);
+    }
+
+    void HTTPListener::handleConnection(std::unique_ptr<ResponderSocket> socket) {
+        // Parse HTTP request:
+        Request rq(socket.get());
+        if ( C4Error err = rq.socketError() ) {
+            string peer = socket->peerAddress();
+            if ( err == C4Error{NetworkDomain, kC4NetErrConnectionReset} ) {
+                c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (closed by peer)", peer.c_str());
+            } else {
+                c4log(ListenerLog, kC4LogError, "Error reading HTTP request from %s: %s", peer.c_str(),
+                      err.description().c_str());
+            }
+            return;
+        }
+
+        websocket::Headers headers;
+        headers.add("Date", timestamp());
+        headers.add("Server", _serverName + "/" + _serverVersion);
+        HTTPStatus status;
+
+        // HTTP auth:
+        if ( auto authCallback = _config.httpAuthCallback ) {
+            if ( !authCallback(_delegate, rq.header("Authorization"), _config.callbackContext) ) {
+                c4log(ListenerLog, kC4LogInfo, "Authentication failed");
+                headers.add("WWW-Authenticate", "Basic charset=\"UTF-8\"");
+                writeResponse(HTTPStatus::Unauthorized, headers, socket.get());
+                return;
+            }
+        }
+
+        // Handle the request:
+        try {
+            status = handleRequest(rq, headers, socket);
+        } catch ( ... ) {
+            C4Error error = C4Error::fromCurrentException();
+            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", error.description().c_str());
+            status = StatusFromError(error);
+        }
+        if ( socket ) writeResponse(status, headers, socket.get());
+    }
+
+    void HTTPListener::writeResponse(HTTPStatus status, websocket::Headers const& headers, TCPSocket* socket) {
+        const char* statusMessage = StatusMessage(status);
+        if ( !statusMessage ) statusMessage = "";
+        stringstream response;
+        response << "HTTP/1.1 " << int(status) << ' ' << statusMessage << "\r\n";
+        headers.forEach([&](slice name, slice value) { response << name << ": " << value << "\r\n"; });
+        response << "\r\n";
+        (void)socket->write(response.str());
+    }
 
 #    pragma mark - TASKS:
 
@@ -134,7 +205,7 @@ namespace litecore::REST {
 
     void HTTPListener::Task::bumpTimeUpdated() { _timeUpdated = ::time(nullptr); }
 
-    void HTTPListener::Task::writeDescription(fleece::JSONEncoder& json) {
+    void HTTPListener::Task::writeDescription(JSONEncoder& json) {
         json.writeFormatted("pid: %u, started_on: %lu", _taskID, _timeStarted.load());
     }
 
@@ -173,30 +244,6 @@ namespace litecore::REST {
             unique_lock lock(_mutex);
             _tasksCondition.wait(lock, [this] { return _tasks.empty(); });
         }
-    }
-
-#    pragma mark - UTILITIES:
-
-    void HTTPListener::addHandler(Method method, const char* uri, APIVersion vers, Server::Handler handler) {
-        _server->addHandler(method, uri, vers, std::move(handler));
-    }
-
-    void HTTPListener::addDBHandler(Method method, const char* uri, bool writeable, APIVersion vers,
-                                    DBHandler handler) {
-        _server->addHandler(method, uri, vers, [this, handler, writeable](RequestResponse& rq) {
-            BorrowedDatabase db = getDatabase(rq, rq.path(0), writeable);
-            if ( db ) handler(rq, db);
-        });
-    }
-
-    BorrowedDatabase HTTPListener::getDatabase(RequestResponse& rq, const string& dbName, bool writeable) {
-        BorrowedDatabase db = borrowDatabaseNamed(dbName, writeable);
-        if ( !db ) {
-            if ( isValidDatabaseName(dbName) ) rq.respondWithStatus(HTTPStatus::NotFound, "No such database");
-            else
-                rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
-        }
-        return db;
     }
 
 }  // namespace litecore::REST

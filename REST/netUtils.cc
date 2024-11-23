@@ -101,6 +101,14 @@ namespace litecore::REST {
         return value;
     }
 
+    std::string timestamp() {
+        char   dateStr[100];
+        time_t t = time(nullptr);
+        strftime(dateStr, sizeof(dateStr), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&t));  // faster than date::format()
+        return string(dateStr);
+    }
+
+
 }  // namespace litecore::REST
 
 /* Copyright (c) 2013-2017 the Civetweb developers
