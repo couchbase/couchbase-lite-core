@@ -11,10 +11,9 @@
 //
 
 #pragma once
-#include "c4DatabaseTypes.h"
-#include "Listener.hh"
+#include "DatabaseRegistry.hh"
+#include "HTTPTypes.hh"
 #include "Server.hh"
-#include "FilePath.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
 #include <memory>
@@ -26,16 +25,33 @@
 
 C4_ASSUME_NONNULL_BEGIN
 
+namespace fleece {
+    class JSONEncoder;
+}
+
+namespace litecore::net {
+    class Address;
+    class TCPSocket;
+}  // namespace litecore::net
+
+namespace litecore::websocket {
+    class Headers;
+}
+
 namespace litecore::REST {
     using fleece::RefCounted;
     using fleece::Retained;
-    class Server;
+    using namespace litecore::net;
 
-    /** Listener subclass that serves HTTP requests.
-        The HTTP work is done by a Server object. */
-    class HTTPListener : public Listener {
+    class Request;
+
+    /** Listener subclass that serves HTTP requests. */
+    class HTTPListener
+        : public RefCounted
+        , public InstanceCountedIn<HTTPListener>
+        , protected Server::Delegate {
       public:
-        explicit HTTPListener(const Config&);
+        explicit HTTPListener(const C4ListenerConfig&);
         ~HTTPListener() override;
 
         void setDelegate(C4Listener* d) { _delegate = d; }
@@ -45,12 +61,18 @@ namespace litecore::REST {
         uint16_t port() const { return _server->port(); }
 
         /** My root URL, or the URL of a database. */
-        virtual std::vector<net::Address> addresses(C4Database* C4NULLABLE dbOrNull        = nullptr,
-                                                    bool                   webSocketScheme = false) const;
+        virtual std::vector<Address> addresses(C4Database* C4NULLABLE dbOrNull        = nullptr,
+                                               bool                   webSocketScheme = false) const;
 
-        int connectionCount() override;
+        int connectionCount();
 
-        int activeConnectionCount() override { return (int)tasks().size(); }
+        int activeConnectionCount() { return (int)tasks().size(); }
+
+        bool registerDatabase(C4Database* db, std::optional<std::string> name = std::nullopt,
+                              C4ListenerDatabaseConfig const* C4NULLABLE dbConfig = nullptr);
+        bool unregisterDatabase(C4Database*);
+        bool registerCollection(const std::string& name, C4CollectionSpec const& collection);
+        bool unregisterCollection(const std::string& name, C4CollectionSpec const& collection);
 
         /** An asynchronous task (like a replication). */
         class Task
@@ -98,31 +120,32 @@ namespace litecore::REST {
       protected:
         friend class Task;
 
-        Retained<net::TLSContext>         createTLSContext(const C4TLSConfig*);
+        Retained<TLSContext>              createTLSContext(const C4TLSConfig*);
         static Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
 
         Server* server() const { return _server.get(); }
 
-        BorrowedDatabase getDatabase(RequestResponse& rq, const std::string& dbName, bool writeable);
-
         unsigned registerTask(Task*);
         void     unregisterTask(Task*);
 
-        using APIVersion = Server::APIVersion;
-        using Handler    = Server::Handler;
-        using DBHandler  = std::function<void(RequestResponse&, C4Database*)>;
+        // Socket::Delegate API
+        void handleConnection(std::unique_ptr<ResponderSocket>) override;
 
-        void addHandler(net::Method, const char* uri, APIVersion, Handler);
-        void addDBHandler(net::Method, const char* uri, bool writeable, APIVersion, DBHandler);
+        virtual HTTPStatus handleRequest(Request&, websocket::Headers&, std::unique_ptr<ResponderSocket>&) = 0;
 
-        std::string _serverName, _serverVersion;
+        void writeResponse(HTTPStatus, websocket::Headers const&, TCPSocket*);
+
+        C4ListenerConfig const           _config;
+        C4Listener* C4NULLABLE _delegate = nullptr;
+        std::string            _serverName, _serverVersion;
+        DatabaseRegistry       _registry;
+        std::mutex             _mutex;
 
       private:
         void stopTasks();
 
         Retained<crypto::Identity> _identity;
         Retained<Server>           _server;
-        C4Listener* C4NULLABLE     _delegate = nullptr;
         std::set<Retained<Task>>   _tasks;
         std::condition_variable    _tasksCondition;
         unsigned                   _nextTaskID{1};

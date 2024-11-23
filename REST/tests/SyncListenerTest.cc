@@ -261,7 +261,13 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener
 }
 
 TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
-    fleece::Retained<Server> s(new Server());
+    class FakeDelegate : public Server::Delegate {
+      public:
+        void handleConnection(std::unique_ptr<net::ResponderSocket>) override {}
+    };
+
+    FakeDelegate             delegate;
+    fleece::Retained<Server> s(new Server(delegate));
     s->start(0);
     auto addresses = s->addresses();
     s->stop();

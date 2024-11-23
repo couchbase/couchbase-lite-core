@@ -61,6 +61,50 @@ namespace litecore::net {
         return Method::None;
     }
 
+    HTTPStatus StatusFromError(C4Error err) {
+        if ( err.code == 0 ) return HTTPStatus::OK;
+        HTTPStatus status = HTTPStatus::ServerError;
+        // TODO: Add more mappings, and make these table-driven
+        switch ( err.domain ) {
+            case LiteCoreDomain:
+                switch ( err.code ) {
+                    case kC4ErrorInvalidParameter:
+                    case kC4ErrorBadRevisionID:
+                        status = HTTPStatus::BadRequest;
+                        break;
+                    case kC4ErrorNotADatabaseFile:
+                    case kC4ErrorCrypto:
+                        status = HTTPStatus::Unauthorized;
+                        break;
+                    case kC4ErrorNotWriteable:
+                        status = HTTPStatus::Forbidden;
+                        break;
+                    case kC4ErrorNotFound:
+                        status = HTTPStatus::NotFound;
+                        break;
+                    case kC4ErrorConflict:
+                        status = HTTPStatus::Conflict;
+                        break;
+                    case kC4ErrorUnimplemented:
+                    case kC4ErrorUnsupported:
+                        status = HTTPStatus::NotImplemented;
+                        break;
+                    case kC4ErrorRemoteError:
+                        status = HTTPStatus::GatewayError;
+                        break;
+                    case kC4ErrorBusy:
+                        status = HTTPStatus::Locked;
+                        break;
+                }
+                break;
+            case WebSocketDomain:
+                if ( err.code < 1000 ) status = HTTPStatus(err.code);
+            default:
+                break;
+        }
+        return status;
+    }
+
     ProxySpec::ProxySpec(const C4Address& addr) {
         if ( slice(addr.scheme).caseEquivalent("http"_sl) ) type = ProxyType::HTTP;
         if ( slice(addr.scheme).caseEquivalent("https"_sl) ) type = ProxyType::HTTPS;

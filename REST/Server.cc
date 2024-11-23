@@ -11,7 +11,6 @@
 //
 
 #include "Server.hh"
-#include "Request.hh"
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
 #include "Poller.hh"
@@ -53,7 +52,7 @@ namespace litecore::REST {
         error::_throw(error::LiteCoreError::Unimplemented);
     }
 
-    Server::Server() {
+    Server::Server(Delegate& delegate) : _delegate(delegate) {
         if ( !ListenerLog ) ListenerLog = c4log_getDomain("Listener", true);
         if ( !RESTLog ) RESTLog = c4log_getDomain("REST", true);
     }
@@ -126,7 +125,6 @@ namespace litecore::REST {
         Poller::instance().removeListeners(_acceptor->handle());
         _acceptor->close();
         _acceptor.reset();
-        _rules.clear();
     }
 
     void Server::awaitConnection() {
@@ -134,6 +132,7 @@ namespace litecore::REST {
         if ( !_acceptor ) return;
 
         Poller::instance().addListener(_acceptor->handle(), Poller::kReadable, [this] {
+            // Callback when a socket is accepted:
             Retained<Server> selfRetain = this;
             acceptConnection();
         });
@@ -164,6 +163,7 @@ namespace litecore::REST {
         } catch ( const std::exception& x ) {
             c4log(ListenerLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
         }
+
         // Start another async accept:
         awaitConnection();
     }
@@ -194,127 +194,8 @@ namespace litecore::REST {
         }
         if ( !loggedConnection ) c4log(ListenerLog, kC4LogInfo, "Accepted connection from %s", peer.c_str());
 
-        // Now read one or more requests and write responses:
-        while ( true ) {
-            // Read HTTP request from socket:
-            RequestResponse rq(std::move(responder));
-            if ( C4Error err = rq.socketError() ) {
-                if ( err == C4Error{NetworkDomain, kC4NetErrConnectionReset} ) {
-                    c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (closed by peer)", peer.c_str());
-                } else {
-                    c4log(ListenerLog, kC4LogError, "Error reading HTTP request from %s: %s", peer.c_str(),
-                          err.description().c_str());
-                }
-                break;
-            }
-            rq.addHeaders(_extraHeaders);
-            auto   method    = rq.method();
-            string uri       = rq.uri();  // save it now, as it may be cleared if rq gets moved
-            bool   keepAlive = rq.keepAlive();
-            if ( keepAlive && rq.httpVersion() == Request::HTTP1_0 ) rq.setHeader("Connection", "keep-alive");
-
-            // Handle it!
-            dispatchRequest(rq);
-            c4log(RESTLog, kC4LogInfo, "%s\t%s\t%s\t-> %d", peer.c_str(), MethodName(method), uri.c_str(), rq.status());
-
-            // Either close, or take back the socket:
-            if ( !keepAlive || rq.responseHeaders()["Connection"] == "close" ) {
-                c4log(ListenerLog, kC4LogInfo, "End of socket connection from %s (Connection:close)", peer.c_str());
-                break;
-            }
-            responder = rq.extractSocket();  // Get the socket back, unless it's been given to a WebSocket
-            if ( !responder ) { break; }
-        }
-    }
-
-    void Server::setExtraHeaders(const std::map<std::string, std::string>& headers) {
-        lock_guard<mutex> lock(_mutex);
-        _extraHeaders = headers;
-    }
-
-    void Server::addHandler(Methods methods, string_view pattern, APIVersion version, Handler handler) {
-        precondition(handler);
-        lock_guard<mutex> lock(_mutex);
-        _rules.push_back(
-                {.methods = methods, .pattern = string(pattern), .version = version, .handler = std::move(handler)});
-    }
-
-    Server::URIRule* Server::findRule(Method method, const string& path) {
-        // Convert the request path to a pattern:
-        string pattern = "";
-        split(path, "/", [&](string_view component) {
-            if ( !component.empty() ) {
-                pattern += '/';
-                if ( component[0] == '_' ) pattern += component;
-                else
-                    pattern += '*';
-            }
-        });
-        if ( pattern.empty() ) pattern = "/";
-
-        if ( method == Methods::HEAD ) method = Methods::GET;
-
-        // Now look up the pattern:
-        lock_guard<mutex> lock(_mutex);
-        for ( auto& rule : _rules ) {
-            if ( (rule.methods & method) && rule.pattern == pattern ) return &rule;
-        }
-        return nullptr;
-    }
-
-    void Server::dispatchRequest(RequestResponse& rq) {
-        try {
-            Method method = rq.method();
-            if ( method == Method::GET && rq.header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
-
-            if ( !_authenticator || _authenticator(rq.header("Authorization")) ) {
-                ++_connectionCount;
-                Retained<Server> retainedSelf = this;
-                rq.onClose([=] { --retainedSelf->_connectionCount; });
-
-                string pathStr(rq.path());
-                auto   rule = findRule(method, pathStr);
-                if ( rule ) {
-                    // Found a rule; check the version:
-                    c4log(ListenerLog, kC4LogVerbose, "Matched rule %s for path %s", rule->pattern.c_str(),
-                          pathStr.c_str());
-                    APIVersion rqVers = APIVersion::parse(rq.header("API-Version"));
-                    if ( rqVers.major < rule->version.major )
-                        rq.respondWithStatus(HTTPStatus::BadRequest, "Version too old");
-                    else if ( rqVers.major > rule->version.major )
-                        rq.respondWithStatus(HTTPStatus::BadRequest, "Version too new");
-                    else
-                        rule->handler(rq);  // Dispatch request to handler method!
-                } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
-                    // No such rule:
-                    c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
-                    rq.respondWithStatus(HTTPStatus::NotFound, "Not found");
-                } else {
-                    // Wrong HTTP method:
-                    c4log(ListenerLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(),
-                          pathStr.c_str());
-                    if ( method == Method::UPGRADE )
-                        rq.respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
-                    else
-                        rq.respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
-                }
-            } else {
-                c4log(ListenerLog, kC4LogInfo, "Authentication failed");
-                rq.setStatus(HTTPStatus::Unauthorized, "Unauthorized");
-                rq.setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
-            }
-        } catch ( const std::exception& ) {
-            C4Error error = C4Error::fromCurrentException();
-            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", error.description().c_str());
-            if ( !rq.finished() ) rq.respondWithError(error);
-        }
-        rq.finish();
-    }
-
-    Server::APIVersion Server::APIVersion::parse(string_view str) {
-        APIVersion vers{1, 0};
-        if ( !str.empty() ) { (void)sscanf(string(str).c_str(), "%hhu.%hhu", &vers.major, &vers.minor); }
-        return vers;
+        //TODO: Increment/decrement _connectionCount
+        _delegate.handleConnection(std::move(responder));
     }
 
 }  // namespace litecore::REST

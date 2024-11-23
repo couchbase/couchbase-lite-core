@@ -1,5 +1,5 @@
 //
-// Listener.cc
+// DatabaseRegistry.cc
 //
 // Copyright 2017-Present Couchbase, Inc.
 //
@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "Listener.hh"
+#include "DatabaseRegistry.hh"
 #include "DatabasePool.hh"
 #include "c4Database.hh"
 #include "c4ListenerInternal.hh"
@@ -25,12 +25,7 @@ using namespace fleece;
 
 namespace litecore::REST {
 
-
-    Listener::Listener(const Config& config) : _config(config) {
-        if ( !ListenerLog ) ListenerLog = c4log_getDomain("Listener", true);
-    }
-
-    string Listener::makeKeyspace(string_view dbName, C4CollectionSpec const& coll) {
+    string DatabaseRegistry::makeKeyspace(string_view dbName, C4CollectionSpec const& coll) {
         string keyspace(dbName);
         bool   hasScope = (coll.scope && coll.scope != kC4DefaultScopeID);
         if ( hasScope ) {
@@ -44,7 +39,7 @@ namespace litecore::REST {
         return keyspace;
     }
 
-    pair<string_view, C4CollectionSpec> Listener::parseKeyspace(slice keyspace) {
+    pair<string_view, C4CollectionSpec> DatabaseRegistry::parseKeyspace(slice keyspace) {
         slice_istream in(keyspace);
         slice         dbName = in.readToDelimiter(".");
         if ( !dbName ) return {keyspace, kC4DefaultCollectionSpec};
@@ -64,7 +59,7 @@ namespace litecore::REST {
         return c >= ' ' && c < 0x7F && c != '.' && c != '/';
     }
 
-    string Listener::databaseNameFromPath(const FilePath& path) {
+    string DatabaseRegistry::databaseNameFromPath(const FilePath& path) {
         string name  = path.fileOrDirName();
         auto   split = FilePath::splitExtension(name);
         if ( split.second != kC4DatabaseFilenameExtension )
@@ -81,12 +76,13 @@ namespace litecore::REST {
         return name;
     }
 
-    bool Listener::isValidDatabaseName(const string& name) {
+    bool DatabaseRegistry::isValidDatabaseName(const string& name) {
         if ( name.empty() || name.size() > 240 || name[0] == '_' ) return false;
         return std::all_of(name.begin(), name.end(), isCharValidInDBName);
     }
 
-    bool Listener::registerDatabase(C4Database* db, optional<string> name, C4ListenerDatabaseConfig const* dbConfig) {
+    bool DatabaseRegistry::registerDatabase(C4Database* db, optional<string> name,
+                                            C4ListenerDatabaseConfig const& dbConfig) {
         if ( !name ) {
             alloc_slice path(db->getPath());
             name = databaseNameFromPath(FilePath(string(path)));
@@ -96,20 +92,15 @@ namespace litecore::REST {
         lock_guard<mutex> lock(_mutex);
         if ( _databases.contains(*name) ) return false;
 
-        DBShare share{.pool = new DatabasePool(db), .keySpaces = {makeKeyspace(*name, kC4DefaultCollectionSpec)}};
-        share.pool->onOpen([](C4Database* db) { _c4db_setDatabaseTag(db, DatabaseTag_RESTListener); });
-        if ( dbConfig ) {
-            share.config = *dbConfig;
-        } else {
-            share.config = {.allowPull       = _config.allowPull,
-                            .allowPush       = _config.allowPush,
-                            .enableDeltaSync = _config.enableDeltaSync};
-        }
-        _databases.emplace(*name, std::move(share));
+        auto pool = make_retained<DatabasePool>(db);
+        pool->onOpen([](C4Database* db) { _c4db_setDatabaseTag(db, DatabaseTag_RESTListener); });
+        _databases.emplace(*name, DBShare{.pool      = std::move(pool),
+                                          .keySpaces = {makeKeyspace(*name, kC4DefaultCollectionSpec)},
+                                          .config    = dbConfig});
         return true;
     }
 
-    bool Listener::unregisterDatabase(const std::string& name) {
+    bool DatabaseRegistry::unregisterDatabase(const std::string& name) {
         lock_guard<mutex> lock(_mutex);
         auto              i = _databases.find(name);
         if ( i == _databases.end() ) return false;
@@ -117,7 +108,7 @@ namespace litecore::REST {
         return true;
     }
 
-    bool Listener::unregisterDatabase(C4Database* db) {
+    bool DatabaseRegistry::unregisterDatabase(C4Database* db) {
         lock_guard<mutex> lock(_mutex);
         for ( auto i = _databases.begin(); i != _databases.end(); ++i ) {
             if ( i->second.pool->sameAs(db) ) {
@@ -128,23 +119,23 @@ namespace litecore::REST {
         return false;
     }
 
-    Listener::DBShare* Listener::_getShare(std::string const& name) {
+    DatabaseRegistry::DBShare* DatabaseRegistry::_getShare(std::string const& name) {
         auto i = _databases.find(name);
         return i != _databases.end() ? &i->second : nullptr;
     }
 
-    Listener::DBShare const* Listener::_getShare(std::string const& name) const {
-        return const_cast<Listener*>(this)->_getShare(name);
+    DatabaseRegistry::DBShare const* DatabaseRegistry::_getShare(std::string const& name) const {
+        return const_cast<DatabaseRegistry*>(this)->_getShare(name);
     }
 
-    optional<Listener::DBShare> Listener::getShare(std::string const& name) const {
+    optional<DatabaseRegistry::DBShare> DatabaseRegistry::getShare(std::string const& name) const {
         lock_guard<mutex> lock(_mutex);
         optional<DBShare> result;
         if ( auto share = _getShare(name) ) result.emplace(*share);
         return result;
     }
 
-    bool Listener::registerCollection(const string& name, CollectionSpec collection) {
+    bool DatabaseRegistry::registerCollection(const string& name, C4CollectionSpec const& collection) {
         lock_guard<mutex> lock(_mutex);
         auto              share = _getShare(name);
         if ( !share ) return false;
@@ -152,20 +143,20 @@ namespace litecore::REST {
         return true;
     }
 
-    bool Listener::unregisterCollection(const string& name, CollectionSpec collection) {
+    bool DatabaseRegistry::unregisterCollection(const string& name, C4CollectionSpec const& collection) {
         lock_guard<mutex> lock(_mutex);
         auto              share = _getShare(name);
         return share && share->keySpaces.erase(makeKeyspace(name, collection)) > 0;
     }
 
-    BorrowedDatabase Listener::borrowDatabaseNamed(const string& name, bool writeable) const {
+    BorrowedDatabase DatabaseRegistry::borrowDatabaseNamed(const string& name, bool writeable) const {
         lock_guard<mutex> lock(_mutex);
         if ( auto share = _getShare(name) ) return writeable ? share->pool->borrowWriteable() : share->pool->borrow();
         else
             return {};
     }
 
-    BorrowedCollection Listener::borrowCollection(const string& keyspace, bool writeable) const {
+    BorrowedCollection DatabaseRegistry::borrowCollection(const string& keyspace, bool writeable) const {
         auto [dbName, spec] = parseKeyspace(keyspace);
         lock_guard<mutex> lock(_mutex);
         auto              share = _getShare(string(dbName));
@@ -173,14 +164,14 @@ namespace litecore::REST {
         return BorrowedCollection(writeable ? share->pool->borrowWriteable() : share->pool->borrow(), spec);
     }
 
-    optional<string> Listener::nameOfDatabase(C4Database* db) const {
+    optional<string> DatabaseRegistry::nameOfDatabase(C4Database* db) const {
         lock_guard<mutex> lock(_mutex);
         for ( auto& [aName, share] : _databases )
             if ( share.pool->sameAs(db) ) return aName;
         return nullopt;
     }
 
-    vector<string> Listener::databaseNames() const {
+    vector<string> DatabaseRegistry::databaseNames() const {
         lock_guard     lock(_mutex);
         vector<string> names;
         names.reserve(_databases.size());
@@ -188,7 +179,7 @@ namespace litecore::REST {
         return names;
     }
 
-    void Listener::closeDatabases() {
+    void DatabaseRegistry::closeDatabases() {
         lock_guard lock(_mutex);
         c4log(ListenerLog, kC4LogInfo, "Closing databases");
         for ( auto& d : _databases ) d.second.pool->close();

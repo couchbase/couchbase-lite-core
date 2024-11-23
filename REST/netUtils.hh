@@ -34,4 +34,7 @@ namespace litecore::REST {
     bool iterateURLQueries(std::string_view queries, char delimiter,
                            fleece::function_ref<bool(std::string_view, std::string_view)> callback);
 
+    /// Returns the current date/time formatted per HTTP, for use in Date: header.
+    std::string timestamp();
+
 }  // namespace litecore::REST

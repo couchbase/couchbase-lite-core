@@ -73,7 +73,7 @@ namespace litecore {
     }  // namespace crypto
 
     namespace REST {
-        class Listener;
+        class DatabaseRegistry;
         class HTTPListener;
     }  // namespace REST
 
