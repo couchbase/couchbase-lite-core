@@ -167,9 +167,14 @@ namespace litecore {
         while ( true ) {
             if ( _closed ) error::_throw(error::NotOpen, "DatabasePool is closed");
             Retained<C4Database> dbp = cache.pop();
-            if ( !dbp && cache.created < cache.capacity ) {
-                dbp = newDB(cache);
-                ++cache.created;
+            if ( !dbp ) {
+                if (cache.created < cache.capacity ) {
+                    dbp = newDB(cache);
+                    ++cache.created;
+                } else if (cache.capacity == 0) {
+                    Assert(&cache == &_readWrite);
+                    error::_throw(error::NotWriteable, "Database is read-only");
+                }
             }
             if ( dbp || !or_wait ) return BorrowedDatabase(std::move(dbp), this);
 
