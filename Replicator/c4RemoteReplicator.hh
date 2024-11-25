@@ -39,9 +39,9 @@ namespace litecore {
         // This can be overridden by setting the option `kC4ReplicatorOptionMaxRetryInterval`.
         static constexpr unsigned kDefaultMaxRetryDelay = 5 * 60;
 
-        C4RemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params, const C4Address& serverAddress,
+        C4RemoteReplicator(DatabaseOrPool db, const C4ReplicatorParameters& params, const C4Address& serverAddress,
                            C4String remoteDatabaseName, slice logPrefix)
-            : C4ReplicatorImpl(db, params)
+            : C4ReplicatorImpl(std::move(db), params)
             , _url(effectiveURL(serverAddress, remoteDatabaseName))
             , _retryTimer([this] { retry(false); }) {
             std::string logName = "C4RemoteRepl";
