@@ -43,6 +43,8 @@ namespace litecore {
         // submodule relationship to this one, so it's possible for it to get out of sync.
         static constexpr int API_VERSION = 5;
 
+        using DatabaseOrPool = std::variant<Retained<C4Database>, Retained<DatabasePool>>;
+
         void start(bool reset = false) noexcept override;
 
         // Retry is not supported by default. C4RemoteReplicator overrides this.
@@ -74,8 +76,6 @@ namespace litecore {
 #endif
 
       protected:
-        using DatabaseOrPool = std::variant<Retained<C4Database>, Retained<DatabasePool>>;
-
         static BorrowedDatabase borrow(DatabaseOrPool const& dbp);
 
         /// Base constructor. For `db` you can pass either a `Retained<C4Database>` or a

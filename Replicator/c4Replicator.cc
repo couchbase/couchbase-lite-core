@@ -11,6 +11,7 @@
 //
 
 #include "c4Replicator.hh"
+#include "c4Replicator+Pool.hh"
 #include "c4RemoteReplicator.hh"
 #include "c4IncomingReplicator.hh"
 #include "c4Database.hh"
@@ -26,13 +27,15 @@ using namespace litecore::net;  // work around missing 'using' in c4LocalReplica
 using namespace std;
 using namespace litecore;
 
+using DatabaseOrPool = C4ReplicatorImpl::DatabaseOrPool;
 
-#pragma mark - C++ API:
+#pragma mark - C4DATABASE METHODS:
 
-// All instances are subclasses of C4BaseReplicator.
+
+// All instances are subclasses of C4ReplicatorImpl.
 static C4ReplicatorImpl* asInternal(const C4Replicator* repl) { return (C4ReplicatorImpl*)repl; }
 
-Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress, slice remoteDatabaseName,
+static Retained<C4Replicator> newRemoteReplicator(DatabaseOrPool db, C4Address serverAddress, slice remoteDatabaseName,
                                                  const C4ReplicatorParameters& params, slice logPrefix) {
     if ( !params.socketFactory ) {
         C4Replicator::validateRemote(serverAddress, remoteDatabaseName);
@@ -42,23 +45,41 @@ Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress, slice 
                  "unreachable, but if opened, it would give anyone unlimited privileges.");
         }
     }
-    return new C4RemoteReplicator(this, params, serverAddress, remoteDatabaseName, logPrefix);
+    return new C4RemoteReplicator(std::move(db), params, serverAddress, remoteDatabaseName, logPrefix);
+}
+
+Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress, slice remoteDatabaseName,
+                                                 const C4ReplicatorParameters& params, slice logPrefix) {
+    return newRemoteReplicator(this, serverAddress, remoteDatabaseName, params, logPrefix);
+}
+
+Retained<C4Replicator> NewReplicator(DatabasePool* dbPool, C4Address serverAddress,  slice remoteDatabaseName,
+                                     const C4ReplicatorParameters& params, slice logPrefix) {
+    return newRemoteReplicator(dbPool, serverAddress, remoteDatabaseName, params, logPrefix);
 }
 
 
 #ifdef COUCHBASE_ENTERPRISE
-Retained<C4Replicator> C4Database::newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params,
+Retained<C4Replicator> _newLocalReplicator(DatabaseOrPool db, DatabaseOrPool otherDB, const C4ReplicatorParameters& params,
                                                       slice logPrefix) {
     std::for_each(params.collections, params.collections + params.collectionCount,
                   [](const C4ReplicationCollection& coll) {
                       AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
                                   "Either push or pull must be enabled");
                   });
-    AssertParam(otherLocalDB != this, "Can't replicate a database to itself");
-    return new C4LocalReplicator(this, params, otherLocalDB, logPrefix);
+    AssertParam(db != otherDB, "Can't replicate a database to itself");
+    return new C4LocalReplicator(db, params, otherDB, logPrefix);
+}
+
+Retained<C4Replicator> C4Database::newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params,
+                                                      slice logPrefix) {
+    return _newLocalReplicator(this, otherLocalDB, params, logPrefix);
+}
+Retained<C4Replicator> NewLocalReplicator(DatabasePool* dbPool, DatabasePool* otherLocalDB, const C4ReplicatorParameters& params,
+                                                      slice logPrefix) {
+    return _newLocalReplicator(dbPool, otherLocalDB, params, logPrefix);
 }
 #endif
-
 
 Retained<C4Replicator> C4Database::newIncomingReplicator(WebSocket* openSocket, const C4ReplicatorParameters& params,
                                                          slice logPrefix) {
@@ -69,6 +90,17 @@ Retained<C4Replicator> C4Database::newIncomingReplicator(C4Socket* openSocket, c
                                                          slice logPrefix) {
     return newIncomingReplicator(WebSocketFrom(openSocket), params, logPrefix);
 }
+
+Retained<C4Replicator> NewIncomingReplicator(DatabasePool *dbPool,
+                                            WebSocket* openSocket,
+                                                     const C4ReplicatorParameters& params,
+                                                         fleece::slice logPrefix) {
+    return new C4IncomingReplicator(dbPool, params, openSocket, logPrefix);
+}
+
+
+#pragma mark - C4REPLICATOR METHODS:
+
 
 bool C4Replicator::retry() const { return asInternal(this)->retry(true); }
 
