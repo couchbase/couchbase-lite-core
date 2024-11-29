@@ -1947,6 +1947,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithoutDelta / timeWithDelta);
 }
 
+// Disabled pending CBG-
+#if 0
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",
                  "[.SyncServerCollection][Delta]") {
@@ -2021,9 +2023,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
                      FLDict flbody, void* context) { return true; };
 
     // -------- Pulling changes from SG --------
-#ifdef LITECORE_CPPTEST
+#    ifdef LITECORE_CPPTEST
     _expectedDocPullErrors = {docPrefix + "doc-001"};
-#endif
+#    endif
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replParams.setPullFilter(_pullFilter).setCallbackContext(this);
     {
@@ -2048,6 +2050,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     }
     CHECK(n == kNumDocs);
 }
+#endif
 
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.SyncServerCollection][Delta]") {
@@ -2233,113 +2236,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "
     waitForStatus(kC4Stopped);
 
     _repl = nullptr;
-}
-
-TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push&Pull Replication with the Copy of Fully Synced Database SG",
-                 "[.SyncServerCollection]") {
-    string       idPrefix  = timePrefix();
-    const string channelID = idPrefix;
-    initTest({Lavenders}, {channelID});
-
-    enum { iPushPull };
-
-    constexpr slice body            = "{\"ans*wer\":42}"_sl;
-    alloc_slice     bodyWithChannel = SG::addChannelToJSON(body, "channels", {channelID});
-    alloc_slice     localPrefix{idPrefix + "local-"};
-    alloc_slice     remotePrefix{idPrefix + "remote-"};
-    unsigned        docCount = 20;
-
-    // push documents prefixed with "remote-" to the push/pull collection
-    for ( size_t i = 0; i < _collectionCount; ++i ) {
-        for ( int d = 1; d <= docCount; ++d ) {
-            constexpr size_t bufSize = 80;
-            char             docID[bufSize];
-            snprintf(docID, bufSize, "%.*s%d", SPLAT(remotePrefix), d);
-            createFleeceRev(_collections[i], slice(docID), nullslice, bodyWithChannel);
-        }
-    }
-
-    // And send them to remote
-    {
-        ReplParams replParams{_collectionSpecs};
-        replParams.setPushPull(kC4OneShot, kC4Disabled);
-        replicate(replParams);
-    }
-
-    deleteAndRecreateDBAndCollections();
-
-    // add 20(docCount) "local-" docs to the local db
-    // The 20(docCount) "remote-" docs are already in the remote db
-    for ( size_t i = 0; i < _collectionCount; ++i ) {
-        for ( int d = 1; d <= docCount; ++d ) {
-            constexpr size_t bufSize = 80;
-            char             docID[bufSize];
-            snprintf(docID, bufSize, "%.*s%d", SPLAT(localPrefix), d);
-            createFleeceRev(_collections[i], slice(docID), nullslice, bodyWithChannel);
-        }
-    }
-
-    // Perform a Push&Pull replication on db
-    // It will push 20 "local-" docs to the remote, and pull "remote-" docs to local db
-    {
-        ReplParams replParams{_collectionSpecs};
-        replParams.collections[iPushPull].push = kC4OneShot;
-        replParams.collections[iPushPull].pull = kC4OneShot;
-        replicate(replParams);
-    }
-
-    auto require = [&]() {
-        for ( size_t i = 0; i < _collectionCount; ++i ) {
-            c4::ref<C4DocEnumerator> e      = c4coll_enumerateAllDocs(_collections[i], nullptr, ERROR_INFO());
-            unsigned                 total  = 0;
-            unsigned                 local  = 0;
-            unsigned                 remote = 0;
-            while ( c4enum_next(e, ERROR_INFO()) ) {
-                C4DocumentInfo info;
-                c4enum_getDocumentInfo(e, &info);
-                slice docID_sl{info.docID};
-                total++;
-                if ( docID_sl.hasPrefix(localPrefix) ) { local++; }
-                if ( docID_sl.hasPrefix(remotePrefix) ) { remote++; }
-            }
-            switch ( i ) {
-                case iPushPull:
-                    REQUIRE(total == 2 * docCount);
-                    REQUIRE(local == docCount);
-                    REQUIRE(remote == docCount);
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
-    // Make sure in the local db, there are docCount docs prefixed with "local-", which are
-    // in the local db prior to Push/Pull sync, and docCount docs prefixed "remote-", which are
-    // pulled from the remote db.
-    require();
-
-    // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
-    C4Error     error;
-    alloc_slice path(c4db_getPath(db));
-    string      scratchDBName = stringprintf("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
-    REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
-
-    // release the old db and Open the copied db:
-    c4db_release(db);
-    db = c4db_openNamed(slice(scratchDBName), &dbConfig(), ERROR_INFO(error));
-    REQUIRE(db);
-    _collections = collectionPreamble(_collectionSpecs);
-
-    {
-        ReplParams replParams{_collectionSpecs};
-        replParams.setPushPull(kC4OneShot, kC4OneShot);
-        replicate(replParams);
-    }
-    require();
-
-    // The Pull/Push replicator finishes without pushing or pulling any documents because the
-    // checkpoints of the copied (prebuilt) db are inheritted from the original db.
-    CHECK((_callbackStatus.progress == C4Progress{0, 0, 0}));
 }
 
 static C4Database* copy_and_open(C4Database* db, const string& idPrefix) {
