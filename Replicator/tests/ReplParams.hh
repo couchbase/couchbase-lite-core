@@ -12,6 +12,7 @@
 #include "fleece/Expert.hh"
 #include "c4ReplicatorTypes.h"
 #include "ReplicatorOptions.hh"
+#include <cstdint>
 #include <vector>
 #include <unordered_map>
 
@@ -57,11 +58,11 @@ class ReplParams : public C4ReplicatorParameters {
     // Set an option for all collections
     ReplParams& setCollectionOptions(const AllocedDict& options);
     // Set docIDs in options of each collection
-    ReplParams& setDocIDs(const std::vector<std::unordered_map<alloc_slice, unsigned>>& docIDs);
+    ReplParams& setDocIDs(const std::vector<std::unordered_map<alloc_slice, uint64_t>>& docIDs);
 
     // Same as above, with array parameter
     template <size_t N>
-    ReplParams& setDocIDs(const std::array<std::unordered_map<alloc_slice, unsigned>, N>& docIDs) {
+    ReplParams& setDocIDs(const std::array<std::unordered_map<alloc_slice, uint64_t>, N>& docIDs) {
         return setDocIDs({docIDs.begin(), docIDs.end()});
     }
 

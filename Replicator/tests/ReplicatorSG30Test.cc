@@ -305,9 +305,9 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Push & Pull Deletion SG3.0", "[.SyncServer
     createRev(_collections[0], slice(docID), kRevID, kFleeceBody);
     createRev(_collections[0], slice(docID), kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
-    std::vector<std::unordered_map<alloc_slice, unsigned>> docIDs{_collectionCount};
+    std::vector<std::unordered_map<alloc_slice, uint64_t>> docIDs{_collectionCount};
 
-    docIDs[0] = unordered_map<alloc_slice, unsigned>{{alloc_slice(docID), 0}};
+    docIDs[0] = unordered_map<alloc_slice, uint64_t>{{alloc_slice(docID), 0}};
 
     ReplParams replParams{_collectionSpecs, kC4OneShot, kC4Disabled};
     replParams.setDocIDs(docIDs);
@@ -419,8 +419,8 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Update Once-Conflicted Doc - SG3.0", "[.Sy
     // Create a conflicted doc on SG, and resolve the conflict
     for ( const auto& body : bodies ) { _sg.upsertDoc(_collectionSpecs[0], docID + "?new_edits=false", body); }
 
-    std::vector<std::unordered_map<alloc_slice, unsigned>> docIDs = {
-            std::unordered_map<alloc_slice, unsigned>{{alloc_slice(docID), 0}}};
+    std::vector docIDs = {
+            std::unordered_map<alloc_slice, uint64_t>{{alloc_slice(docID), 0}}};
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");

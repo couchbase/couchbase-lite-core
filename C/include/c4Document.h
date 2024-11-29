@@ -138,6 +138,7 @@ CBL_CORE_API C4SliceResult c4doc_getRevisionHistory(C4Document* doc, unsigned ma
 CBL_CORE_API C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
 /** Selects the parent of the selected revision, if it's known, else returns false.
+ *  Throws if the document is a version-vectors document.
         \note The caller must use a lock for Document when this function is called. */
 NODISCARD CBL_CORE_API bool c4doc_selectParentRevision(C4Document* doc) C4API;
 
