@@ -15,6 +15,7 @@
 #include "SGTestUser.hh"
 #include "ReplParams.hh"
 #include <array>
+#include <c4Collection.hh>
 #include <cstdint>
 #include <iostream>
 #include <typeinfo>
@@ -243,6 +244,33 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         // Check the initTest
         REQUIRE((!_collectionSpecs.empty() && !_collections.empty()));
         for ( int i = 0; i < _collectionCount; ++i ) { _docIDs[i] = getDocIDs(_collections[i]); }
+    }
+
+    alloc_slice getLegacyRevID(C4Collection* coll, slice docID) {
+        c4::ref doc = c4coll_getDoc(coll, docID, true, kDocGetCurrentRev, ERROR_INFO());
+        return getLegacyRevID(coll->getSpec(), doc);
+    }
+
+    alloc_slice getLegacyRevID(C4CollectionSpec spec, C4Document* doc) {
+        alloc_slice revID;
+        if (isRevTrees()) {
+            revID = doc->revID;
+        } else {
+            alloc_slice docID = doc->docID;
+            revID = _sg.getRevID(docID.asString(), spec);
+        }
+        return revID;
+    }
+
+    alloc_slice getLegacyRevID(C4CollectionSpec spec, const C4DocumentInfo& info) {
+        alloc_slice revID;
+        if (isRevTrees()) {
+            revID = info.revID;
+        } else {
+            alloc_slice docID = info.docID;
+            revID = _sg.getRevID(docID.asString(), spec);
+        }
+        return revID;
     }
 
     struct CipherContext {

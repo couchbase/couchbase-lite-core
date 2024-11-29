@@ -623,11 +623,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull deltas from Collection SG", "
                 c4enum_getDocumentInfo(e, &info);
                 alloc_slice docID = info.docID;
                 CHECK(docID.hasPrefix(slice(docIDPref)));
-                alloc_slice revID = info.revID;
-                if (!isRevTrees()) {
-                    revID = _sg.getRevID(docID.asString(), _collectionSpecs[i]);
-                }
-                CHECK(revID.hasPrefix("2-"_sl));
+                alloc_slice revID = getLegacyRevID(_collectionSpecs[i], info);
+                CHECK(c4rev_getGeneration(revID) == 2);
                 ++n;
             }
             CHECK(error.code == 0);
@@ -921,17 +918,10 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     for ( int i = 0; i < _collectionCount; ++i ) {
         // Verify
-        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(docIDstr), true, kDocGetAll, nullptr);
-        REQUIRE(doc1);
-        alloc_slice revID = doc1->revID;
-        if (!isRevTrees()) {
-            revID = _sg.getRevID(docIDstr, _collectionSpecs[i]);
-        }
-        CHECK(revID.hasPrefix("1-"_sl));
-
+        alloc_slice revID = getLegacyRevID(_collections[i], slice(docIDstr));
+        CHECK(c4rev_getGeneration(revID) == 1);
         // Update doc to only channel 'b'
-        auto oRevID = slice(doc1->revID).asString();
-        REQUIRE(_sg.upsertDoc(_collectionSpecs[i], docIDstr, oRevID, "{}", {channelIDb}));
+        REQUIRE(_sg.upsertDoc(_collectionSpecs[i], docIDstr, revID.asString(), "{}", {channelIDb}));
     }
 
     C4Log("-------- Pull update");
@@ -939,12 +929,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled - Revoke Access
 
     // Verify the update:
     for ( auto& coll : _collections ) {
-        c4::ref<C4Document> doc1 = c4coll_getDoc(coll, slice(docIDstr), true, kDocGetAll, nullptr);
-        REQUIRE(doc1);
-        alloc_slice revID = doc1->revID;
-        if (!isRevTrees()) {
-            revID = _sg.getRevID(docIDstr, coll->getSpec());
-        }
+        alloc_slice revID = getLegacyRevID(coll, slice(docIDstr));
         CHECK(revID.hasPrefix("2-"_sl));
     }
     CHECK(_docsEnded == 0);
@@ -1589,17 +1574,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     for ( int i = 0; i < _collectionCount; ++i ) {
         // Verify doc
-        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-        REQUIRE(doc1);
-        alloc_slice revID = doc1->revID;
-        if (!isRevTrees()) {
-            revID = _sg.getRevID(doc1ID, _collectionSpecs[i]);
-        }
+        alloc_slice revID = getLegacyRevID(_collections[i], slice(doc1ID));
         CHECK(c4rev_getGeneration(revID) == 1);
 
         // Once verified, remove it from channel 'a' in that collection
-        auto oRevID = slice(doc1->revID).asString();
-        _sg.upsertDoc(_collectionSpecs[i], doc1ID, oRevID, "{}", {chIDs[1]});
+        _sg.upsertDoc(_collectionSpecs[i], doc1ID, revID.asString(), "{}", {chIDs[1]});
     }
 
     C4Log("-------- Pull update");
@@ -1613,17 +1592,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Remove Doc From Channel SG", "[.Sy
 
     for ( int i = 0; i < _collectionCount; ++i ) {
         // Verify the update:
-        c4::ref<C4Document> doc1 = c4coll_getDoc(_collections[i], slice(doc1ID), true, kDocGetCurrentRev, nullptr);
-        REQUIRE(doc1);
-        alloc_slice revID = doc1->revID;
-        if (!isRevTrees()) {
-            revID = _sg.getRevID(doc1ID, _collectionSpecs[i]);
-        }
+        alloc_slice revID = getLegacyRevID(_collections[i], slice(doc1ID));
         CHECK(c4rev_getGeneration(revID) == 2);
 
         // Remove doc from all channels:
-        auto oRevID = slice(doc1->revID).asString();
-        _sg.upsertDoc(_collectionSpecs[i], doc1ID, oRevID, "{}", {});
+        _sg.upsertDoc(_collectionSpecs[i], doc1ID, revID.asString(), "{}", {});
     }
 
     C4Log("-------- Pull the removed");
@@ -1782,14 +1755,14 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     replicate(replParams);
 
     bool deleteThenCreate = true;
-    SECTION("Delete then Create Doc") {
+         SECTION("Delete then Create Doc") {
         // Create a new doc with the same id that was deleted:
         {
             TransactionHelper t(db);
             for ( size_t i = 0; i < _collectionCount; ++i ) {
                 C4Error error;
                 docs[i] = c4coll_createDoc(_collections[i], slice(docID), json2fleece(bodyJSON.asString().c_str()), 0,
-                                           ERROR_INFO(error));
+                                                ERROR_INFO(error));
                 REQUIRE(error.code == 0);
                 REQUIRE(docs[i] != nullptr);
             }
@@ -1852,14 +1825,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG", "[.Sync
     replicate(replParams);
 
     CHECK(_callbackStatus.progress.documentCount == _collectionCount);
-    for (int i = 0; i < _collectionCount; ++i) {
-        c4::ref<C4Document> doc = c4coll_getDoc(_collections[i], slice(docID), true, kDocGetCurrentRev, nullptr);
-        REQUIRE(doc);
-        alloc_slice revID = doc->revID;
-        if (!isRevTrees()) {
-            revID = _sg.getRevID(docID, _collectionSpecs[i]);
-        }
-        CHECK(revID.hasPrefix("1-"_sl));
+    for ( auto& coll : _collections ) {
+        alloc_slice revID = getLegacyRevID(coll, slice(docID));
+        CHECK(c4rev_getGeneration(revID) == 1);
     }
 
     const std::array<std::string, 3> bodies{R"({"count":2, "_rev":"1-1111"})",
@@ -1871,14 +1839,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull multiply-updated SG", "[.Sync
     }
 
     replicate(replParams);
-    for (int i = 0; i < _collectionCount; ++i) {
-        c4::ref<C4Document> doc = c4coll_getDoc(_collections[i], slice(docID), true, kDocGetCurrentRev, nullptr);
-        REQUIRE(doc);
-        alloc_slice revID = doc->revID;
-        if (!isRevTrees()) {
-            revID = _sg.getRevID(docID, _collectionSpecs[i]);
-        }
-        CHECK(revID.hasPrefix("4-"_sl));
+    for ( auto& coll : _collections ) {
+        alloc_slice revID = getLegacyRevID(coll, slice(docID));
+        CHECK(c4rev_getGeneration(revID) == 4);
     }
 }
 
@@ -1971,11 +1934,8 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
             while ( c4enum_next(e, ERROR_INFO(error)) ) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                alloc_slice revID = info.revID;
-                if (!isRevTrees()) {
-                    revID = _sg.getRevID(alloc_slice(info.docID).asString(), coll->getSpec());
-                }
-                CHECK(revID.hasPrefix("2-"_sl));
+                alloc_slice revID = getLegacyRevID(coll->getSpec(), info);
+                CHECK(c4rev_getGeneration(revID) == 2);
                 ++n;
             }
             CHECK(error.code == 0);
@@ -1987,8 +1947,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithoutDelta / timeWithDelta);
 }
 
-// Disabled pending working delta-sync support in SG
-#if 0
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",
                  "[.SyncServerCollection][Delta]") {
@@ -2002,13 +1960,17 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
 
     const string docPrefix = idPrefix + cblTicket + "_";
 
+    vector<string> docIDs(kNumDocs);
+
+    for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+        docIDs[docNo] = stringprintf("%sdoc-%03d", docPrefix.c_str(), docNo);
+    }
+
     // -------- Populating local db --------
     auto populateDB = [&]() {
         TransactionHelper t(db);
         std::srand(123456);  // start random() sequence at a known place
-        for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
-            char docID[kDocBufSize];
-            snprintf(docID, kDocBufSize, "%sdoc-%03d", docPrefix.c_str(), docNo);
+        for (const string& docID : docIDs) {
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
@@ -2032,45 +1994,27 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     replicate(replParams);
 
     // -------- Updating docs on SG --------
-    {
-        JSONEncoder enc;
+    for (const string& docID : docIDs) {
+        C4Error             error;
+        c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, ERROR_INFO(error));
+        REQUIRE(doc);
+        Dict props = c4doc_getProperties(doc);
+
+        JSONEncoder enc{};
         enc.beginDict();
-        enc.writeKey("docs"_sl);
-        enc.beginArray();
-        for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
-            char docID[kDocBufSize];
-            snprintf(docID, kDocBufSize, "%sdoc-%03d", docPrefix.c_str(), docNo);
-            C4Error             error;
-            c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, ERROR_INFO(error));
-            REQUIRE(doc);
-            Dict props = c4doc_getProperties(doc);
-
-            enc.beginDict();
-            enc.writeKey("_id"_sl);
-            enc.writeString(docID);
-            enc.writeKey("_rev"_sl);
-            enc.writeString(doc->revID);
-            for ( Dict::iterator i(props); i; ++i ) {
-                enc.writeKey(i.keyString());
-                auto value = i.value().asInt();
-                if ( RandomNumber() % 2 == 0 ) value = RandomNumber();
-                enc.writeInt(value);
-            }
-            enc.writeKey("channels"_sl);
-            enc.beginArray();
-            enc.writeString(channelID);
-            enc.endArray();
-            enc.endDict();
+        for ( Dict::iterator i(props); i; ++i ) {
+            enc.writeKey(i.keyString());
+            auto value = i.value().asInt();
+            if ( RandomNumber() % 2 == 0 ) value = RandomNumber();
+            enc.writeInt(value);
         }
-        enc.endArray();
         enc.endDict();
-        (void)_sg.sendRemoteRequest("POST", _collectionSpecs[0], "_bulk_docs", enc.finish(), false,
-                                    HTTPStatus::Created);
-    }
+        alloc_slice body = enc.finish();
 
-    // -------- Repopulating local db --------
-    deleteAndRecreateDBAndCollections();
-    populateDB();
+        alloc_slice revID = getLegacyRevID(_collectionSpecs[0], doc);
+
+        _sg.upsertDoc(_collectionSpecs[0], docID, revID.asString(), body, {channelID});
+    }
 
     // Setup pull filter:
     _pullFilter = [](C4CollectionSpec collectionName, C4String docID, C4String revID, C4RevisionFlags flags,
@@ -2098,10 +2042,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
         c4enum_getDocumentInfo(e, &info);
         alloc_slice docID = info.docID;
         CHECK(docID.hasPrefix(slice(docPrefix + "doc-")));
-        alloc_slice revID = info.revID;
-        if (!isRevTrees()) {
-            revID = _sg.getRevID(docID.asString(), _collectionSpecs[0]);
-        }
+        alloc_slice revID = getLegacyRevID(_collectionSpecs[0], info);
         CHECK(revID.hasPrefix("2-"_sl));
         ++n;
     }
@@ -2186,7 +2127,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.Syn
     CHECK(_callbackStatus.error.code == 0);
     CHECK(_callbackStatus.progress.documentCount == kNumDocs);
 }
-#endif
 
 // CBL-5033
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Revoked docs queue behind revs", "[.SyncServerCollection]") {

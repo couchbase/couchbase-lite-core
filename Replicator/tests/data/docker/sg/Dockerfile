@@ -1,4 +1,5 @@
 FROM golang:1.22 AS build
+RUN apt update
 RUN git clone -b release/anemone https://github.com/couchbase/sync_gateway.git
 RUN SG_EDITION=CE ./sync_gateway/build.sh
 
@@ -32,6 +33,7 @@ COPY scripts /opt/sg/scripts
 
 WORKDIR /opt/sg
 
+RUN apt update
 RUN apt -yqq install systemctl
 RUN dpkg -i ./couchbase-sync-gateway.deb
 
