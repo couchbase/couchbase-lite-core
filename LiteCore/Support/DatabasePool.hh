@@ -260,7 +260,7 @@ namespace litecore {
 
       private:
         BorrowedDatabase _bdb;
-        C4Collection*    _collection;
+        C4Collection*    _collection {};
     };
 
     /** Subclass of C4Database::Transaction : a transaction on a borrowed (writeable) database.
