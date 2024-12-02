@@ -37,8 +37,6 @@ using namespace litecore::crypto;
 namespace litecore::REST {
     using namespace net;
 
-    static int kTaskExpirationTime = 10;
-
     HTTPListener::HTTPListener(const C4ListenerConfig& config)
         : _config(config)
         , _server(new Server(*this))
@@ -223,14 +221,12 @@ namespace litecore::REST {
 
     vector<Retained<HTTPListener::Task>> HTTPListener::tasks() {
         lock_guard<mutex>      lock(_mutex);
-        vector<Retained<Task>> result{_tasks.begin(), _tasks.end()};
-        // Clean up old finished tasks:
-        time_t now;
-        time(&now);
+        vector<Retained<Task>> result;
         for ( auto i = _tasks.begin(); i != _tasks.end(); ) {
-            if ( (*i)->finished() && (now - (*i)->timeUpdated()) >= kTaskExpirationTime ) i = _tasks.erase(i);
+            if ( (*i)->listed() )
+                result.push_back(*i++);
             else
-                ++i;
+                i = _tasks.erase(i);        // Clean up old finished tasks
         }
         return result;
     }
