@@ -30,7 +30,7 @@ namespace fleece {
 }
 
 namespace litecore::net {
-    class Address;
+    struct Address;
     class TCPSocket;
 }  // namespace litecore::net
 
@@ -91,6 +91,9 @@ namespace litecore::REST {
 
             /// Call this when activity occurs: it sets timeUpdated to now.
             void bumpTimeUpdated();
+
+            /// Should return true if the task should be included in `tasks()`.
+            virtual bool listed() {return !finished();}
 
             /// Should return true if the Task has completed its work.
             virtual bool finished() const = 0;
