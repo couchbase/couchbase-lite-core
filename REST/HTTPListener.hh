@@ -16,6 +16,7 @@
 #include "Server.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <set>
