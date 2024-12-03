@@ -236,7 +236,7 @@ typedef struct C4ReplicatorParameters {
     "onlySelfSignedServer"  ///< Only accept self signed server certs (for P2P, bool)
 
 // HTTP options:
-#define kC4ReplicatorOptionExtraHeaders   "headers"  ///< Extra HTTP headers (string[])
+#define kC4ReplicatorOptionExtraHeaders   "headers"  ///< Extra HTTP headers (Dict)
 #define kC4ReplicatorOptionCookies        "cookies"  ///< HTTP Cookie header value (string)
 #define kC4ReplicatorOptionAuthentication "auth"     ///< Auth settings (Dict); see [1]
 #define kC4ReplicatorOptionProxyServer    "proxy"    ///< Proxy settings (Dict); see [3]]
