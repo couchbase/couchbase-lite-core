@@ -393,7 +393,7 @@ namespace litecore {
 
 #pragma mark - INDEXES:
 
-        void createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
+        bool createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
                          const C4IndexOptions* indexOptions = nullptr) override {
             IndexSpec::Options options;
             switch ( indexType ) {
@@ -478,7 +478,7 @@ namespace litecore {
                     error::_throw(error::InvalidParameter, "Invalid index type");
                     break;
             }
-            keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
+            return keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
                                    options);
         }
 
