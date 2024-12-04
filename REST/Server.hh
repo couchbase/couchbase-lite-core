@@ -57,7 +57,7 @@ namespace litecore::REST {
 
         explicit Server(Delegate&);
 
-        void start(uint16_t port, slice networkInterface = {}, net::TLSContext* = nullptr);
+        void start(uint16_t port, slice networkInterface = {}, net::TLSContext* C4NULLABLE = nullptr);
 
         virtual void stop();
 

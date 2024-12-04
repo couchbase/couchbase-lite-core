@@ -40,9 +40,9 @@ namespace litecore::REST {
 
     HTTPListener::HTTPListener(const C4ListenerConfig& config)
         : _config(config)
-        , _server(new Server(*this))
         , _serverName(config.serverName ? slice(config.serverName) : "CouchbaseLite"_sl)
-        , _serverVersion(config.serverVersion ? slice(config.serverVersion) : alloc_slice(c4_getVersion())) {
+        , _serverVersion(config.serverVersion ? slice(config.serverVersion) : alloc_slice(c4_getVersion()))
+        , _server(new Server(*this)) {
         _server->start(config.port, config.networkInterface, createTLSContext(config.tlsConfig).get());
     }
 
@@ -187,15 +187,13 @@ namespace litecore::REST {
     }
 
     string HTTPListener::findMatchingSyncProtocol(DatabaseRegistry::DBShare const& share, string_view clientProtocols) {
-        auto boolToMode = [](bool enabled) {return enabled ? kC4Passive : kC4Disabled;};
-        auto serverProtocols = repl::Replicator::compatibleProtocols(
-            share.pool->getConfiguration().flags,
-            boolToMode(share.config.allowPush),
-            boolToMode(share.config.allowPull) );
+        auto boolToMode      = [](bool enabled) { return enabled ? kC4Passive : kC4Disabled; };
+        auto serverProtocols = repl::Replicator::compatibleProtocols(share.pool->getConfiguration().flags,
+                                                                     boolToMode(share.config.allowPush),
+                                                                     boolToMode(share.config.allowPull));
 
-        for (auto protocol : split(clientProtocols, ",")) {
-            if (std::ranges::find(serverProtocols, protocol) != serverProtocols.end())
-                return string(protocol);
+        for ( auto protocol : split(clientProtocols, ",") ) {
+            if ( std::ranges::find(serverProtocols, protocol) != serverProtocols.end() ) return string(protocol);
         }
         return "";
     }
@@ -238,10 +236,9 @@ namespace litecore::REST {
         lock_guard<mutex>      lock(_mutex);
         vector<Retained<Task>> result;
         for ( auto i = _tasks.begin(); i != _tasks.end(); ) {
-            if ( (*i)->listed() )
-                result.push_back(*i++);
+            if ( (*i)->listed() ) result.push_back(*i++);
             else
-                i = _tasks.erase(i);        // Clean up old finished tasks
+                i = _tasks.erase(i);  // Clean up old finished tasks
         }
         return result;
     }

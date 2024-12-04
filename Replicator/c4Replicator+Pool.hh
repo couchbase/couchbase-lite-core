@@ -18,24 +18,23 @@ C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore {
     class DatabasePool;
-namespace websocket {class WebSocket;}
-}
+
+    namespace websocket {
+        class WebSocket;
+    }
+}  // namespace litecore
 
 // C4Replicator factory functions that take a DatabasePool instead of a C4Database.
 
-fleece::Retained<C4Replicator> NewReplicator(litecore::DatabasePool *dbPool,
-                                             C4Address serverAddress,
-                                             fleece::slice remoteDatabaseName,
-                                                 const C4ReplicatorParameters& params,
+fleece::Retained<C4Replicator> NewReplicator(litecore::DatabasePool* dbPool, C4Address serverAddress,
+                                             fleece::slice remoteDatabaseName, const C4ReplicatorParameters& params,
                                              fleece::slice logPrefix = {});
-fleece::Retained<C4Replicator> NewLocalReplicator(litecore::DatabasePool *dbPool,
-                                             litecore::DatabasePool* otherLocalDB,
-                                                  const C4ReplicatorParameters& params,
-                                                  fleece::slice logPrefix ={});
-fleece::Retained<C4Replicator> NewIncomingReplicator(litecore::DatabasePool *dbPool,
-                                            litecore::websocket::WebSocket* openSocket,
-                                                     const C4ReplicatorParameters& params,
-                                                         fleece::slice logPrefix ={});
+fleece::Retained<C4Replicator> NewLocalReplicator(litecore::DatabasePool* dbPool, litecore::DatabasePool* otherLocalDB,
+                                                  const C4ReplicatorParameters& params, fleece::slice logPrefix = {});
+fleece::Retained<C4Replicator> NewIncomingReplicator(litecore::DatabasePool*         dbPool,
+                                                     litecore::websocket::WebSocket* openSocket,
+                                                     const C4ReplicatorParameters&   params,
+                                                     fleece::slice                   logPrefix = {});
 
 
 C4_ASSUME_NONNULL_END
