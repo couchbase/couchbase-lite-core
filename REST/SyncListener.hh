@@ -33,8 +33,6 @@ namespace litecore::REST {
       private:
         class SyncTask;
 
-        std::string findMatchingProtocol(DatabaseRegistry::DBShare const&, std::string_view clientProtocols);
-
         bool const _allowPush, _allowPull;
         bool const _enableDeltaSync;
     };

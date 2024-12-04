@@ -139,6 +139,8 @@ namespace litecore::REST {
 
         void writeResponse(HTTPStatus, websocket::Headers const&, TCPSocket*);
 
+        std::string findMatchingSyncProtocol(DatabaseRegistry::DBShare const&, std::string_view clientProtocols);
+
         C4ListenerConfig const           _config;
         C4Listener* C4NULLABLE _delegate = nullptr;
         std::string            _serverName, _serverVersion;
