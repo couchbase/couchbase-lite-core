@@ -21,7 +21,7 @@ namespace litecore::REST {
 
     class SyncListener : public HTTPListener {
       public:
-        static constexpr int kAPIVersion = 2;
+        static constexpr int kAPIVersion = 3;
 
         explicit SyncListener(const C4ListenerConfig&);
         ~SyncListener();

@@ -29,10 +29,9 @@ namespace litecore::websocket {
 
     Headers::Headers(Dict dict) { readFrom(dict); }
 
-    Headers::Headers(Headers&& other) noexcept            = default;
-    Headers& Headers::operator=(Headers&& other) noexcept = default;
-
     Headers::Headers(const Headers& other) { *this = other; }
+
+    Headers::Headers(Headers&& other) noexcept { *this = std::move(other); }
 
     Headers& Headers::operator=(const Headers& other) {
         clear();
@@ -40,8 +39,21 @@ namespace litecore::websocket {
             _map          = other._map;
             _backingStore = other._backingStore;
         } else {
+            // If other's Writer has been used, some of its keys/values may point inside it;
+            // copying it to _writer changes their addresses, invalidating _map. So just copy:
             setBackingStore(other._backingStore);
             for ( auto& entry : other._map ) add(entry.first, entry.second);
+        }
+        return *this;
+    }
+
+    Headers& Headers::operator=(Headers&& other) noexcept {
+        if ( other._writer.length() == 0 ) {
+            _map          = std::move(other._map);
+            _backingStore = std::move(other._backingStore);
+            _writer.reset();
+        } else {
+            *this = other;
         }
         return *this;
     }
