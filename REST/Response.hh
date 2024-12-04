@@ -54,10 +54,9 @@ namespace litecore::REST {
         void setBody(alloc_slice body) { _body = std::move(body); }
 
         websocket::Headers _headers;
-        // mutable std::optional<MIMEType> _contentType;
-        alloc_slice  _body;
-        mutable bool _gotBodyFleece{false};
-        mutable Doc  _bodyFleece;
+        alloc_slice        _body;
+        mutable bool       _gotBodyFleece{false};
+        mutable Doc        _bodyFleece;
     };
 
     /** An HTTP response from a server, created by specifying a request to send.

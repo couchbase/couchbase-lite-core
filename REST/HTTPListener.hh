@@ -94,7 +94,7 @@ namespace litecore::REST {
             void bumpTimeUpdated();
 
             /// Should return true if the task should be included in `tasks()`.
-            virtual bool listed() {return !finished();}
+            virtual bool listed() { return !finished(); }
 
             /// Should return true if the Task has completed its work.
             virtual bool finished() const = 0;
@@ -124,8 +124,8 @@ namespace litecore::REST {
       protected:
         friend class Task;
 
-        Retained<TLSContext>              createTLSContext(const C4TLSConfig*);
-        static Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
+        Retained<TLSContext>              createTLSContext(const C4TLSConfig* C4NULLABLE);
+        static Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig* C4NULLABLE);
 
         Server* server() const { return _server.get(); }
 
@@ -141,7 +141,7 @@ namespace litecore::REST {
 
         std::string findMatchingSyncProtocol(DatabaseRegistry::DBShare const&, std::string_view clientProtocols);
 
-        C4ListenerConfig const           _config;
+        C4ListenerConfig const _config;
         C4Listener* C4NULLABLE _delegate = nullptr;
         std::string            _serverName, _serverVersion;
         DatabaseRegistry       _registry;

@@ -114,7 +114,7 @@ namespace litecore::REST {
         void closeDatabases();
 
       private:
-        DBShare* C4NULLABLE      _getShare(std::string const& name);
+        DBShare* C4NULLABLE       _getShare(std::string const& name);
         DBShare const* C4NULLABLE _getShare(std::string const& name) const;
 
         mutable std::mutex             _mutex;
