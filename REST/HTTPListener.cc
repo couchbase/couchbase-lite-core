@@ -18,6 +18,7 @@
 #include "Address.hh"
 #include "Headers.hh"
 #include "netUtils.hh"
+#include "Replicator.hh"
 #include "Request.hh"
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
@@ -183,6 +184,20 @@ namespace litecore::REST {
         headers.forEach([&](slice name, slice value) { response << name << ": " << value << "\r\n"; });
         response << "\r\n";
         (void)socket->write(response.str());
+    }
+
+    string HTTPListener::findMatchingSyncProtocol(DatabaseRegistry::DBShare const& share, string_view clientProtocols) {
+        auto boolToMode = [](bool enabled) {return enabled ? kC4Passive : kC4Disabled;};
+        auto serverProtocols = repl::Replicator::compatibleProtocols(
+            share.pool->getConfiguration().flags,
+            boolToMode(share.config.allowPush),
+            boolToMode(share.config.allowPull) );
+
+        for (auto protocol : split(clientProtocols, ",")) {
+            if (std::ranges::find(serverProtocols, protocol) != serverProtocols.end())
+                return string(protocol);
+        }
+        return "";
     }
 
 #    pragma mark - TASKS:
