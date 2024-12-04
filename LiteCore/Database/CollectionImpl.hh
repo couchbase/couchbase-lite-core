@@ -478,8 +478,8 @@ namespace litecore {
                     error::_throw(error::InvalidParameter, "Invalid index type");
                     break;
             }
-            return keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
-                                   options);
+            return keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage,
+                                          (IndexSpec::Type)indexType, options);
         }
 
         Retained<C4Index> getIndex(slice name) override { return C4Index::getIndex(this, name); }

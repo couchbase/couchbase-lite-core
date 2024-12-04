@@ -14,6 +14,7 @@
 #include "DatabaseImpl.hh"  // for asInternal, dataFile
 #include "FilePath.hh"
 #include "Logging.hh"
+#include "c4Collection.hh"
 #include "c4ExceptionUtils.hh"
 #include <unistd.h>
 #include <sys/fcntl.h>
@@ -168,10 +169,10 @@ namespace litecore {
             if ( _closed ) error::_throw(error::NotOpen, "DatabasePool is closed");
             Retained<C4Database> dbp = cache.pop();
             if ( !dbp ) {
-                if (cache.created < cache.capacity ) {
+                if ( cache.created < cache.capacity ) {
                     dbp = newDB(cache);
                     ++cache.created;
-                } else if (cache.capacity == 0) {
+                } else if ( cache.capacity == 0 ) {
                     Assert(&cache == &_readWrite);
                     error::_throw(error::NotWriteable, "Database is read-only");
                 }
@@ -233,5 +234,7 @@ namespace litecore {
         if ( _bdb && !_collection ) error::_throw(error::NotFound, "no such collection");
     }
 
+    BorrowedCollection::BorrowedCollection() noexcept = default;
+    BorrowedCollection::~BorrowedCollection()         = default;
 
 }  // namespace litecore

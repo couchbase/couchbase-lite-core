@@ -217,7 +217,7 @@ namespace litecore {
             // Get the database flags and the push/pull modes:
             auto             cfg      = std::visit([](auto db) { return db->getConfiguration(); }, _database);
             C4ReplicatorMode pushMode = kC4Disabled, pullMode = kC4Disabled;
-            for ( ssize_t i = _options->collectionCount() - 1; i >= 0; i-- ) {
+            for ( CollectionIndex i = 0; i < _options->collectionCount(); ++i ) {
                 pushMode = std::max(pushMode, _options->push(i));
                 pullMode = std::max(pullMode, _options->pull(i));
             }

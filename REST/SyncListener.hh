@@ -32,9 +32,6 @@ namespace litecore::REST {
 
       private:
         class SyncTask;
-
-        bool const _allowPush, _allowPull;
-        bool const _enableDeltaSync;
     };
 
 }  // namespace litecore::REST

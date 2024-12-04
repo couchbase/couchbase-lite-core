@@ -240,11 +240,15 @@ namespace litecore {
     class BorrowedCollection {
       public:
         /// Constructs an empty BorrowedCollection. (Use `operator bool` to test for emptiness.)
-        BorrowedCollection() noexcept = default;
+        BorrowedCollection() noexcept;
 
         /// Constructor.
         /// @throws `error::NotFound` if there is a database but no such collection in it.
         BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec);
+
+        BorrowedCollection(BorrowedCollection&& b) noexcept            = default;
+        BorrowedCollection& operator=(BorrowedCollection&& b) noexcept = default;
+        ~BorrowedCollection();
 
         /// Checks whether I am non-empty, i.e. I have a a collection.
         explicit operator bool() const noexcept { return _collection != nullptr; }
@@ -259,8 +263,8 @@ namespace litecore {
         operator C4Collection* C4NONNULL() const noexcept LIFETIMEBOUND { return get(); }
 
       private:
-        BorrowedDatabase _bdb;
-        C4Collection*    _collection {};
+        BorrowedDatabase       _bdb;
+        Retained<C4Collection> _collection{};
     };
 
     /** Subclass of C4Database::Transaction : a transaction on a borrowed (writeable) database.
