@@ -117,8 +117,7 @@ C4Cert* C4Replicator::getPeerTLSCertificate() const { return asInternal(this)->g
 #endif
 
 
-CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[6] = {"stopped", "offline", "connecting",
-                                                                     "idle",    "busy",    "stopping"};
+const char* const kC4ReplicatorActivityLevelNames[6] = {"stopped", "offline", "connecting", "idle", "busy", "stopping"};
 
 static bool isValidScheme(slice scheme) { return scheme.size > 0 && isalpha(scheme[0]); }
 

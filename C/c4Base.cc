@@ -43,8 +43,8 @@ using namespace litecore;
 
 
 extern "C" {
-CBL_CORE_API std::atomic_int gC4ExpectExceptions;
-bool                         C4ExpectingExceptions();
+std::atomic_int gC4ExpectExceptions;
+bool            C4ExpectingExceptions();
 
 bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; }  // LCOV_EXCL_LINE
 }
@@ -174,11 +174,11 @@ C4StringResult c4log_binaryFilePath(void) C4API {
 }
 
 // NOLINTBEGIN(misc-misplaced-const,cppcoreguidelines-interfaces-global-init)
-CBL_CORE_API C4LogDomain const kC4DefaultLog   = (C4LogDomain)&kC4Cpp_DefaultLog;
-CBL_CORE_API C4LogDomain const kC4DatabaseLog  = (C4LogDomain)&DBLog;
-CBL_CORE_API C4LogDomain const kC4QueryLog     = (C4LogDomain)&QueryLog;
-CBL_CORE_API C4LogDomain const kC4SyncLog      = (C4LogDomain)&SyncLog;
-CBL_CORE_API C4LogDomain const kC4WebSocketLog = (C4LogDomain)&websocket::WSLogDomain;
+C4LogDomain const kC4DefaultLog   = (C4LogDomain)&kC4Cpp_DefaultLog;
+C4LogDomain const kC4DatabaseLog  = (C4LogDomain)&DBLog;
+C4LogDomain const kC4QueryLog     = (C4LogDomain)&QueryLog;
+C4LogDomain const kC4SyncLog      = (C4LogDomain)&SyncLog;
+C4LogDomain const kC4WebSocketLog = (C4LogDomain)&websocket::WSLogDomain;
 
 // NOLINTEND(misc-misplaced-const,cppcoreguidelines-interfaces-global-init)
 
