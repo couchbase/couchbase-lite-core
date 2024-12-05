@@ -21,16 +21,16 @@ using namespace std;
 using namespace fleece;
 using namespace litecore;
 
-CBL_CORE_API C4Listener* c4listener_start(const C4ListenerConfig* config, C4Error* outError) noexcept {
+C4Listener* c4listener_start(const C4ListenerConfig* config, C4Error* outError) noexcept {
     try {
         return new C4Listener(*config);
     }
     catchError(outError) return nullptr;
 }
 
-CBL_CORE_API void c4listener_free(C4Listener* listener) noexcept { delete listener; }
+void c4listener_free(C4Listener* listener) noexcept { delete listener; }
 
-CBL_CORE_API C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
+C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
     try {
         if ( string name = C4Listener::URLNameFromPath(pathSlice); name.empty() ) return {};
         else
@@ -39,7 +39,7 @@ CBL_CORE_API C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
     catchAndWarn() return {};
 }
 
-CBL_CORE_API bool c4listener_shareDB(C4Listener* listener, C4String name, C4Database* db, C4Error* outError) noexcept {
+bool c4listener_shareDB(C4Listener* listener, C4String name, C4Database* db, C4Error* outError) noexcept {
     try {
         return listener->shareDB(name, db);
     }
@@ -47,7 +47,7 @@ CBL_CORE_API bool c4listener_shareDB(C4Listener* listener, C4String name, C4Data
     return false;
 }
 
-CBL_CORE_API bool c4listener_unshareDB(C4Listener* listener, C4Database* db, C4Error* outError) noexcept {
+bool c4listener_unshareDB(C4Listener* listener, C4Database* db, C4Error* outError) noexcept {
     try {
         if ( listener->unshareDB(db) ) return true;
         c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Database not shared"_sl, outError);
@@ -56,8 +56,8 @@ CBL_CORE_API bool c4listener_unshareDB(C4Listener* listener, C4Database* db, C4E
     return false;
 }
 
-CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener, C4String name, C4Collection* collection,
-                                             C4Error* outError) noexcept {
+bool c4listener_shareCollection(C4Listener* listener, C4String name, C4Collection* collection,
+                                C4Error* outError) noexcept {
     try {
         return listener->shareCollection(name, collection);
     }
@@ -65,8 +65,8 @@ CBL_CORE_API bool c4listener_shareCollection(C4Listener* listener, C4String name
     return false;
 }
 
-CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String name, C4Collection* collection,
-                                               C4Error* outError) noexcept {
+bool c4listener_unshareCollection(C4Listener* listener, C4String name, C4Collection* collection,
+                                  C4Error* outError) noexcept {
     try {
         if ( listener->unshareCollection(name, collection) ) return true;
         c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Collection not shared"_sl, outError);
@@ -75,14 +75,14 @@ CBL_CORE_API bool c4listener_unshareCollection(C4Listener* listener, C4String na
     return false;
 }
 
-CBL_CORE_API uint16_t c4listener_getPort(const C4Listener* listener) noexcept {
+uint16_t c4listener_getPort(const C4Listener* listener) noexcept {
     try {
         return listener->port();
     }
     catchAndWarn() return 0;
 }
 
-CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Database* db, C4Error* err) noexcept {
+FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Database* db, C4Error* err) noexcept {
     try {
         auto urls = fleece::MutableArray::newArray();
         for ( string& url : listener->URLs(db) ) urls.append(url);
@@ -92,8 +92,8 @@ CBL_CORE_API FLMutableArray c4listener_getURLs(const C4Listener* listener, C4Dat
     return nullptr;
 }
 
-CBL_CORE_API void c4listener_getConnectionStatus(const C4Listener* listener, unsigned* connectionCount,
-                                                 unsigned* activeConnectionCount) noexcept {
+void c4listener_getConnectionStatus(const C4Listener* listener, unsigned* connectionCount,
+                                    unsigned* activeConnectionCount) noexcept {
     auto [conns, active] = listener->connectionStatus();
     if ( connectionCount ) *connectionCount = conns;
     if ( activeConnectionCount ) *activeConnectionCount = active;

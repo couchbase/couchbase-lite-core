@@ -24,7 +24,7 @@ using namespace litecore;
 
 #pragma mark - DOC ENUMERATION:
 
-CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {kC4IncludeNonConflicted | kC4IncludeBodies};
+const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {kC4IncludeNonConflicted | kC4IncludeBodies};
 
 class C4DocEnumerator::Impl
     : public RecordEnumerator
