@@ -111,14 +111,6 @@ namespace litecore::websocket {
         return n;
     }
 
-    vector<slice> Headers::getCommaSeparated(slice name) const {
-        vector<slice> result;
-        if ( slice v = get(name); !v.empty() ) {
-            split(string_view(v), ",", [&](string_view component) { result.push_back(trimWhitespace(component)); });
-        }
-        return result;
-    }
-
     void Headers::forEach(fleece::function_ref<void(slice, slice)> callback) const {
         for ( const auto& i : _map ) callback(i.first, i.second);
     }

@@ -64,9 +64,6 @@ namespace litecore::websocket {
         /** Returns a header parsed as an integer. If missing, returns `defaultValue` */
         [[nodiscard]] int64_t getInt(slice name, int64_t defaultValue = 0) const;
 
-        /** Returns the comma-delimited component of a header, with leading/trailing space removed. */
-        [[nodiscard]] std::vector<slice> getCommaSeparated(slice name) const;
-
         /** Returns the value of a header with that name.*/
         slice operator[](slice name) const { return get(name); }
 

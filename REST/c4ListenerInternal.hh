@@ -19,6 +19,5 @@ namespace litecore::REST {
     class HTTPListener;
 
     extern C4LogDomain ListenerLog;
-    extern C4LogDomain RESTLog;
 
 }  // namespace litecore::REST
