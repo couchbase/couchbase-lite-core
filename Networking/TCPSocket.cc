@@ -613,14 +613,18 @@ namespace litecore::net {
         int err = _socket->last_error();
         Assert(err != 0);
         if ( err > 0 ) {
-            err           = socketToPosixErrCode(err);
-            string errStr = error::_what(error::POSIX, err);
-            LogWarn(WSLog, "%s got POSIX error %d \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"), err,
-                    errStr.c_str());
+            err = socketToPosixErrCode(err);
+            C4Error error;
             if ( err == EWOULDBLOCK )  // Occurs in blocking mode when I/O times out
-                setError(NetworkDomain, kC4NetErrTimeout);
+                error = C4Error{NetworkDomain, kC4NetErrTimeout};
             else
-                setError(POSIXDomain, err);
+                error = C4Error{POSIXDomain, err};
+            if ( error != _error ) {
+                _error        = error;
+                string errStr = error::_what(error::POSIX, err);
+                LogWarn(WSLog, "%s got POSIX error %d \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"), err,
+                        errStr.c_str());
+            }
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
