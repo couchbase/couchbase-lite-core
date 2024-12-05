@@ -25,6 +25,9 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
+namespace litecore::REST {
+    class HTTPListener;
+}
 
 /** A lightweight server that shares databases over the network for replication. */
 struct C4Listener final

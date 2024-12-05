@@ -46,10 +46,10 @@ struct C4Query final
                                       int* C4NULLABLE outErrorPos);
 
     unsigned    columnCount() const noexcept;
-    slice       columnTitle(unsigned col) const;
+    slice       columnTitle(unsigned col) const LIFETIMEBOUND;
     alloc_slice explain() const;
 
-    const std::set<std::string>& parameterNames() const noexcept;
+    const std::set<std::string>& parameterNames() const noexcept LIFETIMEBOUND;
     alloc_slice                  parameters() const noexcept;
     void                         setParameters(slice parameters);
 
@@ -64,8 +64,8 @@ struct C4Query final
         [[nodiscard]] int64_t rowCount() const;
         void                  seek(int64_t rowIndex);
 
-        [[nodiscard]] FLArrayIterator columns() const;
-        [[nodiscard]] FLValue         column(unsigned i) const;
+        [[nodiscard]] FLArrayIterator columns() const LIFETIMEBOUND;
+        [[nodiscard]] FLValue         column(unsigned i) const LIFETIMEBOUND;
 
         [[nodiscard]] unsigned        fullTextMatchCount() const;
         [[nodiscard]] C4FullTextMatch fullTextMatch(unsigned i) const;

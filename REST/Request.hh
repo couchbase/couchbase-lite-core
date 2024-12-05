@@ -37,7 +37,7 @@ namespace litecore::REST {
 
         Method method() const { return _method; }
 
-        std::string const& path() const { return _path; }
+        std::string const& path() const LIFETIMEBOUND { return _path; }
 
         size_t      pathLength() const;
         std::string path(int i) const;
