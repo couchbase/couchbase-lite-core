@@ -54,7 +54,6 @@ namespace litecore::REST {
 
     Server::Server(Delegate& delegate) : _delegate(delegate) {
         if ( !ListenerLog ) ListenerLog = c4log_getDomain("Listener", true);
-        if ( !RESTLog ) RESTLog = c4log_getDomain("REST", true);
     }
 
     Server::~Server() { stop(); }

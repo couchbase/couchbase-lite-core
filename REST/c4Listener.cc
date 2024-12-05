@@ -30,7 +30,6 @@ using namespace litecore::REST;
 
 namespace litecore::REST {
     C4LogDomain ListenerLog;
-    C4LogDomain RESTLog;
 }  // namespace litecore::REST
 
 string C4Listener::URLNameFromPath(slice pathSlice) {
