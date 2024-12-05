@@ -16,8 +16,6 @@
 #include "Logging.hh"
 #include "c4Collection.hh"
 #include "c4ExceptionUtils.hh"
-#include <unistd.h>
-#include <sys/fcntl.h>
 
 namespace litecore {
     using namespace std;
