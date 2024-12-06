@@ -29,14 +29,18 @@ namespace litecore::REST {
     class HTTPListener;
 }
 
-/** A lightweight server that shares databases over the network for replication. */
+/** A lightweight server that shares databases over the network for replication.
+    @note  This class is not ref-counted. Instances must be explicitly deleted/destructed. */
 struct C4Listener final
     : public fleece::InstanceCounted
     , C4Base {
     /// Constructor. Starts the listener (asynchronously) but does not share any databases.
     explicit C4Listener(C4ListenerConfig const& config);
 
-    ~C4Listener() override;
+    ~C4Listener() noexcept override;
+
+    /// Stops the listener. If you don't call this, the destructor will do it for you.
+    C4Error stop() noexcept;
 
     /// Shares a database, and its default collection.
     /// @param name  The URI name (first path component) in the HTTP API.
