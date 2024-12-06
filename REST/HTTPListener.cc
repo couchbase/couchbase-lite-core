@@ -49,9 +49,12 @@ namespace litecore::REST {
     HTTPListener::~HTTPListener() { stop(); }
 
     void HTTPListener::stop() {
-        if ( _server ) _server->stop();
-        stopTasks();
-        _registry.closeDatabases();
+        if ( _server ) {
+            _server->stop();
+            stopTasks();
+            _registry.closeDatabases();
+            _server = nullptr;
+        }
     }
 
     vector<Address> HTTPListener::addresses(C4Database* dbOrNull, bool webSocketScheme) const {

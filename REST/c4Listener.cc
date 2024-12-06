@@ -81,8 +81,18 @@ C4Listener::C4Listener(C4ListenerConfig const& config) : C4Listener(config, make
 
 C4Listener::C4Listener(C4Listener&&) noexcept = default;
 
-C4Listener::~C4Listener() {
-    if ( _impl ) _impl->stop();
+C4Listener::~C4Listener() noexcept { stop(); }
+
+C4Error C4Listener::stop() noexcept {
+    C4Error result{};
+    if ( _impl ) {
+        try {
+            _impl->stop();
+            _impl = nullptr;
+        }
+        catchError(&result);
+    }
+    return result;
 }
 
 bool C4Listener::shareDB(slice name, C4Database* db, C4ListenerDatabaseConfig const* dbConfig) {

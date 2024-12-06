@@ -57,7 +57,7 @@ namespace litecore::REST {
 
         void setDelegate(C4Listener* d) { _delegate = d; }
 
-        virtual void stop();
+        void stop();
 
         uint16_t port() const { return _server->port(); }
 
