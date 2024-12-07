@@ -375,6 +375,7 @@ target_include_directories(
     C/include
     C/Cpp_include
     Crypto
+    LiteCore/Database
     LiteCore/Support
     Networking
     Networking/BLIP/

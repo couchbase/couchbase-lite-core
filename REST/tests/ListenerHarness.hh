@@ -16,6 +16,8 @@
 #include "CertHelper.hh"
 #include "c4Listener.h"
 
+#ifdef COUCHBASE_ENTERPRISE
+
 using namespace fleece;
 
 class ListenerHarness {
@@ -28,9 +30,6 @@ class ListenerHarness {
     }
 
     [[nodiscard]] C4Listener* listener() const { return _listener; }
-
-
-#ifdef COUCHBASE_ENTERPRISE
 
     C4Cert* useServerIdentity(const Identity& id) {
         alloc_slice digest = c4keypair_publicKeyDigest(id.key);
@@ -86,12 +85,8 @@ class ListenerHarness {
         _tlsConfig.tlsCallbackContext = context;
     }
 
-#endif  // COUCHBASE_ENTERPRISE
-
     void share(C4Database* dbToShare, slice name) {
         if ( _listener ) return;
-        auto missing = config.apis & ~c4listener_availableAPIs();
-        if ( missing ) FAIL("Listener API " << missing << " is unavailable in this build");
         C4Error err;
         _listener = c4listener_start(&config, &err);
         REQUIRE(_listener);
@@ -103,14 +98,12 @@ class ListenerHarness {
 
   public:
     C4ListenerConfig config;
-#ifdef COUCHBASE_ENTERPRISE
-    Identity serverIdentity, clientIdentity;
-#endif
+    Identity         serverIdentity, clientIdentity;
 
   private:
     c4::ref<C4Listener> _listener;
     C4TLSConfig         _tlsConfig = {};
-#ifdef COUCHBASE_ENTERPRISE
-    CertHelper _certHelper;
-#endif
+    CertHelper          _certHelper;
 };
+
+#endif  // COUCHBASE_ENTERPRISE
