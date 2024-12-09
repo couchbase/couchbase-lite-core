@@ -113,8 +113,7 @@ namespace litecore {
             _deadStore->close();
         }
 
-        RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since,
-                                                  RecordEnumerator::Options) override;
+        RecordEnumerator::Impl* newEnumeratorImpl(RecordEnumerator::Options const&) override;
 
       private:
         std::unique_ptr<KeyStore> _liveStore;

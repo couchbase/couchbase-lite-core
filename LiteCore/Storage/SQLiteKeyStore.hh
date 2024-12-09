@@ -94,8 +94,7 @@ namespace litecore {
 
       protected:
         bool                    mayHaveExpiration() override;
-        RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since,
-                                                  RecordEnumerator::Options) override;
+        RecordEnumerator::Impl* newEnumeratorImpl(RecordEnumerator::Options const&) override;
 
         std::unique_ptr<SQLite::Statement> compile(const char* sql) const;
         SQLite::Statement&                 compileCached(const std::string& sqlTemplate) const;
