@@ -219,8 +219,7 @@ namespace litecore {
 
         virtual void close() {}
 
-        virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since,
-                                                          RecordEnumerator::Options) = 0;
+        virtual RecordEnumerator::Impl* newEnumeratorImpl(RecordEnumerator::Options const&) = 0;
 
         DataFile&          _db;            // The DataFile I'm contained in
         const std::string  _name;          // My name
