@@ -220,7 +220,7 @@ namespace litecore::REST {
     void HTTPListener::Task::bumpTimeUpdated() { _timeUpdated = ::time(nullptr); }
 
     void HTTPListener::Task::writeDescription(JSONEncoder& json) {
-        json.writeFormatted("pid: %u, started_on: %lu", _taskID, _timeStarted.load());
+        json.writeFormatted("task_id: %u, started_on: %lu", _taskID, _timeStarted.load());
     }
 
     unsigned HTTPListener::registerTask(Task* task) {
