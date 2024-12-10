@@ -39,7 +39,7 @@ using namespace litecore::crypto;
 
 #ifdef COUCHBASE_ENTERPRISE
 
-CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
+const C4CertIssuerParameters kDefaultCertIssuerParameters = {
         CertSigningRequest::kOneYear, C4STR("1"), -1, false, true, true, true};
 
 

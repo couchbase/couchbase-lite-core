@@ -93,7 +93,8 @@ struct C4Collection
     /// Same as the C4Database method, but the query will refer to this collection by default.
     Retained<C4Query> newQuery(C4QueryLanguage language, slice queryExpr, int* outErrorPos) const;
 
-    virtual void createIndex(slice name, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
+    /// Returns true if it created or replaced the index, false if it already exists.
+    virtual bool createIndex(slice name, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
                              const C4IndexOptions* C4NULLABLE indexOptions = nullptr) = 0;
 
     virtual Retained<C4Index> getIndex(slice name) = 0;

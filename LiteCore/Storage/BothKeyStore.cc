@@ -123,11 +123,10 @@ namespace litecore {
     // always returning the lowest-sorting record (basically a merge-sort.)
     class BothEnumeratorImpl final : public RecordEnumerator::Impl {
       public:
-        BothEnumeratorImpl(bool bySequence, sequence_t since, RecordEnumerator::Options options, KeyStore* liveStore,
-                           KeyStore* deadStore)
-            : _liveImpl(liveStore->newEnumeratorImpl(bySequence, since, options))
-            , _deadImpl(deadStore->newEnumeratorImpl(bySequence, since, options))
-            , _bySequence(bySequence)
+        BothEnumeratorImpl(RecordEnumerator::Options options, KeyStore* liveStore, KeyStore* deadStore)
+            : _liveImpl(liveStore->newEnumeratorImpl(options))
+            , _deadImpl(deadStore->newEnumeratorImpl(options))
+            , _bySequence(options.minSequence > 0_seq)
             , _descending(options.sortOption == kDescending) {}
 
         bool next() override {
@@ -181,17 +180,13 @@ namespace litecore {
     // indexes in `onlyConflicts` mode.
     class BothUnorderedEnumeratorImpl final : public RecordEnumerator::Impl {
       public:
-        BothUnorderedEnumeratorImpl(sequence_t since, RecordEnumerator::Options options, KeyStore* liveStore,
-                                    KeyStore* deadStore)
-            : _impl(liveStore->newEnumeratorImpl(false, since, options))
-            , _deadStore(deadStore)
-            , _since(since)
-            , _options(options) {}
+        BothUnorderedEnumeratorImpl(RecordEnumerator::Options const& options, KeyStore* liveStore, KeyStore* deadStore)
+            : _impl(liveStore->newEnumeratorImpl(options)), _deadStore(deadStore), _options(options) {}
 
         bool next() override {
             bool ok = _impl->next();
             if ( !ok && _deadStore != nullptr ) {
-                _impl      = unique_ptr<RecordEnumerator::Impl>(_deadStore->newEnumeratorImpl(false, _since, _options));
+                _impl      = unique_ptr<RecordEnumerator::Impl>(_deadStore->newEnumeratorImpl(_options));
                 _deadStore = nullptr;
                 ok         = _impl->next();
             }
@@ -207,26 +202,25 @@ namespace litecore {
       private:
         unique_ptr<RecordEnumerator::Impl> _impl;       // Current enumerator
         KeyStore*                          _deadStore;  // The deleted store, before I switch to it
-        sequence_t                         _since;      // Starting sequence
         RecordEnumerator::Options          _options;    // Enumerator options
     };
 
-    RecordEnumerator::Impl* BothKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
-                                                            RecordEnumerator::Options options) {
+    RecordEnumerator::Impl* BothKeyStore::newEnumeratorImpl(RecordEnumerator::Options const& options) {
         bool isDefaultStore = (name() == DataFile::kDefaultKeyStoreName);
         if ( options.includeDeleted ) {
             if ( options.sortOption == kUnsorted )
-                return new BothUnorderedEnumeratorImpl(since, options, _liveStore.get(), _deadStore.get());
+                return new BothUnorderedEnumeratorImpl(options, _liveStore.get(), _deadStore.get());
             else
-                return new BothEnumeratorImpl(bySequence, since, options, _liveStore.get(), _deadStore.get());
+                return new BothEnumeratorImpl(options, _liveStore.get(), _deadStore.get());
         } else {
+            auto optionsCopy = options;
             if ( !isDefaultStore ) {
                 // For non default store, liveStore contains only live records. By assigning
                 // includeDeleted to true, we won't apply flag filter to filter out the deleted.
                 // For default store, however, liveStore may have deleted records.
-                options.includeDeleted = true;  // no need for enum to filter out deleted docs
+                optionsCopy.includeDeleted = true;  // no need for enum to filter out deleted docs
             }
-            return _liveStore->newEnumeratorImpl(bySequence, since, options);
+            return _liveStore->newEnumeratorImpl(optionsCopy);
         }
     }
 
