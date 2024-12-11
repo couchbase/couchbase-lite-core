@@ -87,11 +87,10 @@ class ListenerHarness {
 
     void share(C4Database* dbToShare, slice name) {
         if ( _listener ) return;
-        C4Error err;
-        _listener = c4listener_start(&config, &err);
+        _listener = c4listener_start(&config, ERROR_INFO());
         REQUIRE(_listener);
 
-        REQUIRE(c4listener_shareDB(_listener, name, dbToShare, &err));
+        REQUIRE(c4listener_shareDB(_listener, name, dbToShare, WITH_ERROR()));
     }
 
     void stop() { _listener = nullptr; }

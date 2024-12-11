@@ -50,7 +50,8 @@ struct C4Listener final
     ///     and should not be used again by the caller.
     /// @param dbConfig  Optional configuration for this database. Overrides the C4ListenerConfig.
     /// @returns  True on success, false if the name is already in use.
-    [[nodiscard]] bool shareDB(slice name, C4Database* db, C4ListenerDatabaseConfig const* dbConfig = nullptr);
+    [[nodiscard]] bool shareDB(slice name, C4Database* db,
+                               C4ListenerDatabaseConfig const* C4NULLABLE dbConfig = nullptr);
 
     /// Stops sharing a database. `db` need not be the exact instance that was registered;
     /// any instance on the same database file will work.
