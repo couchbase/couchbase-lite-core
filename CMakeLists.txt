@@ -37,9 +37,7 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
         - platform_win_desktop
 ]]#
 
-cmake_minimum_required (VERSION 3.9)
-cmake_policy(VERSION 3.9)
-cmake_policy(SET CMP0057 NEW)
+cmake_minimum_required (VERSION 3.20.3)
 
 # Mac/apple setup -- must appear before the first "project()" line"
 set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
@@ -96,6 +94,8 @@ option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
 option(LITECORE_WARNINGS_HARDCORE "Enables tons of warnings and makes them errors (Clang only)" OFF)
 option(LITECORE_SANITIZE "Enables address and undefined-behavior sanitizers (Clang only)" OFF)
+option(LITECORE_BUILD_SHARED "Enables building the LiteCore shared library" ON)
+option(LITECORE_BUILD_STATIC "Enables building the LiteCore static library" ON)
 
 set(LITECORE_PREBUILT_LIB "" CACHE STRING "If set, C4Tests will use the prebuilt LiteCore instead of building it from source")
 
@@ -209,7 +209,7 @@ target_compile_definitions(
 
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreObjects OBJECT ${ALL_SRC_FILES})
-add_library(LiteCoreUnitTesting OBJECT ${ALL_SRC_FILES})
+add_library(LiteCoreUnitTesting OBJECT EXCLUDE_FROM_ALL ${ALL_SRC_FILES})
 set(LiteCoreObjectsDefines
     LITECORE_IMPL
     LITECORE_CPP_API=1
@@ -276,11 +276,6 @@ target_include_directories(
     ${LiteCoreObjectsIncludes}
 )
 
-add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
-
-add_library(LiteCoreStatic STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:LiteCoreObjects>)
-target_link_libraries(LiteCoreStatic PRIVATE LiteCoreObjects)
-
 # Library flags defined in platform_linux
 set(
     LITECORE_LIBRARIES_PRIVATE
@@ -298,12 +293,36 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
-target_include_directories(
-    LiteCore INTERFACE
-    C/include
-    C/Cpp_include
-)
-target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
+if(LITECORE_BUILD_SHARED)
+    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+    target_include_directories(
+        LiteCore INTERFACE
+        C/include
+        C/Cpp_include
+    ) 
+    target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
+
+    install (
+        TARGETS LiteCore
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        OPTIONAL
+    )
+
+    file(GLOB LITECORE_HEADERS ${PROJECT_SOURCE_DIR}/C/include/*.h ${PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh)
+    file(GLOB FLEECE_HEADERS ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.hh)
+
+    install(FILES ${LITECORE_HEADERS} DESTINATION include)
+    install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
+endif()
+
+if(LITECORE_BUILD_STATIC)
+    add_library(LiteCoreStatic STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:LiteCoreObjects>)
+    target_link_libraries(LiteCoreStatic PRIVATE LiteCoreObjects)
+endif()
+
+
 target_link_libraries(
     LiteCoreObjects INTERFACE
     SQLite3_UnicodeSN
@@ -329,20 +348,6 @@ if(USE_COUCHBASE_SQLITE)
         CouchbaseSqlite3
     )
 endif()
-
-install (
-    TARGETS LiteCore
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    OPTIONAL
-)
-
-file(GLOB LITECORE_HEADERS ${PROJECT_SOURCE_DIR}/C/include/*.h ${PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh)
-file(GLOB FLEECE_HEADERS ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.hh)
-
-install(FILES ${LITECORE_HEADERS} DESTINATION include)
-install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 
 ### Support Libraries (Add functionality, but add nothing to official API)
 
