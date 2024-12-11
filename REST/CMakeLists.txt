@@ -47,6 +47,7 @@ target_include_directories(
     ../C/include
     ../C/Cpp_include
     ../C
+    ../LiteCore/Logging
     ../LiteCore/Support
     ../Crypto
     ../Networking
