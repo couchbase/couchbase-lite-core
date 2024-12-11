@@ -13,6 +13,7 @@
 #include "HTTPLogic.hh"
 #include "TCPSocket.hh"
 #include "WebSocketInterface.hh"
+#include "c4Log.h"
 #include "c4ReplicatorTypes.h"
 #include "Base64.hh"
 #include "Error.hh"
