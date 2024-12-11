@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "c4Compat.h"
+#include "c4Base.h"
 #include "c4Error.h"
 #include "fleece/FLSlice.h"
 #ifdef __cplusplus

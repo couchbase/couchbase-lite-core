@@ -25,6 +25,7 @@
 #include "Delimiter.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
+#include "c4Log.h"
 #include "c4SocketTypes.h"  // for error codes
 #include "Error.hh"
 #include "StringUtil.hh"
