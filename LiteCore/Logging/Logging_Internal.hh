@@ -23,7 +23,6 @@ namespace litecore {
 
     namespace loginternal {
         constexpr const char* C4NULLABLE kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
-        constexpr const char* C4NONNULL kLevels[]     = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
 
         extern std::mutex sLogMutex;
         extern char       sFormatBuffer[2048];
@@ -43,6 +42,7 @@ namespace litecore {
     }  // namespace loginternal
 
     class LogObserver;
+    struct LogEntry;
     struct RawLogEntry;
 
     /** A set of LogObserver instances with associated LogLevels.
@@ -65,6 +65,9 @@ namespace litecore {
 
         /// Posts a log message to all relevant observers. (Called internally by logging functions.)
         void notify(RawLogEntry const&, const char* format, va_list args) __printflike(3, 0);
+
+        /// Posts a log message only to formatted (non-raw) observers. (This is kind of a special case.)
+        void notifyCallbacksOnly(LogEntry const&);
 
       private:
         // Sorted by increasing LogLevel: Debug, Verbose, Info, Warning, Error

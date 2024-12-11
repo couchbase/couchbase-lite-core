@@ -38,6 +38,7 @@ namespace litecore {
         LogLevel           level;      ///< Severity level
         LogObjectRef       objRef;     ///< Registered object that logged the mesage, else None (0)
         const std::string& prefix;     ///< Optional prefix string to add to the message
+        bool               fileOnly;   ///< If true, _only_ LogFiles should log this
     };
 
     /** Abstract class that receives log messages as they're written. */
@@ -53,9 +54,6 @@ namespace litecore {
 
         //---- Instance API:
 
-        /// Sets whether the observer wants RawLogEntry or regular parsed LogEntry (the default.)
-        void setRaw(bool raw) { _raw = raw; }
-
         bool raw() const { return _raw; }
 
         /// Informs a LogObserver of a new log message. Only called if `raw` is false.
@@ -64,16 +62,27 @@ namespace litecore {
         /// Informs a LogObserver of a new log message. Only called if `raw` is true.
         virtual void observe(RawLogEntry const&, const char* format, va_list args) noexcept;
 
+      protected:
+        /// @param raw  True if you want a RawLogEntry, false for the regular parsed LogEntry.
+        explicit LogObserver(bool raw = false) : _raw(raw) {}
+
+        void setRaw(bool raw);
+
       private:
         friend class LogCallback;
         friend class LogFiles;
+
+        LogObserver(const LogObserver&)            = delete;
+        LogObserver& operator=(const LogObserver&) = delete;
+        LogObserver(LogObserver&&)                 = delete;
+        LogObserver& operator=(LogObserver&&)      = delete;
 
         static void _add(LogObserver*, LogLevel defaultLevel, std::span<const std::pair<LogDomain&, LogLevel>> = {});
         static void _remove(LogObserver*);
         void        _addTo(LogDomain&, LogLevel);
         void        _removeFrom(LogDomain&);
 
-        bool _raw = false;
+        bool _raw;
     };
 
 }  // namespace litecore

@@ -77,13 +77,13 @@ namespace litecore {
         void logNoCallback(LogLevel level, const char* fmt, ...) __printflike(3, 4);
         void log(LogLevel level, const char* fmt, ...) __printflike(3, 4);
         void vlog(LogLevel level, const char* fmt, va_list) __printflike(3, 0);
-        void vlogNoCallback(LogLevel level, const char* fmt, va_list) __printflike(3, 0);
 
       private:
         friend class Logging;
         friend class LogObserver;
 
         void vlog(LogLevel level, const Logging* logger, bool callback, const char* fmt, va_list) __printflike(5, 0);
+        void logToCallbacksOnly(LogLevel, const char* message);
 
         LogLevel computeLevel() noexcept;
         LogLevel levelFromEnvironment() const noexcept;
@@ -92,7 +92,7 @@ namespace litecore {
         std::atomic<LogLevel> _level;
         const char*           _name;
         LogDomain*            _next;
-        LogObservers*         _observers = nullptr;
+        LogObservers*         _observers;
 
         static LogDomain* sFirstDomain;
     };
@@ -167,9 +167,9 @@ namespace litecore {
 
         void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
 
-        // Add key=value pairs to the output. They are space separated. If output is not empty
-        // upon entry, add a space to start new key=value pairs.
-        // Warning: the string must not include printf format specifier, '%'.
+        /// Add key=value pairs to the output. They are space separated. If output is not empty
+        /// upon entry, add a space to start new key=value pairs.
+        /// Warning: the string must not include printf format specifier, '%'.
         virtual void addLoggingKeyValuePairs(std::stringstream& output) const {}
 
         LogDomain& _domain;

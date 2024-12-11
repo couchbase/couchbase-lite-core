@@ -13,7 +13,6 @@
 #include "Logging.hh"
 #include "Logging_Internal.hh"
 #include "StringUtil.hh"
-#include "LogFiles.hh"  //TODO: remove
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
 #include "LogObserver.hh"
@@ -60,10 +59,6 @@ namespace litecore {
 
     LogDomain::LogDomain(const char* name, LogLevel level, bool internName)
         : _level(level), _name(internName ? strdup(name) : name), _observers(new LogObservers) {
-        // First-time initialization:
-        static once_flag sOnce;
-        call_once(sOnce, [] { LogCallback::setCallback(LogCallback::defaultCallback, false); });
-
         unique_lock<mutex> lock(sLogMutex);
         _next        = sFirstDomain;
         sFirstDomain = this;
@@ -115,8 +110,7 @@ namespace litecore {
 #pragma mark - LOGGING:
 
     void LogDomain::vlog(LogLevel level, const Logging* logger, bool doCallback, const char* fmt, va_list args) {
-        if ( _effectiveLevel == LogLevel::Uninitialized ) computeLevel();
-        if ( !willLog(level) ) return;
+        if ( computeLevel() > level ) return;
 
         auto         timestamp = uint64_t(c4_now());
         LogObjectRef objRef{LogEncoder::None};
@@ -138,21 +132,23 @@ namespace litecore {
 
         unique_lock<mutex> lock(sLogMutex);
 
-        if ( _observers ) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-            _observers->notify(
-                    RawLogEntry{
-                            .timestamp = timestamp,
-                            .domain    = *this,
-                            .level     = level,
-                            .objRef    = objRef,
-                            .prefix    = prefix,
-                    },
-                    uncheckedFmt, args);
+        _observers->notify(RawLogEntry{.timestamp = timestamp,
+                                       .domain    = *this,
+                                       .level     = level,
+                                       .objRef    = objRef,
+                                       .prefix    = prefix,
+                                       .fileOnly  = !doCallback},
+                           uncheckedFmt, args);
 #pragma GCC diagnostic pop
-        }
-        //TODO: honor `doCallback`
+    }
+
+    void LogDomain::logToCallbacksOnly(LogLevel level, const char* message) {
+        if ( computeLevel() > level ) return;
+        unique_lock<mutex> lock(sLogMutex);
+        _observers->notifyCallbacksOnly(
+                LogEntry{.timestamp = uint64_t(c4_now()), .domain = *this, .level = level, .message = message});
     }
 
     void LogDomain::vlog(LogLevel level, const char* fmt, va_list args) { vlog(level, nullptr, true, fmt, args); }
@@ -162,10 +158,6 @@ namespace litecore {
         va_start(args, fmt);
         vlog(level, nullptr, true, fmt, args);
         va_end(args);
-    }
-
-    void LogDomain::vlogNoCallback(LogLevel level, const char* fmt, va_list args) {
-        vlog(level, nullptr, false, fmt, args);
     }
 
     void LogDomain::logNoCallback(LogLevel level, const char* fmt, ...) {
@@ -221,18 +213,12 @@ namespace litecore {
                                     const string& nickname, LogDomain& domain, LogLevel level) {
             static unsigned sLastObjRef = 0;
 
-            unique_lock<mutex> lock(sLogMutex);
             if ( *val != LogObjectRef::None ) { return *val; }
 
-            LogObjectRef objRef{++sLastObjRef};
+            unique_lock<mutex> lock(sLogMutex);
+            LogObjectRef       objRef{++sLastObjRef};
             sObjectMap.emplace(std::piecewise_construct, std::forward_as_tuple(objRef),
                                std::forward_as_tuple(nickname, LogObjectRef::None));
-            //TODO: Fix this
-            /*
-            if ( LogCallback::_willLog(level) )
-                LogCallback::_invokeCallback(domain, level, "{%s#%u}==> %s @%p", nickname.c_str(), objRef,
-                                             description.c_str(), object);
-                                             */
             return objRef;
         }
 
@@ -315,6 +301,12 @@ namespace litecore {
             string nickname   = loggingClassName();
             string identifier = classNameOf(this) + " " + loggingIdentifier();
             _objectRef        = registerObject(this, &_objectRef, identifier, nickname, _domain, level);
+
+            // The binary logger will write a description of the object the first time it logs,
+            // but callback loggers won't, so give them a special message to log:
+            snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u}==> %s @%p", nickname.c_str(), _objectRef,
+                     identifier.c_str(), this);
+            _domain.logToCallbacksOnly(level, sFormatBuffer);
         }
         return _objectRef;
     }
@@ -324,7 +316,6 @@ namespace litecore {
     }
 
     void Logging::_logv(LogLevel level, const char* format, va_list args) const {
-        _domain.computeLevel();
         if ( _domain.willLog(level) ) _domain.vlog(level, this, true, format, args);
     }
 }  // namespace litecore
