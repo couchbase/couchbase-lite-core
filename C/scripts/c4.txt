@@ -400,6 +400,11 @@ c4index_getQueryLanguage
 c4index_getExpression
 c4index_getOptions
 
+c4log_defaultCallback
+c4log_newObserver
+c4log_removeObserver
+c4log_replaceObserver
+
 FLDoc_FromJSON
 FLDoc_Retain
 FLDoc_GetAllocedData

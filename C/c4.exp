@@ -392,6 +392,11 @@ _c4index_getQueryLanguage
 _c4index_getExpression
 _c4index_getOptions
 
+_c4log_defaultCallback
+_c4log_newObserver
+_c4log_removeObserver
+_c4log_replaceObserver
+
 _FLDoc_FromJSON
 _FLDoc_Retain
 _FLDoc_GetAllocedData

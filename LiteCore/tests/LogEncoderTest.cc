@@ -66,9 +66,6 @@ static string dumpLog(const string& encoded, const vector<string>& levelNames) {
 
 TEST_CASE("LogEncoder formatting", "[Log]") {
     // For checking the timestamp in the path to the binary log file.
-#ifdef LITECORE_CPPTEST
-    string logPath = LogFiles::createLogPath_forUnitTest(LogLevel::Info);
-#endif
     stringstream out;
     {
         LogEncoder logger(out, int8_t(LogLevel::Info));
@@ -114,7 +111,8 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     // From milliseconds to seconds
     utctimestampInLog /= 1000;
 
-    REQUIRE(regex_search(logPath, m, regex{"cbl_info_([0-9]*)\\.cbllog$"}));
+    string logPath = LogFiles::newLogFilePath("whatever", LogLevel::Info);
+    REQUIRE(regex_search(logPath, m, regex{"^whatever.cbl_info_([0-9]*)\\.cbllog$"}));
     string timestampOnLogFilePath = m[1].str();
     // chomp it to seconds
     REQUIRE(timestampOnLogFilePath.length() > 3);
@@ -222,12 +220,34 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
     CHECK(!result.empty());
 }
 
-TEST_CASE("Logging rollover", "[Log]") {
-    auto now = chrono::milliseconds(time(nullptr));
-    char folderName[kFolderBufSize];
-    snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
-    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
-    tmpLogDir.delRecursive();
+struct LogFileTest {
+    LogFileTest() {
+        auto now = chrono::milliseconds(time(nullptr));
+        char folderName[kFolderBufSize];
+        snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
+        tmpLogDir = TestFixture::sTempDir[folderName];
+        tmpLogDir.delRecursive();
+    }
+
+    void createLogger(LogFiles::Options const& options, LogLevel level) {
+        _logFiles = make_retained<LogFiles>(options);
+        LogObserver::add(_logFiles, level);
+    }
+
+    void removeLogger() {
+        if ( _logFiles ) {
+            LogObserver::remove(_logFiles);
+            _logFiles = nullptr;
+        }
+    }
+
+    ~LogFileTest() { removeLogger(); }
+
+    FilePath           tmpLogDir;
+    Retained<LogFiles> _logFiles;
+};
+
+TEST_CASE_METHOD(LogFileTest, "Logging rollover", "[Log]") {
     tmpLogDir.mkdir();
     tmpLogDir["intheway"].mkdir();
 
@@ -235,8 +255,6 @@ TEST_CASE("Logging rollover", "[Log]") {
         ofstream tmpOut(tmpLogDir["abcd"].canonicalPath(), ios::binary);
         tmpOut << "I" << endl;
     }
-
-    const LogFiles::Options prevOptions = LogFiles::currentOptions();
 
     int maxCount = 0;
     SECTION("No Purge") {
@@ -249,11 +267,8 @@ TEST_CASE("Logging rollover", "[Log]") {
         maxCount = 1;
     }
 
-    LogFiles::Options fileOptions{tmpLogDir.canonicalPath(), LogLevel::Info, 1024, maxCount, false};
-#ifdef LITECORE_CPPTEST
-    LogFiles::resetRotateSerialNo();
-#endif
-    LogFiles::writeEncodedLogsTo(fileOptions, "Hello");
+    LogFiles::Options fileOptions{tmpLogDir.canonicalPath(), "Hello", 1024, maxCount, false};
+    createLogger(fileOptions, LogLevel::Info);
     LogObject obj("dummy");
     // The following will trigger 2 rotations.
     for ( int i = 0; i < 1024; i++ ) {
@@ -272,13 +287,7 @@ TEST_CASE("Logging rollover", "[Log]") {
         }
     }
 
-    // HACK: Cause a flush so that the test has something in the second log
-    // to actually read into the decoder
-    snprintf(folderName, kFolderBufSize, "Log_Rollover2_%" PRIms "/", now.count());
-    FilePath other = TestFixture::sTempDir[folderName];
-    other.mkdir();
-    LogFiles::Options fileOptions2{other.canonicalPath(), LogLevel::Info, 1024, 2, false};
-    LogFiles::writeEncodedLogsTo(fileOptions2, "Hello");
+    _logFiles->flush();
 
     vector<string> infoFiles;
     int            totalCount = 0;
@@ -412,63 +421,43 @@ TEST_CASE("Logging rollover", "[Log]") {
         prev     = it;
     }
     CHECK(lastLine == 1023);
-
-    LogFiles::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }
 
-TEST_CASE("Logging throw in c++", "[Log]") {
-    auto now = chrono::milliseconds(time(nullptr));
-    char folderName[kFolderBufSize];
-    snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
-    FilePath          tmpLogDir = TestFixture::sTempDir[folderName];
-    LogFiles::Options fileOptions{tmpLogDir.path(), LogLevel::Info, 1024, 1, false};
+TEST_CASE_METHOD(LogFileTest, "Logging throw in c++", "[Log]") {
+    LogFiles::Options fileOptions{tmpLogDir.path(), "", 1024, 1, false};
     // Note that we haven't created tmpLogDir. Therefore, there will be an exception.
-    string msg{"File Logger fails to open file, "};
+    string msg{"File Logger failed to open file, "};
     msg += tmpLogDir.path();
-    string                  excMsg;
-    const LogFiles::Options prevOptions = LogFiles::currentOptions();
+    string excMsg;
     try {
         ExpectingExceptions x;
-        LogFiles::writeEncodedLogsTo(fileOptions, "Hello");
+        createLogger(fileOptions, LogLevel::Info);
     } catch ( std::exception& exc ) { excMsg = exc.what(); }
+    INFO("excMsg = " << excMsg);
     CHECK(excMsg.find(msg) == 0);
-    LogFiles::writeEncodedLogsTo(prevOptions);
 }
 
-TEST_CASE("Logging throw in c4", "[Log]") {
-    auto now = chrono::milliseconds(time(nullptr));
-    char folderName[kFolderBufSize];
-    snprintf(folderName, kFolderBufSize, "Log_Rollover_%" PRIms "/", now.count());
-    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
+TEST_CASE_METHOD(LogFileTest, "Logging throw in c4", "[Log]") {
     // Note that we haven't created tmpLogDir.
     C4Error           error;
     LogFiles::Options prevOptions;
     {
         ExpectingExceptions x;
-        prevOptions = LogFiles::currentOptions();
         CHECK(!c4log_writeToBinaryFile({kC4LogVerbose, slice(tmpLogDir.path()), 16 * 1024, 1, false}, &error));
     }
-    string excMsg{"File Logger fails to open file, "};
+    string excMsg{"File Logger failed to open file, "};
     excMsg += tmpLogDir.path();
     string errMsg = "LiteCore CantOpenFile, \"";
     errMsg += excMsg;
+    INFO("error = " << error.description());
     CHECK(string(c4error_getDescription(error)).find(errMsg) == 0);
-    LogFiles::writeEncodedLogsTo(prevOptions);
 }
 
-TEST_CASE("Logging plaintext", "[Log]") {
-    char folderName[kFolderBufSize];
-    snprintf(folderName, kFolderBufSize, "Log_Plaintext_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
-    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
-    tmpLogDir.delRecursive();
+TEST_CASE_METHOD(LogFileTest, "Logging plaintext", "[Log]") {
     tmpLogDir.mkdir();
 
-    const LogFiles::Options prevOptions = LogFiles::currentOptions();
-    LogFiles::Options       fileOptions{tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true};
-#ifdef LITECORE_CPPTEST
-    LogFiles::resetRotateSerialNo();
-#endif
-    LogFiles::writeEncodedLogsTo(fileOptions, "Hello");
+    LogFiles::Options fileOptions{tmpLogDir.canonicalPath(), "Hello", 1024, 5, true};
+    createLogger(fileOptions, LogLevel::Info);
     LogObject obj("dummy");
     obj.doLog("This will be in plaintext");
 
@@ -501,6 +490,4 @@ TEST_CASE("Logging plaintext", "[Log]") {
     CHECK(regex_match(lines[n++], m2, checkLine1));
     regex checkLine2{TIMESTAMP " DB Info Obj=/dummy#[0-9]+/ This will be in plaintext"};
     CHECK(regex_match(lines[n], m2, checkLine2));
-
-    LogFiles::writeEncodedLogsTo(prevOptions);  // undo writeEncodedLogsTo() call above
 }

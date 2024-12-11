@@ -66,6 +66,8 @@ FilePath GetTempDirectory() {
 void InitTestLogging() {
     static once_flag once;
     call_once(once, [] {
+        c4log_writeToCallback(kC4LogInfo, c4log_defaultCallback, false);
+
         alloc_slice buildInfo = c4_getBuildInfo();
         alloc_slice version   = c4_getVersion();
         C4Log("This is LiteCore %.*s ... short version %.*s", SPLAT(buildInfo), SPLAT(version));
@@ -79,7 +81,6 @@ void InitTestLogging() {
             if ( !c4log_writeToBinaryFile({kC4LogDebug, slice(path), 16 * 1024, 1, false}, &error) ) {
                 C4WarnError("TestsCommon: Can't log to binary file, %.*s", SPLAT(c4error_getDescription(error)));
             }
-            c4log_setCallbackLevel(kC4LogInfo);
         } else {
             C4Log("Binary logging is already enabled, so I'm not doing it");
         }

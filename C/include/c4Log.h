@@ -14,11 +14,7 @@
 #include "c4Base.h"
 #include "c4Error.h"
 #include "fleece/FLSlice.h"
-#ifdef __cplusplus
-#    include <cstdarg>
-#else
-#    include <stdarg.h>
-#endif
+#include <stdarg.h>
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
@@ -104,8 +100,10 @@ typedef void (*C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char* fm
             will be NULL. */
 CBL_CORE_API void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) C4API;
 
-/** A log callback that writes log messages to stderr, or on Android to `__android_log_write`. */
-CBL_CORE_API void c4log_defaultCallback(C4LogDomain, C4LogLevel, const char* fmt, va_list args) __printflike(3, 0);
+/** A log callback that writes log messages to stderr, or on Android to `__android_log_write`.
+    This callback is preformatted: it expects `message` to be the complete string, and ignores `args`.
+    If passing it to \ref c4log_writeToCallback, you MUST pass `true` for `preformatted`. */
+CBL_CORE_API void c4log_defaultCallback(C4LogDomain, C4LogLevel, const char* message, va_list) __printflike(3, 0);
 
 /** Returns the current logging callback, or the default one if none has been set. */
 CBL_CORE_API C4LogCallback c4log_getCallback(void) C4API;
@@ -116,6 +114,58 @@ CBL_CORE_API C4LogLevel c4log_callbackLevel(void) C4API;
 
 /** Sets the minimum level of log messages to be reported via callback. */
 CBL_CORE_API void c4log_setCallbackLevel(C4LogLevel level) C4API;
+
+
+#pragma mark - LOG OBSERVERS:
+
+/** A log entry, as passed to a C4LogObserverCallback. */
+typedef struct C4LogEntry {
+    C4Timestamp timestamp;
+    C4LogLevel  level;
+    C4LogDomain domain;
+    FLString    message;
+} C4LogEntry;
+
+/** A (domain, level) pair, used to customize a log observer's configuration. */
+typedef struct C4DomainLevel {
+    C4LogDomain domain;
+    C4LogLevel  level;
+} C4DomainLevel;
+
+/** The callback that will be called by a C4LogObserver.
+    Will be called on arbitrary threads. Should return as quickly as possible. */
+typedef void (*C4LogObserverCallback)(const C4LogEntry*, void* C4NULLABLE context);
+
+/** Configuration for creating a C4LogObserver,
+    which may either call a callback or write to a file (but not both.)
+    Exactly one of `callback` and `fileOptions` must be non-NULL. */
+typedef struct C4LogObserverConfig {
+    C4LogLevel                         defaultLevel;     ///< Log level for domains not listed
+    const C4DomainLevel* C4NULLABLE    domains;          ///< List of domains and levels (may be NULL if empty)
+    size_t                             domainsCount;     ///< Length of `domains` array
+    C4LogObserverCallback C4NULLABLE   callback;         ///< C callback to invoke
+    void* C4NULLABLE                   callbackContext;  ///< `context` value to pass the callback
+    const C4LogFileOptions* C4NULLABLE fileOptions;      ///< Config for file logging (Note: `log_level` is ignored)
+} C4LogObserverConfig;
+
+/** Creates and registers a log observer, returning a reference.
+    Fails if the configuration is invalid.
+    @note Call \ref c4logobserver_release when done with the reference.
+          (You don't need to keep it unless you're going to call \ref c4log_removeObserver later.) */
+NODISCARD CBL_CORE_API C4LogObserver* c4log_newObserver(C4LogObserverConfig config, C4Error* C4NULLABLE outError) C4API;
+
+/** Unregisters a log observer. Does nothing if it's not registered.
+    @note  This does not release your reference. You should call \ref c4logobserver_release afterward
+           if you don't need the object anymore. */
+CBL_CORE_API void c4log_removeObserver(C4LogObserver*) C4API;
+
+/** Atomically unregisters an observer and registers a new one.
+    If oldObs is NULL, nothing is unregistered.
+    In case of failure (invalid config) oldObs is left intact.
+    @note  This does not release `oldObs`. You should call \ref c4logobserver_release afterward
+           if you don't need the object anymore. */
+NODISCARD CBL_CORE_API C4LogObserver*
+c4log_replaceObserver(C4LogObserver* C4NULLABLE oldObs, C4LogObserverConfig config, C4Error* C4NULLABLE outError) C4API;
 
 
 #pragma mark - LOG DOMAINS:
@@ -181,7 +231,7 @@ CBL_CORE_API void c4log(C4LogDomain domain, C4LogLevel level, const char* fmt, .
 /** Same as c4log, for use in calling functions that already take variable args. */
 CBL_CORE_API void c4vlog(C4LogDomain domain, C4LogLevel level, const char* fmt, va_list args) C4API __printflike(3, 0);
 
-/** Same as c4log, except it accepts preformatted messages as FLSlices */
+/** Writes a preformatted message to log files, but does not invoke log callbacks. */
 CBL_CORE_API void c4slog(C4LogDomain domain, C4LogLevel level, FLString msg) C4API;
 
 // Convenient aliases for c4log:

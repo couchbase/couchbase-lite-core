@@ -22,67 +22,93 @@
 C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore {
+    class LogEncoder;
 
-    /** API for logging to files. */
+    /** A LogObserver that writes to a set of log files (text or binary), one per level. */
     class LogFiles : public LogObserver {
       public:
         struct Options {
-            std::string path;
-            LogLevel    level;
-            int64_t     maxSize;
-            int         maxCount;
-            bool        isPlaintext;
+            std::string directory;                ///< Parent directory for log files; must exist
+            std::string initialMessage;           ///< A message to write at the start of each file
+            int64_t     maxSize     = 1'000'000;  ///< Size in bytes at which files rotate
+            int         maxCount    = 0;          ///< Max number of old files to preserve
+            bool        isPlaintext = false;      ///< True to write text files, false for binary
         };
 
-        /// Registers (or unregisters) a file to which log messages will be written in binary format.
-        /// @param options The options to use when performing file logging
-        /// @param initialMessage  First message that will be written to the log, e.g. version info */
-        static void writeEncodedLogsTo(const Options& options, const std::string& initialMessage = "");
+        explicit LogFiles(const Options& options);
 
-        /// Returns the current log file configuration options, as given to `writeEncodedLogsTo`.
-        static Options currentOptions();
+        ~LogFiles();
 
-        static LogLevel logLevel() noexcept;
+        Options options() const;
 
-        static void setLogLevel(LogLevel) noexcept;
+        void setOptions(Options const&);
 
-        static void flush();
+        void flush();
 
-#ifdef LITECORE_CPPTEST
-        static std::string createLogPath_forUnitTest(LogLevel level);
-        static void        resetRotateSerialNo();
-#endif
+        void close();
 
-      protected:
-        LogFiles();
+        // exposed for testing
+        static std::string newLogFilePath(std::string_view dir, LogLevel);
+
+      private:
+        void        setupFileOut();
+        void        setupEncoders();
+        void        teardownEncoders();
+        void        teardownFileOut();
+        void        purgeOldLogs(LogLevel level);
+        void        purgeOldLogs();
+        std::string fileLogHeader(LogLevel);
+        void        rotateLog(LogLevel);
+        std::string newLogFilePath(LogLevel level) const;
+
+        void observe(LogEntry const&) noexcept override;
         void observe(RawLogEntry const&, const char* format, va_list args) noexcept override __printflike(3, 0);
+
+        static constexpr size_t kNumLevels = 5;
+
+        mutable std::mutex                                     _mutex;
+        Options                                                _options;
+        std::array<std::unique_ptr<std::ofstream>, kNumLevels> _fileOut;  // File per log level
+        std::array<std::unique_ptr<LogEncoder>, kNumLevels>    _logEncoder;
+        std::array<unsigned, kNumLevels>                       _rotateSerialNo = {};
     };
 
-    /** API for the global logging callback. */
+    /** A LogObserver that calls a C++ std::function. */
+    class LogFunction : public LogObserver {
+      public:
+        explicit LogFunction(std::function<void(LogEntry const&)> fn) : _fn(std::move(fn)){};
+
+        void observe(LogEntry const& entry) noexcept override { _fn(entry); }
+
+      private:
+        std::function<void(LogEntry const&)> _fn;
+    };
+
+    /** A LogObserver that calls a C callback function. */
     class LogCallback : public LogObserver {
       public:
-        using Callback_t = void (*)(const LogDomain&, LogLevel, const char* format, va_list);
+        /// Preferred callback that takes a preformatted LogEntry.
+        using Callback_t = void (*)(void* C4NULLABLE context, LogEntry const&);
 
-        /** Registers (or unregisters) a callback to be passed log messages.
-            @param callback  The callback function, or NULL to unregister.
-            @param preformatted  If true, callback will be passed already-formatted log messages to be
-                displayed verbatim (and the `va_list` parameter will be NULL.) */
-        static void setCallback(Callback_t callback, bool preformatted);
+        /// Lower-level callback that needs to do the printf-style formatting itself.
+        using RawCallback_t = void (*)(void* C4NULLABLE context, const LogDomain&, LogLevel, const char* format,
+                                       va_list);
 
-        static Callback_t currentCallback();
+        LogCallback(Callback_t cb, void* C4NULLABLE context) : LogCallback(cb, nullptr, context) {}
 
-        /// The default logging callback writes to stderr, or on Android to `__android_log_write`.
-        static void defaultCallback(const LogDomain&, LogLevel, const char* format, va_list) __printflike(3, 0);
+        LogCallback(RawCallback_t cb, void* C4NULLABLE context) : LogCallback(nullptr, cb, context) {}
 
-        static LogLevel callbackLogLevel() noexcept;
+        /// A default logging callback that writes to stderr, or on Android to `__android_log_write`.
+        static void consoleCallback(void* C4NULLABLE context, LogEntry const&);
 
-        static void setCallbackLogLevel(LogLevel) noexcept;
+      private:
+        LogCallback(Callback_t C4NULLABLE, RawCallback_t C4NULLABLE, void* C4NULLABLE context);
+        void observe(LogEntry const&) noexcept override;
+        void observe(RawLogEntry const&, const char* format, va_list args) noexcept override __printflike(3, 0);
 
-      protected:
-        LogCallback() = default;
-        static void updateLogObserver();
-        void        observe(LogEntry const&) noexcept override;
-        void        observe(RawLogEntry const&, const char* format, va_list args) noexcept override __printflike(3, 0);
+        Callback_t C4NULLABLE    _callback    = nullptr;
+        RawCallback_t C4NULLABLE _rawCallback = nullptr;
+        void* C4NULLABLE         _context     = nullptr;
     };
 
 }  // namespace litecore
