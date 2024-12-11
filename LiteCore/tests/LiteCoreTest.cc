@@ -43,9 +43,6 @@ string TestFixture::sFixturesDir = "../LiteCore/tests/data/";
 string TestFixture::sFixturesDir = "LiteCore/tests/data/";
 #endif
 
-
-FilePath TestFixture::sTempDir = GetTempDirectory();
-
 string stringWithFormat(const char* format, ...) {
     va_list args;
     va_start(args, format);

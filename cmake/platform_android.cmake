@@ -70,24 +70,17 @@ function(setup_litecore_build)
         -DSQLITE_UNLINK_AFTER_CLOSE
     )
 
-    target_link_libraries(
-        LiteCore PUBLIC
-        log
-        atomic
-    )
+    if(LITECORE_BUILD_SHARED)
+        target_link_libraries(
+            LiteCore PUBLIC
+            log
+            atomic
+        )
+    endif()
 
     target_include_directories(
         LiteCoreWebSocket
         PUBLIC
-        LiteCore/Android
-    )
-endfunction()
-
-function(setup_support_build)
-    setup_support_build_linux()
-
-    target_include_directories(
-        Support PRIVATE
         LiteCore/Android
     )
 endfunction()

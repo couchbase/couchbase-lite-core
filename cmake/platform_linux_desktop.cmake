@@ -1,38 +1,54 @@
 include("${CMAKE_CURRENT_LIST_DIR}/platform_linux.cmake")
 
+MACRO (_install_gcc_file GCCFILENAME)
+  IF (UNIX AND NOT APPLE)
+    EXECUTE_PROCESS(
+      COMMAND "${CMAKE_CXX_COMPILER}" ${CMAKE_CXX_FLAGS} -print-file-name=${GCCFILENAME}
+      OUTPUT_VARIABLE _gccfile OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_VARIABLE _errormsg
+      RESULT_VARIABLE _failure)
+    IF (_failure)
+      MESSAGE (FATAL_ERROR "Error (${_failure}) determining path to ${GCCFILENAME}: ${_errormsg}")
+    ENDIF ()
+    # We actually need to copy any files with longer filenames - this can be eg.
+    # libstdc++.so.6, or libgcc_s.so.1.
+    # Note: RPM demands that .so files be executable or else it won't
+    # extract debug info from them.
+    FILE (GLOB _gccfiles "${_gccfile}*")
+    FOREACH (_gccfile ${_gccfiles})
+      # Weird extraneous file not desired
+      IF (_gccfile MATCHES ".py$")
+        CONTINUE ()
+      ENDIF ()
+      INSTALL (FILES "${_gccfile}" DESTINATION lib
+               PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                  GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+    ENDFOREACH ()
+  ENDIF ()
+ENDMACRO (_install_gcc_file)
+
+_install_gcc_file(libstdc++.so.6)
+_install_gcc_file(libgcc_s.so.1)
+
+IF (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    SET(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE STRING
+        "The install location" FORCE)
+    LIST(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
+ENDIF (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
+INCLUDE (${CMAKE_CURRENT_LIST_DIR}/../jenkins/CBDeps.cmake)
+
+if(NOT LITECORE_DISABLE_ICU AND NOT LITECORE_DYNAMIC_ICU)
+    # Install cbdeps packages using cbdep tool
+    CBDEP_INSTALL (PACKAGE icu4c VERSION 76.1-52886)
+    FILE (COPY "${CBDEP_icu4c_DIR}/lib" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+endif()
+
 function(setup_globals)
     setup_globals_linux()
 
     # Enable relative RPATHs for installed bits
     set (CMAKE_INSTALL_RPATH "\$ORIGIN" PARENT_SCOPE)
-
-    # NOTE: We used to do a whole dog and pony show here to get clang to use libc++.  Now we don't care
-    # and if the person using this project wants to do so then they will have to set the options
-    # accordingly
-
-    if(NOT LITECORE_DISABLE_ICU AND NOT LITECORE_DYNAMIC_ICU)
-        set (_icu_libs)
-        foreach (_lib icuuc icui18n icudata)
-            unset (_iculib CACHE)
-            find_library(_iculib ${_lib} HINTS "${CBDEP_icu4c_DIR}/lib")
-            if (NOT _iculib)
-                message(FATAL_ERROR "${_lib} not found")
-            endif()
-            list(APPEND _icu_libs ${_iculib})
-        endforeach()
-        set (ICU_LIBS ${_icu_libs} CACHE STRING "ICU libraries" FORCE)
-        message("Found ICU libs at ${ICU_LIBS}")
-
-        find_path(LIBICU_INCLUDE unicode/ucol.h
-            HINTS "${CBDEP_icu4c_DIR}"
-            PATH_SUFFIXES include)
-        if (NOT LIBICU_INCLUDE)
-            message(FATAL_ERROR "libicu header files not found")
-        endif()
-        message("Using libicu header files in ${LIBICU_INCLUDE}")
-        include_directories("${LIBICU_INCLUDE}")
-        mark_as_advanced(ICU_LIBS LIBICU_INCLUDE)
-    endif()
 
     find_library(ZLIB_LIB z)
     if (NOT ZLIB_LIB)
@@ -47,7 +63,7 @@ function(setup_globals)
     message("Using libz header files in ${ZLIB_INCLUDE}")
 
     mark_as_advanced(
-           ICU_LIBS LIBICU_INCLUDE ZLIB_LIB ZLIB_INCLUDE
+           ZLIB_LIB ZLIB_INCLUDE
     )
 endfunction()
 
@@ -75,15 +91,6 @@ function(setup_litecore_build)
         target_compile_options(
             ${target} PRIVATE
             "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
-        )
-
-        # Enough is enough, we keep bumping the compiler to get newer C++ stuff
-        # and then suffering the consequences of that stuff not being available
-        # everywhere that we need.  Just build it into the product directly
-        target_link_options(
-            ${target} PRIVATE
-            "-static-libstdc++"
-            "-static-libgcc"
         )
     endforeach()
 
