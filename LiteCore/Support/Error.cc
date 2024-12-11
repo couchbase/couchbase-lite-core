@@ -46,7 +46,7 @@
 #    include <mbedtls/error.h>
 #    include <sockpp/exception.h>
 #else
-#    include "c4Base.h"  // Ugly layering violation, but needed for using Error in other libs
+#    include "c4Log.h"  // Ugly layering violation, but needed for using Error in other libs
 #endif
 
 namespace litecore {
@@ -612,7 +612,8 @@ namespace litecore {
             messageStr += expr;
         }
         if ( sWarnOnError && sNotableExceptionHook ) sNotableExceptionHook();
-        if ( !WillLog(LogLevel::Error) ) fprintf(stderr, "%s (%s:%u, in %s)", messageStr.c_str(), file, line, fn);
+        if ( !kC4Cpp_DefaultLog.willLog(LogLevel::Error) )
+            fprintf(stderr, "%s (%s:%u, in %s)", messageStr.c_str(), file, line, fn);
         auto err = error(LiteCore, AssertionFailed, messageStr);
         err.captureBacktrace(1);  // always get backtrace of assertion failure
         if ( sWarnOnError ) {

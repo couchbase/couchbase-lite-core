@@ -30,6 +30,8 @@ namespace date {
 }  // namespace date
 
 namespace litecore {
+    using namespace fleece;
+
     // A timestamp with greater range, but lower precision, than the `system_clock`'s default nanosecond
     // resolution. This gives us a range of 300 million years(!) instead of only 300 years.
     using date_time_point = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;

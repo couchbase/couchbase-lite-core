@@ -16,6 +16,7 @@
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
 #include "ParseDate.hh"
+#include "c4Log.h"
 #include "fleece/PlatformCompat.hh"
 #include <regex>
 #include <sstream>

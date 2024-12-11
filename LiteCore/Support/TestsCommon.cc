@@ -11,6 +11,7 @@
 //
 
 #include "c4Base.h"
+#include "c4Log.h"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "TestsCommon.hh"  // iwyu pragma: keep

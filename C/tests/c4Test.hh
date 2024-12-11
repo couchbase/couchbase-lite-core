@@ -15,6 +15,7 @@
 #include "c4BlobStore.h"
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
+#include "c4Log.h"
 #include "c4Private.h"
 #include "fleece/function_ref.hh"
 #include "fleece/Expert.hh"

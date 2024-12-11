@@ -4,6 +4,7 @@
 
 #include "SG.hh"
 #include "c4Database.hh"
+#include "c4Log.h"
 #include <utility>
 #include <map>
 #include "Response.hh"
