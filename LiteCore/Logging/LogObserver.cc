@@ -11,6 +11,7 @@
 //
 
 #include "LogObserver.hh"
+#include "LogFiles.hh"
 #include "Logging_Internal.hh"
 #include "Error.hh"
 #include <compare>
@@ -25,6 +26,19 @@ namespace litecore {
     using namespace std;
     using namespace litecore::loginternal;
 
+    __printflike(2, 0) static LogEntry formatEntry(RawLogEntry const& entry, const char* format, va_list args) {
+        size_t len = 0;
+        if ( entry.objRef != LogObjectRef::None )
+            len = addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), entry.objRef);
+        Assert(len < sizeof(sFormatBuffer));
+        if ( !entry.prefix.empty() ) {
+            size_t prefLen = std::min(sizeof(sFormatBuffer) - len, entry.prefix.size());
+            memcpy(sFormatBuffer, &entry.prefix[prefLen], prefLen);
+            len += prefLen;
+        }
+        len += vsnprintf(&sFormatBuffer[len], sizeof(sFormatBuffer) - len, format, args);
+        return LogEntry{.domain = entry.domain, .level = entry.level, .message = string_view(sFormatBuffer, len)};
+    }
 
 #pragma mark - LOG OBSERVERS:
 
@@ -56,23 +70,30 @@ namespace litecore {
     void LogObservers::notify(RawLogEntry const& entry, const char* format, va_list args) {
         optional<LogEntry> formattedEntry;
         for ( auto& [obs, obsLevel] : _observers ) {
-            if ( obsLevel > entry.level ) {
-                break;
-            } else if ( obs->raw() ) {
+            if ( obsLevel > entry.level ) break;
+            if ( entry.fileOnly && !dynamic_cast<LogFiles*>(obs.get()) ) continue;
+            if ( obs->raw() ) {
                 obs->observe(entry, format, args);
             } else {
-                if ( !formattedEntry ) {
-                    int len = vsnprintf(sFormatBuffer, sizeof(sFormatBuffer), format, args);
-                    formattedEntry.emplace(LogEntry{.domain  = entry.domain,
-                                                    .level   = entry.level,
-                                                    .message = string_view(sFormatBuffer, len)});
-                }
+                if ( !formattedEntry ) formattedEntry.emplace(formatEntry(entry, format, args));
                 obs->observe(*formattedEntry);
             }
         }
     }
 
+    void LogObservers::notifyCallbacksOnly(LogEntry const& entry) {
+        for ( auto& [obs, obsLevel] : _observers ) {
+            if ( obsLevel > entry.level ) break;
+            if ( !obs->raw() && !dynamic_cast<LogFiles*>(obs.get()) ) obs->observe(entry);
+        }
+    }
+
 #pragma mark - LOG OBSERVER:
+
+    void LogObserver::setRaw(bool raw) {
+        lock_guard lock(sLogMutex);
+        _raw = raw;
+    }
 
     void LogObserver::_addTo(LogDomain& domain, LogLevel level) {
         if ( level == LogLevel::None ) return;
@@ -118,4 +139,5 @@ namespace litecore {
     void LogObserver::observe(RawLogEntry const&, const char*, va_list) noexcept {
         assert("Should have been overridden" == nullptr);
     }
+
 }  // namespace litecore
