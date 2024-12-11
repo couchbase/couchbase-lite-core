@@ -141,6 +141,7 @@ target_include_directories(
     ${TOP}Networking/WebSockets
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
+    ${TOP}LiteCore/Logging
     ${TOP}LiteCore/RevTrees
     ${TOP}LiteCore/Storage
     ${TOP}LiteCore/Support

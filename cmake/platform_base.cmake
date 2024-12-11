@@ -45,6 +45,12 @@ function(set_litecore_source_base)
         LiteCore/Database/TreeDocument.cc
         LiteCore/Database/Upgrader.cc
         LiteCore/Database/VectorDocument.cc
+        LiteCore/Logging/Logging.cc
+        LiteCore/Logging/DefaultLogger.cc
+        LiteCore/Logging/LogDecoder.cc
+        LiteCore/Logging/LogEncoder.cc
+        LiteCore/Logging/LogFiles.cc
+        LiteCore/Logging/LogObserver.cc
         LiteCore/Query/DateFormat.cc
         LiteCore/Query/IndexSpec.cc
         LiteCore/Query/LazyIndex.cc
@@ -122,15 +128,11 @@ function(set_litecore_source_base)
         Replicator/URLTransformer.cc
         Replicator/Worker.cc
         LiteCore/Support/Arena.cc
-        LiteCore/Support/Logging.cc
         LiteCore/Support/DatabasePool.cc
-        LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc
         LiteCore/Support/EncryptedStream.cc
         LiteCore/Support/FilePath.cc
         LiteCore/Support/HybridClock.cc
-        LiteCore/Support/LogDecoder.cc
-        LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/SequenceSet.cc
         LiteCore/Support/StringUtil.cc
