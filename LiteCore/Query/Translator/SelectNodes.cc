@@ -481,6 +481,7 @@ namespace litecore::qt {
                 isFrom = true;
                 require(_sources.empty(), "multiple non-join FROM items");
                 ctx.from = source;
+                ctx.delegate.updateDefaultTableName(source);
             }
             ctx.sources.emplace_back(source);
         }
