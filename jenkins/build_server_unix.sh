@@ -134,7 +134,7 @@ build_binaries () {
         echo "Copying libs from compiler"
         libstdcpp=`$cxx --print-file-name=libstdc++.so`
         libstdcppname=`basename "$libstdcpp"`
-        libgcc_s=`$cc --print-file-name=libgcc_s.so`
+        libgcc_s=`$cc --print-file-name=libgcc_s.so.1`
         libgcc_sname=`basename "$libgcc_s"`
 
         cp -p "$libstdcpp" "./install/lib/$libstdcppname" -v
