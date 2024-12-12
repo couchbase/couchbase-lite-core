@@ -44,6 +44,9 @@ namespace litecore {
             return _delegate.tableExists(indexTable);
         };
 #endif
+        root.updateDefaultTableName = [&](SourceNode* source) -> void {
+            _defaultTableName = tableNameForCollectionSource(source);
+        };
         return root;
     }
 
@@ -112,6 +115,21 @@ namespace litecore {
         }
     }
 
+    string QueryTranslator::tableNameForCollectionSource(SourceNode* source) const {
+        string name(source->collection());
+        if ( name.empty() ) name = _defaultCollectionName;
+        if ( !source->scope().empty() ) name = string(source->scope()) + "." + name;
+
+        DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
+        //FIXME: Support kDeletedDocs
+
+        string tableName = _delegate.collectionTableName(name, delStatus);
+        if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
+            fail("no such collection \"%s\"", name.c_str());
+
+        return tableName;
+    }
+
     string QueryTranslator::tableNameForSource(SourceNode* source, ParseContext& ctx) {
         string tableName(source->tableName());
         if ( !tableName.empty() ) return tableName;
@@ -129,17 +147,7 @@ namespace litecore {
             _hashedTables.emplace(tableName, plainTableName);
             if ( _delegate.tableExists(tableName) ) source->setTableName(ctx.newString(tableName));
         } else {
-            string name(source->collection());
-            if ( name.empty() ) name = _defaultCollectionName;
-            if ( !source->scope().empty() ) name = string(source->scope()) + "." + name;
-
-            DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
-            //FIXME: Support kDeletedDocs
-
-            tableName = _delegate.collectionTableName(name, delStatus);
-            if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
-                fail("no such collection \"%s\"", name.c_str());
-
+            tableName = tableNameForCollectionSource(source);
             if ( auto index = dynamic_cast<IndexSourceNode*>(source) ) {
                 switch ( index->indexType() ) {
                     case IndexType::FTS:
@@ -164,6 +172,7 @@ namespace litecore {
 #endif
                 }
             } else if ( source->isCollection() ) {
+                DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
                 if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table
                     _kvTables.insert(tableName);
             }

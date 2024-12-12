@@ -125,6 +125,7 @@ namespace litecore {
       private:
         QueryTranslator(const QueryTranslator& qp)         = delete;
         QueryTranslator& operator=(const QueryTranslator&) = delete;
+        string           tableNameForCollectionSource(qt::SourceNode*) const;
         string           tableNameForSource(qt::SourceNode*, qt::ParseContext&);
         void             assignTableNameToSource(qt::SourceNode*, qt::ParseContext&);
         string           writeSQL(function_ref<void(qt::SQLWriter&)>);
@@ -133,7 +134,7 @@ namespace litecore {
         qt::RootContext  makeRootContext() const;
 
         const Delegate&                    _delegate;               // delegate object (SQLiteKeyStore)
-        string                             _defaultTableName;       // Name of the default table to use
+        mutable string                     _defaultTableName;       // Name of the default table to use
         string                             _defaultCollectionName;  // Name of the default collection to use
         string                             _sql;                    // The generated SQL
         std::set<string>                   _parameters;             // Plug-in "$" parameters found in parsing

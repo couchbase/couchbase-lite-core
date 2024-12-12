@@ -76,6 +76,7 @@ namespace litecore::qt {
 #ifdef COUCHBASE_ENTERPRISE
         std::function<bool(string_view id)> hasPredictiveIndex;
 #endif
+        std::function<void(SourceNode*)> updateDefaultTableName;
     };
 
     /** State used during parsing, passed down through the recursive descent. */
