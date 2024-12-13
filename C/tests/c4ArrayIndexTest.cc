@@ -610,22 +610,25 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Single Level Array With Group By"
     C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
     importTestData(coll);
 
-    c4::ref query = c4query_new2(db, kC4N1QLQuery, "SELECT likes, count(1) FROM profiles AS p UNNEST p.likes AS likes GROUP BY likes LIMIT 10"_sl, nullptr, ERROR_INFO());
+    c4::ref query =
+            c4query_new2(db, kC4N1QLQuery,
+                         "SELECT likes, count(1) FROM profiles AS p UNNEST p.likes AS likes GROUP BY likes LIMIT 10"_sl,
+                         nullptr, ERROR_INFO());
     REQUIRE(query);
 
     c4::ref queryenum = REQUIRED(c4query_run(query, nullslice, nullptr));
     validateQuery(queryenum, {
-        R"(["biking", 3])",
-        R"(["boxing", 10])",
-        R"(["chatting", 10])",
-        R"(["checkers", 4])",
-        R"(["chess", 6])",
-        R"(["climbing", 5])",
-        R"(["driving", 4])",
-        R"(["ironing", 7])",
-        R"(["reading", 5])",
-        R"(["running", 9])",
-    });
+                                     R"(["biking", 3])",
+                                     R"(["boxing", 10])",
+                                     R"(["chatting", 10])",
+                                     R"(["checkers", 4])",
+                                     R"(["chess", 6])",
+                                     R"(["climbing", 5])",
+                                     R"(["driving", 4])",
+                                     R"(["ironing", 7])",
+                                     R"(["reading", 5])",
+                                     R"(["running", 9])",
+                             });
 }
 
 // 6. TestUnnestWithoutAlias
