@@ -1,4 +1,4 @@
-FROM golang:1.22 AS build
+FROM golang:1.23 AS build
 RUN apt update
 RUN git clone -b release/anemone https://github.com/couchbase/sync_gateway.git
 RUN SG_EDITION=CE ./sync_gateway/build.sh
