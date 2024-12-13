@@ -419,8 +419,7 @@ TEST_CASE_METHOD(ReplicatorSG30Test, "Update Once-Conflicted Doc - SG3.0", "[.Sy
     // Create a conflicted doc on SG, and resolve the conflict
     for ( const auto& body : bodies ) { _sg.upsertDoc(_collectionSpecs[0], docID + "?new_edits=false", body); }
 
-    std::vector docIDs = {
-            std::unordered_map<alloc_slice, uint64_t>{{alloc_slice(docID), 0}}};
+    std::vector docIDs = {std::unordered_map<alloc_slice, uint64_t>{{alloc_slice(docID), 0}}};
 
     // Pull doc into CBL:
     C4Log("-------- Pulling");

@@ -204,7 +204,7 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, sl
 
 bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, const std::string& revID, slice body,
                    const std::vector<std::string>& channelIDs, C4Error* err) const {
-    if (useRevTrees) {
+    if ( useRevTrees ) {
         return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
     } else {
         // For Version Vectors, SG does not allow us to provide a version vector in the '_rev' property, it must be a
@@ -253,13 +253,12 @@ alloc_slice SG::getDoc(const std::string& docID, C4CollectionSpec collectionSpec
 
 alloc_slice SG::getRevID(const std::string& docID, C4CollectionSpec collectionSpec) const {
     const alloc_slice bodyJSON = getDoc(docID, collectionSpec);
-    Encoder e {};
+    Encoder           e{};
     e.convertJSON(bodyJSON);
     const auto bodyFleece = e.finishDoc();
-    const auto bodyDict = bodyFleece.asDict();
+    const auto bodyDict   = bodyFleece.asDict();
     return bodyDict.get("_rev").toString();
 }
-
 
 alloc_slice SG::sendRemoteRequest(const std::string& method, C4CollectionSpec collectionSpec, std::string path,
                                   HTTPStatus* outStatus, C4Error* outError, slice body, bool admin, bool logRequests) {

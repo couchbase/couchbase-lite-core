@@ -1755,14 +1755,15 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Auto Purge Enabled(default) - Dele
     replicate(replParams);
 
     bool deleteThenCreate = true;
-         SECTION("Delete then Create Doc") {
+
+    SECTION("Delete then Create Doc") {
         // Create a new doc with the same id that was deleted:
         {
             TransactionHelper t(db);
             for ( size_t i = 0; i < _collectionCount; ++i ) {
                 C4Error error;
                 docs[i] = c4coll_createDoc(_collections[i], slice(docID), json2fleece(bodyJSON.asString().c_str()), 0,
-                                                ERROR_INFO(error));
+                                           ERROR_INFO(error));
                 REQUIRE(error.code == 0);
                 REQUIRE(docs[i] != nullptr);
             }
@@ -1947,7 +1948,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithoutDelta / timeWithDelta);
 }
 
-// Disabled pending CBG-
+// Disabled, to be re-enabled with CBL-5621
 #if 0
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",

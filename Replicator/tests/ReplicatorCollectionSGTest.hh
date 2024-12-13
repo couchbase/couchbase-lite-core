@@ -226,8 +226,8 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
         _collectionCount = _collectionSpecs.size();
         // Avoid copy constructor
         new (&_testUser) SG::TestUser{_sg, username, channelIDs, collSpecs};
-        _options       = createOptionsAuth(_testUser._username, _testUser._password);
-        _sg.authHeader = _testUser.authHeader();
+        _options        = createOptionsAuth(_testUser._username, _testUser._password);
+        _sg.authHeader  = _testUser.authHeader();
         _sg.useRevTrees = isRevTrees();
         _docIDs.resize(_collectionCount);
         REQUIRE(sgVersionCheck());
@@ -253,22 +253,22 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
 
     alloc_slice getLegacyRevID(C4CollectionSpec spec, C4Document* doc) {
         alloc_slice revID;
-        if (isRevTrees()) {
+        if ( isRevTrees() ) {
             revID = doc->revID;
         } else {
             alloc_slice docID = doc->docID;
-            revID = _sg.getRevID(docID.asString(), spec);
+            revID             = _sg.getRevID(docID.asString(), spec);
         }
         return revID;
     }
 
     alloc_slice getLegacyRevID(C4CollectionSpec spec, const C4DocumentInfo& info) {
         alloc_slice revID;
-        if (isRevTrees()) {
+        if ( isRevTrees() ) {
             revID = info.revID;
         } else {
             alloc_slice docID = info.docID;
-            revID = _sg.getRevID(docID.asString(), spec);
+            revID             = _sg.getRevID(docID.asString(), spec);
         }
         return revID;
     }

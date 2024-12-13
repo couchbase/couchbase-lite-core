@@ -590,14 +590,14 @@ namespace litecore::repl {
                                    "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
 
-        const auto &compats = repl::kCompatProtocols;
+        const auto& compats = repl::kCompatProtocols;
 
-        string acceptedProtocol;
+        string       acceptedProtocol;
         stringstream s(headers["Sec-WebSocket-Protocol"].asString());
-        string protocol;
-        while(getline(s, protocol, ',')) {
+        string       protocol;
+        while ( getline(s, protocol, ',') ) {
             auto i = std::find(compats.begin(), compats.end(), protocol);
-            if (i != compats.end()) {
+            if ( i != compats.end() ) {
                 acceptedProtocol = protocol;
                 break;
             }
