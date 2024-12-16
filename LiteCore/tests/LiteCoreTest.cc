@@ -16,6 +16,7 @@
 #include "StringUtil.hh"
 #include "Encoder.hh"
 #include "Logging.hh"
+#include "LogFiles.hh"  // for LogFunction class
 #include <csignal>
 #include <cstdlib>
 #include <cstdarg>
@@ -75,12 +76,12 @@ void ExpectException(litecore::error::Domain domain, int code, const std::functi
 #pragma mark - TESTFIXTURE:
 
 
-static LogDomain::Callback_t sPrevCallback;
-static atomic_uint           sWarningsLogged;
+static LogCallback::Callback_t sPrevCallback;
+static atomic_uint             sWarningsLogged;
 
 static void logCallback(const LogDomain& domain, LogLevel level, const char* fmt, va_list args) {
     if ( level >= LogLevel::Warning ) { ++sWarningsLogged; }
-    sPrevCallback(domain, level, fmt, args);
+    if ( sPrevCallback ) sPrevCallback(domain, level, fmt, args);
 }
 
 TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCount(c4_getObjectCount()) {
@@ -88,8 +89,8 @@ TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCou
     call_once(once, [] {
         InitTestLogging();
 
-        sPrevCallback = LogDomain::currentCallback();
-        LogDomain::setCallback(&logCallback, false);
+        sPrevCallback = LogCallback::currentCallback();
+        LogCallback::setCallback(&logCallback, false);
 
 #if TARGET_OS_IPHONE
         // iOS tests copy the fixture files into the test bundle.

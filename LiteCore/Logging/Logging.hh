@@ -11,15 +11,13 @@
 //
 
 #pragma once
-#include "fleece/slice.hh"
 #include "c4Compat.h"
 #include <atomic>
-#include <map>
-#include <string>
 #include <cstdarg>
 #include <cstdint>
 #include <cinttypes>  //for stdint.h fmt specifiers
-#include <vector>
+#include <iosfwd>
+#include <string>
 
 /*
     This is a configurable console-logging facility that lets logging be turned on and off independently for various subsystems or areas of the code. It's used similarly to printf:
@@ -48,34 +46,16 @@
 
 namespace litecore {
 
-    using namespace fleece;
-
     enum class LogLevel : int8_t { Uninitialized = -1, Debug, Verbose, Info, Warning, Error, None };
 
-    struct LogFileOptions {
-        std::string path;
-        LogLevel    level;
-        int64_t     maxSize;
-        int         maxCount;
-        bool        isPlaintext;
-    };
+    enum class LogObjectRef : unsigned { None = 0 };
 
     class Logging;
+    class LogObservers;
 
     class LogDomain {
       public:
-        // objectRef -> (loggingName, parentObectRef)
-        using ObjectMap = std::map<unsigned, std::pair<std::string, unsigned>>;
-
-        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info, bool internName = false)
-            : _level(level), _name(name), _next(sFirstDomain) {
-            sFirstDomain = this;
-            if ( internName ) {
-                slice nslice{_name};
-                sInternedNames.push_back(alloc_slice::nullPaddedString(nslice));
-                _name = (const char*)sInternedNames.back().buf;
-            }
-        }
+        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info, bool internName = false);
 
         static LogDomain* named(const char* name);
 
@@ -84,9 +64,9 @@ namespace litecore {
         void     setLevel(LogLevel lvl) noexcept;
         LogLevel level() const noexcept;
 
-        /** The level at which this domain will actually have an effect. This is based on the level(),
-        but raised to take into account the levels at which the callback and/or encoded file will
-        trigger. In other words, any log() calls below this level will produce no output. */
+        /// The level at which this domain will actually have an effect. This is based on the level(),
+        /// but raised to take into account the levels of LogObservers.
+        /// In other words, any log() calls below this level will produce no output. */
         LogLevel effectiveLevel() {
             computeLevel();
             return _effectiveLevel;
@@ -99,72 +79,22 @@ namespace litecore {
         void vlog(LogLevel level, const char* fmt, va_list) __printflike(3, 0);
         void vlogNoCallback(LogLevel level, const char* fmt, va_list) __printflike(3, 0);
 
-        using Callback_t = void (*)(const LogDomain&, LogLevel, const char* format, va_list);
-
-        static void       defaultCallback(const LogDomain&, LogLevel, const char* format, va_list) __printflike(3, 0);
-        static Callback_t currentCallback();
-
-        /** Registers (or unregisters) a callback to be passed log messages.
-        @param callback  The callback function, or NULL to unregister.
-        @param preformatted  If true, callback will be passed already-formatted log messages to be
-            displayed verbatim (and the `va_list` parameter will be NULL.) */
-        static void setCallback(Callback_t callback, bool preformatted);
-
-        /** Registers (or unregisters) a file to which log messages will be written in binary format.
-        @param options The options to use when performing file logging
-        @param initialMessage  First message that will be written to the log, e.g. version info */
-        static void writeEncodedLogsTo(const LogFileOptions& options, const std::string& initialMessage = "");
-
-        /** Returns the current log file configuration options, as given to `writeEncodedLogsTo`. */
-        static LogFileOptions currentLogFileOptions();
-
-        static LogLevel callbackLogLevel() noexcept;
-
-        static LogLevel fileLogLevel() noexcept { return sFileMinLevel; }
-
-        static void setCallbackLogLevel(LogLevel) noexcept;
-        static void setFileLogLevel(LogLevel) noexcept;
-
-        static void flushLogFiles();
-
-        static unsigned warningCount();  ///< Number of warnings logged since launch
-        static unsigned errorCount();    ///< Number of errors logged since launch
-
-        static std::string getObjectPath(unsigned obj, const ObjectMap& objMap);
-
       private:
         friend class Logging;
-        static std::string getObject(unsigned);
-        unsigned           registerObject(const void* object, const unsigned* val, const std::string& description,
-                                          const std::string& nickname, LogLevel level);
-        static bool        registerParentObject(unsigned object, unsigned parentObject);
-        static void        unregisterObject(unsigned obj);
+        friend class LogObserver;
 
-        static std::string getObjectPath(unsigned obj) { return getObjectPath(obj, sObjectMap); }
-
-        static inline size_t addObjectPath(char* destBuf, size_t bufSize, unsigned obj);
         void vlog(LogLevel level, const Logging* logger, bool callback, const char* fmt, va_list) __printflike(5, 0);
 
-      private:
-        static LogLevel _callbackLogLevel() noexcept;
-        LogLevel        computeLevel() noexcept;
-        LogLevel        levelFromEnvironment() const noexcept;
-        static void     _invalidateEffectiveLevels() noexcept;
-
-        static void dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix,
-                          const char* fmt, va_list) __printflike(5, 0);
+        LogLevel computeLevel() noexcept;
+        LogLevel levelFromEnvironment() const noexcept;
 
         std::atomic<LogLevel> _effectiveLevel{LogLevel::Uninitialized};
         std::atomic<LogLevel> _level;
         const char*           _name;
-        LogDomain* const      _next;
+        LogDomain*            _next;
+        LogObservers*         _observers = nullptr;
 
-        static unsigned                 slastObjRef;
-        static ObjectMap                sObjectMap;
-        static LogDomain*               sFirstDomain;
-        static LogLevel                 sCallbackMinLevel;
-        static LogLevel                 sFileMinLevel;
-        static std::vector<alloc_slice> sInternedNames;
+        static LogDomain* sFirstDomain;
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
@@ -194,8 +124,6 @@ namespace litecore {
 #    define WriteDebug(FMT, ...)
 #endif
 
-    inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }
-
     /** Mixin that adds log(), warn(), etc. methods. The messages these write will be prefixed
         with a description of the object; by default this is just the class and address, but
         you can customize it by overriding loggingIdentifier(). */
@@ -203,8 +131,8 @@ namespace litecore {
       public:
         std::string loggingName() const;
 
-        unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
-        void     setParentObjectRef(unsigned parentObjRef);
+        LogObjectRef getObjectRef(LogLevel level = LogLevel::Info) const;
+        void         setParentObjectRef(LogObjectRef parentObjRef);
 
       protected:
         explicit Logging(LogDomain& domain) : _domain(domain) {}
@@ -248,15 +176,9 @@ namespace litecore {
 
       private:
         friend class LogDomain;
-        static void rotateLog(LogLevel level);
 
-        mutable unsigned _objectRef{0};
+        mutable LogObjectRef _objectRef{};
     };
-
-#ifdef LITECORE_CPPTEST
-    std::string createLogPath_forUnitTest(LogLevel level);
-    void        resetRotateSerialNo();
-#endif
 
 #define _logAt(LEVEL, FMT, ...)                                                                                        \
     do {                                                                                                               \
