@@ -104,6 +104,9 @@ typedef void (*C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char* fm
             will be NULL. */
 CBL_CORE_API void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) C4API;
 
+/** A log callback that writes log messages to stderr, or on Android to `__android_log_write`. */
+CBL_CORE_API void c4log_defaultCallback(C4LogDomain, C4LogLevel, const char* fmt, va_list args) __printflike(3, 0);
+
 /** Returns the current logging callback, or the default one if none has been set. */
 CBL_CORE_API C4LogCallback c4log_getCallback(void) C4API;
 
