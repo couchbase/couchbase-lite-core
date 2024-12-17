@@ -66,7 +66,7 @@ FilePath GetTempDirectory() {
 void InitTestLogging() {
     static once_flag once;
     call_once(once, [] {
-        c4log_writeToCallback(kC4LogInfo, c4log_defaultCallback, false);
+        c4log_initConsole(kC4LogInfo);
 
         alloc_slice buildInfo = c4_getBuildInfo();
         alloc_slice version   = c4_getVersion();

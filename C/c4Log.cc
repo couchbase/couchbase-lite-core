@@ -13,8 +13,10 @@
 #include "c4Log.h"
 #include "Backtrace.hh"
 #include "Error.hh"
-#include "Logging.hh"
 #include "LogFiles.hh"
+#include "LogFunction.hh"
+#include "LogObserver.hh"
+#include "Logging.hh"
 #include "PlatformIO.hh"  // For vasprintf on Windows
 #include "WebSocketInterface.hh"
 #include "c4ExceptionUtils.hh"
@@ -30,6 +32,54 @@ CBL_CORE_API const C4LogDomain kC4SyncLog      = (C4LogDomain)&SyncLog;
 CBL_CORE_API const C4LogDomain kC4WebSocketLog = (C4LogDomain)&websocket::WSLogDomain;
 
 // NOLINTEND(cppcoreguidelines-interfaces-global-init)
+
+namespace litecore {
+
+    /** A LogObserver that calls a C4LogObserverCallback or a C4LogCallback. */
+    class LogCallback : public LogObserver {
+      public:
+        LogCallback(C4LogObserverCallback C4NULLABLE callback, void* C4NULLABLE context)
+            : _obsCallback(callback), _context(context) {}
+
+        LogCallback(C4LogCallback C4NULLABLE legacyCallback, bool preformatted)
+            : _legacyCallback(legacyCallback), _preformatted(preformatted) {}
+
+      private:
+        void observe(LogEntry const& e) noexcept override {
+            if ( _obsCallback ) {
+                C4LogEntry c4entry{.timestamp = C4Timestamp(e.timestamp),
+                                   .level     = C4LogLevel(e.level),
+                                   .domain    = C4LogDomain(&e.domain),
+                                   .message   = slice(e.message)};
+                _obsCallback(&c4entry, _context);
+            } else if ( _preformatted ) {
+                va_list dummy_args{};
+                _legacyCallback(C4LogDomain(&e.domain), C4LogLevel(e.level), e.message.data(), dummy_args);
+            } else {
+                // The legacy callback wants a format string and va_list, but we're given a preformatted string.
+                // (The reason we don't ask for a 'raw' callback is that using it requires formatting
+                // the objRef, which is complicated. Best to let LogObserver's internal `formatEntry`
+                // do it for us.)
+                // To get a valid va_list for the callback, call a function that takes variable args:
+                observeVA(e, "%s", e.message.data());  // yes, e.message is nul-terminated
+            }
+        }
+
+        void observeVA(LogEntry const& e, const char* fmt, ...) {
+            // `fmt` will always be "%s" and the next arg will be the formatted log message.
+            va_list args;
+            va_start(args, fmt);
+            _legacyCallback(C4LogDomain(&e.domain), C4LogLevel(e.level), fmt, args);
+            va_end(args);
+        }
+
+        C4LogObserverCallback const _obsCallback    = nullptr;
+        C4LogCallback const         _legacyCallback = nullptr;
+        void* const                 _context        = nullptr;
+        bool                        _preformatted   = true;
+    };
+
+}  // namespace litecore
 
 #pragma mark - LOG OBSERVER:
 
@@ -75,20 +125,9 @@ C4LogObserver* c4log_newObserver(C4LogObserverConfig config, C4Error* outError) 
         }
         auto                  domains = convertDomains(config);
         Retained<LogObserver> obs;
-        if ( config.callback ) {
-            // Create LogCallback observer:
-            auto thunk = [cb = config.callback, ctx = config.callbackContext](LogEntry const& e) {
-                C4LogEntry c4entry{.timestamp = C4Timestamp(e.timestamp),
-                                   .level     = C4LogLevel(e.level),
-                                   .domain    = (C4LogDomain)&e.domain,
-                                   .message   = slice(e.message)};
-                cb(&c4entry, ctx);
-            };
-            obs = make_retained<LogFunction>(thunk);
-        } else {
-            // Create LogFiles observer:
+        if ( config.callback ) obs = make_retained<LogCallback>(config.callback, config.callbackContext);
+        else
             obs = make_retained<LogFiles>(convertFileOptions(*config.fileOptions));
-        }
         LogObserver::add(obs, LogLevel(config.defaultLevel), domains);
         return toExternal(std::move(obs));
     }
@@ -122,109 +161,131 @@ C4LogObserver* c4log_replaceObserver(C4LogObserver* oldObs, C4LogObserverConfig 
     return nullptr;
 }
 
+void c4log_consoleObserverCallback(const C4LogEntry* entry, void* context) noexcept {
+    LogFunction::logToConsole({.timestamp = uint64_t(entry->timestamp),
+                               .domain    = *(LogDomain*)entry->domain,
+                               .level     = LogLevel(entry->level),
+                               .message   = (const char*)entry->message.buf});
+}
+
+void c4logobserver_flush(C4LogObserver* obs) C4API {
+    if ( auto logFiles = dynamic_cast<LogFiles*>(toInternal(obs)) ) {
+        try {
+            logFiles->flush();
+        }
+        catchAndWarn();
+    }
+}
+
 #pragma mark - CALLBACK LOGGING:
 
-static Retained<LogCallback> sDefaultLogCallback;
-static C4LogCallback         sDefaultLogCallbackFn;
-static C4LogLevel            sDefaultLogCallbackLevel = kC4LogNone;
+static C4LogObserver* sDefaultLogCallback;
+static C4LogCallback  sDefaultLogCallbackFn;
+static C4LogLevel     sDefaultLogCallbackLevel = kC4LogNone;
+static bool           sDefaultLogCallbackPreformatted;
 
 // LCOV_EXCL_START
 void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) noexcept {
     if ( !callback ) level = kC4LogNone;
     if ( sDefaultLogCallback ) {
-        LogObserver::remove(sDefaultLogCallback);
+        c4log_removeObserver(sDefaultLogCallback);
+        c4logobserver_release(sDefaultLogCallback);
         sDefaultLogCallback = nullptr;
     }
     if ( level != kC4LogNone ) {
-        if ( preformatted ) {
-            LogCallback::Callback_t thunk = [](void* ctx, LogEntry const& e) {
-                va_list noArgs{};
-                ((C4LogCallback)ctx)(C4LogDomain(&e.domain), C4LogLevel(e.level), e.message.data(), noArgs);
-            };
-            sDefaultLogCallback = make_retained<LogCallback>(thunk, (void*)callback);
-        } else {
-            LogCallback::RawCallback_t thunk = [](void* ctx, const LogDomain& domain, LogLevel level,
-                                                  const char* format, va_list args) {
-                ((C4LogCallback)ctx)(C4LogDomain(&domain), C4LogLevel(level), format, args);
-            };
-            sDefaultLogCallback = make_retained<LogCallback>(thunk, (void*)callback);
-        }
-        LogObserver::add(sDefaultLogCallback, LogLevel(level));
+        auto obs = make_retained<LogCallback>(callback, preformatted);
+        LogObserver::add(obs, LogLevel(level));
+        sDefaultLogCallback = toExternal(std::move(obs));
     }
-    sDefaultLogCallbackLevel = level;
+    sDefaultLogCallbackLevel        = level;
+    sDefaultLogCallbackPreformatted = preformatted;
 }
 
 C4LogCallback c4log_getCallback() noexcept { return sDefaultLogCallbackFn; }
 
-void c4log_defaultCallback(C4LogDomain domain, C4LogLevel level, const char* fmt, va_list args) {
-    char* cstr = nullptr;
-    if ( vasprintf(&cstr, fmt, args) < 0 ) return;
-    LogCallback::consoleCallback(nullptr, LogEntry{.timestamp = uint64_t(c4_now()),
-                                                   .domain    = *(LogDomain*)domain,
-                                                   .level     = LogLevel(level),
-                                                   .message   = cstr});
-    free(cstr);
+C4LogLevel c4log_callbackLevel() noexcept { return sDefaultLogCallbackLevel; }  // LCOV_EXCL_LINE
+
+void c4log_initConsole(C4LogLevel level) noexcept {
+    auto defaultCallback = [](C4LogDomain domain, C4LogLevel level, const char* message, va_list) {
+        LogFunction::logToConsole(LogEntry{.timestamp = uint64_t(c4_now()),
+                                           .domain    = *(LogDomain*)domain,
+                                           .level     = LogLevel(level),
+                                           .message   = message});
+    };
+    c4log_writeToCallback(level, defaultCallback, true);
 }
 
 void c4log_setCallbackLevel(C4LogLevel level) noexcept {
-    if ( level != sDefaultLogCallbackLevel && sDefaultLogCallback ) {
-        LogObserver::remove(sDefaultLogCallback);
-        LogObserver::add(sDefaultLogCallback, LogLevel(level));
-    }
+    if ( level != sDefaultLogCallbackLevel && sDefaultLogCallback )
+        c4log_writeToCallback(level, sDefaultLogCallbackFn, sDefaultLogCallbackPreformatted);
     sDefaultLogCallbackLevel = level;
 }
-
-C4LogLevel c4log_callbackLevel() noexcept { return sDefaultLogCallbackLevel; }  // LCOV_EXCL_LINE
 
 // LCOV_EXCL_STOP
 
 #pragma mark - FILE LOGGING:
 
-static Retained<LogFiles> sDefaultLogFiles;
-static C4LogLevel         sDefaultLogFilesLevel = kC4LogNone;
+static C4LogObserver* sDefaultLogFiles;
+static C4LogLevel     sDefaultLogFilesLevel = kC4LogNone;
+
+static void endFileLogging() {
+    if ( sDefaultLogFiles ) {
+        c4log_removeObserver(sDefaultLogFiles);
+        c4logobserver_release(sDefaultLogFiles);
+        sDefaultLogFiles = nullptr;
+    }
+}
 
 bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* outError) noexcept {
-    return tryCatch(outError, [=] {
-        if ( options.base_path.empty() || options.log_level == kC4LogNone ) {
-            // Disabling file logging:
-            if ( sDefaultLogFiles ) {
-                LogObserver::remove(sDefaultLogFiles);
-                sDefaultLogFiles = nullptr;
-            }
-            sDefaultLogFilesLevel = kC4LogNone;
-        } else {
-            LogFiles::Options lfOptions = convertFileOptions(options);
-            if ( !sDefaultLogFiles || !sDefaultLogFiles->setOptions(lfOptions) ) {
-                auto newLogger = make_retained<LogFiles>(lfOptions);
-                if ( sDefaultLogFiles ) LogObserver::remove(sDefaultLogFiles);
-                sDefaultLogFiles = std::move(newLogger);
-                LogObserver::add(sDefaultLogFiles, LogLevel(options.log_level));
-            }
-            sDefaultLogFilesLevel = options.log_level;
-        }
-    });
+    if ( options.base_path.empty() || options.log_level == kC4LogNone ) {
+        // Disabling file logging:
+        endFileLogging();
+        sDefaultLogFilesLevel = kC4LogNone;
+    } else {
+        C4LogObserverConfig config{.defaultLevel = options.log_level, .fileOptions = &options};
+        auto                newObs = c4log_replaceObserver(sDefaultLogFiles, config, outError);
+        if ( !newObs ) return false;
+        c4logobserver_release(sDefaultLogFiles);
+        sDefaultLogFiles      = newObs;
+        sDefaultLogFilesLevel = options.log_level;
+
+        static once_flag sOnce;
+        call_once(sOnce, []() {
+            atexit([] {
+                // Make sure to flush the log file on exit:
+                if ( auto logFile = sDefaultLogFiles ) {
+                    c4logobserver_flush(logFile);
+                    c4logobserver_release(logFile);
+                }
+            });
+        });
+    }
+    return true;
 }
 
 C4LogLevel c4log_binaryFileLevel() noexcept { return sDefaultLogFilesLevel; }
 
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {
     if ( sDefaultLogFiles && level != sDefaultLogFilesLevel ) {
-        LogObserver::remove(sDefaultLogFiles);
-        LogObserver::add(sDefaultLogFiles.get(), LogLevel(level));
-        sDefaultLogFilesLevel = level;
+        if ( level == kC4LogNone ) {
+            endFileLogging();
+        } else {
+            auto logFiles = dynamic_cast<LogFiles*>(toInternal(sDefaultLogFiles));
+            LogObserver::remove(logFiles);
+            LogObserver::add(logFiles, LogLevel(level));
+        }
     }
+    sDefaultLogFilesLevel = level;
 }
 
 C4StringResult c4log_binaryFilePath() C4API {
-    if ( sDefaultLogFiles ) {
-        auto options = sDefaultLogFiles->options();
-        if ( !options.isPlaintext ) return C4StringResult(alloc_slice(options.directory));
-    }
+    if ( auto logFiles = dynamic_cast<LogFiles*>(toInternal(sDefaultLogFiles)) )
+        return C4StringResult(alloc_slice(logFiles->options().directory));
     return {};
 }
 
 void c4log_flushLogFiles() C4API {
-    if ( sDefaultLogFiles ) sDefaultLogFiles->flush();
+    if ( sDefaultLogFiles ) c4logobserver_flush(sDefaultLogFiles);
 }
 
 #pragma mark - LOG DOMAINS AND LEVELS:

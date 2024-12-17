@@ -24,7 +24,7 @@ namespace litecore {
 
     /** Struct representing a log message and its metadata. */
     struct LogEntry {
-        uint64_t         timestamp;  ///< Time the event occurred
+        uint64_t         timestamp;  ///< Time the event occurred, in ms since Unix epoch (same as C4Timestamp)
         LogDomain&       domain;     ///< Domain being logged to
         LogLevel         level;      ///< Severity level
         std::string_view message;    ///< The text. Guaranteed to be followed by a 00 byte.
