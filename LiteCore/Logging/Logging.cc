@@ -25,10 +25,6 @@
 #include <mutex>
 #include <ctime>
 
-#if __ANDROID__
-#    include <android/log.h>
-#endif
-
 #if ( defined(__linux__) || defined(__APPLE__) ) && !defined(__ANDROID__)
 #    include <cxxabi.h>
 #endif

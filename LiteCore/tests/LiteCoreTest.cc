@@ -15,8 +15,8 @@
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Encoder.hh"
+#include "LogFunction.hh"
 #include "Logging.hh"
-#include "LogFiles.hh"  // for LogFunction class
 #include <csignal>
 #include <cstdlib>
 #include <cstdarg>
