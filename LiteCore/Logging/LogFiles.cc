@@ -17,6 +17,7 @@
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
 #include "LogObserver.hh"
+#include "StringUtil.hh"
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -29,11 +30,130 @@ namespace litecore {
     using namespace std::chrono;
     using namespace litecore::loginternal;
 
-    constexpr const char* C4NONNULL kLevels[] = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
+    /// Level names to write into textual logs, both in headers and in the lines logged.
+    constexpr const char* kLevelNamesInLog[] = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
 
-#pragma mark - FILE LOGGING:
+#pragma mark - LOGFILE:
 
-    LogFiles::LogFiles(const Options& options) : LogObserver(!options.isPlaintext) { setOptions(options); }
+    /** Represents a single log file for one log level, owned by a LogFiles object. */
+    class LogFiles::LogFile {
+      public:
+        LogFile(LogLevel level, Options const& options) : _level(level), _options(options) {}
+
+        void open() {
+            auto path = LogFiles::newLogFilePath(_options.directory, _level);
+            _fileOut.open(path, ofstream::out | ofstream::trunc | ofstream::binary);
+            if ( !_fileOut.good() ) {
+                // calling error::_throw() here could deadlock, by causing a recursive Warn() call
+                throw error(error::LiteCore, error::CantOpenFile, "File Logger failed to open file, " + path);
+            }
+
+            string header = CONCAT("serialNo=" << _rotateSerialNo << ","
+                                               << "logDirectory=" << _options.directory << ","
+                                               << "fileLogLevel=" << int(_level) << ","
+                                               << "fileMaxSize=" << _options.maxSize << ","
+                                               << "fileMaxCount=" << _options.maxCount);
+
+            if ( _options.isPlaintext ) {
+                LogDecoder::writeTimestamp(LogDecoder::now(), _fileOut, true);
+                LogDecoder::writeHeader(levelName(), "", _fileOut);
+                _fileOut << "---- " << header << " ----" << endl;
+                if ( !_options.initialMessage.empty() ) {
+                    LogDecoder::writeTimestamp(LogDecoder::now(), _fileOut, true);
+                    LogDecoder::writeHeader(levelName(), "", _fileOut);
+                    _fileOut << "---- " << _options.initialMessage << " ----" << endl;
+                }
+            } else {
+                _logEncoder = make_unique<LogEncoder>(_fileOut, LogEncoder::LogLevel(_level));
+                _logEncoder->log("", "---- %s ----", header.c_str());
+                if ( !_options.initialMessage.empty() ) {
+                    _logEncoder->log("", "---- %s ----", _options.initialMessage.c_str());
+                }
+                _logEncoder->flush();  // Make sure at least the magic bytes are present
+            }
+        }
+
+        void write(LogEntry const& e) {
+            if ( !_fileOut.is_open() ) return;
+            LogDecoder::writeTimestamp(LogDecoder::now(), _fileOut, true);
+            LogDecoder::writeHeader(levelName(), e.domain.name(), _fileOut);
+            _fileOut << e.message << endl;
+            if ( _fileOut.tellp() > _options.maxSize ) rotateLog();
+        }
+
+        void write(RawLogEntry const& e, const char* format, va_list args) __printflike(3, 0) {
+            if ( !_logEncoder ) return;
+            string path;
+            if ( e.objRef != LogObjectRef::None && _logEncoder->isNewObject(LogEncoder::ObjectRef(e.objRef)) )
+                path = getObjectPath(e.objRef);
+            _logEncoder->vlog(e.domain.name(), LogEncoder::ObjectRef(e.objRef), path, e.prefix, format, args);
+            if ( _logEncoder->tellp() > _options.maxSize ) rotateLog();
+        }
+
+        void flush() {
+            if ( _logEncoder ) _logEncoder->flush();
+            else if ( _fileOut.is_open() )
+                _fileOut.flush();
+        }
+
+        void close(bool writeTrailer = true) {
+            if ( _options.isPlaintext ) {
+                if ( writeTrailer && _fileOut.is_open() ) {
+                    LogDecoder::writeTimestamp(LogDecoder::now(), _fileOut, true);
+                    LogDecoder::writeHeader(levelName(), "", _fileOut);
+                    _fileOut << "---- END ----" << endl;
+                }
+            } else if ( _logEncoder ) {
+                if ( writeTrailer ) _logEncoder->log("", "---- END ----");
+                _logEncoder->flush();
+            }
+            _logEncoder = nullptr;
+            _fileOut.close();
+        }
+
+      private:
+        const char* levelName() const { return kLevelNamesInLog[int(_level)]; }
+
+        void rotateLog() {
+            close(false);
+            purgeOldLogs();
+            _rotateSerialNo++;
+            open();
+        }
+
+        void purgeOldLogs() {
+            FilePath logDir(_options.directory, "");
+            if ( !logDir.existsAsDir() ) { return; }
+
+            multimap<time_t, FilePath> logFiles;
+            const char*                levelStr = kLevelNames[(int)_level];
+            logDir.forEachFile([&](const FilePath& f) {
+                if ( f.fileName().find(levelStr) != string::npos && f.extension() == CBL_LOG_EXTENSION ) {
+                    logFiles.emplace(f.lastModified(), f);
+                }
+            });
+
+            while ( logFiles.size() > _options.maxCount ) {
+                (void)logFiles.begin()->second.del();
+                logFiles.erase(logFiles.begin());
+            }
+        }
+
+        LogLevel const         _level;               ///< My log level
+        Options const&         _options;             ///< Reference to owning LogFiles's options
+        ofstream               _fileOut;             ///< Log file stream (text or binary)
+        unique_ptr<LogEncoder> _logEncoder;          ///< Binary log encoder, writes to _fileOut, or NULL
+        unsigned               _rotateSerialNo = 1;  ///< Counter appearing at top of log file
+    };
+
+#pragma mark - LOGFILES:
+
+    LogFiles::LogFiles(const Options& options) : LogObserver(!options.isPlaintext) {
+        _setOptions(options);
+        // Initialize LogFile objects before opening them:
+        for ( int i = 0; i < kNumLogLevels; i++ ) _files[i] = make_unique<LogFile>(LogLevel(i), _options);
+        for ( int i = 0; i < kNumLogLevels; i++ ) _files[i]->open();
+    }
 
     LogFiles::~LogFiles() { close(); }
 
@@ -42,214 +162,44 @@ namespace litecore {
         return _options;
     }
 
-    void LogFiles::setOptions(const Options& options) {
+    bool LogFiles::setOptions(const Options& options) {
         unique_lock lock(_mutex);
+        if ( options.isPlaintext != _options.isPlaintext || options.directory != _options.directory ) return false;
+        _setOptions(options);
+        return true;
+    }
+
+    void LogFiles::_setOptions(Options const& options) {
         Assert(!options.directory.empty());
-
-        const bool teardown = (options.isPlaintext != _options.isPlaintext || options.directory != _options.directory);
-        if ( teardown ) {
-            teardownEncoders();
-            teardownFileOut();
-            for ( auto& no : _rotateSerialNo ) { no++; };
-        }
-
         _options          = options;
-        _options.maxSize  = max((int64_t)1024, _options.maxSize);
+        _options.maxSize  = max(int64_t(1024), _options.maxSize);
         _options.maxCount = max(0, _options.maxCount);
-        setRaw(!_options.isPlaintext);
-
-        if ( teardown ) {
-            purgeOldLogs();
-            setupFileOut();
-            if ( !_options.isPlaintext ) { setupEncoders(); }
-
-            uint8_t level = 0;
-            if ( _options.isPlaintext ) {
-                for ( auto& fout : _fileOut ) {
-                    LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
-                    LogDecoder::writeHeader(kLevels[level], "", *fout);
-                    *fout << "---- " << fileLogHeader(LogLevel(level)) << " ----" << endl;
-                    if ( !_options.initialMessage.empty() ) {
-                        LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
-                        LogDecoder::writeHeader(kLevels[level], "", *fout);
-                        *fout << "---- " << _options.initialMessage << " ----" << endl;
-                    }
-                    ++level;
-                }
-            } else {
-                for ( auto& encoder : _logEncoder ) {
-                    encoder->log("", "---- %s ----", fileLogHeader(LogLevel(level)).c_str());
-                    if ( !_options.initialMessage.empty() ) {
-                        encoder->log("", "---- %s ----", _options.initialMessage.c_str());
-                    }
-                    encoder->flush();  // Make sure at least the magic bytes are present
-                    ++level;
-                }
-            }
-        }
     }
 
     void LogFiles::flush() {
         unique_lock lock(_mutex);
-        for ( auto& encoder : _logEncoder )
-            if ( encoder ) encoder->flush();
-        for ( auto& fout : _fileOut )
-            if ( fout ) fout->flush();
+        for ( auto& file : _files ) file->flush();
     }
 
     void LogFiles::close() {
         unique_lock lock(_mutex);
-        if ( _logEncoder[0] ) {
-            for ( auto& encoder : _logEncoder ) { encoder->log("", "---- END ----"); }
-        } else if ( _fileOut[0] ) {
-            uint8_t level = 0;
-            for ( auto& fout : _fileOut ) {
-                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
-                LogDecoder::writeHeader(kLevels[level++], "", *fout);
-                *fout << "---- END ----" << endl;
-            }
-        }
-
-        teardownEncoders();
-        teardownFileOut();
+        for ( auto& file : _files ) file->close();
     }
 
     void LogFiles::observe(LogEntry const& e) noexcept {
         unique_lock lock(_mutex);
-        auto&       file = _fileOut[(int)e.level];
-        if ( !file ) return;
-        LogDecoder::writeTimestamp(LogDecoder::now(), *file, true);
-        LogDecoder::writeHeader(kLevels[(int)e.level], e.domain.name(), *file);
-        *file << e.message << endl;
-
-        if ( file->tellp() > _options.maxSize ) rotateLog(e.level);
+        _files[int(e.level)]->write(e);
     }
 
     void LogFiles::observe(RawLogEntry const& e, const char* format, va_list args) noexcept {
         unique_lock lock(_mutex);
-        auto&       encoder = _logEncoder[(int)e.level];
-        if ( !encoder ) return;
-        string path;
-        if ( e.objRef != LogObjectRef::None && encoder->isNewObject(LogEncoder::ObjectRef(e.objRef)) )
-            path = getObjectPath(e.objRef);
-        encoder->vlog(e.domain.name(), LogEncoder::ObjectRef(e.objRef), path, e.prefix, format, args);
-
-        if ( encoder->tellp() >= _options.maxSize ) rotateLog(e.level);
+        _files[int(e.level)]->write(e, format, args);
     }
-
-    //-------- Methods below are private and assume the mutex is locked
 
     string LogFiles::newLogFilePath(string_view dir, LogLevel level) {
         int64_t millisSinceEpoch = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-
-        stringstream ss;
-        ss << dir << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << millisSinceEpoch
-           << CBL_LOG_EXTENSION;
-        return ss.str();
-    }
-
-    string LogFiles::newLogFilePath(LogLevel level) const { return newLogFilePath(_options.directory, level); }
-
-    void LogFiles::setupFileOut() {
-        for ( int i = 0; kLevelNames[i]; i++ ) {
-            auto path   = newLogFilePath((LogLevel)i);
-            _fileOut[i] = make_unique<ofstream>(path, ofstream::out | ofstream::trunc | ofstream::binary);
-            if ( !_fileOut[i]->good() ) {
-                // calling error::_throw() here can deadlock, by causing a recursive Warn() call
-                throw error(error::LiteCore, error::CantOpenFile, "File Logger failed to open file, " + path);
-            }
-        }
-    }
-
-    void LogFiles::setupEncoders() {
-        for ( int i = 0; i < kNumLevels; i++ ) {
-            _logEncoder[i] = make_unique<LogEncoder>(*_fileOut[i], LogEncoder::LogLevel(i));
-        }
-    }
-
-    void LogFiles::teardownEncoders() {
-        for ( auto& encoder : _logEncoder ) {
-            if ( encoder ) encoder->flush();
-            encoder = nullptr;
-        }
-    }
-
-    void LogFiles::teardownFileOut() {
-        for ( auto& fout : _fileOut ) {
-            if ( fout ) fout->flush();
-            fout = nullptr;
-        }
-    }
-
-    void LogFiles::purgeOldLogs(LogLevel level) {
-        FilePath logDir(_options.directory, "");
-        if ( !logDir.existsAsDir() ) { return; }
-
-        multimap<time_t, FilePath> logFiles;
-        const char*                levelStr = kLevelNames[(int)level];
-
-        logDir.forEachFile([&](const FilePath& f) {
-            if ( f.fileName().find(levelStr) != string::npos && f.extension() == CBL_LOG_EXTENSION ) {
-                logFiles.insert(make_pair(f.lastModified(), f));
-            }
-        });
-
-        while ( logFiles.size() > _options.maxCount ) {
-            logFiles.begin()->second.del();
-            logFiles.erase(logFiles.begin());
-        }
-    }
-
-    void LogFiles::purgeOldLogs() {
-        for ( int i = 0; i < kNumLevels; i++ ) { purgeOldLogs((LogLevel)i); }
-    }
-
-    string LogFiles::fileLogHeader(LogLevel level) {
-        std::stringstream ss;
-        ss << "serialNo=" << _rotateSerialNo[(int)level] << ","
-           << "logDirectory=" << _options.directory << ","
-           << "fileLogLevel=" << int(level) << ","
-           << "fileMaxSize=" << _options.maxSize << ","
-           << "fileMaxCount=" << _options.maxCount;
-        return ss.str();
-    }
-
-    void LogFiles::rotateLog(LogLevel level) {
-        auto& encoder = _logEncoder[(int)level];
-        auto& file    = _fileOut[(int)level];
-        if ( encoder ) {
-            encoder->flush();
-        } else {
-            file->flush();
-        }
-
-        _logEncoder[(int)level] = nullptr;
-        _fileOut[(int)level]    = nullptr;
-        purgeOldLogs(level);
-        const auto path      = newLogFilePath(level);
-        _fileOut[(int)level] = make_unique<ofstream>(path, ofstream::out | ofstream::trunc | ofstream::binary);
-        if ( !_fileOut[(int)level]->good() ) { fprintf(stderr, "rotateLog fails to open %s\n", path.c_str()); }
-
-        _rotateSerialNo[(int)level]++;
-        if ( !_options.isPlaintext ) {
-            auto newEncoder = make_unique<LogEncoder>(*_fileOut[(int)level], LogEncoder::LogLevel(level));
-            newEncoder->log("", "---- %s ----", fileLogHeader(level).c_str());
-            if ( !_options.initialMessage.empty() ) {
-                newEncoder->log("", "---- %s ----", _options.initialMessage.c_str());
-            }
-            newEncoder->flush();  // Make sure at least the magic bytes are present
-            _logEncoder[(int)level] = std::move(newEncoder);
-        } else {
-            auto& fout = _fileOut[(int)level];
-            LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
-            LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
-            *fout << "---- " << fileLogHeader(level) << " ----" << endl;
-            if ( !_options.initialMessage.empty() ) {
-                LogDecoder::writeTimestamp(LogDecoder::now(), *fout, true);
-                LogDecoder::writeHeader(kLevels[(int)level], "", *fout);
-                *_fileOut[(int)level] << "---- " << _options.initialMessage << " ----" << endl;
-            }
-        }
+        return CONCAT(dir << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << millisSinceEpoch
+                          << CBL_LOG_EXTENSION);
     }
 
 #pragma mark - CALLBACKS:
@@ -269,12 +219,12 @@ namespace litecore {
         string tag("LiteCore");
         string domainName(e.domain.name());
         if ( !domainName.empty() ) tag += " [" + domainName + "]";
-        static const int androidLevels[kNumLevels] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_INFO,
-                                                      ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
-        __android_log_vprint(androidLevels[(int)e.level], tag.c_str(), "%s", e.message);
+        static const int androidLevels[kNumLogLevels] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_INFO,
+                                                         ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
+        __android_log_write(androidLevels[int(e.level)], tag.c_str(), e.message.data());
 #else
         LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
-        LogDecoder::writeHeader(kLevels[(int)e.level], e.domain.name(), cerr);
+        LogDecoder::writeHeader(kLevelNamesInLog[(int)e.level], e.domain.name(), cerr);
         cerr << e.message << endl;
 #endif
     }
