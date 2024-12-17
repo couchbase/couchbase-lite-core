@@ -90,11 +90,6 @@ namespace litecore {
 
 #pragma mark - LOG OBSERVER:
 
-    void LogObserver::setRaw(bool raw) {
-        lock_guard lock(sLogMutex);
-        _raw = raw;
-    }
-
     void LogObserver::_addTo(LogDomain& domain, LogLevel level) {
         if ( level == LogLevel::None ) return;
         if ( !domain._observers->addObserver(this, level) )

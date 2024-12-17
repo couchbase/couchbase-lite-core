@@ -22,7 +22,8 @@ C4_ASSUME_NONNULL_BEGIN
 namespace litecore {
 
     namespace loginternal {
-        constexpr const char* C4NULLABLE kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
+        constexpr const char* C4NULLABLE kLevelNames[kNumLogLevels + 1] = {"debug",   "verbose", "info",
+                                                                           "warning", "error",   nullptr};
 
         extern std::mutex sLogMutex;
         extern char       sFormatBuffer[2048];

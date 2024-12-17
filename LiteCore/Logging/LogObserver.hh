@@ -66,8 +66,6 @@ namespace litecore {
         /// @param raw  True if you want a RawLogEntry, false for the regular parsed LogEntry.
         explicit LogObserver(bool raw = false) : _raw(raw) {}
 
-        void setRaw(bool raw);
-
       private:
         friend class LogCallback;
         friend class LogFiles;
@@ -82,7 +80,7 @@ namespace litecore {
         void        _addTo(LogDomain&, LogLevel);
         void        _removeFrom(LogDomain&);
 
-        bool _raw;
+        bool const _raw;
     };
 
 }  // namespace litecore
