@@ -13,6 +13,7 @@
 #include "LogFiles.hh"
 #include "Error.hh"
 #include "FilePath.hh"
+#include "LogFunction.hh"
 #include "Logging_Internal.hh"  // for getObjectPath()
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
@@ -23,15 +24,19 @@
 #include <iostream>
 #include <sstream>
 
-#define CBL_LOG_EXTENSION ".cbllog"
+#if __ANDROID__
+#    include <android/log.h>
+#endif
 
 namespace litecore {
     using namespace std;
     using namespace std::chrono;
     using namespace litecore::loginternal;
 
+    static constexpr string_view kLogFileExtension = ".cbllog";
+
     /// Level names to write into textual logs, both in headers and in the lines logged.
-    constexpr const char* kLevelNamesInLog[] = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
+    static constexpr const char* kLevelNamesInLog[] = {"Debug", "Verbose", "Info", "WARNING", "ERROR"};
 
 #pragma mark - LOGFILE:
 
@@ -128,7 +133,7 @@ namespace litecore {
             multimap<time_t, FilePath> logFiles;
             const char*                levelStr = kLevelNames[(int)_level];
             logDir.forEachFile([&](const FilePath& f) {
-                if ( f.fileName().find(levelStr) != string::npos && f.extension() == CBL_LOG_EXTENSION ) {
+                if ( f.fileName().find(levelStr) != string::npos && f.extension() == kLogFileExtension ) {
                     logFiles.emplace(f.lastModified(), f);
                 }
             });
@@ -199,22 +204,13 @@ namespace litecore {
     string LogFiles::newLogFilePath(string_view dir, LogLevel level) {
         int64_t millisSinceEpoch = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
         return CONCAT(dir << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << millisSinceEpoch
-                          << CBL_LOG_EXTENSION);
+                          << kLogFileExtension);
     }
 
 #pragma mark - CALLBACKS:
 
-    LogCallback::LogCallback(Callback_t callback, RawCallback_t rawCallback, void* context)
-        : LogObserver(rawCallback != nullptr), _callback(callback), _rawCallback(rawCallback), _context(context) {}
-
-    void LogCallback::observe(LogEntry const& e) noexcept { _callback(_context, e); }
-
-    void LogCallback::observe(RawLogEntry const& e, const char* format, va_list args) noexcept {
-        _rawCallback(_context, e.domain, e.level, format, args);
-    }
-
     // The default logging callback writes to stderr, or on Android to __android_log_write.
-    void LogCallback::consoleCallback(void* ctx, LogEntry const& e) {
+    void LogFunction::logToConsole(LogEntry const& e) {
 #if ANDROID
         string tag("LiteCore");
         string domainName(e.domain.name());
@@ -223,7 +219,8 @@ namespace litecore {
                                                          ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
         __android_log_write(androidLevels[int(e.level)], tag.c_str(), e.message.data());
 #else
-        LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
+        LogDecoder::Timestamp ts{.secs = time_t(e.timestamp / 1000), .microsecs = 1000 * unsigned(e.timestamp % 1000)};
+        LogDecoder::writeTimestamp(ts, cerr);
         LogDecoder::writeHeader(kLevelNamesInLog[(int)e.level], e.domain.name(), cerr);
         cerr << e.message << endl;
 #endif
