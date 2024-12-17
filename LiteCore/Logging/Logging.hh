@@ -48,6 +48,8 @@ namespace litecore {
 
     enum class LogLevel : int8_t { Uninitialized = -1, Debug, Verbose, Info, Warning, Error, None };
 
+    static constexpr size_t kNumLogLevels = 5;  ///< Number of active levels, Debug...Error
+
     enum class LogObjectRef : unsigned { None = 0 };
 
     class Logging;

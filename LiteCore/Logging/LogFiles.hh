@@ -15,7 +15,6 @@
 #include "LogObserver.hh"
 #include <array>
 #include <functional>
-#include <iosfwd>
 #include <memory>
 #include <mutex>
 
@@ -41,7 +40,9 @@ namespace litecore {
 
         Options options() const;
 
-        void setOptions(Options const&);
+        /// Changes the options, if possible, else returns false.
+        /// The `directory` and `isPlaintext` fields cannot be changed.
+        [[nodiscard]] bool setOptions(Options const&);
 
         void flush();
 
@@ -51,26 +52,16 @@ namespace litecore {
         static std::string newLogFilePath(std::string_view dir, LogLevel);
 
       private:
-        void        setupFileOut();
-        void        setupEncoders();
-        void        teardownEncoders();
-        void        teardownFileOut();
-        void        purgeOldLogs(LogLevel level);
-        void        purgeOldLogs();
-        std::string fileLogHeader(LogLevel);
-        void        rotateLog(LogLevel);
-        std::string newLogFilePath(LogLevel level) const;
+        void _setOptions(Options const&);
 
         void observe(LogEntry const&) noexcept override;
         void observe(RawLogEntry const&, const char* format, va_list args) noexcept override __printflike(3, 0);
 
-        static constexpr size_t kNumLevels = 5;
+        class LogFile;
 
-        mutable std::mutex                                     _mutex;
-        Options                                                _options;
-        std::array<std::unique_ptr<std::ofstream>, kNumLevels> _fileOut;  // File per log level
-        std::array<std::unique_ptr<LogEncoder>, kNumLevels>    _logEncoder;
-        std::array<unsigned, kNumLevels>                       _rotateSerialNo = {};
+        mutable std::mutex                                  _mutex;
+        Options                                             _options;
+        std::array<std::unique_ptr<LogFile>, kNumLogLevels> _files;  // File per log level
     };
 
     /** A LogObserver that calls a C++ std::function. */
