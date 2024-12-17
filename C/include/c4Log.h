@@ -49,9 +49,6 @@ CBL_CORE_API extern const C4LogDomain kC4DefaultLog,  ///< The default log domai
         kC4SyncLog,                                   ///< Log domain for replication operations
         kC4WebSocketLog;                              ///< Log domain for WebSocket operations
 
-
-#pragma mark - FILE LOGGING:
-
 /** Configuration for file-based logging. */
 typedef struct C4LogFileOptions {
     C4LogLevel log_level;         ///< The minimum level of message to be logged
@@ -61,62 +58,6 @@ typedef struct C4LogFileOptions {
     bool       use_plaintext;     ///< Disables binary encoding of the logs (not recommended)
     FLString   header;            ///< Header text to print at the start of every log file
 } C4LogFileOptions;
-
-/** Causes log messages to be written to a file, overwriting any previous contents.
-    The data is written in an efficient and compact binary form that can be read using the
-    "litecorelog" tool.
-    @param options The options to use when setting up the binary logger
-    @param error  On failure, the filesystem error that caused the call to fail.
-    @return  True on success, false on failure. */
-NODISCARD CBL_CORE_API bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error) C4API;
-
-/** Returns the filesystem path of the directory where log files are kept. */
-CBL_CORE_API FLStringResult c4log_binaryFilePath(void) C4API;
-
-/** Ensures all log messages have been written to the current log files. */
-CBL_CORE_API void c4log_flushLogFiles(void) C4API;
-
-/** Returns the minimum level of log messages to be written to the log file,
-    regardless of what level individual log domains are set to. */
-CBL_CORE_API C4LogLevel c4log_binaryFileLevel(void) C4API;
-
-/** Sets the minimum level of log messages to be written to the log file. */
-CBL_CORE_API void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
-
-
-#pragma mark - CALLBACK LOGGING:
-
-
-/** A logging callback that the application can register. */
-typedef void (*C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char* fmt, va_list args);
-
-/** Registers (or unregisters) a log callback, and sets the minimum log level to report.
-    Before this is called, a default callback is used that writes to stderr at the Info level.
-    NOTE: this setting is global to the entire process.
-    @param level  The minimum level of message to log.
-    @param callback  The logging callback, or NULL to disable logging entirely.
-    @param preformatted  If true, log messages will be formatted before invoking the callback,
-            so the `fmt` parameter will be the actual string to log, and the `args` parameter
-            will be NULL. */
-CBL_CORE_API void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) C4API;
-
-/** A log callback that writes log messages to stderr, or on Android to `__android_log_write`.
-    This callback is preformatted: it expects `message` to be the complete string, and ignores `args`.
-    If passing it to \ref c4log_writeToCallback, you MUST pass `true` for `preformatted`. */
-CBL_CORE_API void c4log_defaultCallback(C4LogDomain, C4LogLevel, const char* message, va_list) __printflike(3, 0);
-
-/** Returns the current logging callback, or the default one if none has been set. */
-CBL_CORE_API C4LogCallback c4log_getCallback(void) C4API;
-
-/** Returns the minimum level of log messages to be reported via callback,
-    regardless of what level individual log domains are set to. */
-CBL_CORE_API C4LogLevel c4log_callbackLevel(void) C4API;
-
-/** Sets the minimum level of log messages to be reported via callback. */
-CBL_CORE_API void c4log_setCallbackLevel(C4LogLevel level) C4API;
-
-
-#pragma mark - LOG OBSERVERS:
 
 /** A log entry, as passed to a C4LogObserverCallback. */
 typedef struct C4LogEntry {
@@ -144,9 +85,17 @@ typedef struct C4LogObserverConfig {
     const C4DomainLevel* C4NULLABLE    domains;          ///< List of domains and levels (may be NULL if empty)
     size_t                             domainsCount;     ///< Length of `domains` array
     C4LogObserverCallback C4NULLABLE   callback;         ///< C callback to invoke
-    void* C4NULLABLE                   callbackContext;  ///< `context` value to pass the callback
+    void* C4NULLABLE                   callbackContext;  ///< `context` value to pass to the callback
     const C4LogFileOptions* C4NULLABLE fileOptions;      ///< Config for file logging (Note: `log_level` is ignored)
 } C4LogObserverConfig;
+
+#pragma mark - LOG OBSERVERS:
+
+
+/** Initializes logging by adding a default observer that writes to `stderr`, just like
+    \ref c4log_consoleObserverCallback.
+    You don't need to call this if you set up your own log observers. */
+CBL_CORE_API void c4log_initConsole(C4LogLevel) C4API;
 
 /** Creates and registers a log observer, returning a reference.
     Fails if the configuration is invalid.
@@ -161,11 +110,22 @@ CBL_CORE_API void c4log_removeObserver(C4LogObserver*) C4API;
 
 /** Atomically unregisters an observer and registers a new one.
     If oldObs is NULL, nothing is unregistered.
-    In case of failure (invalid config) oldObs is left intact.
+    In case of failure (invalid config) oldObs is left intact and NULL is returned.
+    It is possible that the observer is modified in place (the function retains & returns `oldObs`)
+    but this should not affect your code's logic.
+    @note Call \ref c4logobserver_release when done with the returned reference.
     @note  This does not release `oldObs`. You should call \ref c4logobserver_release afterward
-           if you don't need the object anymore. */
+           if you don't need the old observer anymore. */
 NODISCARD CBL_CORE_API C4LogObserver*
 c4log_replaceObserver(C4LogObserver* C4NULLABLE oldObs, C4LogObserverConfig config, C4Error* C4NULLABLE outError) C4API;
+
+/** Ensures all log messages have been written to the observer's files.
+    If it's not a file-based observer, this is presently a no-op since callbacks are delivered synchronously. */
+CBL_CORE_API void c4logobserver_flush(C4LogObserver* observer) C4API;
+
+/** A \ref C4LogObserverCallback that logs to `stderr`, or on Android to `__android_log_write`.
+    @note  The `context` argument is ignored. */
+CBL_CORE_API void c4log_consoleObserverCallback(const C4LogEntry*, void* C4NULLABLE context) C4API;
 
 
 #pragma mark - LOG DOMAINS:
@@ -245,6 +205,53 @@ CBL_CORE_API void c4slog(C4LogDomain domain, C4LogLevel level, FLString msg) C4A
 #define C4Warn(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogWarning, FMT, ##__VA_ARGS__)
 #define C4WarnError(FMT, ...)  C4LogToAt(kC4DefaultLog, kC4LogError, FMT, ##__VA_ARGS__)
 
+
+#pragma mark - LEGACY LOG FILE/CALLBACK API:
+
+
+/** Causes log messages to be written to a file, overwriting any previous contents.
+    The data is written in an efficient and compact binary form that can be read using the
+    "litecorelog" tool.
+    @param options The options to use when setting up the binary logger
+    @param error  On failure, the filesystem error that caused the call to fail.
+    @return  True on success, false on failure. */
+NODISCARD CBL_CORE_API bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error) C4API;
+
+/** Returns the filesystem path of the directory where log files are kept. */
+CBL_CORE_API FLStringResult c4log_binaryFilePath(void) C4API;
+
+/** Ensures all log messages have been written to the current log files. */
+CBL_CORE_API void c4log_flushLogFiles(void) C4API;
+
+/** Returns the minimum level of log messages to be written to the log file,
+    regardless of what level individual log domains are set to. */
+CBL_CORE_API C4LogLevel c4log_binaryFileLevel(void) C4API;
+
+/** Sets the minimum level of log messages to be written to the log file. */
+CBL_CORE_API void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
+
+/** A logging callback that the application can register. */
+typedef void (*C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char* fmt, va_list args);
+
+/** Registers (or unregisters) a log callback, and sets the minimum log level to report.
+    Before this is called, a default callback is used that writes to stderr at the Info level.
+    NOTE: this setting is global to the entire process.
+    @param level  The minimum level of message to log.
+    @param callback  The logging callback, or NULL to disable logging entirely.
+    @param preformatted  If true, log messages will be formatted before invoking the callback,
+            so the `fmt` parameter will be the actual string to log, and the `args` parameter
+            will be NULL. */
+CBL_CORE_API void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) C4API;
+
+/** Returns the current logging callback, or the default one if none has been set. */
+CBL_CORE_API C4LogCallback c4log_getCallback(void) C4API;
+
+/** Returns the minimum level of log messages to be reported via callback,
+    regardless of what level individual log domains are set to. */
+CBL_CORE_API C4LogLevel c4log_callbackLevel(void) C4API;
+
+/** Sets the minimum level of log messages to be reported via callback. */
+CBL_CORE_API void c4log_setCallbackLevel(C4LogLevel level) C4API;
 
 /** @} */
 

@@ -400,7 +400,9 @@ c4index_getQueryLanguage
 c4index_getExpression
 c4index_getOptions
 
-c4log_defaultCallback
+c4logobserver_flush
+c4log_consoleObserverCallback
+c4log_initConsole
 c4log_newObserver
 c4log_removeObserver
 c4log_replaceObserver

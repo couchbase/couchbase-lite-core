@@ -72,10 +72,14 @@ namespace litecore {
         for ( auto& [obs, obsLevel] : _observers ) {
             if ( obsLevel > entry.level ) break;
             if ( entry.fileOnly && !dynamic_cast<LogFiles*>(obs.get()) ) continue;
+
+            // A `va_list` is like a stream, so we have to copy it and let each callback read from a copy:
+            va_list argsCopy;
+            va_copy(argsCopy, args);
             if ( obs->raw() ) {
-                obs->observe(entry, format, args);
+                obs->observe(entry, format, argsCopy);
             } else {
-                if ( !formattedEntry ) formattedEntry.emplace(formatEntry(entry, format, args));
+                if ( !formattedEntry ) formattedEntry.emplace(formatEntry(entry, format, argsCopy));
                 obs->observe(*formattedEntry);
             }
         }

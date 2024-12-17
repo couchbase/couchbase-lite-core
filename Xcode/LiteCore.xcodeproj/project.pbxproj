@@ -1164,6 +1164,7 @@
 		275A74461ED37992008CB57B /* Base.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Base.hh; sourceTree = "<group>"; };
 		275A74D51ED3AA11008CB57B /* c4Listener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
 		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
+		275AA0192D1231DD00DA2EEA /* LogFunction.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogFunction.hh; sourceTree = "<group>"; };
 		275AA5D72A5F603800ABC172 /* SourceID.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SourceID.hh; sourceTree = "<group>"; };
 		275B2DF22A4A0A1A00B7215E /* HybridClock.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HybridClock.hh; sourceTree = "<group>"; };
 		275B2DF32A4A0A1A00B7215E /* HybridClock.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HybridClock.cc; sourceTree = "<group>"; };
@@ -2980,6 +2981,7 @@
 				27C4035D2D10BFFE00CF0CB2 /* LogObserver.cc */,
 				27C403592D10BFFE00CF0CB2 /* LogFiles.hh */,
 				27C4035A2D10BFFE00CF0CB2 /* LogFiles.cc */,
+				275AA0192D1231DD00DA2EEA /* LogFunction.hh */,
 				27C4035B2D10BFFE00CF0CB2 /* Logging_Internal.hh */,
 				2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */,
 				726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */,
