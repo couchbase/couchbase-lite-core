@@ -3038,7 +3038,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query][N1QL]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string               docID = "doc1";
