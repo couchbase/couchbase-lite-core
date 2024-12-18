@@ -31,8 +31,10 @@ std::unique_ptr<REST::Response> SG::createRequest(const std::string& method, C4C
             path = std::string("/") + kspace + path;
         }
     }
-    if ( logRequests )
+    if ( logRequests ) {
         C4Log("*** Server command: %s %.*s:%d%s", method.c_str(), SPLAT(address.hostname), port, path.c_str());
+        C4Log("Body: %.*s", SPLAT(body));
+    }
 
     Encoder enc;
     enc.beginDict();
@@ -202,7 +204,15 @@ bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, sl
 
 bool SG::upsertDoc(C4CollectionSpec collectionSpec, const std::string& docID, const std::string& revID, slice body,
                    const std::vector<std::string>& channelIDs, C4Error* err) const {
-    return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
+    if ( useRevTrees ) {
+        return upsertDoc(collectionSpec, docID, addRevToJSON(body, revID), channelIDs, err);
+    } else {
+        // For Version Vectors, SG does not allow us to provide a version vector in the '_rev' property, it must be a
+        // traditional revID. So we fetch the current revID from sync gateway, then we will use that.
+        const auto sgRevID = getRevID(docID, collectionSpec);
+        Assert(!sgRevID.empty());
+        return upsertDoc(collectionSpec, docID, addRevToJSON(body, sgRevID.asString()), channelIDs, err);
+    }
 }
 
 bool SG::upsertDocWithEmptyChannels(C4CollectionSpec collectionSpec, const std::string& docID, slice body,
@@ -239,6 +249,15 @@ alloc_slice SG::getDoc(const std::string& docID, C4CollectionSpec collectionSpec
     auto       result = runRequest("GET", collectionSpec, docID, nullslice, false, nullptr, &status);
     Assert(status == HTTPStatus::OK);
     return result;
+}
+
+alloc_slice SG::getRevID(const std::string& docID, C4CollectionSpec collectionSpec) const {
+    const alloc_slice bodyJSON = getDoc(docID, collectionSpec);
+    Encoder           e{};
+    e.convertJSON(bodyJSON);
+    const auto bodyFleece = e.finishDoc();
+    const auto bodyDict   = bodyFleece.asDict();
+    return bodyDict.get("_rev").toString();
 }
 
 alloc_slice SG::sendRemoteRequest(const std::string& method, C4CollectionSpec collectionSpec, std::string path,

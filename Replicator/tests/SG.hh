@@ -69,6 +69,8 @@ class SG {
                                     C4Error* err = nullptr) const;
     [[nodiscard]] alloc_slice getDoc(const std::string& docID,
                                      C4CollectionSpec   collectionSpec = kC4DefaultCollectionSpec) const;
+    [[nodiscard]] alloc_slice getRevID(const std::string& docID,
+                                       C4CollectionSpec   collectionSpec = kC4DefaultCollectionSpec) const;
 
     void setAdminCredentials(const std::string& username, const std::string& password) {
         adminUsername = username;
@@ -112,6 +114,10 @@ class SG {
     c4::ref<C4Cert>    identityCert{nullptr};
     c4::ref<C4KeyPair> identityKey{nullptr};
 #endif
+
+    // Whether to use rev-trees logic for SG requests.
+    // If false, uses specialized logic for Version Vectors.
+    bool useRevTrees{true};
 
   private:
     [[nodiscard]] std::unique_ptr<REST::Response> createRequest(const std::string& method,
