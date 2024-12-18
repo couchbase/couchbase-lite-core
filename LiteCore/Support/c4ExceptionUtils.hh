@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4Log.h"
 #include "c4Private.h"
 #include "fleece/PlatformCompat.hh"  // for NOINLINE, ALWAYS_INLINE
 #include <atomic>

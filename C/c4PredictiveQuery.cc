@@ -11,6 +11,7 @@
 //
 
 #include "c4PredictiveQuery.h"
+#include "c4Log.h"
 
 #ifdef COUCHBASE_ENTERPRISE
 
