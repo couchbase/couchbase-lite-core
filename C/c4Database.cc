@@ -36,9 +36,9 @@ using namespace fleece;
 using namespace litecore;
 
 
-CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";
+const char* const kC4DatabaseFilenameExtension = ".cblite2";
 
-CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine = "SQLite";
+C4StorageEngine const kC4SQLiteStorageEngine = "SQLite";
 
 C4EncryptionKey C4EncryptionKeyFromPassword(slice password, C4EncryptionAlgorithm alg) {
     C4EncryptionKey key;

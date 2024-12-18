@@ -31,6 +31,7 @@ namespace litecore::net {
 
         OK        = 200,
         Created   = 201,
+        Accepted  = 202,
         NoContent = 204,
 
         MovedPermanently  = 301,
@@ -61,6 +62,8 @@ namespace litecore::net {
     inline bool IsSuccess(HTTPStatus s) { return int(s) < 300; }
 
     const char* StatusMessage(HTTPStatus);
+
+    HTTPStatus StatusFromError(C4Error);
 
     /// HTTP methods. These do NOT have consecutive values, rather they're powers of two
     /// so they can be used as bit-masks.

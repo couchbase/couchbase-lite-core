@@ -73,8 +73,8 @@ function(setup_litecore_build_linux)
             )
 
             target_link_libraries(
-                ${liteCoreVariant} INTERFACE
-                ${ICU_LIBS}
+                ${liteCoreVariant} PUBLIC
+                icu::icu4c
            )
        endforeach()
     endif()

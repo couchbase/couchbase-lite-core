@@ -26,7 +26,7 @@ using namespace fleece::impl;
 using namespace litecore;
 
 
-CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {};
+const C4QueryOptions kC4DefaultQueryOptions = {};
 
 C4Query::C4Query(C4Collection* coll, C4QueryLanguage language, slice queryExpression)
     : _database(asInternal(coll)->dbImpl())
@@ -63,6 +63,8 @@ alloc_slice C4Query::explain() const { return alloc_slice(_query->explain()); }
 alloc_slice C4Query::fullTextMatched(const C4FullTextMatch& term) {
     return _query->getMatchedText((Query::FullTextTerm&)term);
 }
+
+const set<string>& C4Query::parameterNames() const noexcept { return _query->parameterNames(); }
 
 alloc_slice C4Query::parameters() const noexcept {
     LOCK(_mutex);
