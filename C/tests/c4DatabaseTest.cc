@@ -1373,7 +1373,8 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
 TEST_CASE("Database Upgrade from 3.1 with peerCheckpoints table", "[Database][Upgrade][C]") {
     string dbPath = "upgrade_3.1_peerCheckpoints.cblite2";
 
-    C4DatabaseFlags withFlags {0};
+    C4DatabaseFlags withFlags{0};
+
     SECTION("Revision Tree") {}
     SECTION("Version Vector") { withFlags = kC4DB_VersionVectors; }
 
