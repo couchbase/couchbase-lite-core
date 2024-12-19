@@ -108,36 +108,22 @@ namespace litecore {
     void LogDomain::vlog(LogLevel level, const Logging* logger, bool doCallback, const char* fmt, va_list args) {
         if ( computeLevel() > level ) return;
 
-        auto         timestamp = uint64_t(c4_now());
-        LogObjectRef objRef{LogEncoder::None};
-
-        const char* uncheckedFmt = fmt;
-        std::string prefix, prefixedFmt;
+        string      prefix;
+        RawLogEntry entry{.timestamp = uint64_t(c4_now()),
+                          .domain    = *this,
+                          .level     = level,
+                          .objRef    = LogObjectRef::None,
+                          .prefix    = prefix,  // a reference to it
+                          .fileOnly  = !doCallback};
         if ( logger ) {
-            objRef = logger->getObjectRef();
+            entry.objRef = logger->getObjectRef();
             std::stringstream prefixOut;
             logger->addLoggingKeyValuePairs(prefixOut);
             prefix = prefixOut.str();
-            if ( !prefix.empty() ) {
-                DebugAssert(prefix.find('%') == std::string::npos);
-                prefixOut << " " << fmt;
-                prefixedFmt  = prefixOut.str();
-                uncheckedFmt = prefixedFmt.c_str();
-            }
         }
 
         unique_lock<mutex> lock(sLogMutex);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-nonliteral"
-        _observers->notify(RawLogEntry{.timestamp = timestamp,
-                                       .domain    = *this,
-                                       .level     = level,
-                                       .objRef    = objRef,
-                                       .prefix    = prefix,
-                                       .fileOnly  = !doCallback},
-                           uncheckedFmt, args);
-#pragma GCC diagnostic pop
+        _observers->notify(entry, fmt, args);
     }
 
     void LogDomain::logToCallbacksOnly(LogLevel level, const char* message) {

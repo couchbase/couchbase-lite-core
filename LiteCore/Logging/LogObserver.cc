@@ -28,14 +28,19 @@ namespace litecore {
 
     __printflike(2, 0) static LogEntry formatEntry(RawLogEntry const& entry, const char* format, va_list args) {
         size_t len = 0;
-        if ( entry.objRef != LogObjectRef::None )
+        if ( entry.objRef != LogObjectRef::None ) {
+            // Write the object (`Logging` instance) description:
             len = addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), entry.objRef);
-        Assert(len < sizeof(sFormatBuffer));
-        if ( !entry.prefix.empty() ) {
-            size_t prefLen = std::min(sizeof(sFormatBuffer) - len, entry.prefix.size());
-            memcpy(sFormatBuffer, &entry.prefix[prefLen], prefLen);
-            len += prefLen;
         }
+        if ( !entry.prefix.empty() ) {
+            // Add the prefix string (created from Logger::addLoggingKeyValuePairs):
+            Assert(len < sizeof(sFormatBuffer));
+            size_t prefixLen = std::min(sizeof(sFormatBuffer) - len, entry.prefix.size());
+            memcpy(&sFormatBuffer[len], entry.prefix.data(), prefixLen);
+            len += prefixLen;
+            if ( len < sizeof(sFormatBuffer) ) sFormatBuffer[len++] = ' ';
+        }
+        // Then format the printf args:
         len += vsnprintf(&sFormatBuffer[len], sizeof(sFormatBuffer) - len, format, args);
         return LogEntry{.domain = entry.domain, .level = entry.level, .message = string_view(sFormatBuffer, len)};
     }

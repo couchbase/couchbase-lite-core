@@ -95,6 +95,7 @@ namespace litecore {
 
         LogLevel computeLevel() noexcept;
         LogLevel levelFromEnvironment() const noexcept;
+
         void invalidateLevel() noexcept { _effectiveLevel = LogLevel::Uninitialized; }
 
         std::atomic<LogLevel> _effectiveLevel{LogLevel::Uninitialized};

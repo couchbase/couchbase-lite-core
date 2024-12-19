@@ -57,6 +57,7 @@ add_executable(
     DocumentKeysTest.cc
     LiteCoreTest.cc
     LogEncoderTest.cc
+    LogObserverTest.cc
     N1QLParserTest.cc
     QueryTranslatorTest.cc
     QueryTest.cc
