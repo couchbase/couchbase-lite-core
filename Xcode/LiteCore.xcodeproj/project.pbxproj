@@ -227,6 +227,9 @@
 		276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
 		277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		277071D6230B696E00F7EB95 /* HTTPTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271C069723078176000EC09B /* HTTPTypes.cc */; };
+		277098CE2D14CB3B000ACEA9 /* LogObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277098CD2D14CB3B000ACEA9 /* LogObserverTest.cc */; };
+		277098CF2D14CB3B000ACEA9 /* LogObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277098CD2D14CB3B000ACEA9 /* LogObserverTest.cc */; };
+		277098D02D14CB3B000ACEA9 /* LogObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277098CD2D14CB3B000ACEA9 /* LogObserverTest.cc */; };
 		2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
 		2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
@@ -1247,6 +1250,8 @@
 		276E021A1EA983EE00FEFE8A /* Response.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Response.hh; sourceTree = "<group>"; };
 		27700DFD1FB642B80005D48E /* Increment.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Increment.hh; sourceTree = "<group>"; };
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
+		277098CC2D14CB3B000ACEA9 /* LogObserverTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogObserverTest.hh; sourceTree = "<group>"; };
+		277098CD2D14CB3B000ACEA9 /* LogObserverTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LogObserverTest.cc; sourceTree = "<group>"; };
 		2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLiteCoreWebSocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreWebSocket.xcconfig; sourceTree = "<group>"; };
 		2771A0EC228B832400B18E0A /* build_mbedtls.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_mbedtls.sh; sourceTree = SOURCE_ROOT; };
@@ -1954,6 +1959,8 @@
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
+				277098CC2D14CB3B000ACEA9 /* LogObserverTest.hh */,
+				277098CD2D14CB3B000ACEA9 /* LogObserverTest.cc */,
 				27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */,
 				278CE6F12BAA116300245552 /* SequenceSetTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
@@ -4188,6 +4195,7 @@
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				278CE6F22BAA116300245552 /* SequenceSetTest.cc in Sources */,
 				27D62A6B2B7D2AF0004C0787 /* QueryTranslatorTest.cc in Sources */,
+				277098CE2D14CB3B000ACEA9 /* LogObserverTest.cc in Sources */,
 				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
@@ -4261,6 +4269,7 @@
 				2719252A23970BDF0053DDA6 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				2719252C23970BFD0053DDA6 /* RESTClientTest.cc in Sources */,
 				2719252D23970BFD0053DDA6 /* RESTListenerTest.cc in Sources */,
+				277098CF2D14CB3B000ACEA9 /* LogObserverTest.cc in Sources */,
 				2719252E23970BFD0053DDA6 /* SyncListenerTest.cc in Sources */,
 				2719253523970E070053DDA6 /* c4Listener.cc in Sources */,
 				271925172396FE2C0053DDA6 /* PredictiveQueryTest.cc in Sources */,
@@ -4365,6 +4374,7 @@
 				27FE0CFB24BE7C2A00A36EC2 /* LiteCoreTest.cc in Sources */,
 				27FE0CF224BE7C2A00A36EC2 /* LogEncoderTest.cc in Sources */,
 				27FE0CEF24BE7C2A00A36EC2 /* DataFileTest.cc in Sources */,
+				277098D02D14CB3B000ACEA9 /* LogObserverTest.cc in Sources */,
 				27FE0CF024BE7C2A00A36EC2 /* DocumentKeysTest.cc in Sources */,
 				27FE0CF824BE7C2A00A36EC2 /* SequenceTrackerTest.cc in Sources */,
 				2740A7502B3210C8003387E9 /* DBAccessTestWrapper.cc in Sources */,
