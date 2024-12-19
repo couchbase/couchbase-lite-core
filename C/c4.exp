@@ -396,6 +396,7 @@ _c4logobserver_flush
 _c4log_consoleObserverCallback
 _c4log_initConsole
 _c4log_newObserver
+_c4log_nextDomain
 _c4log_removeObserver
 _c4log_replaceObserver
 

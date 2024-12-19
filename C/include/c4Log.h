@@ -137,8 +137,13 @@ CBL_CORE_API void c4log_consoleObserverCallback(const C4LogEntry*, void* C4NULLA
     @return  The domain object, or NULL if not found. */
 CBL_CORE_API C4LogDomain c4log_getDomain(const char* name, bool create) C4API;
 
-/** Returns the name of a log domain. (The default domain's name is an empty string.) */
+/** Returns the name of a log domain. */
 CBL_CORE_API const char* c4log_getDomainName(C4LogDomain) C4API;
+
+/** Returns the next log domain (in arbitrary order) after the given one;
+    or the first domain if the argument is NULL. You can iterate all domains like this:
+    `for(C4LogDomain d = c4log_nextDomain(NULL); d; d = c4log_nextDomain(d))` */
+CBL_CORE_API C4LogDomain c4log_nextDomain(C4LogDomain C4NULLABLE) C4API;
 
 /** Returns the current log level of a domain, the minimum level of message it will log. */
 CBL_CORE_API C4LogLevel c4log_getLevel(C4LogDomain) C4API;

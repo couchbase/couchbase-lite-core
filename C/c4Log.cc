@@ -81,6 +81,10 @@ namespace litecore {
 
 }  // namespace litecore
 
+static inline LogDomain* toInternal(C4LogDomain d) { return reinterpret_cast<LogDomain*>(d); }
+
+static inline C4LogDomain toExternal(LogDomain* d) { return reinterpret_cast<C4LogDomain>(d); }
+
 #pragma mark - LOG OBSERVER:
 
 // There is no real `C4LogObserver` struct. `C4LogObserver*` is an alias for C++ `LogObserver*`.
@@ -101,7 +105,7 @@ static vector<pair<LogDomain&, LogLevel>> convertDomains(C4LogObserverConfig con
         for ( size_t j = 0; j < i; j++ ) {
             if ( config.domains[j].domain == domain ) error::_throw(error::InvalidParameter, "duplicate log domain");
         }
-        domains.emplace_back(*(LogDomain*)domain, LogLevel(level));
+        domains.emplace_back(*toInternal(domain), LogLevel(level));
     }
     return domains;
 }
@@ -163,7 +167,7 @@ C4LogObserver* c4log_replaceObserver(C4LogObserver* oldObs, C4LogObserverConfig 
 
 void c4log_consoleObserverCallback(const C4LogEntry* entry, void* context) noexcept {
     LogFunction::logToConsole({.timestamp = uint64_t(entry->timestamp),
-                               .domain    = *(LogDomain*)entry->domain,
+                               .domain    = *toInternal(entry->domain),
                                .level     = LogLevel(entry->level),
                                .message   = (const char*)entry->message.buf});
 }
@@ -205,20 +209,20 @@ C4LogCallback c4log_getCallback() noexcept { return sDefaultLogCallbackFn; }
 
 C4LogLevel c4log_callbackLevel() noexcept { return sDefaultLogCallbackLevel; }  // LCOV_EXCL_LINE
 
-void c4log_initConsole(C4LogLevel level) noexcept {
-    auto defaultCallback = [](C4LogDomain domain, C4LogLevel level, const char* message, va_list) {
-        LogFunction::logToConsole(LogEntry{.timestamp = uint64_t(c4_now()),
-                                           .domain    = *(LogDomain*)domain,
-                                           .level     = LogLevel(level),
-                                           .message   = message});
-    };
-    c4log_writeToCallback(level, defaultCallback, true);
-}
-
 void c4log_setCallbackLevel(C4LogLevel level) noexcept {
     if ( level != sDefaultLogCallbackLevel && sDefaultLogCallback )
         c4log_writeToCallback(level, sDefaultLogCallbackFn, sDefaultLogCallbackPreformatted);
     sDefaultLogCallbackLevel = level;
+}
+
+void c4log_initConsole(C4LogLevel level) noexcept {
+    auto defaultCallback = [](C4LogDomain domain, C4LogLevel level, const char* message, va_list) {
+        LogFunction::logToConsole(LogEntry{.timestamp = uint64_t(c4_now()),
+                                           .domain    = *toInternal(domain),
+                                           .level     = LogLevel(level),
+                                           .message   = message});
+    };
+    c4log_writeToCallback(level, defaultCallback, true);
 }
 
 // LCOV_EXCL_STOP
@@ -293,18 +297,24 @@ void c4log_flushLogFiles() C4API {
 C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     if ( !name ) return kC4DefaultLog;
     auto domain = LogDomain::named(name);
-    if ( !domain && create ) domain = new LogDomain(name, LogLevel::Info, true);
-    return (C4LogDomain)domain;
+    if ( !domain && create ) domain = new LogDomain(strdup(name));
+    return toExternal(domain);
 }
 
 const char* c4log_getDomainName(C4LogDomain c4Domain) noexcept {
-    auto domain = (LogDomain*)c4Domain;
+    auto domain = toInternal(c4Domain);
     return domain->name();
 }
 
+C4LogDomain c4log_nextDomain(C4LogDomain domain) noexcept {
+    if ( domain ) return toExternal(toInternal(domain)->next());
+    else
+        return toExternal(LogDomain::first());
+}
+
 C4LogLevel c4log_getLevel(C4LogDomain c4Domain) noexcept {
-    auto domain = (LogDomain*)c4Domain;
-    return (C4LogLevel)domain->level();
+    auto domain = toInternal(c4Domain);
+    return (C4LogLevel)domain->effectiveLevel();
 }
 
 void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept {
@@ -313,7 +323,7 @@ void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept {
 }
 
 bool c4log_willLog(C4LogDomain c4Domain, C4LogLevel level) C4API {
-    auto domain = (LogDomain*)c4Domain;
+    auto domain = toInternal(c4Domain);
     return domain->willLog((LogLevel)level);
 }
 
@@ -343,7 +353,7 @@ void c4log(C4LogDomain c4Domain, C4LogLevel level, const char* fmt, ...) noexcep
 
 void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char* fmt, va_list args) noexcept {
     try {
-        ((LogDomain*)c4Domain)->vlog((LogLevel)level, fmt, args);
+        toInternal(c4Domain)->vlog((LogLevel)level, fmt, args);
     } catch ( ... ) {}
 }
 
@@ -352,7 +362,7 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
     if ( msg.buf == nullptr ) { return; }
 
     try {
-        ((LogDomain*)c4Domain)->logNoCallback((LogLevel)level, "%.*s", FMTSLICE(msg));
+        toInternal(c4Domain)->logNoCallback((LogLevel)level, "%.*s", FMTSLICE(msg));
     } catch ( ... ) {}
 }
 

@@ -66,6 +66,12 @@ namespace litecore {
         void     setLevel(LogLevel lvl) noexcept;
         LogLevel level() const noexcept;
 
+        /// The first domain in the linked list (in arbitrary order.)
+        static LogDomain* first() noexcept { return sFirstDomain; }
+
+        /// The next domain in the linked list (in arbitrary order), or nullptr at the end.
+        LogDomain* next() const noexcept { return _next; }
+
         /// The level at which this domain will actually have an effect. This is based on the level(),
         /// but raised to take into account the levels of LogObservers.
         /// In other words, any log() calls below this level will produce no output. */
