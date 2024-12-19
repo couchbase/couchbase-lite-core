@@ -77,7 +77,7 @@ namespace litecore {
 
         static void _add(LogObserver*, LogLevel defaultLevel, std::span<const std::pair<LogDomain&, LogLevel>> = {});
         static void _remove(LogObserver*);
-        void        _addTo(LogDomain&, LogLevel);
+        bool        _addTo(LogDomain&, LogLevel);
         void        _removeFrom(LogDomain&);
 
         bool const _raw;

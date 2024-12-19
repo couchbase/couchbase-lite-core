@@ -94,15 +94,15 @@ namespace litecore {
 
 #pragma mark - LOG OBSERVER:
 
-    void LogObserver::_addTo(LogDomain& domain, LogLevel level) {
-        if ( level == LogLevel::None ) return;
-        if ( !domain._observers->addObserver(this, level) )
-            error::_throw(error::InvalidParameter, "LogObserver is already registered");
-        domain._effectiveLevel = LogLevel::Uninitialized;
+    bool LogObserver::_addTo(LogDomain& domain, LogLevel level) {
+        if ( level == LogLevel::None ) return true;
+        if ( !domain._observers->addObserver(this, level) ) return false;
+        domain.invalidateLevel();
+        return true;
     }
 
     void LogObserver::_removeFrom(LogDomain& domain) {
-        if ( domain._observers->removeObserver(this) ) domain._effectiveLevel = LogLevel::Uninitialized;
+        if ( domain._observers->removeObserver(this) ) domain.invalidateLevel();
     }
 
     void LogObserver::add(LogObserver* observer, LogLevel defaultLevel, span<const pair<LogDomain&, LogLevel>> levels) {
@@ -112,12 +112,15 @@ namespace litecore {
 
     void LogObserver::_add(LogObserver* observer, LogLevel defaultLevel,
                            span<const pair<LogDomain&, LogLevel>> levels) {
-        for ( auto& dl : levels ) observer->_addTo(dl.first, dl.second);
+        for ( auto& dl : levels ) {
+            if ( !observer->_addTo(dl.first, dl.second) )
+                error::_throw(error::InvalidParameter, "LogObserver is already registered");
+        }
         if ( defaultLevel != LogLevel::None ) {
             if ( !sDomainlessObservers ) sDomainlessObservers = new LogObservers;
             if ( !sDomainlessObservers->addObserver(observer, defaultLevel) )
                 error::_throw(error::InvalidParameter, "LogObserver is already registered");
-            for ( auto domain = LogDomain::sFirstDomain; domain; domain = domain->_next )
+            for ( auto domain = LogDomain::first(); domain; domain = domain->next() )
                 (void)observer->_addTo(*domain, defaultLevel);
         }
     }
@@ -128,8 +131,7 @@ namespace litecore {
     }
 
     void LogObserver::_remove(LogObserver* observer) {
-        for ( LogDomain* domain = LogDomain::sFirstDomain; domain; domain = domain->_next )
-            observer->_removeFrom(*domain);
+        for ( auto domain = LogDomain::first(); domain; domain = domain->next() ) observer->_removeFrom(*domain);
         if ( sDomainlessObservers ) sDomainlessObservers->removeObserver(observer);
     }
 
