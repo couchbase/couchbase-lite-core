@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-
+#include "LogObserverTest.hh"
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
 #include "LogFiles.hh"
@@ -32,22 +32,6 @@ using namespace std;
 #define TIMESTAMP "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z"
 
 constexpr size_t kFolderBufSize = 64;
-
-class LogObject : public Logging {
-  public:
-    explicit LogObject(const std::string& identifier) : Logging(DBLog), _identifier(identifier) {}
-
-    explicit LogObject(std::string&& identifier) : Logging(DBLog), _identifier(identifier) {}
-
-    void doLog(const char* format, ...) const __printflike(2, 3) { LOGBODY(Info); }
-
-    std::string loggingClassName() const override { return _identifier; }
-
-    LogObjectRef getRef() const { return getObjectRef(); }
-
-  private:
-    std::string _identifier;
-};
 
 static string dumpLog(const string& encoded, const vector<string>& levelNames) {
     cerr << "Encoded log is " << encoded.size() << " bytes\n";
