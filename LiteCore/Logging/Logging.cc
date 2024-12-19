@@ -117,9 +117,7 @@ namespace litecore {
                           .fileOnly  = !doCallback};
         if ( logger ) {
             entry.objRef = logger->getObjectRef();
-            std::stringstream prefixOut;
-            logger->addLoggingKeyValuePairs(prefixOut);
-            prefix = prefixOut.str();
+            prefix       = logger->loggingKeyValuePairs();
         }
 
         unique_lock<mutex> lock(sLogMutex);
