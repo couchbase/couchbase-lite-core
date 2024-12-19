@@ -14,7 +14,6 @@
 #include "Logging.hh"
 #include "LogObserver.hh"
 #include <queue>
-#include <sstream>
 
 using namespace std;
 using namespace litecore;
@@ -32,7 +31,7 @@ class LogObject : public Logging {
 
     std::string loggingClassName() const override { return _identifier; }
 
-    void addLoggingKeyValuePairs(std::stringstream& output) const override { output << _kv; }
+    std::string loggingKeyValuePairs() const override { return _kv; }
 
     LogObjectRef getRef() const { return getObjectRef(); }
 

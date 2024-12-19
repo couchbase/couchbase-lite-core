@@ -16,7 +16,6 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cinttypes>  //for stdint.h fmt specifiers
-#include <iosfwd>
 #include <string>
 
 /*
@@ -153,6 +152,11 @@ namespace litecore {
         virtual std::string loggingIdentifier() const;
         virtual std::string loggingClassName() const;
 
+        /** Override this to return aditional metadata about the object, in the form of
+            space-separated "key=value" pairs.
+            These will be logged with every message, even in the binary log file. */
+        virtual std::string loggingKeyValuePairs() const { return {}; }
+
 #define LOGBODY_(LEVEL)                                                                                                \
     va_list args;                                                                                                      \
     va_start(args, format);                                                                                            \
@@ -176,11 +180,6 @@ namespace litecore {
         void _log(LogLevel level, const char* format, ...) const __printflike(3, 4) { LOGBODY_(level) }
 
         void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
-
-        /// Add key=value pairs to the output. They are space separated. If output is not empty
-        /// upon entry, add a space to start new key=value pairs.
-        /// Warning: the string must not include printf format specifier, '%'.
-        virtual void addLoggingKeyValuePairs(std::stringstream& output) const {}
 
         LogDomain& _domain;
 

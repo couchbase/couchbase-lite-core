@@ -1351,12 +1351,14 @@ namespace litecore::repl {
         }
     }
 
-    void Replicator::addLoggingKeyValuePairs(std::stringstream& output) const {
-        Worker::addLoggingKeyValuePairs(output);
+    string Replicator::loggingKeyValuePairs() const {
+        string kv = Worker::loggingKeyValuePairs();
         if ( _correlationID ) {
-            if ( output.tellp() > 0 ) output << " ";
-            output << "CorrID=" << _correlationID.asString();
+            if ( !kv.empty() ) kv += " ";
+            kv += "CorrID=";
+            kv += _correlationID.asString();
         }
+        return kv;
     }
 
 }  // namespace litecore::repl

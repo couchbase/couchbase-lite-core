@@ -242,7 +242,7 @@ namespace litecore::repl {
         // 'errorSlice' describes the nature of the violation.
         std::pair<CollectionIndex, slice> checkCollectionOfMsg(const blip::MessageIn& msg) const;
 
-        void addLoggingKeyValuePairs(std::stringstream& output) const override;
+        std::string loggingKeyValuePairs() const override;
 
         RetainedConst<Options>    _options;        // The replicator options
         Retained<Worker>          _parent;         // Worker that owns me

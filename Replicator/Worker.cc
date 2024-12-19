@@ -323,12 +323,14 @@ namespace litecore::repl {
         return std::make_pair(collIn, err);
     }
 
-    void Worker::addLoggingKeyValuePairs(std::stringstream& output) const {
-        actor::Actor::addLoggingKeyValuePairs(output);
+    string Worker::loggingKeyValuePairs() const {
+        string kv = Actor::loggingKeyValuePairs();
         if ( auto collIdx = collectionIndex(); collIdx != kNotCollectionIndex ) {
-            if ( output.tellp() > 0 ) output << " ";
-            output << "Coll=" << collIdx;
+            if ( !kv.empty() ) kv += " ";
+            kv += "Coll=";
+            kv += to_string(collIdx);
         }
+        return kv;
     }
 
     const std::unordered_set<slice> Options::kWhiteListOfKeysToLog{
