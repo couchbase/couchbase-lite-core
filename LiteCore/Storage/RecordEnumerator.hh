@@ -39,12 +39,13 @@ namespace litecore {
             bool          onlyConflicts  = false;        ///< Only include records with conflicts
             SortOption    sortOption     = kAscending;   ///< Sort order, or unsorted
             ContentOption contentOption  = kEntireBody;  ///< Load record bodies?
-
-            Options() {}
+            sequence_t    minSequence{};                 ///< Minimum sequence; if nonzero, orders by sequence
+            alloc_slice   startKey;                      ///< Min key, or max key if descending
         };
 
-        explicit RecordEnumerator(KeyStore&, Options options = Options());
-        RecordEnumerator(KeyStore&, sequence_t since, Options options = Options());
+        explicit RecordEnumerator(KeyStore& ks) : RecordEnumerator(ks, Options{}) {}
+
+        RecordEnumerator(KeyStore&, Options const&);
 
         RecordEnumerator(RecordEnumerator&& e) noexcept { *this = std::move(e); }
 

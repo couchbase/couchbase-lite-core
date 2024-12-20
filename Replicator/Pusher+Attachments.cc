@@ -102,7 +102,7 @@ namespace litecore::repl {
 
         auto collIndex = Worker::getCollectionIndex(*req);
         if ( collIndex != kNotCollectionIndex ) {
-            auto collSpec     = repl->collection(collIndex)->getSpec();
+            auto collSpec     = repl->collectionSpec(collIndex);
             progress.collSpec = collSpec;
         }
 

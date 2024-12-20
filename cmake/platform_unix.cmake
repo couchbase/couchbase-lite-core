@@ -39,10 +39,12 @@ function(setup_litecore_build_unix)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
 
-        set_property(TARGET LiteCore       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        if(LITECORE_BUILD_SHARED)
+            set_property(TARGET LiteCore       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        endif()
     endif()
 
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
+    if(LITECORE_BUILD_SHARED AND CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
         # C/C++ atomic operations on ARM6/7 emit calls to functions in libatomic
         target_link_libraries(
             LiteCore PRIVATE

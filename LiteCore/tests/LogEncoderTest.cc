@@ -30,6 +30,10 @@ using namespace std;
 
 constexpr size_t kFolderBufSize = 64;
 
+// This is moved here so that it can be shared between cbl-logtest
+// and CppTests
+FilePath TestFixture::sTempDir = GetTempDirectory();
+
 class LogObject : public Logging {
   public:
     explicit LogObject(const std::string& identifier) : Logging(DBLog), _identifier(identifier) {}
