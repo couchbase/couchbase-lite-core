@@ -55,6 +55,7 @@ struct C4Collection
     virtual uint64_t getDocumentCount() const = 0;
 
     virtual C4SequenceNumber getLastSequence() const = 0;
+    virtual uint64_t getPurgeCount() const = 0;
 
     C4ExtraInfo& extraInfo() noexcept { return _extraInfo; }
 
