@@ -18,15 +18,12 @@
     copy of the logging system with different state, which would cause confusion. */
 
 namespace litecore {
-    // Same as dylog, making this static breaks __printflike
-    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+
     void LogDomain::log(LogLevel level, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        c4vlog(kC4DefaultLog, (C4LogLevel)level, fmt, args);
+        c4vlog(C4LogDomain(this), C4LogLevel(level), fmt, args);
         va_end(args);
     }
-
-    // NOLINTEND(readability-convert-member-functions-to-static)
 
 }  // namespace litecore
