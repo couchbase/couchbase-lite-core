@@ -93,7 +93,7 @@ namespace litecore::repl {
             if ( !changes && req->body() != "null"_sl ) {
                 warn("Invalid body of 'changes' message");
                 req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
-            } else if ( (!proposed && _mustBeProposed) || (proposed && _db->usingVersionVectors()) ) {
+            } else if ( !proposed && _mustBeProposed ) {
                 // In conflict-free mode plus rev-trees the protocol requires the pusher send
                 // "proposeChanges" instead. But with version vectors, always use "changes".
                 req->respondWithError({"BLIP"_sl, 409});

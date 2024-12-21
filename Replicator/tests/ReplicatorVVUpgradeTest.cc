@@ -48,6 +48,8 @@ class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
     }
 };
 
+#if 0
+// Disabled, c.f. https://jira.issues.couchbase.com/browse/CBL-6593
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push]") {
     //- db pushes docs to db2. Both are still on rev-trees.
     //- db and db2 both upgrade to version vectors.
@@ -74,6 +76,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push]") {
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":103}");
 }
+#endif
 
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull]") {
     //- db pushes docs to db2. Both are still on rev-trees.

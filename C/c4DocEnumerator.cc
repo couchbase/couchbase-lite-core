@@ -62,8 +62,12 @@ class C4DocEnumerator::Impl
         if ( !this->hasRecord() ) return false;
 
         revid vers(record().version());
-        if ( (_options.flags & kC4IncludeRevHistory) && vers.isVersion() ) _docRevID = vers.asVersionVector().asASCII();
-        else
+        if ( (_options.flags & kC4IncludeRevHistory) && vers.isVersion() ) {
+            if ( _options.flags & kC4RevIDGlobalForm )
+                _docRevID = vers.asVersionVector().asASCII(_collection->dbImpl()->mySourceID());
+            else
+                _docRevID = vers.asVersionVector().asASCII();
+        } else
             _docRevID = vers.expanded();
 
         outInfo->docID      = record().key();

@@ -102,6 +102,7 @@ namespace litecore::repl {
         try {
             _db.useLocked([&](C4Database* db) {
                 Assert(db == _checkpointer->collection()->getDatabase());
+                options.flags |= kC4RevIDGlobalForm;
                 C4DocEnumerator e(_checkpointer->collection(), _maxSequence, options);
                 changes.revs.reserve(limit);
                 while ( e.next() && limit > 0 ) {
@@ -240,7 +241,7 @@ namespace litecore::repl {
                 return false;  // fail the rev: error getting doc
             }
 
-            if ( !C4Document::equalRevIDs(doc->revID(), rev->revID) )
+            if ( !C4Document::equalRevIDs(doc->getSelectedRevIDGlobalForm(), rev->revID) )
                 return false;  // skip rev: there's a newer one already
 
             if ( needRemoteRevID ) {
