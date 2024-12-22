@@ -35,8 +35,8 @@ typedef C4_OPTIONS(uint16_t, C4EnumeratorFlags){
                                don't need to access the revision tree or revision bodies. You
                                can still access all the data of the document, but it will
                                trigger loading the document body from the database. */
-        kC4IncludeRevHistory    = 0x40,  ///< Put entire revision history/version vector in `revID`
-        kC4RevIDGlobalForm      = 0x80};
+        kC4IncludeRevHistory    = 0x40   ///< Put entire revision history/version vector in `revID`
+};
 
 /** Options for enumerating over all documents. */
 typedef struct {

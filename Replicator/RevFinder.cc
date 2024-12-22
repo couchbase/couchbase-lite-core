@@ -95,7 +95,7 @@ namespace litecore::repl {
                 req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
             } else if ( !proposed && _mustBeProposed ) {
                 // In conflict-free mode plus rev-trees the protocol requires the pusher send
-                // "proposeChanges" instead. But with version vectors, always use "changes".
+                // "proposeChanges" instead.
                 req->respondWithError({"BLIP"_sl, 409});
             } else if ( nChanges == 0 ) {
                 // Empty array indicates we've caught up. (This may have been sent no-reply)
