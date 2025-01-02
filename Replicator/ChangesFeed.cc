@@ -240,7 +240,7 @@ namespace litecore::repl {
                 return false;  // fail the rev: error getting doc
             }
 
-            if ( !C4Document::equalRevIDs(doc->revID(), rev->revID) )
+            if ( !C4Document::equalRevIDs(doc->getSelectedRevIDGlobalForm(), _db.convertVersionToAbsolute(rev->revID)) )
                 return false;  // skip rev: there's a newer one already
 
             if ( needRemoteRevID ) {
