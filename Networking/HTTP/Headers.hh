@@ -12,9 +12,9 @@
 
 #pragma once
 #include "fleece/slice.hh"
-#include "Writer.hh"
 #include "fleece/function_ref.hh"
 #include <map>
+#include <vector>
 
 namespace fleece {
     class Dict;
@@ -30,42 +30,52 @@ namespace litecore::websocket {
         using slice       = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
 
+        /** Creates an empty instance. */
         Headers() = default;
 
-        /** Reconstitute from Fleece data. */
-        explicit Headers(const alloc_slice& encoded);
-
-        explicit Headers(slice encoded) : Headers(alloc_slice(encoded)) {}
-
+        /** Instantiate from a Fleece Dict whose keys are header names and values are either
+            strings or arrays of strings. */
         explicit Headers(fleece::Dict);
 
-        Headers(const Headers&);
-        Headers(Headers&&) noexcept;
-        Headers& operator=(const Headers&);
+        /** Reconstitute from an encoded Fleece Dict. */
+        explicit Headers(const alloc_slice& encoded);
 
+        /** Reconstitute from an encoded Fleece Dict. */
+        explicit Headers(slice encoded) : Headers(alloc_slice(encoded)) {}
+
+        Headers(const Headers&)                = default;
+        Headers& operator=(const Headers&)     = default;
+        Headers(Headers&&) noexcept            = default;
+        Headers& operator=(Headers&&) noexcept = default;
+
+        /** Removes all headers. */
         void clear();
 
+        /** True if there are no headers. */
         [[nodiscard]] bool empty() const { return _map.empty(); }
-
-        /** Keep a reference to this alloc_slice; any keys/values that are added that point
-            within the backing store won't cause any allocation. */
-        void setBackingStore(alloc_slice);
 
         /** Adds a header. If a header with that name already exists, it adds a second. */
         void add(slice name, slice value);
 
+        /** Sets the value of a header. If headers with that name exist, they're replaced. */
+        void set(slice name, slice value);
+
         /** Returns the value of a header with that name.*/
         [[nodiscard]] slice get(slice name) const;
 
+        /** Returns a header parsed as an integer. If missing, returns `defaultValue` */
         [[nodiscard]] int64_t getInt(slice name, int64_t defaultValue = 0) const;
 
-        /** Returns the value of a header with that name.*/
-        slice operator[](slice name) const { return get(name); }
+        /** Returns the value of a header with that name. */
+        [[nodiscard]] slice operator[](slice name) const { return get(name); }
 
-        /** Calls the function once for each header, in ASCII order.*/
+        /** Returns all header values with the given name, separated by commas. */
+        [[nodiscard]] std::string getAll(slice name) const;
+
+        /** Calls the function once for each header/value pair, in ASCII order.*/
         void forEach(fleece::function_ref<void(slice, slice)> callback) const;
 
-        /** Calls the function once for each value with the given name.*/
+        /** Calls the function once for each header with the given name.*/
         void forEach(slice name, fleece::function_ref<void(slice)> callback) const;
 
         /** Encodes the headers as a Fleece dictionary. Each key is a header name, and its
@@ -78,12 +88,11 @@ namespace litecore::websocket {
 
         class HeaderCmp {
           public:
-            bool operator()(fleece::slice a, fleece::slice b) const noexcept { return a.caseEquivalentCompare(b) < 0; }
+            bool operator()(slice a, slice b) const noexcept { return a.caseEquivalentCompare(b) < 0; }
         };
 
         std::multimap<slice, slice, HeaderCmp> _map;
-        alloc_slice                            _backingStore;
-        fleece::Writer                         _writer;
+        std::vector<alloc_slice>               _backingStore;  // Owns the data that _map points to
     };
 
 

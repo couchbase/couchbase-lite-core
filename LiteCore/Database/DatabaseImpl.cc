@@ -311,7 +311,7 @@ namespace litecore {
         // Split path into a separate variable to workaround GCC 8 constructor resolution issue
         auto path  = alloc_slice(filePath().subdirectoryNamed(dirname));
         auto flags = _config.flags;
-        if ( force ) { flags |= kC4DB_Create; }
+        if ( !(_config.flags & kC4DB_ReadOnly) || force ) { flags |= kC4DB_Create; }
 
         return make_unique<C4BlobStore>(path, flags, encryptionKey);
     }

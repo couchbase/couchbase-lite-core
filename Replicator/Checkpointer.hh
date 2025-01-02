@@ -45,7 +45,7 @@ namespace litecore::repl {
               Replicator, Pusher and Puller. */
     class Checkpointer {
       public:
-        Checkpointer(const Options* NONNULL, fleece::slice remoteURL, C4Collection*);
+        Checkpointer(const Options* NONNULL, fleece::slice remoteURL, C4CollectionSpec const&);
 
         ~Checkpointer();
 
@@ -161,7 +161,7 @@ namespace litecore::repl {
                                        alloc_slice& newRevID);
 
         /// The collection used internally during the operation of Replicator.
-        C4Collection* collection() const { return _collection; }
+        C4CollectionSpec collectionSpec() const { return _collectionSpec; }
 
       private:
         void               checkpointIsInvalid();
@@ -172,11 +172,12 @@ namespace litecore::repl {
         void               saveSoon();
 
         CollectionIndex collectionIndex() const {
-            return fleece::narrow_cast<CollectionIndex>(_options->collectionSpecToIndex().at(_collection->getSpec()));
+            return fleece::narrow_cast<CollectionIndex>(_options->collectionSpecToIndex().at(_collectionSpec));
         }
 
         Logging*                        _logger{};
         RetainedConst<Options>          _options;
+        C4CollectionSpec                _collectionSpec;
         alloc_slice const               _remoteURL;
         std::unordered_set<std::string> _docIDs;
 
@@ -196,7 +197,6 @@ namespace litecore::repl {
         std::unique_ptr<actor::Timer> _timer;
         SaveCallback                  _saveCallback;
         duration                      _saveTime{};
-        C4Collection* const           _collection;
     };
 
 }  // namespace litecore::repl
