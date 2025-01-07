@@ -606,20 +606,6 @@ namespace litecore::repl {
                                    "Incompatible replication protocol "
                                    "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
-
-        const auto& compats = repl::kCompatProtocols;
-
-        string       acceptedProtocol;
-        stringstream s(headers["Sec-WebSocket-Protocol"].asString());
-        string       protocol;
-        while ( getline(s, protocol, ',') ) {
-            auto i = std::find(compats.begin(), compats.end(), protocol);
-            if ( i != compats.end() ) {
-                acceptedProtocol = protocol;
-                break;
-            }
-        }
-
         if ( _delegate ) _delegate->replicatorGotHTTPResponse(this, status, headers);
         if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
             _correlationID = x_corr;
