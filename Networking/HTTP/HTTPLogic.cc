@@ -224,7 +224,11 @@ namespace litecore::net {
         while ( true ) {
             slice line = responseData.readToDelimiter("\r\n"_sl);
             if ( !line ) return false;
-            if ( line.size == 0 ) break;  // empty line
+            if ( line.size == 0 ) break;  // empty line denotes end; exit
+            for (uint8_t byte : line) {
+                if ((byte < ' ' && byte != '\t') || byte == 0x7F) // no control characters
+                    return false;
+            }
             const uint8_t* colon = line.findByte(':');
             if ( !colon ) return false;
             slice name(line.buf, colon);

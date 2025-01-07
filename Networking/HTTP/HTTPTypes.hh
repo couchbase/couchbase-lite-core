@@ -51,6 +51,7 @@ namespace litecore::net {
         Conflict            = 409,
         Gone                = 410,
         PreconditionFailed  = 412,
+        UnsupportedMediaType= 415,
         UnprocessableEntity = 422,
         Locked              = 423,
 
