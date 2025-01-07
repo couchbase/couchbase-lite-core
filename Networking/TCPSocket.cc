@@ -387,7 +387,7 @@ namespace litecore::net {
             slice_istream reader(line);
             chunkLength = (size_t)reader.readHex();
             if ( !reader.eof() ) {
-                setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
+                setError(WebSocketDomain, 400, "Invalid chunked response data");
                 return nullslice;
             }
 
@@ -399,7 +399,7 @@ namespace litecore::net {
             char crlf[2];
             if ( readExactly(crlf, 2) < 2 ) return nullslice;
             if ( crlf[0] != '\r' || crlf[1] != '\n' ) {
-                setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
+                setError(WebSocketDomain, 400, "Invalid chunked response data");
                 return nullslice;
             }
         } while ( chunkLength > 0 );
@@ -422,7 +422,7 @@ namespace litecore::net {
                 //TODO: There may be more response headers after the chunks
             } else {
                 body.reset();
-                setError(NetworkDomain, kNetErrUnknown, "Unsupported HTTP Transfer-Encoding");
+                setError(WebSocketDomain, 501, "Unsupported HTTP Transfer-Encoding");
                 // Other transfer encodings are "gzip", "deflate"
             }
 
@@ -432,12 +432,12 @@ namespace litecore::net {
                 body = readToEOF();
             } else {
                 body.reset();
-                setError(WebSocketDomain, kCodeProtocolError, "Unsupported 'Connection' response header");
+                setError(WebSocketDomain, 501, "Unsupported 'Connection' response header");
             }
 
         } else {
             body.reset();
-            setError(WebSocketDomain, kCodeProtocolError,
+            setError(WebSocketDomain, 400,
                      "Response has neither 'Content-Length', 'Transfer-Encoding' nor 'Connection: close'");
         }
 
