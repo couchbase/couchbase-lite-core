@@ -446,6 +446,10 @@ namespace litecore {
                     {
                         if ( i >= _query->_1stCustomResultColumn ) {
                             slice        fleeceData{col.getBlob(), (size_t)col.getBytes()};
+                            if (fleeceData == nullslice) {
+                                enc.writeNull();
+                                return false;
+                            }
                             Scope        fleeceScope(fleeceData, _sk);
                             const Value* value = Value::fromTrustedData(fleeceData);
                             if ( !value )
@@ -456,7 +460,12 @@ namespace litecore {
                         }
                             // else fall through:
                         case SQLITE_TEXT:
-                            enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
+                            slice fleeceData{col.getText(), (size_t)col.getBytes()};
+                            if (fleeceData == nullslice) {
+                                enc.writeNull();
+                                return false;
+                            }
+                            enc.writeString(fleeceData);
                             break;
                     }
             }
