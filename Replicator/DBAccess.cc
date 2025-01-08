@@ -39,8 +39,21 @@ namespace litecore::repl {
                             tuning::kInsertionDelay)
         , _timer([this] { markRevsSyncedNow(); })
         , _usingVersionVectors((pool->getConfiguration().flags & kC4DB_VersionVectors) != 0) {
+        // There are a couple of read-only operations on a C4Database that may require write access
+        // the first time. Take care of those now so a read-only instance doesn't trigger them and
+        // cause a write-access exception:
         BorrowedDatabase bdb = _pool->borrowWriteable();
+
+        // KeyStores' sequence indexes are created lazily. Force them to be created now:
+        bdb->forEachScope([&](slice scope) {
+            bdb->forEachCollection(scope, [&](C4CollectionSpec const& spec) {
+                (void)bdb->getCollection(spec)->getDocumentBySequence(9999999_seq);
+            });
+        });
+
+        // The SourceID may need to be generated and stored into the db:
         if ( _usingVersionVectors ) _mySourceID = string(bdb->getSourceID());
+
         // The BlobStore is thread-safe, so it can be used later without needing to borrow a db.
         _blobStore = &bdb->getBlobStore();
     }
