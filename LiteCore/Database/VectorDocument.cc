@@ -40,16 +40,7 @@ namespace litecore {
             _initialize();
         }
 
-        VectorDocument(const VectorDocument& other) : C4Document(other), _doc(other._doc), _remoteID(other._remoteID) {
-            // C.f. VectorRecord::readRecordExtra()
-            // _revision is in general read from extraDoc in other._doc. However, for the default
-            // RemoteID, namely, RemoteID(1), it can be filled by the current revision if flag kSync
-            // is set, and the flag is cleared after _revisions is filled. We make it up here.
-            if ( !_doc.remoteRevision(RemoteID(1)) && !(_doc.flags() & DocumentFlags::kSynced) ) {
-                if ( optional<Revision> optRev = other._doc.remoteRevision(RemoteID(1)); optRev )
-                    _doc.setRemoteRevision(RemoteID(1), optRev);
-            }
-        }
+        VectorDocument(const VectorDocument& other) : C4Document(other), _doc(other._doc), _remoteID(other._remoteID) {}
 
         Retained<C4Document> copy() const override { return new VectorDocument(*this); }
 

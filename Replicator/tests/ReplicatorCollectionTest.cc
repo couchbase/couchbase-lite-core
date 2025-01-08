@@ -1079,7 +1079,6 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Remote RevID Continuous Push",
 
     std::future<void> future;
     _callbackWhenIdle = [this, roses, &future]() {
-        _callbackWhenIdle        = nullptr;
         c4::ref<C4Document> doc1 = c4coll_getDoc(roses, slice("doc1"), true, kDocGetAll, ERROR_INFO());
         TransactionHelper   t(db);
         c4::ref<C4Document> doc = c4doc_update(doc1, json2fleece("{'ok':'no way!'}"), 0, nullptr);
@@ -1087,6 +1086,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Remote RevID Continuous Push",
             sleepFor(1s);
             stopWhenIdle();
         });
+        _callbackWhenIdle       = nullptr;
     };
 
     _expectedDocumentCount = 2;
