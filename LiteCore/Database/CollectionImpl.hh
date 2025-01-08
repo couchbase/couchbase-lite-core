@@ -89,6 +89,7 @@ namespace litecore {
         uint64_t getDocumentCount() const override { return keyStore().recordCount(); }
 
         C4SequenceNumber getLastSequence() const override { return keyStore().lastSequence(); }
+
         uint64_t getPurgeCount() const override { return keyStore().purgeCount(); }
 
         DatabaseImpl* dbImpl() { return asInternal(getDatabase()); }
