@@ -96,7 +96,7 @@ namespace litecore {
 
     bool Revision::hasVersionVector() const { return revID.isVersion(); }
 
-    VectorRecord::VectorRecord(KeyStore& store, const Record& rec, bool wasSynced)
+    VectorRecord::VectorRecord(KeyStore& store, const Record& rec)
         : _store(store)
         , _docID(rec.key())
         , _sequence(rec.sequence())
@@ -104,7 +104,6 @@ namespace litecore {
         , _docFlags(rec.flags())
         , _savedRevID(rec.version())
         , _revID(_savedRevID)
-        , _wasSynced(wasSynced)
         , _whichContent(rec.contentLoaded()) {
         _current.revID = revid(_revID);
         _current.flags = _docFlags - (DocumentFlags::kConflicted | DocumentFlags::kSynced);
@@ -122,8 +121,7 @@ namespace litecore {
     VectorRecord::VectorRecord(KeyStore& store, slice docID, ContentOption whichContent)
         : VectorRecord(store, store.get(docID, whichContent)) {}
 
-    VectorRecord::VectorRecord(const VectorRecord& other)
-        : VectorRecord(other._store, other.originalRecord(), other._wasSynced) {}
+    VectorRecord::VectorRecord(const VectorRecord& other) : VectorRecord(other._store, other.originalRecord()) {}
 
     VectorRecord::~VectorRecord() = default;
 
@@ -165,14 +163,9 @@ namespace litecore {
         // The kSynced flag is set when the document's current revision is pushed to remote #1.
         // This is done instead of updating the doc body, for reasons of speed. So when loading
         // the document, detect that flag and belatedly update remote #1's state.
-        // We also need to do the following if _wasSynced is set after kSynced is handled.
-        // kSync and _wasSynced cannot be both set.
-        // Note that kSynced only affects RemoteID(1)
-        if ( (_docFlags & DocumentFlags::kSynced) || _wasSynced ) {
-            Assert(!((_docFlags & DocumentFlags::kSynced) && _wasSynced));
+        if ( _docFlags & DocumentFlags::kSynced ) {
             setRemoteRevision(RemoteID(1), currentRevision());
-            if ( _docFlags & DocumentFlags::kSynced ) { _docFlags -= DocumentFlags::kSynced; }
-            // setRemoteRevision resets _wasSynced. We must set it afterwards.
+            _docFlags -= DocumentFlags::kSynced;
             _wasSynced = true;
             _changed   = false;
         }
@@ -248,7 +241,12 @@ namespace litecore {
         rec.updateSubsequence(_subsequence);
         if ( _sequence > 0_seq ) rec.setExists();
         rec.setVersion(_savedRevID);
-        rec.setFlags(_docFlags);
+        if ( _wasSynced ) {
+            Assert(!(_docFlags & DocumentFlags::kSynced));
+            rec.setFlags(_docFlags | DocumentFlags::kSynced);
+        } else {
+            rec.setFlags(_docFlags);
+        }
         rec.setBody(_bodyDoc.allocedData());
         rec.setExtra(_extraDoc.allocedData());
         rec.setContentLoaded(_whichContent);
@@ -340,8 +338,6 @@ namespace litecore {
         if ( remote == RemoteID::Local ) {
             Assert(optRev);
             return setCurrentRevision(*optRev);
-        } else if ( remote == RemoteID(1) ) {
-            _wasSynced = false;
         }
 
         mustLoadRemotes();
