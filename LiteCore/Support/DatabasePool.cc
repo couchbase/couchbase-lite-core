@@ -12,6 +12,7 @@
 
 #include "DatabasePool.hh"
 #include "DatabaseImpl.hh"  // for asInternal, dataFile
+#include "Delimiter.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "c4Collection.hh"
@@ -175,13 +176,23 @@ namespace litecore {
                     error::_throw(error::NotWriteable, "Database is read-only");
                 }
             }
+            if ( dbp ) cache.borrowers.push_back(std::this_thread::get_id());
             if ( dbp || !or_wait ) return BorrowedDatabase(std::move(dbp), this);
 
             // Nothing available, so wait and retry
             auto timeout = std::chrono::system_clock::now() + kTimeout;
-            if ( _cond.wait_until(lock, timeout) == std::cv_status::timeout )
-                error::_throw(error::Busy, "Timed out waiting on DatabasePool::borrow");
+            if ( _cond.wait_until(lock, timeout) == std::cv_status::timeout ) borrowFailed(cache);
         }
+    }
+
+    __cold void DatabasePool::borrowFailed(Cache& cache) {
+        // Try to identify the source of the deadlock:
+        stringstream out;
+        out << "Thread " << std::this_thread::get_id() << " timed out waiting on DatabasePool::borrow ["
+            << (&cache == &_readWrite ? "writeable" : "read-only") << "]. Borrowers are ";
+        delimiter comma;
+        for ( auto id : cache.borrowers ) out << comma << id;
+        error::_throw(error::Busy, "%s", out.str().c_str());
     }
 
     BorrowedDatabase DatabasePool::borrow() { return borrow(_readOnly, true); }
@@ -205,6 +216,13 @@ namespace litecore {
             closeDB(std::move(db));
             --cache.created;
         }
+
+        // Remove this thread from the list of borrowers:
+        if ( auto i = ranges::find(cache.borrowers, this_thread::get_id()); i != cache.borrowers.end() )
+            cache.borrowers.erase(i);
+        else
+            Warn("DatabasePool::returnDatabase: Calling thread is not the same that borrowed db");
+
         _cond.notify_all();  // wake up waiting `borrow` and `close` calls
     }
 
