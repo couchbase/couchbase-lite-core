@@ -274,6 +274,7 @@ namespace litecore {
         int                          _parentOfLocal{};      // (only used in imported revtree)
         bool                         _changed{false};       // Set to true on explicit change
         bool                         _revIDChanged{false};  // Has setRevID() been called?
+        bool                         _wasSynced{false};     // Set when kSync is cleared.
         ContentOption                _whichContent;         // Which parts of record are available
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)
     };

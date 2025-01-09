@@ -166,7 +166,8 @@ namespace litecore {
         if ( _docFlags & DocumentFlags::kSynced ) {
             setRemoteRevision(RemoteID(1), currentRevision());
             _docFlags -= DocumentFlags::kSynced;
-            _changed = false;
+            _wasSynced = true;
+            _changed   = false;
         }
     }
 
@@ -240,7 +241,12 @@ namespace litecore {
         rec.updateSubsequence(_subsequence);
         if ( _sequence > 0_seq ) rec.setExists();
         rec.setVersion(_savedRevID);
-        rec.setFlags(_docFlags);
+        if ( _wasSynced ) {
+            Assert(!(_docFlags & DocumentFlags::kSynced));
+            rec.setFlags(_docFlags | DocumentFlags::kSynced);
+        } else {
+            rec.setFlags(_docFlags);
+        }
         rec.setBody(_bodyDoc.allocedData());
         rec.setExtra(_extraDoc.allocedData());
         rec.setContentLoaded(_whichContent);
