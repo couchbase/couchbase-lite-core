@@ -18,6 +18,7 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
+#include <thread>
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -151,19 +152,22 @@ namespace litecore {
 
         /** A cache of available db instances, either read-only or read-write. */
         struct Cache {
-            C4DatabaseFlags const                     flags;         // Flags for opening dbs
+            C4DatabaseFlags const                     flags;         /// Flags for opening dbs
             unsigned                                  capacity = 0;  /// Total capacity including borrowed dbs
             unsigned                                  created  = 0;  /// Number of instantiated dbs including borrowed
             std::vector<fleece::Retained<C4Database>> available;     /// Available dbs
+            std::vector<std::thread::id>              borrowers;     /// Threads that are borrowing dbs
 
             unsigned borrowedCount() const { return unsigned(created - available.size()); }
 
             fleece::Retained<C4Database> pop();
         };
 
-        DatabasePool(DatabasePool&&)                           = delete;
-        DatabasePool&                operator=(DatabasePool&&) = delete;
-        BorrowedDatabase             borrow(Cache& cache, bool orWait);
+        DatabasePool(DatabasePool&&)                = delete;
+        DatabasePool&     operator=(DatabasePool&&) = delete;
+        BorrowedDatabase  borrow(Cache& cache, bool orWait);
+        [[noreturn]] void borrowFailed(Cache&);
+
         fleece::Retained<C4Database> newDB(Cache&);
         void                         closeDB(Retained<C4Database>) noexcept;
         void                         returnDatabase(fleece::Retained<C4Database>);
