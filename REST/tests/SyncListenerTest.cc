@@ -16,6 +16,7 @@
 #include "Server.hh"
 #include "NetworkInterfaces.hh"
 #include "c4Replicator.h"
+#include "TCPSocket.hh"
 #include <algorithm>
 
 using namespace litecore::REST;
