@@ -71,11 +71,6 @@ function(setup_litecore_build_linux)
                 ${liteCoreVariant} PRIVATE
                 -DLITECORE_USES_ICU=1
             )
-
-            target_link_libraries(
-                ${liteCoreVariant} PUBLIC
-                icu::icu4c
-           )
        endforeach()
     endif()
 
