@@ -58,6 +58,14 @@ if [ -z "$EDITION" ]; then
     usage
 fi
 
+if [[ "$EDITION" == "enterprise" ]]; then
+    echo "Building enterprise edition (EDITION = enterprise)"
+    build_enterprise="ON"
+else
+    echo "Building community edition (EDITION = $EDITION)"
+    build_enterprise="OFF"
+fi
+
 SHA_VERSION="$7"
 if [ -z "$SHA_VERSION" ]; then
     usage
@@ -92,10 +100,7 @@ if [ ! -f ${NINJA} ]; then
     .tools/cbdep install -d .tools ninja ${NINJA_VER}
 fi
 
-ARCH_VERSION="19"
-if [[ "${ANDROID_ARCH}" == "x86_64" ]] || [[ "${ANDROID_ARCH}" == "arm64-v8a" ]]; then
-    ARCH_VERSION="21"
-fi
+ARCH_VERSION="22"
 
 #create artifacts dir for publishing to latestbuild
 ARTIFACTS_SHA_DIR=${WORKSPACE}/artifacts/couchbase-lite-core/sha/${SHA_VERSION:0:2}/${SHA_VERSION}
@@ -111,7 +116,7 @@ ${CMAKE} \
     -DCMAKE_MAKE_PROGRAM="${NINJA}" \
     -DANDROID_PLATFORM=${ARCH_VERSION} \
     -DANDROID_ABI=${ANDROID_ARCH} \
-    -DEDITION=${EDITION} \
+    -DBUILD_ENTERPRISE=${build_enterprise} \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     ..
@@ -126,7 +131,7 @@ ${CMAKE} \
     -DCMAKE_MAKE_PROGRAM="${NINJA}" \
     -DANDROID_PLATFORM=${ARCH_VERSION} \
     -DANDROID_ABI=${ANDROID_ARCH} \
-    -DEDITION=${EDITION} \
+    -DBUILD_ENTERPRISE=${build_enterprise} \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=Debug \
     ..

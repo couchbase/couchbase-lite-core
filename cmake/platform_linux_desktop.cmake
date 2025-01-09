@@ -100,6 +100,15 @@ function(setup_litecore_build)
            Threads::Threads
         )
     endforeach()
+
+    if(NOT LITECORE_DISABLE_ICU AND NOT LITECORE_DYNAMIC_ICU)
+        foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
+            target_link_libraries(
+                ${liteCoreVariant} PUBLIC
+                icu::icu4c
+            )
+       endforeach()
+    endif()
 endfunction()
 
 function(setup_rest_build)
