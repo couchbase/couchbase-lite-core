@@ -33,19 +33,18 @@ namespace litecore {
         , _dbName(name)
         , _dbConfig(config)
         , _dbDir(_dbConfig.parentDirectory)
-        , _readOnly{.flags = (config.flags | kC4DB_ReadOnly) & ~kC4DB_Create}
-        , _readWrite{.flags = (config.flags & ~kC4DB_ReadOnly) & ~kC4DB_Create} {
+        , _readOnly(config.flags | kC4DB_ReadOnly, kDefaultReadOnlyCapacity)
+        , _readWrite(config.flags & ~kC4DB_ReadOnly, (_dbConfig.flags & kC4DB_ReadOnly) ? 0 : 1) {
         _dbConfig.parentDirectory = _dbDir;
-        _readOnly.capacity        = kDefaultReadOnlyCapacity;
-        _readWrite.capacity       = (_dbConfig.flags & kC4DB_ReadOnly) ? 0 : 1;
     }
 
     DatabasePool::DatabasePool(C4Database* main) : DatabasePool(main->getName(), main->getConfiguration()) {
-        _dbTag       = _c4db_getDatabaseTag(main);
-        Cache& cache = writeable() ? _readWrite : _readOnly;
-        cache.available.emplace_back(main);
-        cache.created++;
         logInfo("initial database is %s", nameOf(main).c_str());
+        _dbTag              = _c4db_getDatabaseTag(main);
+        Cache& cache        = writeable() ? _readWrite : _readOnly;
+        cache.entries[0].db = std::move(main);
+        cache.created++;
+        cache.available++;
     }
 
     DatabasePool::~DatabasePool() { close(); }
@@ -80,14 +79,21 @@ namespace litecore {
     }
 
     void DatabasePool::setCapacity(unsigned newCapacity) {
+        Assert(newCapacity <= kMaxCapacity);
         unique_lock lock(_mutex);
         if ( _closed ) error::_throw(error::NotOpen, "DatabasePool is closed");
         Assert(newCapacity >= 1 + _readWrite.capacity, "capacity too small");
         _readOnly.capacity = newCapacity - _readWrite.capacity;
         Assert(_readOnly.capacity >= 1);
-        // Toss out any excess RO databases:
-        int keep = std::max(0, int(_readOnly.capacity) - int(_readOnly.borrowedCount()));
-        while ( _readOnly.available.size() > keep ) closeDB(_readOnly.pop());
+
+        // Toss out any excess available RO databases:
+        for ( auto& entry : _readOnly.entries ) {
+            if ( _readOnly.created > _readOnly.capacity && entry.db && entry.borrowCount == 0 ) {
+                closeDB(std::move(entry.db));
+                --_readOnly.available;
+                --_readOnly.created;
+            }
+        }
     }
 
     bool DatabasePool::sameAs(C4Database* db) const noexcept {
@@ -98,8 +104,10 @@ namespace litecore {
         unique_lock lock(_mutex);
         _initializer = std::move(init);
         if ( callNow && _initializer ) {
-            for ( auto& db : _readOnly.available ) _initializer(db);
-            for ( auto& db : _readWrite.available ) _initializer(db);
+            for ( auto& entry : _readOnly.entries )
+                if ( entry.db ) _initializer(entry.db);
+            for ( auto& entry : _readWrite.entries )
+                if ( entry.db ) _initializer(entry.db);
         }
     }
 
@@ -120,11 +128,13 @@ namespace litecore {
     }
 
     void DatabasePool::_closeUnused(Cache& cache) {
-        for ( auto& db : cache.available ) {
-            closeDB(std::move(db));
-            --cache.created;
+        for ( auto& entry : cache.entries ) {
+            if ( entry.borrowCount == 0 && entry.db ) {
+                closeDB(std::move(entry.db));
+                --cache.created;
+                --cache.available;
+            }
         }
-        cache.available.clear();
     }
 
     // Allocates and opens a new C4Database instance.
@@ -153,31 +163,60 @@ namespace litecore {
         catchAndWarn();
     }
 
-    Retained<C4Database> DatabasePool::Cache::pop() {
-        Retained<C4Database> db;
-        if ( !available.empty() ) {
-            db = std::move(available.back());
-            available.pop_back();
-        }
-        return db;
-    }
-
     BorrowedDatabase DatabasePool::borrow(Cache& cache, bool or_wait) {
+        auto tid = std::this_thread::get_id();
+
         unique_lock lock(_mutex);
         while ( true ) {
             if ( _closed ) error::_throw(error::NotOpen, "DatabasePool is closed");
-            Retained<C4Database> dbp = cache.pop();
-            if ( !dbp ) {
-                if ( cache.created < cache.capacity ) {
-                    dbp = newDB(cache);
-                    ++cache.created;
-                } else if ( cache.capacity == 0 ) {
-                    Assert(&cache == &_readWrite);
-                    error::_throw(error::NotWriteable, "Database is read-only");
+
+            auto borrow = [&](Cache::Entry& entry) -> BorrowedDatabase {
+                DebugAssert(entry.db);
+                DebugAssert(entry.borrower == tid);
+                ++entry.borrowCount;
+                return BorrowedDatabase(entry.db, this);
+            };
+
+            if ( !cache.writeable() && cache.borrowedCount() > 0 ) {
+                // A thread can borrow the same read-only database multiple times:
+                for ( auto& entry : cache.entries ) {
+                    if ( entry.borrower == tid ) {
+                        DebugAssert(entry.borrowCount > 0);
+                        return borrow(entry);
+                    }
                 }
             }
-            if ( dbp ) cache.borrowers.push_back(std::this_thread::get_id());
-            if ( dbp || !or_wait ) return BorrowedDatabase(std::move(dbp), this);
+            if ( cache.available > 0 ) {
+                // Look for an available database:
+                for ( auto& entry : cache.entries ) {
+                    if ( entry.db && entry.borrowCount == 0 ) {
+                        DebugAssert(entry.borrower == thread::id{});
+                        entry.borrower = tid;
+                        --cache.available;
+                        return borrow(entry);
+                    }
+                }
+            }
+            if ( cache.borrowedCount() < cache.capacity ) {
+                // Open a new C4Database if cache is not yet at capacity:
+                for ( auto& entry : cache.entries ) {
+                    if ( entry.db == nullptr ) {
+                        DebugAssert(entry.borrowCount == 0);
+                        entry.db = newDB(cache);
+                        ++cache.created;
+                        entry.borrower = tid;
+                        return borrow(entry);
+                    }
+                }
+            }
+
+            // Couldn't borrow a database:
+            if ( cache.capacity == 0 ) {
+                Assert(cache.writeable());
+                error::_throw(error::NotWriteable, "Database is read-only");
+            }
+
+            if ( !or_wait ) return BorrowedDatabase(nullptr, this);
 
             // Nothing available, so wait and retry
             auto timeout = std::chrono::system_clock::now() + kTimeout;
@@ -191,7 +230,9 @@ namespace litecore {
         out << "Thread " << std::this_thread::get_id() << " timed out waiting on DatabasePool::borrow ["
             << (&cache == &_readWrite ? "writeable" : "read-only") << "]. Borrowers are ";
         delimiter comma;
-        for ( auto id : cache.borrowers ) out << comma << id;
+        for ( auto& entry : cache.entries ) {
+            if ( entry.borrowCount ) out << comma << entry.borrower;
+        }
         error::_throw(error::Busy, "%s", out.str().c_str());
     }
 
@@ -207,24 +248,51 @@ namespace litecore {
     void DatabasePool::returnDatabase(fleece::Retained<C4Database> db) {
         Assert(db && !db->isInTransaction());
         unique_lock lock(_mutex);
-        Cache&      cache = (db->getConfiguration().flags & kC4DB_ReadOnly) ? _readOnly : _readWrite;
-        Assert(cache.available.size() < cache.created);
-        if ( cache.created <= cache.capacity && !_closed ) {
-            cache.available.emplace_back(std::move(db));
-        } else {
-            // Toss out a DB if capacity was lowered after it was checked out, or I'm closed:
-            closeDB(std::move(db));
-            --cache.created;
+
+        Cache& cache = (db->getConfiguration().flags & kC4DB_ReadOnly) ? _readOnly : _readWrite;
+        Assert(cache.borrowedCount() > 0);
+
+        for ( auto& entry : cache.entries ) {
+            if ( entry.db == db ) {
+                auto tid = this_thread::get_id();
+                if ( entry.borrower != tid )
+                    Warn("DatabasePool::returnDatabase: Calling thread is not the same that borrowed db");
+                Assert(entry.borrowCount > 0);
+                if ( --entry.borrowCount == 0 ) {
+                    entry.borrower = {};
+                    if ( cache.created > cache.capacity || _closed ) {
+                        // Toss out a DB if capacity was lowered after it was checked out, or I'm closed:
+                        closeDB(std::move(db));
+                        entry.db = nullptr;
+                        --cache.created;
+                    } else {
+                        ++cache.available;
+                    }
+                }
+
+                _cond.notify_all();  // wake up waiting `borrow` and `close` calls
+                return;
+            }
         }
-
-        // Remove this thread from the list of borrowers:
-        if ( auto i = ranges::find(cache.borrowers, this_thread::get_id()); i != cache.borrowers.end() )
-            cache.borrowers.erase(i);
-        else
-            Warn("DatabasePool::returnDatabase: Calling thread is not the same that borrowed db");
-
-        _cond.notify_all();  // wake up waiting `borrow` and `close` calls
+        error::_throw(error::AssertionFailed, "DatabasePool::returnDatabase: db does not belong to pool");
     }
+
+#pragma mark - CACHE:
+
+    DatabasePool::Cache::Cache(C4DatabaseFlags flags_, unsigned capacity_)
+        : flags(flags_ & ~kC4DB_Create), capacity(capacity_) {
+        Assert(capacity <= kMaxCapacity);
+    }
+
+    // Retained<C4Database> DatabasePool::Cache::pop() {
+    //     Retained<C4Database> db;
+    //     if ( !available.empty() ) {
+    //         db = std::move(available.back());
+    //         available.pop_back();
+    //     }
+    //     return db;
+    // }
+
 
 #pragma mark - BORROWED DATABASE:
 
