@@ -15,6 +15,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "fleece/RefCounted.hh"
+#include <array>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
