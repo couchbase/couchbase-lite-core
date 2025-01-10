@@ -187,7 +187,6 @@ namespace litecore::repl {
 
         } else {
             // Send an error if we couldn't get the revision:
-            coll = {};  // release db to avoid double-borrow in doneWithRev() call below
             int blipError;
             if ( c4err.domain == WebSocketDomain ) blipError = c4err.code;
             else if ( c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound )

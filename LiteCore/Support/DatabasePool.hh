@@ -150,17 +150,27 @@ namespace litecore {
       private:
         friend class BorrowedDatabase;
 
-        /** A cache of available db instances, either read-only or read-write. */
+        static constexpr size_t kMaxCapacity = 8;
+
+        /** A cache of available db instances with the same access, either read-only or read-write. */
         struct Cache {
-            C4DatabaseFlags const                     flags;         /// Flags for opening dbs
-            unsigned                                  capacity = 0;  /// Total capacity including borrowed dbs
-            unsigned                                  created  = 0;  /// Number of instantiated dbs including borrowed
-            std::vector<fleece::Retained<C4Database>> available;     /// Available dbs
-            std::vector<std::thread::id>              borrowers;     /// Threads that are borrowing dbs
+            Cache(C4DatabaseFlags, unsigned capacity);
 
-            unsigned borrowedCount() const { return unsigned(created - available.size()); }
+            struct Entry {
+                Retained<C4Database> db;               ///< Database (may be nullptr)
+                unsigned             borrowCount = 0;  ///< Number of borrows
+                std::thread::id      borrower;         ///< Thread that borrowed it, if any
+            };
 
-            fleece::Retained<C4Database> pop();
+            C4DatabaseFlags const           flags;          ///< Flags for opening dbs
+            unsigned                        capacity;       ///< Max number of open dbs
+            unsigned                        created   = 0;  ///< Number of open dbs
+            unsigned                        available = 0;  ///< Number of un-borrowed open dbs
+            std::array<Entry, kMaxCapacity> entries;        ///< Tracks each db and its borrowers
+
+            bool writeable() const noexcept { return (flags & kC4DB_ReadOnly) == 0; }
+
+            unsigned borrowedCount() const noexcept { return created - available; }
         };
 
         DatabasePool(DatabasePool&&)                = delete;
