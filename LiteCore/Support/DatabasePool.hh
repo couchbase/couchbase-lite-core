@@ -30,24 +30,26 @@ namespace litecore {
     /** A concurrent pool of C4Database instances on a single file.
         A thread wanting to use the database can temporarily "borrow" an instance, wrapped in a
         `BorrowedDatabase` smart-pointer. The database is returned to the pool when the
-        `BorrwedDatabase` object exits scope.
+        `BorrwedDatabase` object exits scope. There's also a `BorrowedCollection`.
 
         The databases in the pool are opened read-only, except for one writeable instance.
         (Since SQLite allows concurrent readers but only a single writer, this ensures that no two
         borrowed databases will block each other.) Therefore, if there is a possibility you need
         to write to the database, you must call `borrowWriteable` or else you'll get database-
-        locked errors. (The writeable database is _only_ checked out by borrowWriteable, to improve
-        availability.)
+        locked errors.
 
         If you try to borrow but all matching databases are checked out, the method blocks until
         one is returned; but after waiting ten seconds it will throw a `Busy` exception.
         If you don't want to block, call one of the `tryBorrow` methods, which return an empty/null
         `BorrowedDatabase` instead of blocking.
 
-        @warning Watch out for nested borrows! If you borrow a database, then call another function
-        that also borrows from the same pool, you've now borrowed two instances, which is wasteful.
-        If you borrow the _writeable_ database twice, the second/nested call will deadlock until
-        it times out and throws a `Busy` exception. */
+        @warning Watch out for nested writeable borrows! If you borrow a writeable database,
+        then call another function that also borrows a writeable database from the same pool,
+        the second/nested call will deadlock since there's only one writeable database and it's in use.
+        This will time out after ten seconds and throw a `Busy` exception.
+        (This isn't a problem with read-only databases; a nested borrow on the same thread will
+        just return the same instance again. This is safe because both users are on the same thread
+        and there's no mutable state like transactions.) */
 
     class DatabasePool
         : public fleece::RefCounted
