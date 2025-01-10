@@ -17,6 +17,7 @@
 #include "Logging.hh"
 #include "c4Collection.hh"
 #include "c4ExceptionUtils.hh"
+#include <sstream>
 
 namespace litecore {
     using namespace std;
