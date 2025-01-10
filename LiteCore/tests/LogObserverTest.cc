@@ -91,8 +91,11 @@ TEST_CASE_METHOD(LogObserverTest, "LogObserver Logging Objects", "[Log]") {
     obj.doLog("goodbye from log object");
 
     REQUIRE(recorder->entries.size() == 3);
-    CHECK(regex_match(recorder->messages[0], regex(R"(^\{LogObject#\d+\}==> LogObject 0x\w+ @0x\w+$)")));
+    UNSCOPED_INFO(recorder->messages[0]);
+    CHECK(regex_match(recorder->messages[0], regex(R"(^\{LogObject#\d+\}==> (class )?LogObject \w+ @\w+$)")));
+    UNSCOPED_INFO(recorder->messages[1]);
     CHECK(regex_match(recorder->messages[1], regex(R"(^Obj=/LogObject#\d+/ hi from log object$)")));
+    UNSCOPED_INFO(recorder->messages[2]);
     CHECK(regex_match(recorder->messages[2], regex(R"(^Obj=/LogObject#\d+/ goodbye from log object$)")));
 }
 
@@ -108,7 +111,7 @@ TEST_CASE_METHOD(LogObserverTest, "LogObserver KV Logging Objects", "[Log]") {
 
     REQUIRE(recorder->entries.size() == 3);
     UNSCOPED_INFO(recorder->messages[0]);
-    CHECK(regex_match(recorder->messages[0], regex(R"(^\{LogObject#\d+\}==> LogObject 0x\w+ @0x\w+$)")));
+    CHECK(regex_match(recorder->messages[0], regex(R"(^\{LogObject#\d+\}==> (class )?LogObject \w+ @\w+$)")));
     UNSCOPED_INFO(recorder->messages[1]);
     CHECK(regex_match(recorder->messages[1], regex(R"(^Obj=/LogObject#\d+/ energy=low hi from kv object$)")));
     UNSCOPED_INFO(recorder->messages[2]);
