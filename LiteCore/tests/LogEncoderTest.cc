@@ -16,6 +16,7 @@
 #include "LogFiles.hh"
 #include "Logging_Internal.hh"
 #include "LiteCoreTest.hh"
+#include "NumConversion.hh"
 #include "StringUtil.hh"
 #include "ParseDate.hh"
 #include "c4Log.h"
@@ -92,19 +93,16 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     REQUIRE(regex_search(utcTimeTag, m, regex{"[^0-9]*"}));
     string utctime           = m.suffix().str();
     auto   utctimestampInLog = fleece::ParseISO8601Date(slice(utctime));
-    // From milliseconds to seconds
-    utctimestampInLog /= 1000;
 
     string logPath = LogFiles::newLogFilePath("whatever", LogLevel::Info);
     REQUIRE(regex_search(logPath, m, regex{"^whatever.cbl_info_([0-9]*)\\.cbllog$"}));
-    string timestampOnLogFilePath = m[1].str();
-    // chomp it to seconds
-    REQUIRE(timestampOnLogFilePath.length() > 3);
-    timestampOnLogFilePath = timestampOnLogFilePath.substr(0, timestampOnLogFilePath.length() - 3);
+    int64_t timestampOnLogFilePath;
+    REQUIRE(ParseInteger(m[1].str().c_str(), timestampOnLogFilePath));
 
-    stringstream ss;
-    ss << utctimestampInLog;
-    CHECK(ss.str() == timestampOnLogFilePath);
+    // Both timestamps are in ms, but utctimestampInLog is rounded down to the last second
+    // (always ends in 000), so the two might differ by up to 1000 + some small epsilon.
+    INFO("utctimestampInLog=" << utctimestampInLog << ", timestampOnLogFilePath=" << timestampOnLogFilePath);
+    CHECK(abs(utctimestampInLog - timestampOnLogFilePath) <= 1100);
 #endif
 }
 
