@@ -36,7 +36,7 @@ namespace litecore {
 
         /** Reads and parses the body of the record. Useful if doc was read as meta-only.
             Returns false if the record has been updated on disk. */
-        bool read(ContentOption) MUST_USE_RESULT;
+        [[nodiscard]] bool read(ContentOption);
 
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
         [[nodiscard]] bool revsAvailable() const { return _contentLoaded == kEntireBody; }

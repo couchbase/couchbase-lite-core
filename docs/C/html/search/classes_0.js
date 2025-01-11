@@ -30,8 +30,5 @@ var searchData=
   ['c4revision_27',['C4Revision',['../struct_c4_revision.html',1,'']]],
   ['c4socketfactory_28',['C4SocketFactory',['../struct_c4_socket_factory.html',1,'']]],
   ['c4tlsconfig_29',['C4TLSConfig',['../struct_c4_t_l_s_config.html',1,'']]],
-  ['c4uuid_30',['C4UUID',['../struct_c4_u_u_i_d.html',1,'']]],
-  ['c4vectorclustering_31',['C4VectorClustering',['../struct_c4_vector_clustering.html',1,'']]],
-  ['c4vectorencoding_32',['C4VectorEncoding',['../struct_c4_vector_encoding.html',1,'']]],
-  ['c4vectorindexoptions_33',['C4VectorIndexOptions',['../struct_c4_vector_index_options.html',1,'']]]
+  ['c4uuid_30',['C4UUID',['../struct_c4_u_u_i_d.html',1,'']]]
 ];

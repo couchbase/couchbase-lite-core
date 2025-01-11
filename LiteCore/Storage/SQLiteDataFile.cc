@@ -87,8 +87,9 @@ namespace litecore {
     };
 
     // Amount of file to memory-map
+    // https://www.sqlite.org/mmap.html#:~:text=To%20disable%20memory%2Dmapped%20I,any%20content%20beyond%20N%20bytes.
 #if TARGET_OS_OSX || TARGET_OS_SIMULATOR
-    static const int kMMapSize = -1;  // Avoid possible file corruption hazard on macOS
+    static const int kMMapSize = 0;  // Avoid possible file corruption hazard on macOS
 #else
     static const int kMMapSize = 50 * MB;
 #endif
@@ -113,7 +114,7 @@ namespace litecore {
 
     void LogStatement(const SQLite::Statement& st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
 
-    static void sqlite3_log_callback(C4UNUSED void* pArg, int errCode, const char* msg) {
+    static void sqlite3_log_callback(void* /*pArg*/, int errCode, const char* msg) {
         switch ( errCode & 0xFF ) {
             case SQLITE_OK:
             case SQLITE_NOTICE:
@@ -180,8 +181,8 @@ namespace litecore {
 
     bool SQLiteDataFile::Factory::_deleteFile(const FilePath& path, const Options*) {
         LogTo(DBLog, "Deleting database file %s (with -wal and -shm)", path.path().c_str());
-        bool ok = path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
-        // Note the non-short-circuiting 'or'! All 3 paths will be deleted.
+        bool ok = (path.del() + path.appendingToName("-shm").del() + path.appendingToName("-wal").del()) != 0;
+        // Note the use of '+' instead of '||'! All 3 paths will be deleted.
         LogDebug(DBLog, "...finished deleting database file %s (with -wal and -shm)", path.path().c_str());
         return ok;
     }
@@ -280,15 +281,16 @@ namespace litecore {
                 // Configure persistent db settings, and create the schema.
                 // `auto_vacuum` has to be enabled ASAP, before anything's written to the db!
                 // (even setting `auto_vacuum` writes to the db, it turns out! See CBSE-7971.)
-                _exec(format("PRAGMA auto_vacuum=incremental; "
-                             "PRAGMA journal_mode=WAL; "
-                             "BEGIN; "
-                             "CREATE TABLE IF NOT EXISTS "  // Table of metadata about KeyStores
-                             "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) "
-                             "WITHOUT ROWID; "
-                             "PRAGMA user_version=%d; "
-                             "END;",
-                             (int)SchemaVersion::Current));
+                _exec(stringprintf(
+                        "PRAGMA auto_vacuum=incremental; "
+                        "PRAGMA journal_mode=WAL; "
+                        "BEGIN; "
+                        "CREATE TABLE IF NOT EXISTS "  // Table of metadata about KeyStores
+                        "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) "
+                        "WITHOUT ROWID; "
+                        "PRAGMA user_version=%d; "
+                        "END;",
+                        (int)SchemaVersion::Current));
                 Assert(intQuery("PRAGMA auto_vacuum") == 2, "Incremental vacuum was not enabled!");
                 _schemaVersion = SchemaVersion::Current;
                 // Create the default KeyStore's table:
@@ -299,13 +301,17 @@ namespace litecore {
                 error::_throw(error::DatabaseTooNew);
             }
 
-            _exec(format("PRAGMA cache_size=%d; "             // Memory cache
-                         "PRAGMA mmap_size=%d; "              // Memory-mapped reads
-                         "PRAGMA synchronous=normal; "        // Speeds up commits
-                         "PRAGMA journal_size_limit=%lld; "   // Limit WAL disk usage
-                         "PRAGMA case_sensitive_like=true; "  // Case sensitive LIKE, for N1QL compat
-                         "PRAGMA fullfsync=ON",  // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
-                         -(int)kCacheSize / 1024, kMMapSize, (long long)kJournalSize));
+            const Options& options = getOptions();
+
+            _exec(stringprintf(
+                    "PRAGMA cache_size=%d; "             // Memory cache
+                    "PRAGMA mmap_size=%d; "              // Memory-mapped reads
+                    "PRAGMA synchronous=%s; "            // Speeds up commits
+                    "PRAGMA journal_size_limit=%lld; "   // Limit WAL disk usage
+                    "PRAGMA case_sensitive_like=true; "  // Case sensitive LIKE, for N1QL compat
+                    "PRAGMA fullfsync=ON",  // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
+                    -(int)kCacheSize / 1024, options.mmapDisabled ? 0 : kMMapSize,
+                    options.diskSyncFull ? "full" : "normal", (long long)kJournalSize));
 
             (void)upgradeSchema(SchemaVersion::WithPurgeCount, "Adding purgeCnt column", [&] {
                 // Schema upgrade: Add the `purgeCnt` column to the kvmeta table.
@@ -331,6 +337,25 @@ namespace litecore {
                 if ( getSchema("indexes", "table", "indexes", sql) ) {
                     // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
                     if ( sql.find("lastSeq") == string::npos ) { _exec("ALTER TABLE indexes ADD COLUMN lastSeq TEXT"); }
+                }
+            });
+
+            (void)upgradeSchema(SchemaVersion::WithExpirationColumn, "Adding `expiration` column", [&] {
+                // Add the 'expiration' column to every KeyStore:
+                for ( string& name : allKeyStoreNames() ) {
+                    if ( name.find("::") == string::npos ) {
+                        string sql;
+                        // We need to check for existence of the expiration column first.
+                        // Do not add it if it already exists in the table.
+                        if ( getSchema("kv_" + name, "table", "kv_" + name, sql)
+                             && sql.find("expiration") != string::npos )
+                            continue;
+                        // Only update data tables, not FTS index tables
+                        _exec(stringprintf(
+                                "ALTER TABLE \"kv_%s\" ADD COLUMN expiration INTEGER; "
+                                "CREATE INDEX \"kv_%s_expiration\" ON \"kv_%s\" (expiration) WHERE expiration not null",
+                                name.c_str(), name.c_str(), name.c_str()));
+                    }
                 }
             });
         });
@@ -369,11 +394,11 @@ namespace litecore {
                              // Note: As we don't have collection support prior 3.1, this change only affects
                              // the default collection.
                              if ( keyStoreName != kDefaultKeyStoreName ) {
-                                 _exec(format("INSERT INTO \"kv_%s%s\" "
-                                              "SELECT * FROM \"kv_%s\" WHERE (flags&1)!=0; "
-                                              "DELETE FROM \"kv_%s\" WHERE (flags&1)!=0;",
-                                              kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
-                                              keyStoreName.c_str(), keyStoreName.c_str()));
+                                 _exec(stringprintf("INSERT INTO \"kv_%s%s\" "
+                                                    "SELECT * FROM \"kv_%s\" WHERE (flags&1)!=0; "
+                                                    "DELETE FROM \"kv_%s\" WHERE (flags&1)!=0;",
+                                                    kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
+                                                    keyStoreName.c_str(), keyStoreName.c_str()));
                              }
                          }
                      }
@@ -406,7 +431,7 @@ namespace litecore {
                 _exec("BEGIN");
                 inTransaction = true;
                 upgrade();
-                _exec(format("PRAGMA user_version=%d; END", (int)minVersion));
+                _exec(stringprintf("PRAGMA user_version=%d; END", (int)minVersion));
             } catch ( const SQLite::Exception& x ) {
                 // Recover if the db file itself is read-only (but not opened with writeable=false)
                 if ( x.getErrorCode() == SQLITE_READONLY ) {
@@ -468,7 +493,7 @@ namespace litecore {
                 // collected objects owning those enumerators, which won't release them until their
                 // finalizers run. (Couchbase Lite Java has this issue.)
                 // We'll log info about the statements so this situation can be detected from logs.
-                _sqlDb->withOpenStatements([=](const char* sql, bool busy) {
+                _sqlDb->withOpenStatements([this, forDelete](const char* sql, bool busy) {
                     _log((forDelete ? LogLevel::Warning : LogLevel::Info),
                          "SQLite::Database %p close deferred due to %s sqlite_stmt: %s", _sqlDb.get(),
                          (busy ? "busy" : "open"), sql);
@@ -598,9 +623,6 @@ namespace litecore {
             // Wrap the store in a BothKeyStore that manages it and the deleted store:
             auto deletedStore = new SQLiteKeyStore(*this, kDeletedKeyStorePrefix + name, options);
 
-            keyStore->addExpiration();
-            deletedStore->addExpiration();
-
             // Create a SQLite view of a union of both stores, for use in queries:
 #define COLUMNS "key,sequence,flags,version,body,extra,expiration"
             // Invarient: keyStore->tablaName()     == kv_<tableName>
@@ -608,10 +630,10 @@ namespace litecore {
             //            all_<cname>               == all_<tableName>
             string      tableName = keyStore->tableName().substr(3);  // remove prefix "kv_"
             const char* cname     = tableName.c_str();
-            _exec(format("CREATE TEMP VIEW IF NOT EXISTS \"all_%s\" (" COLUMNS ") AS "
-                         "SELECT " COLUMNS " from \"kv_%s\" UNION ALL "
-                         "SELECT " COLUMNS " from \"kv_del_%s\"",
-                         cname, cname, cname));
+            _exec(stringprintf("CREATE TEMP VIEW IF NOT EXISTS \"all_%s\" (" COLUMNS ") AS "
+                               "SELECT " COLUMNS " from \"kv_%s\" UNION ALL "
+                               "SELECT " COLUMNS " from \"kv_del_%s\"",
+                               cname, cname, cname));
 #undef COLUMNS
 
             return new BothKeyStore(keyStore, deletedStore);
@@ -793,25 +815,6 @@ namespace litecore {
         return ksName == kDefaultKeyStoreName || ksName.hasPrefix(KeyStore::kCollectionPrefix);
     }
 
-    namespace {
-        std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath) {
-            auto        dot = DataFile::findCollectionPathSeparator(collectionPath);
-            alloc_slice scope;
-            alloc_slice collection;
-            if ( dot == string::npos ) {
-                collection = DataFile::unescapeCollectionName(collectionPath);
-            } else {
-                scope      = DataFile::unescapeCollectionName(collectionPath.substr(0, dot));
-                collection = DataFile::unescapeCollectionName(collectionPath.substr(dot + 1));
-            }
-            return std::make_pair(scope, collection);
-        }
-
-        inline bool isDefaultCollection(slice id) { return id == KeyStore::kDefaultCollectionName; }
-
-        inline bool isDefaultScope(slice id) { return !id || isDefaultCollection(id); }
-    }  // namespace
-
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
     // (The name might be of the form "scope.collection", which is fine because that's the same
     // encoding as used in table names.)
@@ -825,11 +828,11 @@ namespace litecore {
         DebugAssert(!hasPrefix(collection, "kv_"));
 
         string name;
-        if ( type == QueryParser::kLiveAndDeletedDocs ) {
+        if ( type == QueryTranslator::kLiveAndDeletedDocs ) {
             name = "all_";
         } else {
             name = "kv_";
-            if ( type == QueryParser::kDeletedDocs ) name += kDeletedKeyStorePrefix;
+            if ( type == QueryTranslator::kDeletedDocs ) name += kDeletedKeyStorePrefix;
         }
 
         auto [scope, coll] = splitCollectionPath(collection);
@@ -862,8 +865,7 @@ namespace litecore {
         return name;
     }
 
-    string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator,
-                                              const string& property) const {
+    string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) {
         return onTable + string(typeSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }
 
@@ -872,7 +874,11 @@ namespace litecore {
     }
 
     string SQLiteDataFile::unnestedTableName(const string& onTable, const string& property) const {
-        return auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
+        if ( onTable.find(KeyStore::kUnnestSeparator) == string::npos ) {
+            return auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
+        } else {
+            return auxiliaryTableName(onTable, KeyStore::kUnnestLevelSeparator, property);
+        }
     }
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -1067,5 +1073,34 @@ namespace litecore {
         enc.endArray();
         return enc.finish();
     }
+
+    alloc_slice SQLiteDataFile::rawScalarQuery(const string& query) {
+        SQLite::Statement stmt(*_sqlDb, query);
+        std::stringstream ss;
+
+        if ( !stmt.executeStep() ) return nullslice;
+
+        switch ( SQLite::Column col = stmt.getColumn(0); col.getType() ) {
+            case SQLITE_NULL:
+                return nullslice;
+            case SQLITE_INTEGER:
+                ss << col.getInt64();
+                break;
+            case SQLITE_FLOAT:
+                ss << col.getDouble();
+                break;
+            case SQLITE_TEXT:
+                return alloc_slice(col.getString());
+            case SQLITE_BLOB:
+                return {col.getBlob(), static_cast<size_t>(col.getBytes())};
+            default:
+                break;
+        }
+
+        std::string res = ss.str();
+        return alloc_slice(res);
+    }
+
+    int SQLiteDataFile::defaultMmapSize() { return kMMapSize; }
 
 }  // namespace litecore

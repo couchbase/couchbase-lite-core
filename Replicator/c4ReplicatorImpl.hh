@@ -215,7 +215,8 @@ namespace litecore {
             , _options(new Options(params))
             , _onStatusChanged(params.onStatusChanged)
             , _onDocumentsEnded(params.onDocumentsEnded)
-            , _onBlobProgress(params.onBlobProgress) {
+            , _onBlobProgress(params.onBlobProgress)
+            , _loggingName("C4Repl") {
             _status.flags |= kC4HostReachable;
             _options->verify();
         }
@@ -228,14 +229,7 @@ namespace litecore {
             if ( _replicator ) _replicator->terminate();
         }
 
-        std::string loggingClassName() const override {
-            static std::string logName{};
-            if ( logName.empty() ) {
-                logName = "C4Repl";
-                if ( !_logPrefix.empty() ) { logName = _logPrefix.asString() + "/" + logName; }
-            }
-            return logName;
-        }
+        std::string loggingClassName() const override { return _loggingName; }
 
         bool continuous(unsigned collectionIndex = 0) const noexcept {
             return _options->push(collectionIndex) == kC4Continuous || _options->pull(collectionIndex) == kC4Continuous;
@@ -296,8 +290,8 @@ namespace litecore {
             }
 
             setStatusFlag(kC4Suspended, false);
-            logInfo("Starting Replicator %s with config: {%s}\n", _replicator->loggingName().c_str(),
-                    std::string(*_options).c_str());
+            logInfo("Starting Replicator %s with config: {%s} and endpoint: %.*s", _replicator->loggingName().c_str(),
+                    std::string(*_options).c_str(), SPLAT(_replicator->remoteURL()));
             _selfRetain = this;  // keep myself alive till Replicator stops
             updateStatusFromReplicator(_replicator->status());
             _responseHeaders = nullptr;
@@ -466,8 +460,8 @@ namespace litecore {
                     error::_throw(error::NotOpen, "collection not in the Replicator's config");
                 }
 
-                checkpointer = new Checkpointer{repl->_options, repl->URL(), collection};
-                database     = repl->_database;
+                checkpointer.emplace(repl->_options, repl->URL(), collection);
+                database = repl->_database;
             }
 
             alloc_slice pendingDocumentIDs() {
@@ -497,10 +491,10 @@ namespace litecore {
             }
 
           private:
-            Retained<Replicator> replicator;
-            Checkpointer*        checkpointer{nullptr};  // assigned in the constructor
-            Retained<C4Database> database;
-            C4CollectionSpec     collectionSpec;
+            Retained<Replicator>   replicator;
+            optional<Checkpointer> checkpointer;  // initialized in the constructor
+            Retained<C4Database>   database;
+            C4CollectionSpec       collectionSpec;
         };
 
         mutable std::mutex            _mutex;
@@ -513,9 +507,10 @@ namespace litecore {
         bool                 _cancelStop{false};
 
       protected:
-        alloc_slice _logPrefix;
+        void setLoggingName(const string& loggingName) { _loggingName = loggingName; }
 
       private:
+        std::string _loggingName;
         alloc_slice _responseHeaders;
 #ifdef COUCHBASE_ENTERPRISE
         mutable alloc_slice      _peerTLSCertificateData;

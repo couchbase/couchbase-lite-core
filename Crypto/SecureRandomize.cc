@@ -24,8 +24,8 @@
 
 namespace litecore {
 
-    std::random_device         rd;
-    std::default_random_engine e(rd());
+    static std::random_device         rd;
+    static std::default_random_engine e(rd());
 
     uint32_t RandomNumber() { return e(); }
 

@@ -47,7 +47,7 @@ TEST_CASE("Options password logging redaction") {
     CHECK(str.find(password) == string::npos);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
     // Push a doc:
     createRev(_collDB1, "doc"_sl, kRevID, kEmptyFleeceBody);
     _expectedDocumentCount = 1;
@@ -56,7 +56,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
     C4Error     error;
     alloc_slice path(c4db_getPath(db));
-    string      scratchDBName = format("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
+    string      scratchDBName = stringprintf("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
     REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
 
     // Open the copied db:
@@ -70,7 +70,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     runPushReplication();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
+TEST_CASE("Fire Timer At Same Time", "[Push][Pull]") {
     atomic_int counter(0);
     Timer      t1([&counter] { counter++; });
 
@@ -82,12 +82,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull
     REQUIRE_BEFORE(2s, counter == 2);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty DB", "[Push]") {
+TEST_CASE("Timer autoDelete", "[Push][Pull]") {
+    atomic_int counter(0);
+    auto       t1 = new Timer([&counter] { counter++; });
+    t1->autoDelete();
+    t1->fireAfter(500ms);
+
+    REQUIRE_BEFORE(2s, counter == 1);
+}
+
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty DB", "[Push]") {
     runPushReplication();
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPushReplication();
@@ -95,7 +104,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":100}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
     createRev(_collDB1, "doc"_sl, kRevID, kEmptyFleeceBody);
     _expectedDocumentCount = 1;
 
@@ -104,7 +113,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":1}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large docs", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large docs", "[Push]") {
     importJSONLines(sFixturesDir + "wikipedia_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPushReplication();
@@ -112,7 +121,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large docs", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":100}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push deletion", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push deletion", "[Push]") {
     createRev(_collDB1, "dok"_sl, kRevID, kFleeceBody);
     _expectedDocumentCount = 1;
     runPushReplication();
@@ -125,7 +134,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push deletion", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":2}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPushReplication();
@@ -142,7 +151,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":102}", "2-cc");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push 5000 Changes", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push 5000 Changes", "[Push]") {
     string revID;
     {
         TransactionHelper t(db);
@@ -162,7 +171,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push 5000 Changes", "[Push]") {
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") {
     createRev(_collDB1, "eenie"_sl, kRevID, kFleeceBody);
     createRev(_collDB1, "meenie"_sl, kRevID, kFleeceBody);
     createRev(_collDB1, "miney"_sl, kRevID, kFleeceBody);
@@ -185,7 +194,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
     CHECK(doc != nullptr);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
@@ -204,7 +213,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
     validateCheckpoints(db, db2, R"({"local":102,"remote":100})", "2-cc");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", _collDB1);
     _expectedDocumentCount = 12189;
     runPushReplication();
@@ -212,7 +221,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":12189}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[Push][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[Push][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", _collDB1);
@@ -222,7 +231,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[P
     validateCheckpoints(db, db2, "{\"local\":12189}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull large database no-conflicts", "[Pull][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull large database no-conflicts", "[Pull][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", _collDB1);
@@ -232,12 +241,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull large database no-conflicts", "[P
     validateCheckpoints(db2, db, "{\"remote\":12189}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Empty DB", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Empty DB", "[Pull]") {
     runPullReplication();
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Small Non-Empty DB", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Small Non-Empty DB", "[Pull]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPullReplication();
@@ -245,7 +254,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Small Non-Empty DB", "[Pull]") {
     validateCheckpoints(db2, db, "{\"remote\":100}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     runPullReplication();
@@ -262,7 +271,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     validateCheckpoints(db2, db, "{\"remote\":102}", "2-cc");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     // Add 100 docs, then delete 50 of them:
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     constexpr size_t bufSize = 20;
@@ -305,7 +314,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     CHECK(c4coll_getLastSequence(_collDB2) == (skipDeleted ? 50 : 100));
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     // Add a doc to db2; this adds the keys "name" and "gender" to the SharedKeys:
     {
         TransactionHelper t(db2);
@@ -333,7 +342,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     REQUIRE(gender.asstring() == "female");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
     // Start with "mydoc" in both dbs with the same revs, so it won't be replicated.
     // But each db has one unique document.
     createRev(_collDB1, kDocID, kNonLocalRev1ID, kFleeceBody);
@@ -349,7 +358,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
     SECTION("Push") { runPushReplication(); }
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
     createRev(_collDB1, "obsolete"_sl, kNonLocalRev1ID, kFleeceBody);
     createRev(_collDB1, "fresh"_sl, kNonLocalRev1ID, kFleeceBody);
     createRev(_collDB1, "permanent"_sl, kNonLocalRev1ID, kFleeceBody);
@@ -376,7 +385,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
     CHECK(doc->revID == kNonLocalRev1ID);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
     {
         TransactionHelper t(db);
         // Start with "mydoc" in both dbs with the same revs
@@ -404,7 +413,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
     CHECK(error.code == kC4ErrorNotFound);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]") {
     // Push; erase destination; push again. For #453
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
@@ -419,7 +428,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]")
     validateCheckpoints(db, db2, "{\"local\":100}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     SECTION("Default") {}
@@ -455,7 +464,7 @@ static Replicator::Options pushOptionsWithProperty(const char* property, const v
     return opts;
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
     // Test that replicators with different channel or docIDs options use different checkpoints
     // (#386)
     createFleeceRev(_collDB1, "doc"_sl, kRevID, R"({"agent":7})"_sl);
@@ -480,7 +489,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
     CHECK(chk3 != chk1);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
     // For #436
     if ( !isRevTrees() ) return;
 
@@ -507,7 +516,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":50}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
     // For #436
     if ( !isRevTrees() ) return;
 
@@ -539,7 +548,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
 
 #pragma mark - CONTINUOUS:
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][Continuous]") {
     createRev(_collDB1, "doc1"_sl, kRev1ID, kFleeceBody);
     createRev(_collDB1, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
@@ -549,7 +558,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
     runReplicators(pushOpt, Replicator::Options::passive(_collSpec));
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][Continuous]") {
     createRev(_collDB1, "doc1"_sl, kRev1ID, kFleeceBody);
     createRev(_collDB1, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
@@ -559,20 +568,20 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
     runReplicators(Replicator::Options::passive(_collSpec), pullOpt);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous]") {
     addDocsInParallel(1500ms, 6);
     runPushReplication(kC4Continuous);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push][Continuous]") {
-    _parallelThread.reset(runInParallel([=]() {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push][Continuous]") {
+    _parallelThread.reset(runInParallel([this]() {
         sleepFor(1s);
         {
             TransactionHelper t(db);
             createRev(_collDB1, c4str("docA"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             createRev(_collDB1, c4str("docB"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             bool ok = c4coll_purgeDoc(_collDB1, c4str("docA"), ERROR_INFO());
-            REQUIRE(ok);
+            Require(ok);
         }
         sleepFor(1s);  // give replicator a moment to detect the latest revs
         stopWhenIdle();
@@ -582,7 +591,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push]
     runPushReplication(kC4Continuous);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Empty", "[Push][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Empty", "[Push][Continuous]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
     //    SECTION("Default") {
     //    }
@@ -602,24 +611,24 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Emp
     runReplicators(Replicator::Options::pushing(kC4Continuous, _collSpec), serverOpts);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull][Continuous]") {
     addDocsInParallel(1500ms, 6);
     runPullReplication(kC4Continuous);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push-Pull Starting Empty", "[Push][Pull][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push-Pull Starting Empty", "[Push][Pull][Continuous]") {
     addDocsInParallel(1500ms, 100);
     runPushPullReplication(kC4Continuous);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continuous]") {
     addDocsInParallel(100ms, 5000);
     runPushReplication(kC4Continuous);
 
     CHECK(c4coll_getDocumentCount(_collDB1) == c4coll_getDocumentCount(_collDB2));
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][Continuous]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][Continuous]") {
     alloc_slice docID("dock");
     createRev(_collDB1, docID, kRev1ID, kFleeceBody);
     _expectedDocumentCount = -1;
@@ -631,7 +640,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][C
 
 #pragma mark - ATTACHMENTS:
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
     vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -653,7 +662,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
     CHECK(_blobPullProgressCallbacks == 0);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
     vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -676,7 +685,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
     CHECK(_blobPullProgressCallbacks >= 2);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]") {
     string            att1(100000, '!');
     string            att2(80000, '?');
     string            att3(110000, '/');
@@ -695,7 +704,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
     checkAttachments(db2, blobKeys, attachments);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blob]") {
     static const int kNumDocs = 1000, kNumBlobsPerDoc = 5;
     Log("Creating %d docs, with %d blobs each ...", kNumDocs, kNumBlobsPerDoc);
     {
@@ -724,12 +733,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
 
     compareDatabases();
 
-    validateCheckpoints(db2, db, format("{\"remote\":%d}", kNumDocs).c_str());
+    validateCheckpoints(db2, db, stringprintf("{\"remote\":%d}", kNumDocs).c_str());
     CHECK(_blobPushProgressCallbacks == 0);
     CHECK(_blobPullProgressCallbacks >= kNumDocs * kNumBlobsPerDoc);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blob]") {
     // Test case for issue #354
     alloc_slice       image       = readFile(sFixturesDir + "for#354.jpg");
     vector<string>    attachments = {string((const char*)image.buf, image.size)};
@@ -747,7 +756,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blo
     checkAttachments(db2, blobKeys, attachments);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]") {
     vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -799,7 +808,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]
     }
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]") {
     vector<string>    attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -817,7 +826,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
 
 #pragma mark - FILTERS & VALIDATION:
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][Pull]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
 
     fleece::Encoder enc;
@@ -853,7 +862,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
     CHECK(doc != nullptr);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
     fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey("filter"_sl);
@@ -868,14 +877,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
     runReplicators(opts, Replicator::Options::passive(_collSpec));
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     auto        pullOptions = Replicator::Options::passive(_collSpec);
     atomic<int> validationCount{0};
     pullOptions.collectionOpts[0].callbackContext = &validationCount;
     pullOptions.collectionOpts[0].pullFilter      = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID,
                                                   C4RevisionFlags flags, FLDict body, void* context) -> bool {
-        assert_always(flags == 0);  // can't use CHECK on a bg thread
+        Check(flags == 0);
         ++(*(atomic<int>*)context);
         return (Dict(body)["birthday"].asstring() < "1993");
     };
@@ -892,7 +901,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
 
 #pragma mark - CONFLICTS:
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict]") {
     createFleeceRev(_collDB1, C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
@@ -944,7 +953,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     }
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][Conflict][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][Conflict][NoConflicts]") {
     // In the default no-outgoing-conflicts mode, make sure a local conflict isn't pushed to server:
     auto serverOpts = Replicator::Options::passive(_collSpec);
     createFleeceRev(_collDB1, C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
@@ -969,7 +978,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][Conflict][NoCo
     REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "[Push][Conflict][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "[Push][Conflict][NoConflicts]") {
     // Put server in no-conflicts mode and verify that a conflict can't be pushed to it.
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
     createFleeceRev(_collDB1, C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
@@ -994,7 +1003,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "
     REQUIRE(c4coll_getLastSequence(_collDB2) == 2);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][Conflict][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][Conflict][NoConflicts]") {
     static constexpr slice kTreeRevs[7] = {"", "1-1111", "2-2222", "3-3333", "4-4444", "5-5555", "6-6666"};
     static constexpr slice kVersions[7] = {"", "1@*", "2@*", "1@*", "2@*", "3@*", "4@*"};
     const slice*           kRevIDs      = isRevTrees() ? kTreeRevs : kVersions;
@@ -1041,7 +1050,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pull][Push][Conflict][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently",
+                       "[Pull][Push][Conflict][NoConflicts]") {
     // CBL-726: Push conflict but server rev is just a newer ancestor of the local rev.
     // Local:  1-abcd -- 2-c001d00d -- 3-deadbeef -- 4-baba    (known remote rev: 2)
     // Server: 1-abcd -- 2-c001d00d -- 3-deadbeef
@@ -1075,7 +1085,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push][Conflict][NoConflicts]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push][Conflict][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
 
     createRev(_collDB1, kDocID, kRevID, kFleeceBody);
@@ -1093,7 +1103,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push]
     validateCheckpoints(db, db2, "{\"local\":2}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[Push]") {
     auto serverOpts        = Replicator::Options::passive(_collSpec).setNoIncomingConflicts();
     _ignoreLackOfDocErrors = true;
     _checkDocsFinished     = false;
@@ -1131,7 +1141,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[
     CHECK((doc1InDb2 && (doc1InDb2->flags | kDocDeleted)));
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][Conflict]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][Conflict]") {
     C4Slice docID = C4STR("Khan");
 
     createFleeceRev(_collDB1, docID, kRev1ID, C4STR("{}"));
@@ -1178,7 +1188,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conflict]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conflict]") {
     C4Slice docID = C4STR("Khan");
 
     createFleeceRev(_collDB1, docID, kRev1ID, C4STR("{}"));
@@ -1227,7 +1237,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull][Conflict]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull][Conflict]") {
     if ( !isRevTrees() ) return;  // this does not make sense with version vectors
 
     // For https://github.com/couchbase/sync_gateway/issues/3359
@@ -1318,7 +1328,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     }
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous][Conflict]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous][Conflict]") {
     // temporarily disable it for VV
     if ( !isRevTrees() ) return;
 
@@ -1362,25 +1372,25 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     compareDatabases();
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
-    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(format("%07d", i));
+    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(stringprintf("%07d", i));
     auto opts            = Replicator::Options::pushing(kC4OneShot, _collSpec);
     _clientProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(opts, Replicator::Options::passive(_collSpec));
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
-    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(format("%07d", i));
+    for ( int i = 1; i <= 100; ++i ) _expectedDocsFinished.insert(stringprintf("%07d", i));
     auto opts            = Replicator::Options::pulling(kC4OneShot, _collSpec);
     _serverProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(Replicator::Options::passive(_collSpec), opts);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflict]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflict]") {
     createFleeceRev(_collDB1, C4STR("conflict"), kRev1ID, C4STR("{}"));
     createFleeceRev(_collDB1, C4STR("non-conflict"), kRev1ID_Alt, C4STR("{}"));
     createFleeceRev(_collDB1, C4STR("db-deleted"), kRev1ID, C4STR("{}"));
@@ -1483,7 +1493,7 @@ static void mutationsForDelta(C4Collection* collection) {
     }
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
@@ -1506,7 +1516,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
         collOpts.callbackContext = &validationCount;
         collOpts.pullFilter = [](C4CollectionSpec collectionSpec, FLString docID, FLString revID, C4RevisionFlags flags,
                                  FLDict body, void* context) -> bool {
-            assert_always(flags == 0);  // can't use CHECK on a bg thread
+            Check(flags == 0);
             ++(*(atomic<int>*)context);
             return true;
         };
@@ -1519,7 +1529,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 15);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta]") {
     static constexpr int kNumDocs = 100, kNumProps = 1000;
     auto                 serverOpts = Replicator::Options::passive(_collSpec);
 
@@ -1527,11 +1537,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     {
         TransactionHelper t(db);
         for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
-            string  docID = format("doc-%03d", docNo);
+            string  docID = stringprintf("doc-%03d", docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
-                enc.writeKey(format("field%03d", p));
+                enc.writeKey(stringprintf("field%03d", p));
                 enc.writeInt(RandomNumber());
             }
             enc.endDict();
@@ -1548,7 +1558,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     {
         TransactionHelper t(db);
         for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
-            string docID = format("doc-%03d", docNo);
+            string docID = stringprintf("doc-%03d", docNo);
             mutateDoc(_collDB1, slice(docID), [](Dict doc, Encoder& enc) {
                 enc.beginDict();
                 for ( Dict::iterator i(doc); i; ++i ) {
@@ -1570,7 +1580,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     CHECK(DBAccessTestWrapper::numDeltasApplied() - before == kNumDocs);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]") {
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
     // Push db --> db2:
@@ -1592,7 +1602,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
         CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 15);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][Delta][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][Delta][blob]") {
     // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
@@ -1688,7 +1698,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     CHECK(string(json) == expectedJson);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][Delta][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][Delta][blob]") {
     // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
@@ -1760,7 +1770,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     }
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][Pull][Delta][blob]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][Pull][Delta][blob]") {
     // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive(_collSpec).setProperty("disable_blob_support"_sl, true);
 
@@ -1805,7 +1815,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
              "YBwk=\",\"length\":0}]}");
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch", "[Pull]") {
     // CBSE-7341
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
@@ -1824,7 +1834,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
     runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), serverOpts);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revision", "[Pull][Conflict]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revision", "[Pull][Conflict]") {
     // CBL-1174
     createFleeceRev(_collDB1, C4STR("doc1"), kRev1ID, C4STR("{}"));
     createFleeceRev(_collDB1, C4STR("doc2"), kRev1ID_Alt, C4STR("{}"));
@@ -1898,7 +1908,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
 
 #pragma mark - PROPERTY ENCRYPTION:
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback", "[Push][Sync][Encryption]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback", "[Push][Sync][Encryption]") {
     {
         TransactionHelper t(db);
         createFleeceRev(_collDB1, "seekrit"_sl, kRevID, R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})"_sl);
@@ -1942,7 +1952,7 @@ static C4SliceResult testDecryptor(void* rawCtx, C4CollectionSpec collection, C4
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Push][Pull][Sync][Encryption]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Push][Pull][Sync][Encryption]") {
     const bool TestDecryption = GENERATE(false, true);
     C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
 
@@ -1991,7 +2001,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
 }
 #endif  // COUCHBASE_ENTERPRISE
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "[Push][Pull][Sync]") {
     Options opts       = GENERATE_COPY(Options::pushing(kC4OneShot, _collSpec), Options::pulling(kC4OneShot, _collSpec),
                                        Options::pushpull(kC4OneShot, _collSpec));
     Options serverOpts = Options::passive(_collSpec);
@@ -2018,7 +2028,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replication Collections Must Match", "
     runReplicators(opts, serverOpts);
 }
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]") {
     // The new push property, "conflictIncludesRev", introduced by the resolution of CBL-2637,
     // also fixed the scenrio of CBL-127.
 
@@ -2066,7 +2076,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Includes Rev", "[Push][Sync]"
 }
 
 #ifdef LITECORE_CPPTEST
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revisions", "[Push][Sync]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete revisions", "[Push][Sync]") {
     enum class TestMode {
         ClientPush,
         ClientPull,

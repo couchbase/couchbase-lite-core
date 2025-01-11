@@ -32,8 +32,6 @@ namespace litecore::net {
 
         Address(slice scheme, slice hostname, uint16_t port, slice uri);
 
-        Address& operator=(const Address& addr);
-
         [[nodiscard]] alloc_slice url() const { return _url; }
 
         explicit operator alloc_slice() const { return _url; }

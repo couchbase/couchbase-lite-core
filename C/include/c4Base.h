@@ -58,9 +58,9 @@ static C4INLINE C4Slice c4str(const char* C4NULLABLE str) { return FLStr(str); }
 #define C4STR(STR)   FLSTR(STR)
 #define kC4SliceNull kFLSliceNull
 
-static inline bool c4SliceEqual(C4Slice a, C4Slice b) { return FLSlice_Equal(a, b); }
+inline bool c4SliceEqual(C4Slice a, C4Slice b) { return FLSlice_Equal(a, b); }
 
-static inline void c4slice_free(C4SliceResult s) { FLSliceResult_Release(s); }
+inline void c4slice_free(C4SliceResult s) { FLSliceResult_Release(s); }
 
 #pragma mark - COMMON TYPES:
 
@@ -74,7 +74,7 @@ C4API_END_DECLS  // GCC doesn't like this stuff inside `extern "C" {}`
             Max  = UINT64_MAX
         };
 
-static inline C4SequenceNumber operator"" _seq(unsigned long long n) { return C4SequenceNumber(n); }
+inline C4SequenceNumber operator""_seq(unsigned long long n) { return C4SequenceNumber(n); }
 DEFINE_ENUM_INC_DEC(C4SequenceNumber)
 DEFINE_ENUM_ADD_SUB_INT(C4SequenceNumber)
 
@@ -192,56 +192,61 @@ CBL_CORE_API void* c4base_retain(void* C4NULLABLE obj) C4API;
 CBL_CORE_API void  c4base_release(void* C4NULLABLE obj) C4API;
 
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
-static inline C4Cert* C4NULLABLE c4cert_retain(C4Cert* C4NULLABLE r) C4API { return (C4Cert*)c4base_retain(r); }
+inline C4Cert* C4NULLABLE c4cert_retain(C4Cert* C4NULLABLE r) C4API { return (C4Cert*)c4base_retain(r); }
 
-static inline C4Collection* C4NULLABLE c4coll_retain(C4Collection* C4NULLABLE r) C4API {
+inline C4Collection* C4NULLABLE c4coll_retain(C4Collection* C4NULLABLE r) C4API {
     return (C4Collection*)c4base_retain(r);
 }
 
-static inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API {
-    return (C4Database*)c4base_retain(r);
-}
+inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API { return (C4Database*)c4base_retain(r); }
 
-static inline C4Index* C4NULLABLE c4index_retain(C4Index* C4NULLABLE r) C4API { return (C4Index*)c4base_retain(r); }
+inline C4Index* C4NULLABLE c4index_retain(C4Index* C4NULLABLE r) C4API { return (C4Index*)c4base_retain(r); }
 
-static inline C4IndexUpdater* C4NULLABLE c4indexupdater_retain(C4IndexUpdater* C4NULLABLE r) C4API {
+inline C4IndexUpdater* C4NULLABLE c4indexupdater_retain(C4IndexUpdater* C4NULLABLE r) C4API {
     return (C4IndexUpdater*)c4base_retain(r);
 }
 
-static inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {
-    return (C4KeyPair*)c4base_retain(r);
-}
+inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API { return (C4KeyPair*)c4base_retain(r); }
 
-static inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API { return (C4Query*)c4base_retain(r); }
+inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API { return (C4Query*)c4base_retain(r); }
 
 CBL_CORE_API C4Document* C4NULLABLE        c4doc_retain(C4Document* C4NULLABLE) C4API;
 CBL_CORE_API C4QueryEnumerator* C4NULLABLE c4queryenum_retain(C4QueryEnumerator* C4NULLABLE) C4API;
 CBL_CORE_API C4Socket* C4NULLABLE          c4socket_retain(C4Socket* C4NULLABLE) C4API;
 
-static inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r); }
+inline void c4cert_release(C4Cert* C4NULLABLE r) C4API { c4base_release(r); }
 
-static inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
+/** \note This function is thread-safe. */
+inline void c4coll_release(C4Collection* C4NULLABLE r) C4API { c4base_release(r); }
 
-static inline void c4db_release(C4Database* C4NULLABLE r) C4API { c4base_release(r); }
+/** \note This function is thread-safe. */
+inline void c4db_release(C4Database* C4NULLABLE r) C4API { c4base_release(r); }
 
-static inline void c4index_release(C4Index* C4NULLABLE i) C4API { c4base_release(i); }
+inline void c4index_release(C4Index* C4NULLABLE i) C4API { c4base_release(i); }
 
-static inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { c4base_release(u); }
+inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { c4base_release(u); }
 
-static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
+inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
 
-static inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
+/** \note This function is thread-safe. */
+inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
 
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4doc_release(C4Document* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
 CBL_CORE_API void c4socket_release(C4Socket* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted, but must be freed after use:
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4dbobs_free(C4CollectionObserver* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4docobs_free(C4DocumentObserver* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4enum_free(C4DocEnumerator* C4NULLABLE) C4API;
 /** Closes and disposes a listener. */
 CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE) C4API;
+/** \note This function is thread-safe. */
 CBL_CORE_API void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
 /** Frees the storage occupied by a raw document. */
 CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE) C4API;
@@ -250,11 +255,13 @@ CBL_CORE_API void c4raw_free(C4RawDocument* C4NULLABLE) C4API;
         it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
         \note This function is thread-safe. */
 CBL_CORE_API void c4repl_free(C4Replicator* C4NULLABLE) C4API;
-/** Closes a read-stream. (A NULL parameter is allowed.) */
+/** Closes a read-stream. (A NULL parameter is allowed.) 
+    \note After close, the ReadStream is deleted. */
 CBL_CORE_API void c4stream_close(C4ReadStream* C4NULLABLE) C4API;
 /** Closes a blob write-stream. If c4stream_install was not already called (or was called but
         failed), the temporary file will be deleted without adding the blob to the store.
-        (A NULL parameter is allowed, and is a no-op.) */
+        (A NULL parameter is allowed, and is a no-op.) 
+        \note After close, the WriteStream is deleted. */
 CBL_CORE_API void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
 
 
@@ -305,7 +312,8 @@ CBL_CORE_API C4Timestamp c4_now(void) C4API;
 
 /** Wiring call for platforms without discoverable temporary directories.  Simply sets the SQLite
     temp directory so that it can write its temporary files without error.  Several platforms need
-    to do this, but not all need to use this API.  
+    to do this, but not all need to use this API.
+    \note This function is not thread-safe. 
     @param path The path to a writable directory for temporary files for SQLite
     @param err  If an error happens (e.g. it is an error to call this function twice), this parameter
                 records it.

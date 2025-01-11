@@ -50,13 +50,13 @@ std::string sliceToHex(fleece::pure_slice);
 std::string sliceToHexDump(fleece::pure_slice, size_t width = 16);
 
 // Converts a C4Slice or C4SliceResult to a C++ string.
-static inline std::string toString(fleece::slice s) { return std::string(s); }
+inline std::string toString(fleece::slice s) { return std::string(s); }
 
-static inline std::string toString(FLSlice s) { return std::string(fleece::slice(s)); }
+inline std::string toString(FLSlice s) { return std::string(fleece::slice(s)); }
 
-static inline std::string toString(const FLSliceResult& s) { return {(char*)s.buf, s.size}; }
+inline std::string toString(const FLSliceResult& s) { return {(char*)s.buf, s.size}; }
 
-static inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(s)); }
+inline std::string toString(FLSliceResult&& s) { return std::string(fleece::alloc_slice(std::move(s))); }
 
 // Converts JSON5 to JSON; helps make JSON test input more readable!
 std::string         json5(std::string_view);
@@ -76,9 +76,9 @@ namespace fleece {
     std::ostream& operator<<(std::ostream& o, pure_slice s);
 }
 
-static inline std::ostream& operator<<(std::ostream& o, FLSlice s) { return o << fleece::slice(s); }
+inline std::ostream& operator<<(std::ostream& o, FLSlice s) { return o << fleece::slice(s); }
 
-static inline std::ostream& operator<<(std::ostream& o, FLSliceResult s) { return o << fleece::slice(s); }
+inline std::ostream& operator<<(std::ostream& o, FLSliceResult s) { return o << fleece::slice(s); }
 
 // Logging std::set instances to cerr or Catch.
 // This lets you test functions returning sets in CHECK or REQUIRE.
@@ -93,6 +93,38 @@ std::ostream& operator<<(std::ostream& o, const std::set<T>& things) {
     o << "}";
     return o;
 }
+
+#pragma mark - THREAD-SAFE CATCH2 ASSERTIONS:
+
+// `REQUIRE`, `CHECK` and other Catch macros can't be used on background threads because Check is not
+// thread-safe. In multithreaded code, use `Require`, `Check`, `Info` instead.
+// Warning: Don't use regular C `assert`, because if this is an optimized build it'll be ignored.
+
+#define Check(E)                                                                                                       \
+    do {                                                                                                               \
+        if ( OnMainThread() ) CHECK(E);                                                                                \
+        else                                                                                                           \
+            C4Assert(E);                                                                                               \
+    } while ( 0 )
+#define Require(E)                                                                                                     \
+    do {                                                                                                               \
+        if ( OnMainThread() ) REQUIRE(E);                                                                              \
+        else                                                                                                           \
+            C4Assert(E);                                                                                               \
+    } while ( 0 )
+#define Info(E) INFO(E)  //TODO: Not sure how to wrap INFO, with its weird scoping
+
+#define C4Assert(E, ...)                                                                                               \
+    do {                                                                                                               \
+        if ( !(E) ) [[unlikely]]                                                                                       \
+            C4AssertionFailed(__func__, __FILE__, __LINE__, #E, ##__VA_ARGS__);                                        \
+    } while ( 0 )
+
+/// True if running on the main thread.
+[[nodiscard]] bool OnMainThread() noexcept;
+
+[[noreturn]] void C4AssertionFailed(const char* func, const char* file, unsigned line, const char* expr,
+                                    const char* message = nullptr);
 
 #pragma mark - SUPPRESSING EXCEPTION WARNINGS:
 

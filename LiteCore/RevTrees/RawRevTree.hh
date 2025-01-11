@@ -40,7 +40,7 @@ namespace litecore {
         static alloc_slice encodeTree(const std::vector<Rev*>& revs, const RevTree::RemoteRevMap& remoteMap,
                                       const std::vector<const Rev*>& rejectedRevs);
 
-        static inline slice getCurrentRevBody(slice raw_tree) noexcept {
+        static slice getCurrentRevBody(slice raw_tree) noexcept {
             auto rawRev = (const RawRevision*)raw_tree.buf;
             return rawRev->body();
         }

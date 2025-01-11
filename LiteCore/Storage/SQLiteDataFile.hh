@@ -13,7 +13,7 @@
 #pragma once
 
 #include "DataFile.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
 #include <memory>
@@ -36,7 +36,7 @@ namespace litecore {
     /** SQLite implementation of DataFile. */
     class SQLiteDataFile final
         : public DataFile
-        , public QueryParser::Delegate {
+        , public QueryTranslator::Delegate {
       public:
         SQLiteDataFile(const FilePath& path, DataFile::Delegate* delegate, const Options*);
         ~SQLiteDataFile() override;
@@ -72,6 +72,10 @@ namespace litecore {
                                                const std::string& tableName, const std::string& sql) const;
 
         fleece::alloc_slice rawQuery(const std::string& query) override;
+        alloc_slice         rawScalarQuery(const string& query) override;
+
+        /* Internal-only. The default value used for the SQLite PRAGMA config `mmap_size`. */
+        static int defaultMmapSize();
 
         class Factory final : public DataFile::Factory {
           public:
@@ -107,12 +111,12 @@ namespace litecore {
 
         static void enableExtension(const string& name, string path);
 
-        // QueryParser::delegate:
-        bool        tableExists(const std::string& tableName) const override;
-        string      collectionTableName(const string& collection, DeletionStatus) const override;
-        string      auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) const;
-        std::string FTSTableName(const string& collection, const std::string& property) const override;
-        std::string unnestedTableName(const string& collection, const std::string& property) const override;
+        // QueryTranslator::Delegate:
+        bool          tableExists(const std::string& tableName) const override;
+        string        collectionTableName(const string& collection, DeletionStatus) const override;
+        static string auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property);
+        std::string   FTSTableName(const string& collection, const std::string& property) const override;
+        std::string   unnestedTableName(const string& collection, const std::string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
         std::string predictiveTableName(const string& collection, const std::string& property) const override;
         std::string vectorTableName(const string& collection, const std::string& property,
@@ -170,11 +174,12 @@ namespace litecore {
 
             WithNewDocs = 400,  // New document/revision storage (CBL 3.0)
 
-            WithDeletedTable   = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
-            WithIndexesLastSeq = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
-            MaxReadable        = 599,  // Cannot open versions newer than this
+            WithDeletedTable     = 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
+            WithIndexesLastSeq   = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
+            WithExpirationColumn = 502,  // Added 'expiration' column to KeyStore
+            MaxReadable          = 599,  // Cannot open versions newer than this
 
-            Current = WithDeletedTable
+            Current = WithExpirationColumn
         };
 
         void reopenSQLiteHandle();
@@ -190,7 +195,7 @@ namespace litecore {
         void                         registerIndex(const litecore::IndexSpec&, const std::string& keyStoreName,
                                                    const std::string& indexTableName);
         void                         unregisterIndex(slice indexName);
-        void                         garbageCollectIndexTable(const std::string& tableName);
+        void                         garbageCollectIndexTable(const SQLiteIndexSpec&);
         SQLiteIndexSpec              specFromStatement(SQLite::Statement& stmt) const;
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore* store = nullptr) const;
 

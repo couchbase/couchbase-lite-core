@@ -27,7 +27,6 @@ using namespace fleece;
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
     C4String                  doc1 = C4STR("doc1"), doc2 = C4STR("doc2"), doc3 = C4STR("doc3");
-    auto                      toString      = [](C4SliceResult sr) { return std::string(alloc_slice(sr)); };
     static constexpr bool     kNoBodies     = false;
     C4RemoteID                kRemoteID     = 1;
     static constexpr unsigned kMaxAncestors = 4;
@@ -39,7 +38,14 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         C4SliceResult ancestors[1] = {};
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, kMaxAncestors, requireBodies, kRemoteID, &docID, &revID,
                                         ancestors, WITH_ERROR()));
-        return toString(ancestors[0]);
+        return toString(std::move(ancestors[0]));
+    };
+
+    auto freeAncestors = [&] {
+        for ( C4SliceResult& ancestor : ancestors ) {
+            c4slice_free(ancestor);
+            ancestor = {};
+        }
     };
 
     if ( isRevTrees() ) {
@@ -76,6 +82,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
                                         WITH_ERROR()));
         CHECK(toString(ancestors[0]) == R"(1["3-deadbeef"])");
+        freeAncestors();
 
         // Multiple docs:
         C4String docIDs[4] = {doc2, doc1, C4STR("doc4"), doc3};
@@ -86,6 +93,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         CHECK(toString(ancestors[1]) == "8");
         CHECK(!slice(ancestors[2]));
         CHECK(toString(ancestors[3]) == R"(3["1-abcd"])");
+        freeAncestors();
 
     } else {
         // Version-vectors:
@@ -126,6 +134,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
                                         WITH_ERROR()));
         CHECK(toString(ancestors[0]) == R"(1["3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"])");
+        freeAncestors();
 
         // Multiple docs:
         C4String docIDs[4] = {doc2, doc1, C4STR("doc4"), doc3};
@@ -138,6 +147,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         CHECK(toString(ancestors[1]) == "0");
         CHECK(!slice(ancestors[2]));
         CHECK(toString(ancestors[3]) == R"(1["3@CarolCarolCarolCarolCA; 30@BobBobBobBobBobBobBobA"])");
+        freeAncestors();
     }
 }
 

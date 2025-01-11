@@ -60,7 +60,7 @@ namespace litecore {
 
       protected:
         explicit CollationContext(const Collation& collation)
-            : caseSensitive(collation.caseSensitive), canCompareASCII(true) {
+            : canCompareASCII(true), caseSensitive(collation.caseSensitive) {
             //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
         }
     };
@@ -91,7 +91,11 @@ namespace litecore {
     /** Simple comparison of two UTF8- or UTF16-encoded strings. Uses Unicode ordering, but gives
         up and returns kCompareASCIIGaveUp if it finds any non-ASCII characters. */
     template <class CHAR>  // uint8_t or uchar16_t
-    int CompareASCII(int len1, const CHAR* chars1, int len2, const CHAR* chars2, bool caseSensitive);
+    int                 CompareASCII(int len1, const CHAR* chars1, int len2, const CHAR* chars2, bool caseSensitive);
+    extern template int CompareASCII(int len1, const uint8_t* chars1, int len2, const uint8_t* chars2,
+                                     bool caseSensitive);
+    extern template int CompareASCII(int len1, const char16_t* chars1, int len2, const char16_t* chars2,
+                                     bool caseSensitive);
 
     /** The value CompareASCII returns if it finds non-ASCII characters in either string. */
     static constexpr int kCompareASCIIGaveUp = 2;

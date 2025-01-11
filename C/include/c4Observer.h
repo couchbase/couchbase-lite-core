@@ -43,7 +43,7 @@ typedef void (*C4CollectionObserverCallback)(C4CollectionObserver* observer, voi
 
 /** Creates a new collection observer, with a callback that will be invoked after one or more
         documents in the collection have changed.
-        This is exactly like \ref c4dbobs_create, except that it acts on any collection.
+        \note The caller must use a lock for Database when this function is called.
         @param collection  The collection to observe.
         @param callback  The function to call after the collection changes.
         @param context  An arbitrary value that will be passed to the callback.
@@ -62,6 +62,7 @@ NODISCARD CBL_CORE_API C4CollectionObserver* c4dbobs_createOnCollection(C4Collec
         called, but it doesn't have to be; it can be called at any time (subject to thread-safety
         requirements, of course.)
 
+        \note This function is thread-safe.
         \warning After calling this function, you must call \ref c4dbobs_releaseChanges to release
         memory that's being referenced by the `C4CollectionChange`s.
 
@@ -78,6 +79,7 @@ NODISCARD CBL_CORE_API C4CollectionObservation c4dbobs_getChanges(C4CollectionOb
 
 /** Releases the memory used by the `C4CollectionChange` structs (to hold the docID and revID
         strings.) This must be called after \ref c4dbobs_getChanges().
+        \note This function is thread-safe.
         @param changes  The same array of changes that was passed to \ref c4dbobs_getChanges.
         @param numChanges  The number of changes returned by \ref c4dbobs_getChanges, i.e. the number
                             of valid items in `changes`. */
@@ -100,7 +102,7 @@ typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer, C4Colle
 
 /** Creates a new document observer, with a callback that will be invoked when the document
         changes.
-        \note This is exactly like \ref c4docobs_create, except that it works on any collection.
+        \note This function is thread-safe.
         @param collection  The collection containing the document to observe.
         @param docID  The ID of the document to observe.
         @param callback  The function to call after the database changes.
@@ -166,6 +168,7 @@ typedef void (*C4QueryObserverCallback)(C4QueryObserver* observer, C4Query* quer
 
 /** Creates a new query observer, with a callback that will be invoked when the query
         results change, with an enumerator containing the new results.
+        \note This function is thread-safe.
         \note The callback isn't invoked immediately after a change, and won't be invoked after
         every change, to avoid performance problems. Instead, there's a brief delay so multiple
         changes can be coalesced.
@@ -174,11 +177,11 @@ NODISCARD CBL_CORE_API C4QueryObserver* c4queryobs_create(C4Query* query, C4Quer
                                                           void* C4NULLABLE context) C4API;
 
 /** Enables a query observer so its callback can be called, or disables it to stop callbacks.
-
         When a query observer is enabled, its callback will be called with the current results.
         If this is the first observer, the query has to run first (on a background thread) so
         the callback will take a little while; if there are already enabled observers, the
         callback will be pretty much instantaneous.
+        \note This function is thread-safe if called with enabled being false. Otherwise, the caller must use a lock for Database when this function is called.
      */
 CBL_CORE_API void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) C4API;
 
@@ -186,6 +189,7 @@ CBL_CORE_API void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) C4AP
         When the observer is created, the results are initially NULL until the query finishes
         running in the background.
         Once the observer callback is called, the results are available.
+        \note This function is thread-safe.
         \note  You are responsible for releasing the returned reference.
         @param obs  The query observer.
         @param forget  If true, the observer will not hold onto the enumerator, and subsequent calls

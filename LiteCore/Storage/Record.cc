@@ -37,11 +37,11 @@ namespace litecore {
         uint64_t count;
         if ( body().size < sizeof(count) ) return 0;
         memcpy(&count, body().buf, sizeof(count));
-        return endian::dec64(count);
+        return fleece::endian::dec64(count);
     }
 
     void Record::setBodyAsUInt(uint64_t n) noexcept {
-        uint64_t newBody = endian::enc64(n);
+        uint64_t newBody = fleece::endian::enc64(n);
         setBody(slice(&newBody, sizeof(newBody)));
     }
 

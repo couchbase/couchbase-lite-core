@@ -120,7 +120,7 @@ class C4ThreadingTest : public C4Test {
         ((C4ThreadingTest*)context)->observe(observer);
     }
 
-    void observe(C4UNUSED C4DatabaseObserver* observer) {
+    void observe(C4DatabaseObserver*) {
         fprintf(stderr, "!");
         {
             std::lock_guard<std::mutex> lock(_observerMutex);

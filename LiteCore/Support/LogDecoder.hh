@@ -128,15 +128,15 @@ namespace litecore {
         bool               _readMessage;
     };
 
-    static inline bool operator==(const LogDecoder::Timestamp& a, const LogDecoder::Timestamp& b) {
+    inline bool operator==(const LogDecoder::Timestamp& a, const LogDecoder::Timestamp& b) {
         return a.secs == b.secs && a.microsecs == b.microsecs;
     }
 
-    static inline bool operator<(const LogDecoder::Timestamp& a, const LogDecoder::Timestamp& b) {
+    inline bool operator<(const LogDecoder::Timestamp& a, const LogDecoder::Timestamp& b) {
         return a.secs < b.secs || (a.secs == b.secs && a.microsecs < b.microsecs);
     }
 
-    static inline std::ostream& operator<<(std::ostream& out, const LogDecoder::Timestamp& ts) {
+    inline std::ostream& operator<<(std::ostream& out, const LogDecoder::Timestamp& ts) {
         LogDecoder::writeTimestamp(ts, out);
         return out;
     }

@@ -90,8 +90,12 @@ namespace litecore::blip {
                 key = endOfVal + 1;
             }
             if ( body.size > 0 ) {
+#if DEBUG
                 out << "\n\tBODY: ";
                 dumpSlice(out, body);
+#else
+                out << "\n\tBODY: { ... }";
+#endif
             }
             out << " }";
         }
@@ -117,7 +121,7 @@ namespace litecore::blip {
 
     MessageIn::MessageIn(Connection* connection, FrameFlags flags, MessageNo n, MessageProgressCallback onProgress,
                          MessageSize outgoingSize)
-        : Message(flags, n), _connection(connection), _outgoingSize(outgoingSize), _propertiesRemaining(nullptr, 0) {
+        : Message(flags, n), _connection(connection), _propertiesRemaining(nullptr, 0), _outgoingSize(outgoingSize) {
         _onProgress = std::move(onProgress);
     }
 
@@ -241,14 +245,14 @@ namespace litecore::blip {
             MessageType          msgType = isResponse() ? kAckResponseType : kAckRequestType;
             uint8_t              buf[kMaxVarintLen64];
             alloc_slice          payload(buf, PutUVarInt(buf, _rawBytesReceived));
-            Retained<MessageOut> ack =
-                    new MessageOut(_connection, (FrameFlags)(msgType | kUrgent | kNoReply), payload, nullptr, _number);
+            Retained<MessageOut> ack = new MessageOut(
+                    _connection, (FrameFlags)(FrameFlags(msgType) | kUrgent | kNoReply), payload, nullptr, _number);
             _connection->send(ack);
             _unackedBytes = 0;
         }
     }
 
-    void MessageIn::readFrame(Codec& codec, int mode, slice_istream& frame, C4UNUSED bool finalFrame) {
+    void MessageIn::readFrame(Codec& codec, int mode, slice_istream& frame, bool /*finalFrame*/) {
         uint8_t buffer[4096];
         while ( frame.size > 0 ) {
             slice_ostream output(buffer, sizeof(buffer));

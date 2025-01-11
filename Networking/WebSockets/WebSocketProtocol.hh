@@ -68,6 +68,8 @@
 #    include <endian.h>
 #    include <arpa/inet.h>
 #endif
+
+#pragma clang diagnostic ignored "-Wcast-align"
 //COUCHBASE: End of code adapted from Networking.h
 
 //COUCHBASE: Begin of COUCHBASE_forceClose

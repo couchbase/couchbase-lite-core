@@ -14,6 +14,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "Error.hh"
+#include "SmallVector.hh"
 #include <algorithm>
 #include <sstream>
 #include <utility>
@@ -82,12 +83,12 @@ namespace litecore {
         // Placeholder entry (when docID == nullslice):
         CollectionChangeNotifier* const databaseObserver{nullptr};
 
-        Entry(alloc_slice d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags)
+        Entry(alloc_slice d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags_)
             : docID(std::move(d))
-            , revID(std::move(r))
             , sequence(s)
+            , revID(std::move(r))
             , bodySize(bs)
-            , flags(flags)
+            , flags(flags_)
             , idle(false)
             , external(false) {
             DebugAssert(docID != nullslice);
@@ -242,23 +243,24 @@ namespace litecore {
             entry->external          = true;  // it must have come from addExternalTransaction()
         }
 
-        // Notify document notifiers:
-        for ( auto docNotifier : entry->documentObservers ) docNotifier->notify(entry);
+        // Notify document notifiers. Use a copy in case the callbacks mutate the collection:
+        if ( !entry->documentObservers.empty() ) {
+            auto observers = entry->documentObservers;
+            for ( auto docNotifier : observers ) docNotifier->notify(entry);
+        }
 
         if ( listChanged && _numPlaceholders > 0 ) {
-            // Any placeholders right before this change were up to date, should be notified:
-            bool notified = false;
-            auto ph       = next(_changes.rbegin());  // iterating _backwards_, skipping latest
-            while ( ph != _changes.rend() && ph->isPlaceholder() ) {
-                auto nextph = ph;
-                ++nextph;  // precompute next pos, in case 'ph' moves itself during the callback
-                if ( ph->databaseObserver ) {
-                    ph->databaseObserver->notify();
-                    notified = true;
-                }
-                ph = nextph;
+            // Any placeholders right before this change were up to date and should be notified:
+            // Iterate _backwards_, skipping latest. Call observers after iteration in case the callbacks delete
+            // the observers or otherwise mutate _changes.
+            smallVector<CollectionChangeNotifier*, 4> observers;
+            for ( auto ph = next(_changes.rbegin()); ph != _changes.rend() && ph->isPlaceholder(); ++ph ) {
+                if ( ph->databaseObserver ) observers.push_back(ph->databaseObserver);
             }
-            if ( notified ) removeObsoleteEntries();
+            if ( !observers.empty() ) {
+                for ( auto obs : observers ) obs->notify();
+                removeObsoleteEntries();
+            }
         }
     }
 
@@ -387,7 +389,7 @@ namespace litecore {
 
     void SequenceTracker::removeDocChangeNotifier(const_iterator entry, DocChangeNotifier* notifier) {
         auto& observers = entry->documentObservers;
-        auto  i         = find(observers.begin(), observers.end(), notifier);
+        auto  i         = ranges::find(observers, notifier);
         Assert(i != observers.end(), "unknown DocChangeNotifier");
         observers.erase(i);
         --_numDocObservers;
@@ -430,7 +432,7 @@ namespace litecore {
 #pragma mark - DOC CHANGE NOTIFIER:
 
     DocChangeNotifier::DocChangeNotifier(SequenceTracker* t, slice docID, Callback cb)
-        : tracker(t), _docEntry(tracker->addDocChangeNotifier(docID, this)), callback(std::move(cb)) {
+        : tracker(t), callback(std::move(cb)), _docEntry(tracker->addDocChangeNotifier(docID, this)) {
         t->_logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
     }
 

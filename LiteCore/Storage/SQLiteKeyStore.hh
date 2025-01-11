@@ -63,7 +63,7 @@ namespace litecore {
         sequence_t set(const RecordUpdate&, SetOptions, ExclusiveTransaction&) override;
         void       setKV(slice key, slice version, slice value, ExclusiveTransaction&) override;
 
-        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0_seq,
+        bool del(slice key, ExclusiveTransaction&, sequence_t s = {},
                  std::optional<uint64_t> subseq = std::nullopt) override;
 
         bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) override;
@@ -89,9 +89,6 @@ namespace litecore {
         void createSequenceIndex();
         void createConflictsIndex();
         void createBlobsIndex();
-
-        /// Adds the `expiration` column to the table. Called only by SQLiteQuery.
-        void addExpiration() override;
 
         void shareSequencesWith(KeyStore&) override;
 
@@ -129,7 +126,7 @@ namespace litecore {
         void        setLastSequence(sequence_t seq);
         void        incrementPurgeCount();
         void   createTrigger(std::string_view triggerName, std::string_view triggerSuffix, std::string_view operation,
-                             std::string when, std::string_view statements);
+                             std::string when, std::string_view statements, std::string_view parentTable = "");
         bool   createValueIndex(const IndexSpec&);
         bool   createIndex(const IndexSpec&, const std::string& sourceTableName,
                            fleece::impl::ArrayIterator& expressions);
@@ -139,7 +136,9 @@ namespace litecore {
         bool   createVectorIndex(const IndexSpec&);
         string findVectorIndexNameFor(const string& property);
         static std::optional<IndexSpec::VectorOptions> parseVectorSearchTableSQL(string_view sql);
-        std::string                                    createUnnestedTable(const fleece::impl::Value* arrayPath);
+        std::pair<std::string, std::string>            createUnnestedTable(const fleece::impl::Value* arrayPath,
+                                                                           std::string                parentTableName = "",
+                                                                           std::string                hashedParentTableName = "");
 
 #ifdef COUCHBASE_ENTERPRISE
         bool        createPredictiveIndex(const IndexSpec&);
@@ -159,7 +158,6 @@ namespace litecore {
         mutable std::optional<sequence_t> _lastSequence;
         mutable std::atomic<uint64_t>     _purgeCount{0};
         bool                              _hasExpirationColumn{false};
-        bool                              _uncommittedExpirationColumn{false};
         bool                              _uncommitedTable{false};
         SQLiteKeyStore*                   _sequencesOwner{nullptr};
     };

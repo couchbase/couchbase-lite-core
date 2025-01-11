@@ -197,8 +197,7 @@ namespace litecore {
             {fleece::PathSyntaxError, error::LiteCore, error::InvalidQuery}};
 
     __cold static bool mapError(error::Domain& domain, int& code, const std::vector<codeMapping>& table) {
-        const auto row =
-                std::find_if(table.begin(), table.end(), [&code](const codeMapping& cm) { return cm.err == code; });
+        const auto row = ranges::find_if(table, [&code](const codeMapping& cm) { return cm.err == code; });
         if ( row != table.end() ) {
             domain = row->domain;
             code   = row->code;
@@ -222,7 +221,7 @@ namespace litecore {
     }
 
 #ifdef LITECORE_IMPL
-    __cold static const char* litecore_errstr(error::LiteCoreError code) {
+    __cold __no_sanitize("enum") static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
                 // These must match up with the codes in the declaration of LiteCoreError
                 "no error",  // 0
@@ -259,15 +258,14 @@ namespace litecore {
                 "can't apply document delta: base revision body unavailable",
                 "can't apply document delta: format is invalid",
         };
-        static_assert(sizeof(kLiteCoreMessages) / sizeof(kLiteCoreMessages[0]) == error::NumLiteCoreErrorsPlus1,
-                      "Incomplete error message table");
+        static_assert(std::size(kLiteCoreMessages) == error::NumLiteCoreErrorsPlus1, "Incomplete error message table");
         const char* str = nullptr;
-        if ( code < sizeof(kLiteCoreMessages) / sizeof(char*) ) str = kLiteCoreMessages[code];
+        if ( code < std::size(kLiteCoreMessages) ) str = kLiteCoreMessages[code];
         if ( !str ) str = "(unknown LiteCoreError)";
         return str;
     }
 
-    __cold static const char* fleece_errstr(fleece::ErrorCode code) {
+    __cold __no_sanitize("enum") static const char* fleece_errstr(fleece::ErrorCode code) {
         static const char* kFleeceMessages[] = {
                 // These must match up with the codes in the declaration of FLError
                 "no error",  // 0
@@ -288,7 +286,7 @@ namespace litecore {
         return str;
     }
 
-    __cold static const char* network_errstr(int code) {
+    __cold __no_sanitize("enum") static const char* network_errstr(int code) {
         static const char* kNetworkMessages[] = {
                 // These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
                 // The wording is from a client's perspective, i.e. the peer is referred to as "server";
@@ -363,7 +361,7 @@ namespace litecore {
     }
 #endif  // LITECORE_IMPL
 
-    __cold string error::_what(error::Domain domain, int code) noexcept {
+    __cold __no_sanitize("enum") string error::_what(error::Domain domain, int code) noexcept {
 #ifdef LITECORE_IMPL
         switch ( domain ) {
             case LiteCore:
@@ -402,12 +400,11 @@ namespace litecore {
 #endif
     }
 
-    __cold const char* error::nameOfDomain(Domain domain) noexcept {
+    __cold __no_sanitize("enum") const char* error::nameOfDomain(Domain domain) noexcept {
         // Indexed by Domain
         static const char* kDomainNames[] = {"0",      "LiteCore", "POSIX",     "SQLite",
                                              "Fleece", "Network",  "WebSocket", "mbedTLS"};
-        static_assert(sizeof(kDomainNames) / sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
-                      "Incomplete domain name table");
+        static_assert(std::size(kDomainNames) == error::NumDomainsPlus1, "Incomplete domain name table");
 
         if ( domain >= NumDomainsPlus1 ) return "INVALID_DOMAIN";
         return kDomainNames[domain];
@@ -587,7 +584,7 @@ namespace litecore {
     __cold void error::_throw(error::LiteCoreError code, const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        std::string message = vformat(fmt, args);
+        std::string message = vstringprintf(fmt, args);
         va_end(args);
         error{LiteCore, code, message}._throw(1);
     }
@@ -596,7 +593,7 @@ namespace litecore {
         int     code = errno;
         va_list args;
         va_start(args, fmt);
-        std::string message = vformat(fmt, args);
+        std::string message = vstringprintf(fmt, args);
         va_end(args);
         message += ": ";
         message += strerror(code);
@@ -609,7 +606,7 @@ namespace litecore {
         if ( message ) {
             va_list args;
             va_start(args, message);
-            messageStr += vformat(message, args);
+            messageStr += vstringprintf(message, args);
             va_end(args);
         } else {
             messageStr += expr;

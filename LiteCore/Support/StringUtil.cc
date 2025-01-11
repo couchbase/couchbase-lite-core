@@ -50,15 +50,15 @@ namespace litecore {
 #endif  // defined(__ANDROID__) || defined(__GLIBC__)
 
 
-    std::string format(const char* fmt, ...) {
+    std::string stringprintf(const char* fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        std::string result = vformat(fmt, args);
+        std::string result = vstringprintf(fmt, args);
         va_end(args);
         return result;
     }
 
-    std::string vformat(const char* fmt, va_list args) {
+    std::string vstringprintf(const char* fmt, va_list args) {
         char* cstr = nullptr;
         if ( vasprintf(&cstr, fmt, args) < 0 ) throw bad_alloc();
         std::string result(cstr);
@@ -106,12 +106,16 @@ namespace litecore {
             if ( c == oldChar ) c = newChar;
     }
 
-    void replace(std::string& str, string_view oldStr, string_view newStr) {
+    bool replace(std::string& str, string_view oldStr, string_view newStr) {
+        bool replaced = false;
+        ;
         string::size_type pos = 0;
         while ( string::npos != (pos = str.find(oldStr, pos)) ) {
             str.replace(pos, oldStr.size(), newStr);
             pos += newStr.size();
+            replaced = true;
         }
+        return replaced;
     }
 
     bool hasPrefix(string_view str, string_view prefix) noexcept {

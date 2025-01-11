@@ -30,7 +30,7 @@ using namespace litecore;
 
 std::once_flag ReplicatorAPITest::once;
 
-TEST_CASE("URL Parsing", "[C]][Replicator]") {
+TEST_CASE("URL Parsing", "[C][Replicator]") {
     C4Address address;
     C4String  dbName;
 
@@ -130,7 +130,7 @@ TEST_CASE("URL Parsing", "[C]][Replicator]") {
     CHECK(!c4address_fromURL("ws://snej:password@example.com:8080/db"_sl, &address, &dbName));
 }
 
-TEST_CASE("URL Generation", "[C]][Replicator]") {
+TEST_CASE("URL Generation", "[C][Replicator]") {
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl})) == "ws://foo.com:8888/bar"_sl);
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0, "/"_sl})) == "ws://foo.com/"_sl);
 }
@@ -551,6 +551,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         };
     }
 
+    alloc_slice options;
     SECTION("Set Doc IDs") {
         expectedIsPending = false;
         FLEncoder e       = FLEncoder_New();
@@ -561,12 +562,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
         FLEncoder_WriteString(e, FLSTR("0000004"));
         FLEncoder_EndArray(e);
         FLEncoder_EndDict(e);
-        FLSliceResult options                   = FLEncoder_Finish(e, nullptr);
-        params.replCollection.optionsDictFleece = C4Slice(options);
+        options                                 = FLEncoder_Finish(e, nullptr);
+        params.replCollection.optionsDictFleece = options;
         FLEncoder_Free(e);
     }
 
-    _repl = c4repl_newLocal(db, (C4Database*)db2, params, C4STR("Is_Document_Pending"), ERROR_INFO(err));
+    _repl = c4repl_newLocal(db, db2, params, C4STR("Is_Document_Pending"), ERROR_INFO(err));
     REQUIRE(_repl);
 
     bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, kC4DefaultCollectionSpec, ERROR_INFO(err));
@@ -684,6 +685,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs Multiple Collections",
     REQUIRE(encodedDocIDs != nullslice);
     docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
     CHECK(FLArray_Count(docIDs) == 100);
+    c4slice_free(encodedDocIDs);
 }
 #endif
 
@@ -856,6 +858,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     c4repl_stop(_repl);
 
     waitForStatus(kC4Stopped);
+    C4Log("---- The C4Replicator is Stopped ----");
 
     // Because of the above c4socket_retain, the lifetime of c4socket is
     // elongated, overliving the Replicator, Connection, and BLIPIO which serves
@@ -863,6 +866,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][
     // if we don't use WeakHolder.
     c4socket_gotHTTPResponse(c4socket, 0, nullslice);
 
+    C4Log("---- Releasing c4socket ----");
     c4socket_release(c4socket);
 }
 
@@ -923,7 +927,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     REQUIRE(c4coll_getLastSequence(defaultColl) == 100);
     REQUIRE(docIDs.size() == 50);
     for ( unsigned i = 0; i < 50; i++ ) {
-        auto nextID = litecore::format("doc-%03u", i + 51);
+        auto nextID = litecore::stringprintf("doc-%03u", i + 51);
         CHECK(nextID == docIDs[i]);
     }
 }
@@ -975,7 +979,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     REQUIRE(c4coll_getLastSequence(defaultColl) == 50);
     REQUIRE(docIDs.size() == 50);
     for ( unsigned i = 0; i < 50; i++ ) {
-        auto nextID = litecore::format("doc-%03u", i + 1);
+        auto nextID = litecore::stringprintf("doc-%03u", i + 1);
         CHECK(nextID == docIDs[i]);
     }
 }

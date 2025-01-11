@@ -49,16 +49,19 @@ C4API_BEGIN_DECLS
 #define kC4EncryptableValueProperty "value"
 
 
-/** Returns the properties of the selected revision, i.e. the root Fleece Dict. */
+/** Returns the properties of the selected revision, i.e. the root Fleece Dict.
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API FLDict c4doc_getProperties(C4Document* C4NONNULL) C4API;
 
 /** Returns a Fleece document reference created from the selected revision.
-        Caller must release the reference! */
+        Caller must release the reference!
+    \note The caller must use a lock for Database when this function is called. */
 NODISCARD CBL_CORE_API FLDoc c4doc_createFleeceDoc(C4Document*);
 
 /** Resolves a conflict between two leaf revisions.
         Identical to `c4doc_resolveConflict` except that it takes the merged body as a Fleece Dict,
-        instead of pre-encoded Fleece data. */
+        instead of pre-encoded Fleece data.
+        \note The caller must use a lock for Document when this function is called. */
 NODISCARD CBL_CORE_API bool c4doc_resolveConflict2(C4Document* doc, C4String winningRevID, C4String losingRevID,
                                                    FLDict C4NULLABLE mergedProperties, C4RevisionFlags mergedFlags,
                                                    C4Error* C4NULLABLE error) C4API;
@@ -71,27 +74,39 @@ CBL_CORE_API C4Document* c4doc_containingValue(FLValue value);
 CBL_CORE_API bool c4doc_isOldMetaProperty(C4String prop) C4API;
 
 /** Returns true if the document contains 1.x metadata properties at top level.
-        Does NOT return true for "_attachments" because that property isn't obsolete. */
+        Does NOT return true for "_attachments" because that property isn't obsolete.
+        \note The caller must use a lock for Database when this function is called.
+        \note Assume \ref  doc is obtained from the database. */
 CBL_CORE_API bool c4doc_hasOldMetaProperties(FLDict doc) C4API;
 
 /** Re-encodes to Fleece, without any 1.x metadata properties. Old-style attachments that
-        _don't_ refer to blobs will be removed; others are kept. */
+        _don't_ refer to blobs will be removed; others are kept.
+        \note This function is thread-safe. */
 CBL_CORE_API C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FLSharedKeys sk,
                                                                   C4Error* C4NULLABLE outError) C4API;
 
 /** Decodes the dict's "digest" property to a C4BlobKey.
-        Returns false if there is no such property or it's not a valid blob key. */
+        Returns false if there is no such property or it's not a valid blob key.
+        \note The caller must use a lock for Database when this function is called.
+        \note Assume \ref  dict is obtained from the database. */
 NODISCARD CBL_CORE_API bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey* outKey);
 
 /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key.
         (This function cannot recognize child dictionaries of "_attachments", because it's not
-        possible to look at the parent of a Fleece value.) */
+        possible to look at the parent of a Fleece value.) 
+    \note The caller must use a lock for Database when this function is called.
+    \note Assume \ref  dict is obtained from the database. */
 NODISCARD CBL_CORE_API bool c4doc_dictIsBlob(FLDict dict, C4BlobKey* outKey) C4API;
 
+/** Returns true if the given dictionary is a [reference to a] blob;
+    \note The caller must use a lock for Database when this function is called.
+    \note Assume \ref  dict is obtained from the database. */
 CBL_CORE_API bool c4doc_dictContainsBlobs(FLDict dict) C4API;
 
 /** Returns the contents of a blob dictionary, whether they're inline in the "data" property,
         or indirectly referenced via the "digest" property.
+        \note The caller must use a lock for Database when this function is called.
+        @note  Assume \ref  dict is obtained from the database.
         @note  You can omit the C4BlobStore, but if the blob has no inline data the function will
             give up and return a null slice (and clear the error, since this isn't a failure.)
         @param dict  A blob dictionary.
@@ -104,23 +119,30 @@ CBL_CORE_API C4SliceResult c4doc_getBlobData(FLDict dict, C4BlobStore* C4NULLABL
 /** Given a dictionary that's a reference to a blob, determines whether it's worth trying to
         compress the blob's data. This is done by examining the "encoding" and "content_type"
         properties and using heuristics to detect types that are already compressed, like gzip
-        or JPEG. If no warning flags are found it will return true. */
+        or JPEG. If no warning flags are found it will return true. 
+        \note The caller must use a lock for Database when this function is called.
+        \note  Assume \ref  blobDict is obtained from the database. */
 CBL_CORE_API bool c4doc_blobIsCompressible(FLDict blobDict);
 
-/** Translates the body of the selected revision from Fleece to JSON. */
+/** Translates the body of the selected revision from Fleece to JSON.
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4StringResult c4doc_bodyAsJSON(C4Document* doc, bool canonical, C4Error* C4NULLABLE outError) C4API;
 
-/** Creates a Fleece encoder for creating documents for a given database. */
+/** Creates a Fleece encoder for creating documents for a given database.
+    \note The caller must use a lock for Database when this function is called. */
 NODISCARD CBL_CORE_API FLEncoder c4db_createFleeceEncoder(C4Database* db) C4API;
 
 /** Returns a shared Fleece encoder for creating documents for a given database.
-        DO NOT FREE THIS ENCODER. Instead, call FLEncoder_Reset() when finished. */
+        DO NOT FREE THIS ENCODER. Instead, call FLEncoder_Reset() when finished.
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API FLEncoder c4db_getSharedFleeceEncoder(C4Database* db) C4API;
 
-/** Encodes JSON data to Fleece, to store into a document. */
+/** Encodes JSON data to Fleece, to store into a document.
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4SliceResult c4db_encodeJSON(C4Database*, C4String jsonData, C4Error* C4NULLABLE outError) C4API;
 
-/** Returns the FLSharedKeys object used by the given database. */
+/** Returns the FLSharedKeys object used by the given database.
+    \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API FLSharedKeys c4db_getFLSharedKeys(C4Database* db) C4API;
 
 /** @} */

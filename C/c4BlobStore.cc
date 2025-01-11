@@ -19,6 +19,7 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
+#include "SecureDigest.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include <array>

@@ -262,9 +262,13 @@ namespace litecore::REST {
 
         Array                         collections = params["collections"].asArray();
         std::vector<C4CollectionSpec> collSpecs;
-        for ( Array::iterator iter(collections); iter; iter.next() ) {
-            slice collPath = iter.value().asString();
-            collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
+        if ( collections.empty() ) {
+            collSpecs.push_back(kC4DefaultCollectionSpec);
+        } else {
+            for ( Array::iterator iter(collections); iter; iter.next() ) {
+                slice collPath = iter.value().asString();
+                collSpecs.push_back(repl::Options::collectionPathToSpec(collPath));
+            }
         }
 
         slice            localName;

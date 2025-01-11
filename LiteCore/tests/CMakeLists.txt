@@ -55,18 +55,21 @@ add_executable(
     c4DocumentTest_Internal.cc
     DataFileTest.cc
     DocumentKeysTest.cc
-    FTSTest.cc
     LiteCoreTest.cc
     LogEncoderTest.cc
     N1QLParserTest.cc
+    QueryTranslatorTest.cc
+    QueryTest.cc
+    FTSTest.cc
+    ArrayQueryTest.cc
+    VectorQueryTest.cc
     PredictiveQueryTest.cc
     PredictiveVectorQueryTest.cc
-    QueryParserTest.cc
-    QueryTest.cc
     SequenceSetTest.cc
-    SequenceTrackerTest.cc
     SQLiteFunctionsTest.cc
+    SequenceTrackerTest.cc
     UpgraderTest.cc
+    VectorRecordTest.cc
     VectorQueryTest.cc
     LazyVectorQueryTest.cc
     VersionVectorTest.cc
@@ -77,14 +80,12 @@ add_executable(
     ${TOP}vendor/fleece/Tests/DeltaTests.cc
     ${TOP}vendor/fleece/Tests/EncoderTests.cc
     ${TOP}vendor/fleece/Tests/FleeceTests.cc
-    ${TOP}vendor/fleece/Tests/HashTreeTests.cc
     ${TOP}vendor/fleece/Tests/JSON5Tests.cc
     ${TOP}vendor/fleece/Tests/MutableTests.cc
     ${TOP}vendor/fleece/Tests/PerfTests.cc
     ${TOP}vendor/fleece/Tests/SharedKeysTests.cc
     ${TOP}vendor/fleece/Tests/SupportTests.cc
     ${TOP}vendor/fleece/Tests/ValueTests.cc
-    ${TOP}vendor/fleece/Experimental/KeyTree.cc
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
@@ -101,7 +102,9 @@ add_executable(
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
-    main.cpp
+
+    ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
+    ${TOP}vendor/fleece/vendor/catch/CaseListReporter.cc
 )
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
@@ -144,6 +147,7 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
     ${TOP}LiteCore/Query/N1QL_Parser
+    ${TOP}LiteCore/Query/Translator
     ${TOP}LiteCore/tests
     ${TOP}Replicator
     ${TOP}Replicator/tests

@@ -21,7 +21,7 @@ namespace litecore {
 
 
     /** Clears a C4Error back to empty. */
-    static inline void clearError(C4Error* outError) noexcept {
+    inline void clearError(C4Error* outError) noexcept {
         if ( outError ) outError->code = 0;
     }
 

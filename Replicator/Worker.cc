@@ -66,7 +66,7 @@ namespace litecore::repl {
         uint32_t i         = 0;  // Collection index
         for ( auto& c : collectionOpts ) {
             if ( !firstline ) {
-                s << ",\n";
+                s << ", ";
             } else {
                 firstline = false;
             }
@@ -79,7 +79,7 @@ namespace litecore::repl {
             writeRedacted(c.properties, s);
             s << "}";
         }
-        s << "}\n";
+        s << "} ";
 
         s << "Options=";
         writeRedacted(properties, s);
@@ -89,12 +89,12 @@ namespace litecore::repl {
     Worker::Worker(blip::Connection* connection, Worker* parent, const Options* options,
                    std::shared_ptr<DBAccess> dbAccess, const char* namePrefix, CollectionIndex coll)
         : Actor(SyncLog, string(namePrefix) + connection->name(), (parent ? parent->mailboxForChildren() : nullptr))
-        , _connection(connection)
-        , _parent(parent)
         , _options(options)
+        , _parent(parent)
         , _db(std::move(dbAccess))
-        , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
         , _loggingID(parent ? parent->replicator()->loggingName() : connection->name())
+        , _connection(connection)
+        , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
         , _collectionIndex(coll) {
         static std::once_flag f_once;
         std::call_once(f_once, [] {
@@ -115,7 +115,7 @@ namespace litecore::repl {
     void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {
         if ( callback ) {
             increment(_pendingResponseCount);
-            builder.onProgress = asynchronize("sendRequest callback", [=](MessageProgress progress) {
+            builder.onProgress = asynchronize("sendRequest callback", [this, callback](MessageProgress progress) {
                 if ( progress.state >= MessageProgress::kComplete ) decrement(_pendingResponseCount);
                 callback(progress);
             });
@@ -245,9 +245,9 @@ namespace litecore::repl {
 
         if ( reason ) {
             if ( level == kC4Busy ) {
-                if ( eventCount() > 1 ) *reason = format("pendingEvent/%d", eventCount());
+                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%d", eventCount());
                 else
-                    *reason = format("pendingResponse/%d", _pendingResponseCount);
+                    *reason = stringprintf("pendingResponse/%d", _pendingResponseCount);
             } else {
                 *reason = "noPendingEventOrResponse";
             }

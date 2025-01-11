@@ -47,7 +47,12 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
     set(CMAKE_OSX_SYSROOT macosx)
 endif()
-set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
+
+option(LITECORE_MACOS_FAT_DEBUG "Builds all architectures for a debug build (off by default for speed)" OFF)
+
+if (NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR LITECORE_MACOS_FAT_DEBUG)
+    set(CMAKE_OSX_ARCHITECTURES x86_64 arm64)
+endif()
 
 if(DEFINED ENV{VERSION})
     message(VERBOSE "Using VERSION:$ENV{VERSION} from environment variable")
@@ -74,7 +79,7 @@ set(LITECORE_TARGETS "")
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_VISIBILITY_PRESET hidden)
@@ -89,6 +94,9 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
+option(LITECORE_WARNINGS_HARDCORE "Enables tons of warnings and makes them errors (Clang only)" OFF)
+option(LITECORE_SANITIZE "Enables address and undefined-behavior sanitizers (Clang only)" OFF)
+
 set(LITECORE_PREBUILT_LIB "" CACHE STRING "If set, C4Tests will use the prebuilt LiteCore instead of building it from source")
 
 option(LITECORE_MAINTAINER_MODE "Build the library with official options, disable this to reveal additional options" ON)
@@ -118,7 +126,6 @@ add_definitions(
     -DCMAKE                  # Let the source know this is a CMAKE build
     -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
     -D_LIBCPP_REMOVE_TRANSITIVE_INCLUDES # Stop libc++ headers from including extra headers
-
 )
 
 if(BUILD_ENTERPRISE)
@@ -150,6 +157,10 @@ setup_globals()
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LINKER_FLAGS}")
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
+
+if (LITECORE_WARNINGS_HARDCORE)
+    set(FLEECE_WARNINGS_HARDCORE ON CACHE INTERNAL "")
+endif ()
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
@@ -233,6 +244,7 @@ set(
     LiteCore/Database
     LiteCore/Query
     LiteCore/Query/N1QL_Parser
+    LiteCore/Query/Translator
     LiteCore/RevTrees
     LiteCore/Storage
     LiteCore/Support

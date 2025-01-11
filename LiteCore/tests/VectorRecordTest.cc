@@ -55,7 +55,7 @@ using namespace fleece;
 
 static constexpr auto kRemote1 = RemoteID(1), kRemote2 = RemoteID(2);
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRecord][RevIDs]") {
     VectorRecord doc(*store, "Nuu");
     cerr << "Doc is: " << doc << "\n";
 
@@ -63,6 +63,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRec
     CHECK(doc.sequence() == 0_seq);
     CHECK(doc.docID() == "Nuu");
     CHECK(doc.revID() == nullslice);
+    CHECK(doc.lastLegacyRevID() == nullslice);
     CHECK(doc.flags() == DocumentFlags::kNone);
 
     Dict properties = doc.properties();
@@ -81,7 +82,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Untitled VectorRecord", "[VectorRec
     CHECK(mutableProps == properties);
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     {
@@ -104,6 +105,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord]
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
         CHECK(doc.sequence() == 1_seq);
         CHECK(doc.revID().str() == "10000@*");
+        CHECK(doc.lastLegacyRevID() == nullslice);
         CHECK(doc.flags() == DocumentFlags::kHasAttachments);
         CHECK(doc.properties().toJSON(true, true) == "{year:2525}");
         CHECK(!doc.changed());
@@ -124,6 +126,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord]
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
         CHECK(doc.sequence() == 2_seq);
         CHECK(doc.revID().str() == "20000@*");
+        CHECK(doc.lastLegacyRevID() == nullslice);
         CHECK(doc.flags() == DocumentFlags::kNone);
         CHECK(doc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
         CHECK(!doc.changed());
@@ -134,7 +137,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Save VectorRecord", "[VectorRecord]
     }
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Empty Properties", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Empty Properties", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     VectorRecord doc(*store, "Nuu");
@@ -151,7 +154,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Empty Properties", "[V
     CHECK(doc.properties().empty());
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     ExclusiveTransaction t(db);
@@ -189,7 +192,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remotes", "[VectorReco
     cerr << "Storage:\n" << doc.dumpStorage();
 }
 
-N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord][RevIDs]") {
+TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord][RevIDs]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>());
     ExclusiveTransaction t(db);

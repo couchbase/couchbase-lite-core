@@ -151,8 +151,8 @@ namespace litecore {
         LogLevel        levelFromEnvironment() const noexcept;
         static void     _invalidateEffectiveLevels() noexcept;
 
-        void dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix, const char* fmt,
-                   va_list) __printflike(6, 0);
+        static void dylog(LogLevel level, const char* domain, unsigned objRef, const std::string& prefix,
+                          const char* fmt, va_list) __printflike(5, 0);
 
         std::atomic<LogLevel> _effectiveLevel{LogLevel::Uninitialized};
         std::atomic<LogLevel> _level;
@@ -168,58 +168,33 @@ namespace litecore {
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
-    extern LogDomain                  DBLog, QueryLog, SyncLog, &ActorLog;
+    extern LogDomain                  BlobLog, DBLog, QueryLog, SyncLog, &ActorLog;
 
 
-#ifdef _MSC_VER
-#    define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                           \
-        do {                                                                                                           \
-            if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                          \
-                (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                           \
-        } while ( 0 )
+#define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                               \
+    do {                                                                                                               \
+        if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                              \
+            (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);                                               \
+    } while ( 0 )
 
-#    define LogTo(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
-#    define LogVerbose(DOMAIN, FMT, ...) LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
-#    define LogWarn(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Warning, FMT, ##__VA_ARGS__)
-#    define LogError(DOMAIN, FMT, ...)   LogToAt(DOMAIN, Error, FMT, ##__VA_ARGS__)
+#define LogTo(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
+#define LogVerbose(DOMAIN, FMT, ...) LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
+#define LogWarn(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Warning, FMT, ##__VA_ARGS__)
+#define LogError(DOMAIN, FMT, ...)   LogToAt(DOMAIN, Error, FMT, ##__VA_ARGS__)
 
-#    define Log(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Info, FMT, ##__VA_ARGS__)
-#    define Warn(FMT, ...)      LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
-#    define WarnError(FMT, ...) LogToAt(litecore::kC4Cpp_DefaultLog, Error, FMT, ##__VA_ARGS__)
+#define Log(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Info, FMT, ##__VA_ARGS__)
+#define Warn(FMT, ...)      LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
+#define WarnError(FMT, ...) LogToAt(litecore::kC4Cpp_DefaultLog, Error, FMT, ##__VA_ARGS__)
 
-#    ifdef DEBUG
-#        define LogDebug(DOMAIN, FMT, ...) LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
-#        define WriteDebug(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Debug, FMT, ##__VA_ARGS__)
-#    else
-#        define LogDebug(DOMAIN, FMT, ...)
-#        define WriteDebug(FMT, ...)
-#    endif
+#ifdef DEBUG
+#    define LogDebug(DOMAIN, FMT, ...) LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
+#    define WriteDebug(FMT, ...)       LogToAt(litecore::kC4Cpp_DefaultLog, Debug, FMT, ##__VA_ARGS__)
 #else
-#    define LogToAt(DOMAIN, LEVEL, FMT, ARGS...)                                                                       \
-        ({                                                                                                             \
-            if ( _usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL)) )                                          \
-                (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##ARGS);                                                  \
-        })
-
-#    define LogTo(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Info, FMT, ##ARGS)
-#    define LogVerbose(DOMAIN, FMT, ARGS...) LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
-#    define LogWarn(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Warning, FMT, ##ARGS)
-#    define LogError(DOMAIN, FMT, ARGS...)   LogToAt(DOMAIN, Error, FMT, ##ARGS)
-
-#    define Log(FMT, ARGS...)       LogToAt(litecore::kC4Cpp_DefaultLog, Info, FMT, ##ARGS)
-#    define Warn(FMT, ARGS...)      LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
-#    define WarnError(FMT, ARGS...) LogToAt(litecore::kC4Cpp_DefaultLog, Error, FMT, ##ARGS)
-
-#    ifdef DEBUG
-#        define WriteDebug(FMT, ARGS...)       LogToAt(litecore::kC4Cpp_DefaultLog, Debug, FMT, ##ARGS)
-#        define LogDebug(DOMAIN, FMT, ARGS...) LogToAt(DOMAIN, Debug, FMT, ##ARGS)
-#    else
-#        define WriteDebug(FMT...)             ({})
-#        define LogDebug(DOMAIN, FMT, ARGS...) ({})
-#    endif
+#    define LogDebug(DOMAIN, FMT, ...)
+#    define WriteDebug(FMT, ...)
 #endif
 
-    static inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }
+    inline bool WillLog(LogLevel lv) { return kC4Cpp_DefaultLog.willLog(lv); }
 
     /** Mixin that adds log(), warn(), etc. methods. The messages these write will be prefixed
         with a description of the object; by default this is just the class and address, but
@@ -240,11 +215,12 @@ namespace litecore {
         virtual std::string loggingIdentifier() const;
         virtual std::string loggingClassName() const;
 
-#define LOGBODY(LEVEL)                                                                                                 \
+#define LOGBODY_(LEVEL)                                                                                                \
     va_list args;                                                                                                      \
     va_start(args, format);                                                                                            \
-    _logv(LogLevel::LEVEL, format, args);                                                                              \
+    _logv(LEVEL, format, args);                                                                                        \
     va_end(args);
+#define LOGBODY(LEVEL) LOGBODY_(LogLevel::LEVEL)
 
         void warn(const char* format, ...) const __printflike(2, 3) { LOGBODY(Warning) }
 
@@ -259,7 +235,8 @@ namespace litecore {
 
         bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
 
-        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4);
+        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4) { LOGBODY_(level) }
+
         void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
 
         // Add key=value pairs to the output. They are space separated. If output is not empty

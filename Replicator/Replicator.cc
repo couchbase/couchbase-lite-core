@@ -104,7 +104,6 @@ namespace litecore::repl {
                 DatabaseImpl* impl = asInternal(db);
                 return impl->dataFile()->loggingName();
             });
-            logInfo("DB=%s Instantiated %s", dbLogName.c_str(), string(*options).c_str());
 
 #ifdef LITECORE_CPPTEST
             _delayChangesResponse   = _options->delayChangesResponse();
@@ -920,7 +919,7 @@ namespace litecore::repl {
         msg["rev"_sl]    = sub.remoteCheckpointRevID;
         msg << json;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [=, &sub](const MessageProgress& progress) {
+        sendRequest(msg, [this, json, coll, &sub](const MessageProgress& progress) {
             if ( progress.state != MessageProgress::kComplete ) return;
 
             Signpost::end(Signpost::blipSent);
@@ -997,7 +996,7 @@ namespace litecore::repl {
                     }
                 }
                 throw error(error::LiteCore, error::NotFound,
-                            format("collection '%*s' not found", SPLAT(Options::collectionSpecToPath(spec))));
+                            stringprintf("collection '%*s' not found", SPLAT(Options::collectionSpecToPath(spec))));
             });
         } catch ( const error& err ) {
             if ( error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err ) {

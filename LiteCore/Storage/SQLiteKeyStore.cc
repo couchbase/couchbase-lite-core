@@ -17,6 +17,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "SQLUtil.hh"
 #include "sqlite3.h"
 #include <sstream>
 
@@ -69,13 +70,16 @@ namespace litecore {
         // more efficient in SQLite to keep large columns at the end of a row.
         // Create the sequence and flags columns regardless of options, otherwise it's too
         // complicated to customize all the SQL queries to conditionally use them...
-        db().execWithLock(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
-                                "  key TEXT PRIMARY KEY,"
-                                "  sequence INTEGER,"
-                                "  flags INTEGER DEFAULT 0,"
-                                "  version BLOB,"
-                                "  body BLOB,"
-                                "  extra BLOB)"));
+        db().execWithLock(
+                subst("CREATE TABLE IF NOT EXISTS kv_@ ("
+                      "  key TEXT PRIMARY KEY,"
+                      "  sequence INTEGER,"
+                      "  flags INTEGER DEFAULT 0,"
+                      "  version BLOB,"
+                      "  body BLOB,"
+                      "  expiration INTEGER,"
+                      "  extra BLOB);"
+                      "CREATE INDEX IF NOT EXISTS \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
         _uncommitedTable = db().inTransaction();
     }
 
@@ -178,12 +182,10 @@ namespace litecore {
         _purgeCountValid = false;
 
         if ( !commit ) {
-            if ( _uncommittedExpirationColumn ) _hasExpirationColumn = false;
             if ( _uncommitedTable ) { close(); }
         }
 
-        _uncommittedExpirationColumn = false;
-        _uncommitedTable             = false;
+        _uncommitedTable = false;
     }
 
     /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column& col) {
@@ -461,11 +463,11 @@ namespace litecore {
     }
 
     void SQLiteKeyStore::createTrigger(string_view triggerName, string_view triggerSuffix, string_view operation,
-                                       string when, string_view statements) {
+                                       string when, string_view statements, string_view parentTable) {
         if ( hasPrefix(when, "WHERE") ) when.replace(0, 5, "WHEN");
         string sql = CONCAT("CREATE TRIGGER \"" << triggerName << "::" << triggerSuffix << "\" " << operation << " ON "
-                                                << quotedTableName() << " " << when << ' ' << " BEGIN " << statements
-                                                << "; END");
+                                                << (parentTable.empty() ? quotedTableName() : parentTable) << " "
+                                                << when << ' ' << " BEGIN " << statements << "; END");
         LogTo(QueryLog, "    ...for index: %s", sql.c_str());
         db().exec(sql);
     }
@@ -519,19 +521,8 @@ namespace litecore {
         return _hasExpirationColumn;
     }
 
-    // Adds the 'expiration' column to the table.
-    void SQLiteKeyStore::addExpiration() {
-        if ( mayHaveExpiration() ) return;
-        db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
-        db().execWithLock(subst("ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
-                                "CREATE INDEX \"kv_@_expiration\" ON kv_@ (expiration) WHERE expiration not null"));
-        _hasExpirationColumn         = true;
-        _uncommittedExpirationColumn = true;
-    }
-
     bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
         Assert(expTime >= expiration_t(0), "Invalid (negative) expiration time");
-        addExpiration();
         auto&          stmt = compileCached("UPDATE kv_@ SET expiration=? WHERE key=?");
         UsingStatement u(stmt);
         if ( expTime > expiration_t::None ) stmt.bind(1, (long long)expTime);
@@ -583,7 +574,7 @@ namespace litecore {
         }
         if ( !none ) {
             expired = db().exec(
-                    format("DELETE FROM %s WHERE expiration <= %" PRId64, _quotedTableName.c_str(), (int64_t)t));
+                    stringprintf("DELETE FROM %s WHERE expiration <= %" PRId64, _quotedTableName.c_str(), (int64_t)t));
         }
         db()._logInfo("Purged %u expired documents", expired);
         return expired;

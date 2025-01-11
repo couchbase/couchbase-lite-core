@@ -30,37 +30,24 @@ using namespace fleece::impl;
 
 class QueryTest : public DataFileTestFixture {
   public:
-    static const int numberOfOptions = 3;
+    static constexpr int         numberOfOptions               = 5;
+    static constexpr const char* nameOfOption[numberOfOptions] = {
+            "Collection `_default`", "Collection `_`", "Collection `Secondary`", "Collection `_default.Secondary`",
+            "Collection `scopey.subsidiary`"};
 
     string collectionName;
     int    option{0};
 
   protected:
-    QueryTest() : QueryTest(0) {}
+    static constexpr slice kCollectionNameOptions[numberOfOptions] = {
+            KeyStore::kDefaultCollectionName, "_", "Secondary", "_default.Secondary", "scopey.subsidiary"};
+    static constexpr slice kKeyStoreNameOptions[numberOfOptions] = {nullslice, nullslice, ".Secondary", ".Secondary",
+                                                                    ".scopey.subsidiary"};
 
-    static unsigned alter2;
-    static unsigned alter3;
-
-    explicit QueryTest(int option) : option(option) {
-        static const char* kSectionNames[3] = {"default collection", "other collection", "collection in other scope"};
-        logSection(kSectionNames[option]);
-        unsigned jump;
-        switch ( option ) {
-            case 0:
-                jump           = alter3++ % 3;
-                collectionName = (jump == 0) ? KeyStore::kDefaultCollectionName : (jump == 1) ? "_" : "db";
-                break;
-            case 1:
-                collectionName = (alter2++ % 2 == 0) ? "Secondary" : "_default.Secondary";
-                store          = &db->getKeyStore(".Secondary");
-                break;
-            case 2:
-                collectionName = "scopey.subsidiary";
-                store          = &db->getKeyStore(".scopey.subsidiary");
-                break;
-            default:
-                Assert(false, "Test option out of valid range");
-        }
+    explicit QueryTest(int opt = 0) : option(opt) {
+        Assert(option < numberOfOptions, "Test option out of valid range");
+        collectionName = kCollectionNameOptions[option];
+        if ( slice keyStoreName = kKeyStoreNameOptions[option] ) store = &db->getKeyStore(keyStoreName);
     }
 
     static void logSection(const string& name, int level = 0) {

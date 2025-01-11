@@ -14,7 +14,7 @@
 
 #    include "SQLiteKeyStore.hh"
 #    include "SQLiteDataFile.hh"
-#    include "QueryParser.hh"
+#    include "QueryTranslator.hh"
 #    include "SQLUtil.hh"
 #    include "Error.hh"
 #    include "StringUtil.hh"
@@ -29,7 +29,7 @@ namespace litecore {
     // Creates a predictive index, implemented as a SQLite table that caches the value of a PREDICT()
     // call for each document, plus SQLite indexes on properties of the predicted dicts.
     bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec& spec) {
-        auto expressions = spec.what();
+        auto expressions = (const Array*)spec.what();
         if ( expressions->count() != 1 )
             error::_throw(error::InvalidQuery, "Predictive index requires exactly one expression");
         const Array* expression = expressions->get(0)->asArray();
@@ -59,10 +59,10 @@ namespace litecore {
     // Creates the SQLite table for a predictive index, and the triggers that keep it up to date.
     string SQLiteKeyStore::createPredictionTable(const Value* expression) {
         // Derive the table name from the expression (path) it unnests:
-        auto        kvTableName   = tableName();
-        auto        q_kvTableName = quotedTableName();
-        QueryParser qp(db(), "", kvTableName);
-        auto        predTableName = qp.predictiveTableName(expression);
+        auto            kvTableName   = tableName();
+        auto            q_kvTableName = quotedTableName();
+        QueryTranslator qp(db(), string(kDefaultCollectionName), kvTableName);
+        auto            predTableName = qp.predictiveTableName((FLValue)expression);
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE " << sqlIdentifier(predTableName)
@@ -75,23 +75,30 @@ namespace litecore {
         if ( !db().schemaExistsWithSQL(predTableName, "table", predTableName, sql) ) {
             LogTo(QueryLog, "Creating predictive table '%s' on %s", predTableName.c_str(),
                   expression->toJSONString().c_str());
+            // Capture the SQL of the `predict(...)` call, _before_ creating the table.
+            // (If we created the table first, the query translator would generate SQL that used it!)
+            string predictExpr = qp.expressionSQL((FLValue)expression);
+            qp.setBodyColumnName("new.body");
+            string triggerPredictExpr = qp.expressionSQL((FLValue)expression);
+
+            // Create the index-table:
+            LogTo(QueryLog, "Creating predictive index table: %s", sql.c_str());
             db().exec(sql);
 
             // Populate the index-table with data from existing documents:
-            string predictExpr = qp.expressionSQL(expression);
-            db().exec(CONCAT("INSERT INTO " << sqlIdentifier(predTableName)
-                                            << " (docid, body) "
-                                               "SELECT rowid, "
-                                            << predictExpr << "FROM " << q_kvTableName << " WHERE (flags & 1) = 0"));
+            sql = CONCAT("INSERT INTO " << sqlIdentifier(predTableName)
+                                        << " (docid, body) "
+                                           "SELECT rowid, "
+                                        << predictExpr << "FROM " << q_kvTableName << " as _doc WHERE (flags & 1) = 0");
+            LogTo(QueryLog, "Populating predictive index table: %s", sql.c_str());
+            db().exec(sql);
 
             // Set up triggers to keep the index-table up to date
             // ...on insertion:
-            qp.setBodyColumnName("new.body");
-            predictExpr              = qp.expressionSQL(expression);
             string insertTriggerExpr = CONCAT("INSERT INTO " << sqlIdentifier(predTableName)
                                                              << " (docid, body) "
                                                                 "VALUES (new.rowid, "
-                                                             << predictExpr << ")");
+                                                             << triggerPredictExpr << ")");
             createTrigger(predTableName, "ins", "AFTER INSERT", "WHEN (new.flags & 1) = 0", insertTriggerExpr);
 
             // ...on delete:

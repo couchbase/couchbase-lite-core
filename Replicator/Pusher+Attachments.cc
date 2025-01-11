@@ -125,7 +125,7 @@ namespace litecore::repl {
         SHA1Builder sha;
 
         // First digest the length-prefixed nonce:
-        slice nonce = request->body();
+        alloc_slice nonce = request->body();
         if ( nonce.size == 0 || nonce.size > 255 ) {
             request->respondWithError({"BLIP"_sl, 400, "Missing nonce"_sl});
             return;

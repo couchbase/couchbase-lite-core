@@ -162,11 +162,15 @@ namespace litecore::blip {
 
       protected:
         ~BLIPIO() override {
+            double outboxDepth =
+                    (_countOutboxDepth != 0)
+                            ? (static_cast<double>(_totalOutboxDepth) / static_cast<double>(_countOutboxDepth))
+                            : 0.0;
             LogTo(SyncLog,
                   "BLIP sent %zu msgs (%" PRIu64 " bytes), rcvd %" PRIu64 " msgs (%" PRIu64
                   " bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
                   _countOutboxDepth, _totalBytesWritten, _numRequestsReceived, _totalBytesRead, _timeOpen.elapsed(),
-                  _maxOutboxDepth, _totalOutboxDepth / (double)_countOutboxDepth);
+                  _maxOutboxDepth, outboxDepth);
             logStats();
         }
 
@@ -174,7 +178,9 @@ namespace litecore::blip {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotHTTPResponse), status, headers);
         }
 
-        void onWebSocketGotTLSCertificate(slice certData) override { _connection->gotTLSCertificate(certData); }
+        virtual void onWebSocketGotTLSCertificate(slice certData) override {
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotTLSCertificate), alloc_slice{certData});
+        }
 
         // websocket::Delegate interface:
         void onWebSocketConnect() override {
@@ -204,6 +210,11 @@ namespace litecore::blip {
         void _gotHTTPResponse(int status, websocket::Headers headers) {
             // _connection is reset to nullptr in _closed.
             if ( _connection ) _connection->gotHTTPResponse(status, headers);
+        }
+
+        void _gotTLSCertificate(alloc_slice certData) {
+            // _connection is reset to nullptr in _closed.
+            if ( _connection ) _connection->gotTLSCertificate(certData);
         }
 
         void _onWebSocketConnect() {
@@ -313,7 +324,7 @@ namespace litecore::blip {
         /** Removes an outgoing message from the icebox and re-queues it (after ACK arrives.) */
         void thawMessage(MessageOut* msg) {
             logVerbose("Thawing %s #%" PRIu64 "", kMessageTypeNames[msg->type()], msg->number());
-            LITECORE_UNUSED bool removed = _icebox.remove(msg);
+            [[maybe_unused]] bool removed = _icebox.remove(msg);
             DebugAssert(removed);
             requeue(msg, true);
         }
@@ -439,7 +450,7 @@ namespace litecore::blip {
                                     receivedAck(msgNo, (type == kAckResponseType), payload);
                                     break;
                                 default:
-                                    warn("  Unknown BLIP frame type received");
+                                    warn("Unknown BLIP frame type received");
                                     // For forward compatibility let's just ignore this instead of closing
                                     break;
                             }
@@ -532,8 +543,8 @@ namespace litecore::blip {
                     logInfo("REQ #%" PRIu64 " has more frames coming", msgNo);
                 }
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming REQ #%" PRIu64 " (%s)", msgNo,
-                                           (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
+                throw runtime_error(stringprintf("BLIP protocol error: Bad incoming REQ #%" PRIu64 " (%s)", msgNo,
+                                                 (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
             }
             return msg;
         }
@@ -549,8 +560,8 @@ namespace litecore::blip {
                     _pendingResponses.erase(i);
                 }
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming RES #%" PRIu64 " (%s)", msgNo,
-                                           (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
+                throw runtime_error(stringprintf("BLIP protocol error: Bad incoming RES #%" PRIu64 " (%s)", msgNo,
+                                                 (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
             }
             return msg;
         }

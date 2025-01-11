@@ -201,7 +201,7 @@ void C4Query::enableObserver(C4QueryObserverImpl* obs, bool enable) {
             _bgQuerier->getCurrentResult([&](QueryEnumerator* qe, C4Error err) {
                 ObserverSet observers;
                 {
-                    LOCK(_mutex);
+                    unique_lock lock2(_mutex);
                     if ( qe || err.code > 0 )  // Have a result to notify
                         observers = _pendingObservers;
                     _pendingObservers.clear();

@@ -89,8 +89,8 @@ function(setup_litecore_build_linux)
     foreach(platform LiteCoreObjects LiteCoreUnitTesting BLIPObjects)
         target_compile_options(
             ${platform} PRIVATE
-            "-Wformat=2"
+            #"-Wformat=2"
+            "-Wno-format"
         )
     endforeach()
 endfunction()
-

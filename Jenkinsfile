@@ -16,10 +16,10 @@ pipeline {
                     }
                 }
                 stage("iOS") {
-                    agent { label 'mobile-mac-mini' }
+                    agent { label 'sonoma' }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
-                        KEYCHAIN_PWD = credentials("mobile-mac-mini-keychain")
+                        KEYCHAIN_PWD = credentials("keychain-password")
                     }
                     steps {
                         sh 'jenkins/jenkins_ios.sh'
@@ -40,7 +40,7 @@ pipeline {
                    }
                 }
                 stage("macOS") {
-                    agent { label 'mobile-mac-mini'  }
+                    agent { label 'sonoma'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
                         GH_PAT = credentials("cbl-bot-github-pat")
@@ -53,6 +53,8 @@ pipeline {
                     agent { label 's61113u16 (litecore)' }
                     environment {
                        BRANCH = "${BRANCH_NAME}"
+                       CC = "gcc-10"
+                       CXX = "g++-10"
                     }
                     steps {
                         sh 'jenkins/jenkins_unix.sh'

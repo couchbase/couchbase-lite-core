@@ -49,7 +49,7 @@ FilePath TestFixture::sTempDir = GetTempDirectory();
 string stringWithFormat(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    string str = vformat(format, args);
+    string str = vstringprintf(format, args);
     va_end(args);
     return str;
 }
@@ -164,10 +164,10 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options* newOptions) {
     store = &db->defaultKeyStore();
 }
 
-DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options* options) {
+DataFileTestFixture::DataFileTestFixture(const DataFile::Options& options) {
     auto dbPath = databasePath();
     deleteDatabase(dbPath);
-    db.reset(newDatabase(dbPath, options));
+    db.reset(newDatabase(dbPath, &options));
     store = &db->defaultKeyStore();
 }
 

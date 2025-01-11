@@ -10,8 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "QueryParserTest.hh"
-#include "catch.hpp"
+#include "QueryTranslatorTest.hh"
 #include "n1ql_parser.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
@@ -22,15 +21,16 @@ using namespace std;
 using namespace litecore;
 using namespace fleece;
 
-class N1QLParserTest : public QueryParserTest {
+class N1QLParserTest : public QueryTranslatorTest {
   protected:
     // Translates N1QL to JSON, with strings single-quoted to avoid tons of escapes in the tests.
     // On syntax error, returns "".
     string translate(const char* n1ql) {
         UNSCOPED_INFO("N1QL: " << n1ql);
+        Log("translating: %s", n1ql);
         int errorPos;
 
-        FLValue dict = (FLValue)n1ql::parse(n1ql, &errorPos);
+        FLMutableDict dict = n1ql::parse(n1ql, &errorPos);
         if ( !dict ) {
             UNSCOPED_INFO(string(errorPos + 6, ' ') << "^--syntax error");
             return "";
@@ -39,14 +39,36 @@ class N1QLParserTest : public QueryParserTest {
         string jsonResult = string(alloc_slice(FLValue_ToJSONX((FLValue)dict, false, true)));
         replace(jsonResult, '"', '\'');
         UNSCOPED_INFO(jsonResult);
+        Log("    ...JSON is: %s", jsonResult.c_str());
 
-        string sql = parse(dict);
-        UNSCOPED_INFO("-->  " << sql);
+        try {
+            string sql = parse(FLValue(dict));
+            UNSCOPED_INFO("-->  " << sql);
+        } catch ( ... ) {
+            FLDict_Release(dict);
+            throw;
+        }
 
-        FLValue_Release(dict);
+        FLDict_Release(dict);
         return jsonResult;
     }
 };
+
+TEST_CASE_METHOD(N1QLParserTest, "CBL-6245", "[Query][N1QL][C]") {
+    tableNames.insert("kv_.admindb");
+
+    CHECK(translate("SELECT META().id FROM admindb WHERE (type = 'conversation') AND ANY v in userRecipients SATISFIES "
+                    "LOWER(v.firstName) LIKE '%rado%' OR LOWER(v.lastName) LIKE '%rado%' END")
+          == "{'FROM':[{'COLLECTION':'admindb'}],'WHAT':[['_.',['meta()'],'.id']],'WHERE':['AND',['=',['.type'],'"
+             "conversation'],['ANY','v',['.userRecipients'],['OR',['LIKE',['LOWER()',['?v.firstName']],'%rado%'],['"
+             "LIKE',['LOWER()',['?v.lastName']],'%rado%']]]]}");
+
+    // This doesn't compile without brackets around the `SATISFIES` expression.
+    // Should be fixed by CBL-6324.
+    //CHECK(translate("SELECT META().id FROM admindb WHERE type = 'file' AND ANY v in versions SATISFIES "
+    //                "v.docGuid IN ('docGuidExample') END")
+    //      == "q");
+}
 
 // NOTE: the translate() method converts `"` to `'` in its output, to make the string literals
 // in the tests below less cumbersome to type (and read).
@@ -156,6 +178,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
     tableNames.insert("stuff");
+    tableNames.insert("kv_default::text");
 
     CHECK(translate("SELECT -x") == "{'WHAT':[['-',['.x']]]}");
     CHECK(translate("SELECT NOT x") == "{'WHAT':[['NOT',['.x']]]}");
@@ -338,7 +361,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT foo FROM _") == "{'FROM':[{'COLLECTION':'_'}],'WHAT':[['.foo']]}");
     CHECK(translate("SELECT foo FROM _default") == "{'FROM':[{'COLLECTION':'_default'}],'WHAT':[['.foo']]}");
 
-    // QueryParser does not support "IN SELECT" yet
+    // QueryTranslator does not support "IN SELECT" yet
     //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 
     tableNames.insert("kv_.product");
@@ -414,6 +437,62 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
              "'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
 }
 
+TEST_CASE_METHOD(N1QLParserTest, "N1QL UNNEST", "[Query][N1QL][C]") {
+    tableNames.insert("kv_.store.customers");
+    tableNames.insert("kv_.store2.customers");
+
+    // UNNEST is a keyword
+    CHECK(translate("SELECT * FROM _ WHERE unnest = true").empty());
+    CHECK(translate("SELECT * FROM _ WHERE `unnest` = true")
+          == "{'FROM':[{'COLLECTION':'_'}],'WHAT':[['.']],'WHERE':['=',['.unnest'],true]}");
+
+    // This example is used in c4QueryTest
+    CHECK(translate("SELECT META(person).id, `like` FROM _default AS person "
+                    "UNNEST person.`like` AS `like` "
+                    "WHERE `like` > \"snowboarding\" ORDER BY `like`, META(person).id")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'AS':'like','UNNEST':['.person.like']}],"
+             "'ORDER_BY':[['.like'],['_.',['meta()','person'],'.id']],"
+             "'WHAT':[['_.',['meta()','person'],'.id'],['.like']],'WHERE':['>',['.like'],'snowboarding']}");
+
+    // Unnest expression with collection name as data source
+    CHECK(translate("SELECT store.customers.name, notes FROM store.customers UNNEST customers.notes")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+             "{'UNNEST':['.customers.notes']}],'WHAT':[['.store.customers.name'],['.notes']]}");
+
+    // Unnest in conjunction with join
+    CHECK(translate("SELECT notes.date, complaints FROM store.customers "
+                    "JOIN store2.customers ON store.customers.name = store2.customers.name "
+                    "UNNEST store.customers.notes UNNEST notes.complaints")
+          == "{'FROM':[{'COLLECTION':'customers','SCOPE':'store'},"
+             "{'COLLECTION':'customers','JOIN':'INNER',"
+             "'ON':['=',['.store.customers.name'],['.store2.customers.name']],'SCOPE':'store2'},"
+             "{'UNNEST':['.store.customers.notes']},"
+             "{'UNNEST':['.notes.complaints']}],'WHAT':[['.notes.date'],['.complaints']]}");
+
+    CHECK(translate("SELECT META(person).id FROM _default AS person "
+                    "UNNEST person.`interests.music`")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'UNNEST':['.person.interests\\\\.music']}],'WHAT':[['_.',['meta()','person'],'.id']]}");
+
+    // Unnest property includes escaped dot.
+    CHECK(translate("SELECT META(person).id FROM _default AS person "
+                    "UNNEST person.`interests.music` music_interest")
+          == "{'FROM':[{'AS':'person','COLLECTION':'_default'},"
+             "{'AS':'music_interest','UNNEST':['.person.interests\\\\.music']}],'WHAT':[['_.',['meta()','person'],'.id'"
+             "]]}");
+
+    // Unnest an array literal
+    {
+        ExpectingExceptions x;
+        CHECK_THROWS_WITH(translate("SELECT store.customers.name, phone "
+                                    "FROM store.customers "
+                                    "UNNEST [customers.phones[0], customers.phones[1]] AS phone"),
+                          "the use of a general expression as the object of UNNEST is not supported; "
+                          "only a property path is allowed.");
+    }
+}
+
 TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT isarray(x),  isatom(x),  isboolean(x),  isnumber(x),  isobject(x),  isstring(x),  type(x)")
           == "{'WHAT':[['isarray()',['.x']],['isatom()',['.x']],['isboolean()',['.x']],['isnumber()',['.x']],"
@@ -433,6 +512,10 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Qu
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C]") {
     tableNames.emplace("kv_.coll");
     tableNames.emplace("kv_.scope.coll");
+    tableNames.emplace("kv_.coll::fts\\Index");
+    tableNames.emplace("kv_.scope.coll::fts\\Index");
+    tableNames.emplace("kv_.test.flowers");
+    tableNames.emplace("kv_.test.colors");
 
     CHECK(translate("SELECT x FROM coll ORDER BY y")
           == "{'FROM':[{'COLLECTION':'coll'}],'ORDER_BY':[['.y']],'WHAT':[['.x']]}");
@@ -490,6 +573,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Scopes and Collections", "[Query][N1QL][C
           == "{'FROM':[{'COLLECTION':'coll','SCOPE':'scope'},{'COLLECTION':'coll','JOIN':'INNER',"
              "'ON':['=',['.scope.coll.name'],['.coll.y']]}],"
              "'WHAT':[['.scope.coll.x']],'WHERE':['MATCH()','scope\\\\.coll.ftsIndex',['.coll.y']]}");
+    CHECK(translate("SELECT flowers.name, colors.color FROM test.flowers JOIN test.colors "
+                    "ON flowers.cid = colors.cid ORDER BY flowers.name")
+          == "{'FROM':[{'COLLECTION':'flowers','SCOPE':'test'},"
+             "{'COLLECTION':'colors','JOIN':'INNER','ON':['=',['.flowers.cid'],['.colors.cid']],'SCOPE':'test'}],"
+             "'ORDER_BY':[['.flowers.name']],'WHAT':[['.flowers.name'],['.colors.color']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {

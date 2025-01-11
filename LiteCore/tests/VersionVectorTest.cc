@@ -145,12 +145,6 @@ TEST_CASE("HybridClock", "[RevIDs]") {
 TEST_CASE("SourceID Binary", "[RevIDs]") {
     for ( const uint8_t& b : kMeSourceID.bytes() ) { CHECK(b == 0); }
 
-    uint8_t xb = 0x1e;
-    for ( const uint8_t& b : kLegacyRevSourceID.bytes() ) {
-        CHECK(b == xb);
-        xb = 0;
-    }
-
     SourceID id;
     for ( size_t i = 0; i < sizeof(SourceID); ++i ) id.bytes()[i] = uint8_t(i + 1);
     CHECK(id != kMeSourceID);
@@ -170,18 +164,6 @@ TEST_CASE("SourceID Binary", "[RevIDs]") {
             REQUIRE(id2.readBinary(in, &isCurrent));
             CHECK(in.eof());
             CHECK(id2 == kMeSourceID);
-            CHECK(isCurrent == current);
-        }
-        {
-            slice_ostream out(buf);
-            REQUIRE(kLegacyRevSourceID.writeBinary(out, current));
-            slice result = out.output();
-            CHECK(result.hexString() == (current ? "811e" : "011e"));
-
-            slice_istream in(result);
-            REQUIRE(id2.readBinary(in, &isCurrent));
-            CHECK(in.eof());
-            CHECK(id2 == kLegacyRevSourceID);
             CHECK(isCurrent == current);
         }
         {
@@ -223,7 +205,6 @@ TEST_CASE("SourceID ASCII", "[RevIDs]") {
 
 TEST_CASE("Version", "[RevIDs]") {
     CHECK(Version(1_ht, kMeSourceID).asASCII() == "1@*");
-    CHECK(Version(2_ht, kLegacyRevSourceID).asASCII() == "2@?");
 
     Version v1(1_ht, Alice), v2(1_ht, Alice), v3(2_ht, Alice), v4(1_ht, Bob);
     CHECK(v1.time() == 1_ht);
@@ -296,8 +277,8 @@ TEST_CASE("VersionVector <-> Binary", "[RevIDs]") {
             0x96, 0x27, 0x1E, 0x00, 0x03, 0x90, 0x0D, 0xAB, 0xDE, 0x0D, 0xAB, 0xDE, 0x0D, 0xAB, 0xDE, 0x0D, 0xAB,
             0xDE, 0x0D, 0xAB, 0xDE, 0x0C, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x10, 0x09,
             0xAA, 0xE8, 0x94, 0x26, 0xAB, 0xA2, 0x50, 0x9A, 0xAE, 0x89, 0x42, 0x6A, 0xBA, 0x25, 0x08};
-    static constexpr slice kBinary(kBytes, sizeof(kBytes));
-    VersionVector          v;
+    const slice   kBinary(kBytes, sizeof(kBytes));
+    VersionVector v;
     v.readBinary(kBinary);
     CHECK(v.count() == 4);
     CHECK(v.current() == Version(3_ht, kMeSourceID));

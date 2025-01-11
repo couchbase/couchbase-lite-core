@@ -33,7 +33,7 @@ namespace litecore {
             auto name  = (const char*)sqlite3_value_text(argv[0]);
             auto model = PredictiveModel::named(name);
             if ( !model ) {
-                string msg = format("Unknown ML model name '%s'", name);
+                string msg = stringprintf("Unknown ML model name '%s'", name);
                 sqlite3_result_error(ctx, msg.c_str(), -1);
                 return;
             }
@@ -123,7 +123,7 @@ namespace litecore {
     // Given two arrays of numbers, returns their cosine distance:
     // https://en.wikipedia.org/wiki/Cosine_similarity
     // Returns NULL if args are not both arrays and of equal length.
-    static void cosine_distance(sqlite3_context* ctx, C4UNUSED int argc, sqlite3_value** argv) {
+    static void cosine_distance(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         Array::iterator i1(nullptr), i2(nullptr);
         if ( !getArrays(ctx, argv, i1, i2) ) return;
 

@@ -38,7 +38,7 @@ using CollectionOptions = Options::CollectionOptions;
 
 class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
   public:
-    ReplicatorCollectionTest() {
+    ReplicatorCollectionTest(int which) : ReplicatorLoopbackTest(which) {
         db->createCollection(Guitars);
         db->createCollection(Roses);
         db->createCollection(Tulips);
@@ -239,19 +239,19 @@ class ReplicatorCollectionTest : public ReplicatorLoopbackTest {
     }
 };
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Nonexisting Collections", "[Push][Pull]") {
     vector<CollectionSpec> specs = {CollectionSpec("dummy1"_sl), CollectionSpec("dummy2"_sl)};
     ExpectingExceptions    x;
     _expectedError = {LiteCoreDomain, kC4ErrorNotFound};
     runPushPullReplication(specs, specs);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][Pull]") {
     _expectedError = {WebSocketDomain, 404};
     runPushPullReplication({Roses, Lavenders}, {Tulips, Lavenders});
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]") {
     ExpectingExceptions x;
     _expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
     runPushPullReplication({}, {});
@@ -310,7 +310,7 @@ struct CheckDBEntries {
     vector<set<string>>      _db2Before;
 };
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
 #ifdef LITECORE_CPPTEST
     bool collectionAwareActive  = GENERATE(false, true);
     bool collectionAwareOnEntry = repl::Options::sActiveIsCollectionAware;
@@ -369,7 +369,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Pus
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push][Pull]") {
     addDocs(db, Guitars, 10);
     addDocs(db2, Guitars, 10);
 
@@ -418,7 +418,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Single Collection", "[Push
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[Push][Pull]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
     addDocs(db, Lavenders, 10);
@@ -476,7 +476,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections", "[P
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Push and Pull", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Push and Pull", "[Push][Pull]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
     addDocs(db2, Roses, 10);
@@ -499,7 +499,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Pus
     validateCollectionCheckpoints(db, db2, 1, R"({"local":22,"remote":24})");
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Revisions", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Revisions", "[Push][Pull]") {
     addDocs(db, Roses, 2, "db-Roses-");
     addDocs(db, Tulips, 2, "db-Tulips-");
     C4Collection* roses   = getCollection(db, Roses);
@@ -512,8 +512,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
                                                                                  {tulips2, "tulips-docko"_sl}};
 
     SECTION("PUSH") {
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = std::thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = std::thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 CHECK(c4coll_getDocumentCount(roses2) == 2);
                 CHECK(c4coll_getDocumentCount(tulips2) == 2);
 
@@ -528,8 +528,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         runPushReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
     }
     SECTION("PULL") {
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = std::thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = std::thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 CHECK(c4coll_getDocumentCount(roses2) == 2);
                 CHECK(c4coll_getDocumentCount(tulips2) == 2);
 
@@ -549,8 +549,8 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
         docsWithIncrementalRevisions.emplace_back(roses, "roses2-docko"_sl);
         docsWithIncrementalRevisions.emplace_back(tulips, "tulips2-docko"_sl);
 
-        _callbackWhenIdle = [=, &jthread]() {
-            jthread.thread    = thread(std::thread{[=]() {
+        _callbackWhenIdle = [this, &jthread, roses, tulips, roses2, tulips2]() {
+            jthread.thread    = thread(std::thread{[this, roses, tulips, roses2, tulips2]() {
                 // When first time it turns to Idle, we assume 2 documents from db are pushed to db2,
                 // and 2 documents from db2 are pulled to db.
                 CHECK(c4coll_getDocumentCount(roses) == 4);
@@ -579,13 +579,12 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Incremental Rev
     for ( const auto& coll_doc : docsWithIncrementalRevisions ) {
         c4::ref<C4Document> doc = c4coll_getDoc(coll_doc.first, coll_doc.second, true, kDocGetMetadata, ERROR_INFO());
         CHECK(doc);
-        alloc_slice hist = c4doc_getRevisionHistory(doc, 1, nullptr, 0);
-        if ( isRevTrees() ) CHECK(3 == c4rev_getGeneration(hist));
+        if ( doc && isRevTrees() ) CHECK(c4rev_getGeneration(doc->revID) == 3);
     }
 }
 
 // Failed : CBL-3500
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-3500]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-3500]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
 
@@ -608,7 +607,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Push", "[.CBL-
     validateCollectionCheckpoints(db, db2, 1, "{\"local\":10}");
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]") {
     addDocs(db, Roses, 10);
     addDocs(db, Tulips, 10);
 
@@ -631,7 +630,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Reset Checkpoint with Pull", "[Pull]
     validateCollectionCheckpoints(db2, db, 1, "{\"remote\":10}");
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][Pull]") {
     vector<string>    attachments1 = {"Attachment A", "Attachment B", "Attachment Z"};
     vector<C4BlobKey> blobKeys1a, blobKeys1b;
     {
@@ -665,7 +664,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][
     checkAttachments(db2, blobKeys2b, attachments2);
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
     int  resolveCount = 0;
     auto resolver     = [&resolveCount](CollectionSpec spec, C4Document* localDoc, C4Document* remoteDoc) {
         resolveCount++;
@@ -724,7 +723,11 @@ struct CipherContext {
 
 using CipherContextMap = unordered_map<C4CollectionSpec, CipherContext*>;
 
+static mutex sCatchMutex;
+
 static void validateCipherInputs(void* ctx, C4CollectionSpec& spec, C4String& docID, C4String& keyPath) {
+    unique_lock lock(sCatchMutex);  // I may be called on multiple threads, but Catch is not thread-safe
+
     auto contextMap = (CipherContextMap*)ctx;
     auto i          = contextMap->find(spec);
     REQUIRE(i != contextMap->end());
@@ -751,8 +754,8 @@ static C4SliceResult propDecryptor(void* ctx, C4CollectionSpec spec, C4String do
     return C4SliceResult(ReplicatorLoopbackTest::UnbreakableEncryption(input, -1));
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with Collections",
-                 "[Push][Pull][Encryption]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with Collections",
+                       "[Push][Pull][Encryption]") {
     const bool TestDecryption = GENERATE(false, true);
     C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
 
@@ -828,7 +831,7 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Replicate Encrypted Properties with 
     }
 }
 
-TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple Collections", "[Sync][Filters]") {
     string db_roses   = "db-roses-";
     string db_tulips  = "db-tulips-";
     string db2_roses  = "db2-roses-";

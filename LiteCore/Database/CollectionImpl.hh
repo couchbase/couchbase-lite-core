@@ -75,10 +75,10 @@ namespace litecore {
         std::string loggingClassName() const override { return "Collection"; }
 
         std::string loggingIdentifier() const override {  // Logging API
-            if ( _usuallyFalse(!isValid()) ) { return format("Closed collection %.*s", SPLAT(_name)); }
+            if ( _usuallyFalse(!isValid()) ) { return stringprintf("Closed collection %.*s", SPLAT(_name)); }
 
             auto dbName = _database->getName();
-            return format("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
+            return stringprintf("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
         }
 
         KeyStore& keyStore() const {
@@ -125,7 +125,6 @@ namespace litecore {
 #pragma mark - BLOBS:
 
         void findBlobReferences(const fleece::function_ref<bool(FLDict)>& blobCallback) override {
-            uint64_t                  numRevisions = 0;
             RecordEnumerator::Options options;
             options.onlyBlobs  = true;
             options.sortOption = kUnsorted;
@@ -138,7 +137,6 @@ namespace litecore {
                         FLDict body = doc->getProperties();
                         C4Blob::findBlobReferences(body, blobCallback);
                         C4Blob::findAttachmentReferences(body, blobCallback);
-                        ++numRevisions;
                     }
                 } while ( doc->selectNextRevision() );
             }
@@ -400,7 +398,9 @@ namespace litecore {
             IndexSpec::Options options;
             switch ( indexType ) {
                 case kC4ValueIndex:
+                    break;
                 case kC4ArrayIndex:
+                    if ( indexOptions ) { options.emplace<IndexSpec::ArrayOptions>(indexOptions->unnestPath); }
                     break;
                 case kC4FullTextIndex:
                     if ( indexOptions ) {
@@ -550,8 +550,8 @@ namespace litecore {
         Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
     };
 
-    static inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }
+    inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }
 
-    static inline const CollectionImpl* asInternal(const C4Collection* coll) { return (const CollectionImpl*)coll; }
+    inline const CollectionImpl* asInternal(const C4Collection* coll) { return (const CollectionImpl*)coll; }
 
 }  // namespace litecore

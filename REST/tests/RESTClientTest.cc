@@ -23,18 +23,17 @@ using namespace std;
 class RESTClientTest : public ReplicatorAPITest {
   public:
 #if TEST_PROXIES
-    static const int numberOfOptions = 2;
+    static constexpr int numberOfOptions = 2;
 #else
-    static const int numberOfOptions = 1;
+    static constexpr int numberOfOptions = 1;
 #endif
+    static constexpr const char* nameOfOption[2] = {"No proxy", "HTTP proxy"};
 
     explicit RESTClientTest(int option) : ReplicatorAPITest() {
         if ( option == 0 ) {
             _sg.proxy = nullptr;
-            fprintf(stderr, "        --- No proxy ---\n");
         } else if ( option == 1 ) {
             if ( _sg.proxy ) _sg.proxy = make_unique<ProxySpec>(ProxyType::HTTP, "localhost"_sl, uint16_t(8888));
-            fprintf(stderr, "        --- HTTP proxy ---\n");
         }
     }
 };

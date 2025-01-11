@@ -54,9 +54,9 @@ class ReplicatorLoopbackTest
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
 #if SkipVersionVectorTest
-    ReplicatorLoopbackTest() : ReplicatorLoopbackTest(0) {}
+    static constexpr int numberOfOptions = 1;
 #else
-    ReplicatorLoopbackTest() : ReplicatorLoopbackTest(GENERATE(0, 1)) {}
+    static constexpr int numberOfOptions = 2;
 #endif
 
     ReplicatorLoopbackTest(int which) : C4Test(which), db2(createDatabase("2")) {
@@ -85,10 +85,10 @@ class ReplicatorLoopbackTest
     }
 
     ~ReplicatorLoopbackTest() override {
-        if ( _parallelThread ) _parallelThread->join();
+        CHECK(!_parallelThread);
         _replClient = _replServer = nullptr;
         C4Error error;
-        REQUIRE(c4db_delete(db2, WITH_ERROR(&error)));
+        CHECK(c4db_delete(db2, WITH_ERROR(&error)));
         c4db_release(db2);
     }
 
@@ -149,6 +149,11 @@ class ReplicatorLoopbackTest
                 FAIL("Replication timed out after " << timeoutMins << " minutes...");
             }
 
+            if ( _parallelThread ) {
+                _parallelThread->join();
+                _parallelThread = nullptr;
+            }
+
             Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
 
             _checkpointIDs.clear();
@@ -168,8 +173,7 @@ class ReplicatorLoopbackTest
         CHECK((createReplicatorThrew || _gotResponse));
         CHECK((createReplicatorThrew || _statusChangedCalls > 0));
         CHECK(_statusReceived.level == kC4Stopped);
-        CHECK(_statusReceived.error.code == _expectedError.code);
-        if ( _expectedError.code ) CHECK(_statusReceived.error.domain == _expectedError.domain);
+        CHECK(_statusReceived.error == _expectedError);
         if ( !(_ignoreLackOfDocErrors && _docPullErrors.empty()) )
             CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
         if ( !(_ignoreLackOfDocErrors && _docPushErrors.empty()) )
@@ -319,14 +323,13 @@ class ReplicatorLoopbackTest
 #pragma mark - CALLBACKS:
 
     void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override {
-        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
         if ( repl == _replClient ) {
-            Assert(!_gotResponse);
+            Check(!_gotResponse);
             _gotResponse = true;
-            Assert(status == 200);
-            Assert(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
+            Check(status == 200);
+            Check(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
         }
     }
 
@@ -337,17 +340,17 @@ class ReplicatorLoopbackTest
         std::unique_lock<std::mutex> lock(_mutex);
 
         if ( repl == _replClient ) {
-            Assert(_gotResponse);
+            Check(_gotResponse);
             ++_statusChangedCalls;
             Log(">> Replicator is %-s, progress %lu/%lu, %lu docs", kC4ReplicatorActivityLevelNames[status.level],
                 (unsigned long)status.progress.unitsCompleted, (unsigned long)status.progress.unitsTotal,
                 (unsigned long)status.progress.documentCount);
-            Assert(status.progress.unitsCompleted <= status.progress.unitsTotal);
-            Assert(status.progress.documentCount < 1000000);
+            Check(status.progress.unitsCompleted <= status.progress.unitsTotal);
+            Check(status.progress.documentCount < 1000000);
             if ( status.progress.unitsTotal > 0 ) {
-                Assert(status.progress.unitsCompleted >= _statusReceived.progress.unitsCompleted);
-                Assert(status.progress.unitsTotal >= _statusReceived.progress.unitsTotal);
-                Assert(status.progress.documentCount >= _statusReceived.progress.documentCount);
+                Check(status.progress.unitsCompleted >= _statusReceived.progress.unitsCompleted);
+                Check(status.progress.unitsTotal >= _statusReceived.progress.unitsTotal);
+                Check(status.progress.documentCount >= _statusReceived.progress.documentCount);
             }
 
             {
@@ -358,7 +361,7 @@ class ReplicatorLoopbackTest
         }
 
         bool& finished = (repl == _replClient) ? _replicatorClientFinished : _replicatorServerFinished;
-        Assert(!finished);
+        Check(!finished);
         if ( status.level == kC4Stopped ) {
             finished = true;
             if ( _replicatorClientFinished && _replicatorServerFinished ) _cond.notify_all();
@@ -370,7 +373,7 @@ class ReplicatorLoopbackTest
         std::unique_lock<std::mutex> lock(_mutex);
 
         if ( repl == _replClient ) {
-            Assert(!_replicatorClientFinished);
+            Check(!_replicatorClientFinished);
             for ( auto& rev : revs ) {
                 auto dir = rev->dir();
                 if ( rev->error.code ) {
@@ -430,7 +433,7 @@ class ReplicatorLoopbackTest
     // side and tosses the other one out.
     void installConflictHandler() {
         c4::ref<C4Database> resolvDB = c4db_openAgain(db, nullptr);
-        REQUIRE(resolvDB);
+        Require(resolvDB);
         auto& conflictHandlerRunning = _conflictHandlerRunning;
         _conflictHandler             = [resolvDB, &conflictHandlerRunning](ReplicatedRev* rev) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
@@ -444,22 +447,16 @@ class ReplicatorLoopbackTest
             c4::ref<C4Document> doc        = c4coll_getDoc(collection, rev->docID, true, kDocGetAll, &error);
             if ( !doc ) {
                 WarnError("conflictHandler: Couldn't read doc '%.*s'", SPLAT(rev->docID));
-                Assert(false, "conflictHandler: Couldn't read doc");
+                Require(doc);
             }
             alloc_slice     localRevID = doc->selectedRev.revID;
             C4RevisionFlags localFlags = doc->selectedRev.flags;
             FLDict          localBody  = c4doc_getProperties(doc);
             // Get the remote rev:
-            if ( !c4doc_selectNextLeafRevision(doc, true, false, &error) ) {
-                WarnError("conflictHandler: Couldn't get conflicting revision of '%.*s'", SPLAT(rev->docID));
-                Assert(false, "conflictHandler: Couldn't get conflicting revision");
-            }
+            Require(c4doc_selectNextLeafRevision(doc, true, false, &error));
             alloc_slice     remoteRevID = doc->selectedRev.revID;
             C4RevisionFlags remoteFlags = doc->selectedRev.flags;
-            if ( c4doc_selectNextLeafRevision(doc, true, false, &error) ) {  // no 3rd branch!
-                WarnError("conflictHandler: Unexpected 3rd leaf revision in '%.*s'", SPLAT(rev->docID));
-                Assert(false, "conflictHandler: Unexpected 3rd leaf revision");
-            }
+            Require(!c4doc_selectNextLeafRevision(doc, true, false, &error));  // no 3rd branch!
 
             bool remoteWins = false;
 
@@ -480,15 +477,9 @@ class ReplicatorLoopbackTest
                 mergedBody  = localBody;
                 mergedFlags = localFlags;
             }
-            if ( !c4doc_resolveConflict2(doc, remoteRevID, localRevID, mergedBody, mergedFlags, &error) ) {
-                WarnError("conflictHandler: c4doc_resolveConflict failed in '%.*s'", SPLAT(rev->docID));
-                Assert(false, "conflictHandler: c4doc_resolveConflict failed");
-            }
-            Assert((doc->flags & kDocConflicted) == 0);
-            if ( !c4doc_save(doc, 0, &error) ) {
-                WarnError("conflictHandler: c4doc_save failed in '%.*s'", SPLAT(rev->docID));
-                Assert(false, "conflictHandler: c4doc_save failed");
-            }
+            Check(c4doc_resolveConflict2(doc, remoteRevID, localRevID, mergedBody, mergedFlags, &error));
+            Check((doc->flags & kDocConflicted) == 0);
+            Require(c4doc_save(doc, 0, &error));
             conflictHandlerRunning = false;
         };
     }
@@ -527,16 +518,15 @@ class ReplicatorLoopbackTest
                         int totalRevs, bool useFakeRevIDs, const char* logName) {
         C4Database* db = c4coll_getDatabase(collection);
         for ( int i = 0; i < totalRevs; i++ ) {
-            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             int revNo = firstRev + i;
             sleepFor(interval);
             TransactionHelper t(db);
             string            revID;
             if ( useFakeRevIDs ) {
-                revID = isRevTrees(db) ? format("%d-ffff", revNo) : format("%d@*", revNo);
+                revID = isRevTrees(db) ? stringprintf("%d-ffff", revNo) : stringprintf("%d@*", revNo);
                 createRev(collection, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
-                string json = format(R"({"db":"%p","i":%d})", db, revNo);
+                string json = stringprintf(R"({"db":"%p","i":%d})", db, revNo);
                 revID       = createFleeceRev(collection, docID, nullslice, slice(json));
             }
             Log("-------- %s %d: Created rev '%.*s' #%s --------", logName, revNo, SPLAT(docID), revID.c_str());
@@ -549,7 +539,7 @@ class ReplicatorLoopbackTest
     }
 
     void addDocsInParallel(duration interval, int total) {
-        _parallelThread.reset(runInParallel([=]() {
+        _parallelThread.reset(runInParallel([this, interval, total]() {
             _expectedDocumentCount = addDocs(_collDB1, interval, total);
             sleepFor(1s);  // give replicator a moment to detect the latest revs
             stopWhenIdle();
@@ -558,7 +548,7 @@ class ReplicatorLoopbackTest
 
     void addRevsInParallel(duration interval, const alloc_slice& docID, int firstRev, int totalRevs,
                            bool useFakeRevIDs = true) {
-        _parallelThread.reset(runInParallel([=]() {
+        _parallelThread.reset(runInParallel([this, interval, docID, firstRev, totalRevs, useFakeRevIDs]() {
             addRevs(_collDB1, interval, docID, firstRev, totalRevs, useFakeRevIDs, "db");
             sleepFor(1s);  // give replicator a moment to detect the latest revs
             stopWhenIdle();
@@ -596,6 +586,7 @@ class ReplicatorLoopbackTest
     }
 
     void compareDatabases(bool db2MayHaveMoreDocs = false, bool compareDeletedDocs = true) {
+        Assert(OnMainThread());
         C4Log(">> Comparing databases...");
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         if ( compareDeletedDocs ) options.flags |= kC4IncludeDeleted;

@@ -13,8 +13,9 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
-#include "QueryParser.hh"
+#include "QueryTranslator.hh"
 #include "Error.hh"
+#include "SecureDigest.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
 #include "Array.hh"
@@ -88,8 +89,10 @@ namespace litecore {
     bool SQLiteKeyStore::createIndex(const IndexSpec& spec, const string& sourceTableName,
                                      Array::iterator& expressions) {
         Assert(spec.type != IndexSpec::kFullText && spec.type != IndexSpec::kVector);
-        QueryParser qp(db(), "", sourceTableName);
-        qp.writeCreateIndex(spec.name, sourceTableName, expressions, spec.where(), (spec.type != IndexSpec::kValue));
+        string          name{spec.type == IndexSpec::kArray ? litecore::hexName(sourceTableName) : sourceTableName};
+        QueryTranslator qp(db(), "", name);
+        qp.writeCreateIndex(spec.name, name, (FLArrayIterator&)expressions, spec.where(),
+                            (spec.type != IndexSpec::kValue));
         string sql = qp.SQL();
         return db().createIndex(spec, this, sourceTableName, sql);
     }
@@ -149,7 +152,7 @@ namespace litecore {
 #pragma mark - VALUE INDEX:
 
     bool SQLiteKeyStore::createValueIndex(const IndexSpec& spec) {
-        Array::iterator expressions(spec.what());
+        Array::iterator expressions((const Array*)spec.what());
         return createIndex(spec, tableName(), expressions);
     }
 

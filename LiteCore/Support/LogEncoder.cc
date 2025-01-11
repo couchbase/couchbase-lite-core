@@ -14,6 +14,7 @@
 #include "LogDecoder.hh"
 #include "Endian.hh"
 #include "StringUtil.hh"
+#include "Timer.hh"
 #include "varint.hh"
 #include <exception>
 #include <iostream>
@@ -67,18 +68,24 @@ namespace litecore {
 
 #pragma mark - LOGGING:
 
-    void LogEncoder::log(const char* domain, const LogDomain::ObjectMap& objectMap, ObjectRef object,
-                         const char* format, ...) {
+    void LogEncoder::log(const char* domain, ObjectRef object, std::string_view objPath, const char* format, ...) {
         va_list args;
         va_start(args, format);
-        vlog(domain, objectMap, object, "", format, args);
+        vlog(domain, object, objPath, "", format, args);
+        va_end(args);
+    }
+
+    void LogEncoder::log(const char* domain, const char* format, ...) {
+        va_list args;
+        va_start(args, format);
+        vlog(domain, ObjectRef::None, "", "", format, args);
         va_end(args);
     }
 
     int64_t LogEncoder::_timeElapsed() const { return int64_t(_st.elapsed() * kTicksPerSec); }
 
-    void LogEncoder::vlog(const char* domain, const LogDomain::ObjectMap& objectMap, ObjectRef object,
-                          const std::string& prefix, const char* format, va_list args) {
+    void LogEncoder::vlog(const char* domain, ObjectRef object, std::string_view objPath, const std::string& prefix,
+                          const char* format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
@@ -94,13 +101,12 @@ namespace litecore {
         // Write object path
         const auto objRef = (unsigned)object;
         _writeUVarInt(objRef);
-        if ( object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end() ) {
+        if ( object != ObjectRef::None && !_seenObjects.contains(objRef) ) {
             _seenObjects.insert(objRef);
-            auto objPath = LogDomain::getObjectPath(objRef, objectMap);
             if ( objPath.empty() ) {
                 _writer.write({"?\0", 2});
             } else {
-                _writer.write(slice(objPath.c_str()));
+                _writer.write(objPath);
                 _writer.write("\0", 1);
             }
         }
@@ -203,7 +209,7 @@ namespace litecore {
                     case 'p':
                         {
                             size_t param = va_arg(args, size_t);
-                            if ( sizeof(param) == 8 ) param = fleece::endian::encLittle64(param);
+                            if constexpr ( sizeof(param) == 8 ) param = fleece::endian::encLittle64(param);
                             else
                                 param = fleece::endian::encLittle32((uint32_t)param);
                             _writer.write(&param, sizeof(param));
@@ -261,6 +267,11 @@ namespace litecore {
         } else {
             _writeUVarInt(name);
         }
+    }
+
+    bool LogEncoder::isNewObject(ObjectRef obj) const {
+        lock_guard<mutex> lock(_mutex);
+        return !_seenObjects.contains(obj);
     }
 
 #pragma mark - FLUSHING:

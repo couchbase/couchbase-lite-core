@@ -113,6 +113,9 @@ struct C4Database
 
         CollectionSpec(slice name) : C4CollectionSpec{name, kC4DefaultScopeID} {}
 
+        /// Substitutes "_default" for a null scope, since the two are equivalent.
+        slice effectiveScope() const FLPURE { return scope.buf ? scope : kC4DefaultScopeID; }
+
         // NOLINTEND(google-explicit-constructor)
     };
 
@@ -287,20 +290,24 @@ struct C4Database
 };
 
 // This stuff allows CollectionSpec to be used as a key in an unordered_map or unordered_set:
-static inline bool operator==(const C4CollectionSpec& a, const C4CollectionSpec& b) {
-    return a.name == b.name && a.scope == b.scope;
+inline bool operator==(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) {
+    return a.name == b.name && a.effectiveScope() == b.effectiveScope();
 }
 
-static inline bool operator!=(const C4CollectionSpec& a, const C4CollectionSpec& b) { return !(a == b); }
+inline bool operator!=(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) { return !(a == b); }
 
 template <>
-struct std::hash<C4CollectionSpec> {
-    std::size_t operator()(C4CollectionSpec const& spec) const {
-        return fleece::slice(spec.name).hash() ^ fleece::slice(spec.scope).hash();
+struct std::hash<C4Database::CollectionSpec> {
+    std::size_t operator()(C4Database::CollectionSpec const& spec) const {
+        return fleece::slice(spec.name).hash() ^ spec.effectiveScope().hash();
     }
 };
 
 template <>
-struct std::hash<C4Database::CollectionSpec> : public std::hash<C4CollectionSpec> {};
+struct std::hash<C4CollectionSpec> {
+    std::size_t operator()(C4Database::CollectionSpec const& spec) const {
+        return std::hash<C4Database::CollectionSpec>{}(spec);
+    }
+};
 
 C4_ASSUME_NONNULL_END

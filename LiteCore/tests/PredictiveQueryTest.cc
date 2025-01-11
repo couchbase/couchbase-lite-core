@@ -16,7 +16,6 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
-
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
@@ -113,7 +112,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Pre
     PredictiveModel::unregister("8ball");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create and Delete Predictive Index", "[Query][Predict]") {
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
@@ -159,6 +158,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]"
         Log("Explanation: %s", explanation.c_str());
 
         if ( pass > 1 ) {
+            INFO("Explanation: " << explanation);
             CHECK(explanation.find("prediction(") == string::npos);
             CHECK(explanation.find("USING INDEX nums") != string::npos);
         }

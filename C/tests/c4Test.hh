@@ -119,16 +119,6 @@ class WITH_ERROR {
 
 #pragma mark - OTHER TEST UTILITIES:
 
-
-/// REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not
-/// thread-safe. In multithreaded code, use this instead.
-/// \warning Don't use regular assert(), because if this is an optimized build it'll be ignored.
-#define C4Assert(e, ...)                                                                                               \
-    (_usuallyFalse(!(e)) ? AssertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) : (void)0)
-[[noreturn]] void AssertionFailed(const char* func, const char* file, unsigned line, const char* expr,
-                                  const char* message = nullptr);
-
-
 // Platform-specific filesystem path separator.
 #ifdef _MSC_VER
 #    define kPathSeparator "\\"
@@ -152,16 +142,12 @@ void CheckError(C4Error err, C4ErrorDomain expectedDomain, int expectedCode, con
 class TransactionHelper {
   public:
     explicit TransactionHelper(C4Database* db) {
-        C4Error error;
-        C4Assert(c4db_beginTransaction(db, &error));
+        Require(c4db_beginTransaction(db, WITH_ERROR()));
         _db = db;
     }
 
     ~TransactionHelper() {
-        if ( _db ) {
-            C4Error error;
-            C4Assert(c4db_endTransaction(_db, true, &error));
-        }
+        if ( _db ) { Require(c4db_endTransaction(_db, true, WITH_ERROR())); }
     }
 
   private:
@@ -187,35 +173,37 @@ class C4Test {
     enum TestOptions { RevTreeOption = 0, VersionVectorOption, EncryptedRevTreeOption };
 #if defined(COUCHBASE_ENTERPRISE)
 #    if SkipVersionVectorTest
-    static const int numberOfOptions = 2;  // rev-tree, rev-tree encrypted
+    static constexpr int         numberOfOptions               = 2;  // rev-tree, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "EncryptedRevTree"};
 #    else
-    static const int numberOfOptions = 3;  // rev-tree, version vector, rev-tree encrypted
+    static constexpr int         numberOfOptions               = 3;  // rev-tree, version vector, rev-tree encrypted
+    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "VersionVector", "EncryptedRevTree"};
 #    endif
 #else
 #    if SkipVersionVectorTest
-    static const int numberOfOptions = 1;  // rev-tree
+    static constexpr int         numberOfOptions = 1;  // rev-tree
 #    else
-    static const int numberOfOptions = 2;  // rev-tree, version vector
+    static constexpr int numberOfOptions = 2;  // rev-tree, version vector
 #    endif
+    static constexpr const char* nameOfOption[2] = {"RevTree", "VersionVector"};
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
     static std::string sReplicatorFixturesDir;  // directory where replicator test files live
 
     static constexpr slice kDatabaseName = "cbl_core_test";
-#if SkipVersionVectorTest
-    explicit C4Test(int testOption = RevTreeOption);
-#else
-    C4Test(int testOption = VersionVectorOption);
-#endif
+
+    explicit C4Test(int);
     ~C4Test();
 
     [[nodiscard]] alloc_slice databasePath() const { return {c4db_getPath(db)}; }
 
     /// The database handle.
-    C4Database* db;
+    C4Database* db{};
 
     [[nodiscard]] const C4DatabaseConfig2& dbConfig() const { return _dbConfig; }
+
+    void syncDBConfig();
 
     [[nodiscard]] C4StorageEngine storageType() const { return _storage; }
 
@@ -318,9 +306,12 @@ class C4Test {
     [[nodiscard]] std::string listSharedKeys(const std::string& delimiter = ", ") const;
 
     static fleece::alloc_slice readFile(const std::string& path);
+    static fleece::alloc_slice readFile(std::istream& istream);
     // NOLINTBEGIN(modernize-use-nodiscard)
     unsigned importJSONFile(const std::string& path, const std::string& idPrefix = "", double timeout = 0.0,
                             bool verbose = false) const;
+    unsigned importJSONFile(std::istream& istream, C4Collection*, const std::string& idPrefix = "",
+                            double timeout = 0.0, bool verbose = false) const;
     // NOLINTEND(modernize-use-nodiscard)
     static bool     readFileByLines(const std::string& path, function_ref<bool(FLSlice)>, size_t maxLines);
     static unsigned importJSONLines(const std::string& path, C4Collection*, double timeout = 0.0, bool verbose = false,
@@ -333,15 +324,15 @@ class C4Test {
 
     static std::string fleece2json(slice fleece) {
         auto value = ValueFromData(fleece);
-        REQUIRE(value);
+        Require(value);
         return value.toJSON(true, true).asString();
     }
 
     alloc_slice json2fleece(const char* json5str) const {
         std::string       jsonStr = json5(json5str);
         TransactionHelper t(db);
-        alloc_slice       encodedBody = c4db_encodeJSON(db, slice(jsonStr), nullptr);
-        REQUIRE(encodedBody);
+        alloc_slice       encodedBody = c4db_encodeJSON(db, slice(jsonStr), ERROR_INFO());
+        Require(encodedBody);
         return encodedBody;
     }
 

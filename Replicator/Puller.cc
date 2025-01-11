@@ -36,14 +36,14 @@ using namespace litecore::blip;
 namespace litecore::repl {
     Puller::Puller(Replicator* replicator, CollectionIndex coll)
         : Delegate(replicator, "Pull", coll)
+        , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
+        , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
+        , _returningRevs(this, "returningRevs", &Puller::_revsFinished)
 #if __APPLE__
         , _revMailbox(nullptr, "Puller revisions")
 #endif
         , _inserter(new Inserter(replicator, coll))
-        , _revFinder(new RevFinder(replicator, this, coll))
-        , _provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
-        , _provisionallyHandledRevoked(this, "provisionallyHandledRevoked", &Puller::_revsWereProvisionallyHandled)
-        , _returningRevs(this, "returningRevs", &Puller::_revsFinished) {
+        , _revFinder(new RevFinder(replicator, this, coll)) {
         setParentObjectRef(replicator->getObjectRef());
         replicator->registerWorkerHandler(this, "rev", &Puller::handleRev);
         replicator->registerWorkerHandler(this, "norev", &Puller::handleNoRev);
@@ -109,7 +109,7 @@ namespace litecore::repl {
             enc.endDict();
         }
 
-        sendRequest(msg, [=](const blip::MessageProgress& progress) {
+        sendRequest(msg, [this](const blip::MessageProgress& progress) {
             //... After request is sent:
             if ( progress.reply && progress.reply->isError() ) {
                 gotError(progress.reply);
@@ -427,7 +427,7 @@ namespace litecore::repl {
             *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
             for ( const auto& counter : counters ) {
                 if ( counter.first == rc ) {
-                    *reason = format("%s/%d", reason->c_str(), counter.second);
+                    *reason = stringprintf("%s/%d", reason->c_str(), counter.second);
                     break;
                 }
             }

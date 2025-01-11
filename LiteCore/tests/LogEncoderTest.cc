@@ -20,6 +20,7 @@
 #include <regex>
 #include <sstream>
 #include <fstream>
+#include <thread>
 
 using namespace std;
 
@@ -63,20 +64,18 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
 #endif
     stringstream out;
     {
-        LogEncoder           logger(out, LogLevel::Info);
-        size_t               size = 0xabcdabcd;
-        LogDomain::ObjectMap dummy;
-        logger.log(nullptr, dummy, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
-                   1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
+        LogEncoder logger(out, int8_t(LogLevel::Info));
+        size_t     size = 0xabcdabcd;
+        logger.log(nullptr, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p", 1234567890U, 2345678901LU,
+                   123456789123456789LLU, size, (void*)0x7fff5fbc);
         for ( int sgn = -1; sgn <= 1; sgn += 2 ) {
             ptrdiff_t ptrdiff = 1234567890;
-            logger.log(nullptr, dummy, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
-                       1234567890 * sgn, 234567890L * sgn, 123456789123456789LL * sgn, ptrdiff * sgn, '@');
+            logger.log(nullptr, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c", 1234567890 * sgn,
+                       234567890L * sgn, 123456789123456789LL * sgn, ptrdiff * sgn, '@');
         }
         const char* str = "C string";
         slice       buf("hello");
-        logger.log(nullptr, dummy, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf),
-                   SPLAT(buf));
+        logger.log(nullptr, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
     }
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
@@ -130,18 +129,17 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
         domainDraw = c4log_getDomain(draw.c_str(), true);
     }
     {
-        LogDomain::ObjectMap dummy;
-        LogEncoder           verbose(out[0], LogLevel::Verbose);
-        LogEncoder           info(out[1], LogLevel::Info);
-        LogEncoder           warning(out[2], LogLevel::Warning);
-        LogEncoder           error(out[3], LogLevel::Error);
-        info.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "drawing %d pictures", 2);
-        verbose.log("Paint", dummy, LogEncoder::None, "Waiting for drawings");
-        warning.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "made a mistake!");
-        info.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "redrawing %d picture(s)", 1);
-        info.log(c4log_getDomainName(domainDraw), dummy, LogEncoder::None, "Handing off to painter");
-        info.log("Paint", dummy, LogEncoder::None, "Painting");
-        error.log("Customer", dummy, LogEncoder::None, "This isn't what I asked for!");
+        LogEncoder verbose(out[0], int8_t(LogLevel::Verbose));
+        LogEncoder info(out[1], int8_t(LogLevel::Info));
+        LogEncoder warning(out[2], int8_t(LogLevel::Warning));
+        LogEncoder error(out[3], int8_t(LogLevel::Error));
+        info.log(c4log_getDomainName(domainDraw), "drawing %d pictures", 2);
+        verbose.log("Paint", "Waiting for drawings");
+        warning.log(c4log_getDomainName(domainDraw), "made a mistake!");
+        info.log(c4log_getDomainName(domainDraw), "redrawing %d picture(s)", 1);
+        info.log(c4log_getDomainName(domainDraw), "Handing off to painter");
+        info.log("Paint", "Painting");
+        error.log("Customer", "This isn't what I asked for!");
     }
 
     static const vector<string> expectedDomains[] = {{"Paint"},
@@ -173,12 +171,16 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     stringstream out;
     stringstream out2;
     {
-        LogEncoder logger(out, LogLevel::Info);
-        LogEncoder logger2(out2, LogLevel::Verbose);
-        logger.log(nullptr, objects, (LogEncoder::ObjectRef)1, "I'm Tweedledum");
-        logger.log(nullptr, objects, (LogEncoder::ObjectRef)3, "I'm Tweedledee");
-        logger.log(nullptr, objects, (LogEncoder::ObjectRef)2, "and I'm the rattle");
-        logger2.log(nullptr, objects, (LogEncoder::ObjectRef)2, "Am I the rattle too?");
+        LogEncoder logger(out, int8_t(LogLevel::Info));
+        LogEncoder logger2(out2, int8_t(LogLevel::Verbose));
+        logger.log(nullptr, LogEncoder::ObjectRef{1}, LogDomain::getObjectPath(LogEncoder::ObjectRef{1}, objects),
+                   "I'm Tweedledum");
+        logger.log(nullptr, LogEncoder::ObjectRef{3}, LogDomain::getObjectPath(LogEncoder::ObjectRef{3}, objects),
+                   "I'm Tweedledee");
+        logger.log(nullptr, LogEncoder::ObjectRef{2}, LogDomain::getObjectPath(LogEncoder::ObjectRef{2}, objects),
+                   "and I'm the rattle");
+        logger2.log(nullptr, LogEncoder::ObjectRef{2}, LogDomain::getObjectPath(LogEncoder::ObjectRef{2}, objects),
+                    "Am I the rattle too?");
     }
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
@@ -199,8 +201,8 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
 
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
-    LogEncoder   logger(out, LogLevel::Info);
-    logger.log(nullptr, {}, LogEncoder::None, "Hi there");
+    LogEncoder   logger(out, int8_t(LogLevel::Info));
+    logger.log(nullptr, "Hi there");
 
     logger.withStream([&](ostream& s) { CHECK(out.str().empty()); });
     string encoded;

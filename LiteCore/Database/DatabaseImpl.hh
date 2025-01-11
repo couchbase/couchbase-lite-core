@@ -194,7 +194,7 @@ namespace litecore {
         mutable HybridClock                       _versionClock;          // Version-vector clock
     };
 
-    static inline DatabaseImpl* asInternal(const C4Database* db) { return (DatabaseImpl*)db; }
+    inline DatabaseImpl* asInternal(const C4Database* db) { return (DatabaseImpl*)db; }
 
 }  // namespace litecore
 
