@@ -779,7 +779,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C][Unnest]") {
-    auto defaultColl     = getCollection(db, kC4DefaultCollectionSpec);
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
@@ -889,9 +889,10 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C][Un
             C4Log("-------- Repeating with index --------");
             C4IndexOptions indexOpts{};
             indexOpts.unnestPath = "shapes";
-            REQUIRE(c4coll_createIndex(defaultColl, C4STR("shapes"), C4STR("[[\".color\"]]"), kC4JSONQuery, kC4ArrayIndex, &indexOpts, nullptr));
-            REQUIRE(c4coll_createIndex(defaultColl, C4STR("shapes2"), C4STR("concat(color, to_string(size))"), kC4N1QLQuery,
-                                      kC4ArrayIndex, &indexOpts, nullptr));
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("shapes"), C4STR("[[\".color\"]]"), kC4JSONQuery,
+                                       kC4ArrayIndex, &indexOpts, nullptr));
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("shapes2"), C4STR("concat(color, to_string(size))"),
+                                       kC4N1QLQuery, kC4ArrayIndex, &indexOpts, nullptr));
         }
         compileSelect(json5("{WHAT: ['.shape.color'],\
                           DISTINCT: true,\
@@ -932,7 +933,8 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C][Un
 
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
     deleteDatabase();
-    db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    db                            = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    auto              defaultColl = c4db_getDefaultCollection(db, ERROR_INFO());
     std::stringstream students{R"(
 [
 {"type":"university",
@@ -950,7 +952,7 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
    {"id":"student_189","class":"2","order":"5","interests":["violin","movies"]}]}
 ]
 )"};
-    importJSONFile(students, c4db_getDefaultCollection(db, nullptr));
+    importJSONFile(students, defaultColl);
     vector<string> results{
             "Univ of Michigan, student_112, 3, violin",     "Univ of Michigan, student_112, 3, baseball",
             "Univ of Michigan, student_189, 2, violin",     "Univ of Michigan, student_189, 2, tennis",
@@ -963,11 +965,10 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
             C4Log("-------- Repeating with index --------");
             C4IndexOptions indexOpts{};
             indexOpts.unnestPath = "students[].interests";
-            REQUIRE(c4db_createIndex2(db, C4STR("students_interests"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
-                                      &indexOpts, nullptr));
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("students_interests"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
+                                       &indexOpts, nullptr));
 
-            auto           coll  = c4db_getDefaultCollection(db, nullptr);
-            C4Index*       index = c4coll_getIndex(coll, C4STR("students_interests"), nullptr);
+            C4Index*       index = c4coll_getIndex(defaultColl, C4STR("students_interests"), nullptr);
             C4IndexOptions c4opts{};
             bool           succ = c4index_getOptions(index, &c4opts);
             CHECK((succ && "students[].interests"s == c4opts.unnestPath));
@@ -985,7 +986,8 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
     }
 
     deleteDatabase();
-    db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    db          = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    defaultColl = c4db_getDefaultCollection(db, ERROR_INFO());
     // The only difference from "students.json" is that there is an extra property from student to interests.
     std::stringstream students2{R"(
 [
@@ -1005,15 +1007,15 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
  ]}
 ]
 )"};
-    importJSONFile(students2, c4db_getDefaultCollection(db, nullptr));
+    importJSONFile(students2, defaultColl);
 
     for ( int withIndex = 0; withIndex <= 1; ++withIndex ) {
         if ( withIndex ) {
             C4Log("-------- Repeating with index --------");
             C4IndexOptions indexOpts{};
             indexOpts.unnestPath = "students[].extra.interests";
-            REQUIRE(c4db_createIndex2(db, C4STR("students_interests"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
-                                      &indexOpts, nullptr));
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("students_interests"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
+                                       &indexOpts, nullptr));
         }
         compileSelect(json5("{WHAT: [['AS', ['.doc.name'], 'college'], ['.student.id'], ['.student.class']],"
                             " FROM: [{as: 'doc'},"
@@ -1034,7 +1036,8 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST - Missing Array", "[Query][C]") {
     deleteDatabase();
-    db = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    db                            = c4db_openNamed(kDatabaseName, &dbConfig(), ERROR_INFO());
+    auto              defaultColl = c4db_getDefaultCollection(db, ERROR_INFO());
     std::stringstream documents{R"(
 [
   {"name": "Jonh Doe",     "contacts": ["Contact1", "Contact2"]},
@@ -1049,8 +1052,8 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query Nested UNNEST - Missing Array",
             C4Log("-------- Repeating with index --------");
             C4IndexOptions indexOpts{};
             indexOpts.unnestPath = "contacts";
-            REQUIRE(c4db_createIndex2(db, C4STR("contacts"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex, &indexOpts,
-                                      nullptr));
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("contacts"), C4STR(""), kC4N1QLQuery, kC4ArrayIndex,
+                                       &indexOpts, nullptr));
         }
 
         const char* queryStr = "SELECT doc.name, contact FROM _default AS doc UNNEST doc.contacts AS contact";
