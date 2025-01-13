@@ -280,7 +280,7 @@ namespace litecore {
 
     // Test for N1QL NULL value (which is an empty blob tagged with kFleeceNullSubtype)
     static inline bool isNull(sqlite3_value* arg) {
-        if (sqlite3_value_type(arg) != SQLITE_BLOB) return false;
+        if ( sqlite3_value_type(arg) != SQLITE_BLOB ) return false;
         auto subtype = sqlite3_value_subtype(arg);
         return subtype == kFleeceNullSubtype || (subtype == 0 && sqlite3_value_bytes(arg) == 0);
     }
