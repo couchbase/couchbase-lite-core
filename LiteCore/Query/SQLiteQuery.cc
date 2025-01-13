@@ -445,20 +445,24 @@ namespace litecore {
                 case SQLITE_BLOB:
                     {
                         if ( i >= _query->_1stCustomResultColumn ) {
-                            slice        fleeceData{col.getBlob(), (size_t)col.getBytes()};
-                            Scope        fleeceScope(fleeceData, _sk);
-                            const Value* value = Value::fromTrustedData(fleeceData);
-                            if ( !value )
-                                error::_throw(error::CorruptRevisionData,
-                                              "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
-                            enc.writeValue(value);
+                            slice fleeceData{col.getBlob(), (size_t)col.getBytes()};
+                            if ( fleeceData.empty() ) {
+                                enc.writeNull();
+                            } else {
+                                Scope        fleeceScope(fleeceData, _sk);
+                                const Value* value = Value::fromTrustedData(fleeceData);
+                                if ( !value )
+                                    error::_throw(error::CorruptRevisionData,
+                                                  "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
+                                enc.writeValue(value);
+                            }
                             break;
                         }
-                            // else fall through:
-                        case SQLITE_TEXT:
-                            enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
-                            break;
                     }
+                    // else fall through:
+                case SQLITE_TEXT:
+                    enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
+                    break;
             }
             return true;
         }
