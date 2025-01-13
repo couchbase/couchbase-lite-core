@@ -93,12 +93,12 @@ class C4ThreadingTest : public C4Test {
         do {
             if (kLog) fprintf(stderr, "\nEnumeration #%3d: ", ++i);
 
-            (void)c4db_getLastSequence(database);
+            (void)c4coll_getLastSequence(database->getDefaultCollection());
 
             C4Error error;
             C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
             options.flags |= kC4IncludeBodies;
-            auto e = c4db_enumerateChanges(database, 0, &options, ERROR_INFO(error));
+            auto e = c4coll_enumerateChanges(database->getDefaultCollection(), 0, &options, ERROR_INFO(error));
             REQUIRE(e);
 
             n = 0;

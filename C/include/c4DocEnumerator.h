@@ -26,33 +26,6 @@ C4API_BEGIN_DECLS
         \note The caller must use a lock for DocEnumerator when this function is called. */
 void c4enum_close(C4DocEnumerator* C4NULLABLE e) C4API;
 
-#ifndef C4_STRICT_COLLECTION_API
-/** Creates an enumerator ordered by sequence.
-        Caller is responsible for freeing the enumerator when finished with it.
-        \note The caller must use a lock for Database when this function is called.
-        @param database  The database.
-        @param since  The sequence number to start _after_. Pass 0 to start from the beginning.
-        @param options  Enumeration options (NULL for defaults).
-        @param outError  Error will be stored here on failure.
-        @return  A new enumerator, or NULL on failure. */
-NODISCARD CBL_CORE_API C4DocEnumerator* c4db_enumerateChanges(C4Database* database, C4SequenceNumber since,
-                                                              const C4EnumeratorOptions* C4NULLABLE options,
-                                                              C4Error* C4NULLABLE                   outError) C4API;
-
-/** Creates an enumerator ordered by docID.
-        Options have the same meanings as in Couchbase Lite.
-        There's no 'limit' option; just stop enumerating when you're done.
-        Caller is responsible for freeing the enumerator when finished with it.
-        \note The caller must use a lock for Database when this function is called.
-        @param database  The database.
-        @param options  Enumeration options (NULL for defaults).
-        @param outError  Error will be stored here on failure.
-        @return  A new enumerator, or NULL on failure. */
-NODISCARD CBL_CORE_API C4DocEnumerator* c4db_enumerateAllDocs(C4Database*                           database,
-                                                              const C4EnumeratorOptions* C4NULLABLE options,
-                                                              C4Error* C4NULLABLE                   outError) C4API;
-#endif
-
 /** Creates an enumerator ordered by sequence.
         Caller is responsible for freeing the enumerator when finished with it.
         \note The caller must use a lock for Database when this function is called.
