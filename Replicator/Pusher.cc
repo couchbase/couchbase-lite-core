@@ -17,6 +17,7 @@
 #include "Error.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
+#include "VersionVector.hh"
 #include "c4ExceptionUtils.hh"
 #include <algorithm>
 
@@ -215,8 +216,24 @@ namespace litecore::repl {
             enc.beginArray();
             if ( _proposeChanges ) {
                 enc << change->docID;
-                encodeRevID(enc, change->revID);
-                slice remoteAncestorRevID = change->remoteAncestorRevID;
+                alloc_slice revID = change->revID;
+                try {
+                    VersionVector vv = VersionVector::fromASCII(revID);
+                    revID            = vv.current().asASCII();
+                } catch ( ... ) {
+                    // this is not a revID of VersionVerctor
+                }
+                encodeRevID(enc, revID);
+
+                alloc_slice remoteAncestorRevID = change->remoteAncestorRevID;
+                if ( remoteAncestorRevID ) {
+                    try {
+                        VersionVector vv    = VersionVector::fromASCII(remoteAncestorRevID);
+                        remoteAncestorRevID = vv.current().asASCII();
+                    } catch ( ... ) {
+                        // this is not a revID of VersionVerctor
+                    }
+                }
                 if ( remoteAncestorRevID || change->bodySize > 0 ) encodeRevID(enc, remoteAncestorRevID);
                 if ( !_db->usingVersionVectors() && remoteAncestorRevID
                      && C4Document::getRevIDGeneration(remoteAncestorRevID)
