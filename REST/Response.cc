@@ -32,7 +32,7 @@ namespace litecore::REST {
 
     Value Body::bodyAsJSON() const {
         if ( !_gotBodyFleece ) {
-            if ( header("Content-Type") == "application/json" ) {
+            if ( header("Content-Type").hasPrefix("application/json") ) {
                 if ( alloc_slice b = body() ) {
                     FLError err;
                     _bodyFleece = Doc::fromJSON(b, &err);
