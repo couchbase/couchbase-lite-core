@@ -160,7 +160,14 @@ namespace litecore::REST {
         auto [dbName, spec] = parseKeyspace(keyspace);
         lock_guard<mutex> lock(_mutex);
         auto              share = _getShare(string(dbName));
-        if ( !share || !share->keySpaces.contains(keyspace) ) return {};
+        if ( !share ) return {};
+        if (!share->keySpaces.contains(keyspace)) {
+            // The input keyspace might not be in normalized form, i.e. might be `db._default`.
+            // Construct a normalized keyspace string and retry:
+            string normalized = makeKeyspace(dbName, spec);
+            if (!share->keySpaces.contains(normalized))
+                return {};
+        }
         return BorrowedCollection(writeable ? share->pool->borrowWriteable() : share->pool->borrow(), spec);
     }
 
