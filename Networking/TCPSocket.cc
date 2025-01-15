@@ -620,10 +620,13 @@ namespace litecore::net {
             else
                 error = C4Error{POSIXDomain, err};
             if ( error != _error ) {
-                _error        = error;
+                _error         = error;
+                LogLevel level = LogLevel::Warning;
+                // As a server, it's normal for the client to close their socket, so don't warn.
+                if ( !_isClient && err == ECONNRESET ) level = LogLevel::Info;
                 string errStr = error::_what(error::POSIX, err);
-                LogWarn(WSLog, "%s got POSIX error %d \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"), err,
-                        errStr.c_str());
+                WSLog.log(level, "%s got POSIX error %d \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"), err,
+                          errStr.c_str());
             }
         } else {
             // Negative errors are assumed to be from mbedTLS.
