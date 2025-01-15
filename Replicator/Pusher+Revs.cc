@@ -17,6 +17,7 @@
 #include "HTTPTypes.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
+#include "VersionVector.hh"
 #include "fleece/Mutable.hh"
 #include <cinttypes>
 
@@ -106,9 +107,31 @@ namespace litecore::repl {
             }
         }
 
-        auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
+        auto            fullRevID    = alloc_slice(_db->convertVersionToAbsolute(request->revID));
+        alloc_slice     currentRevID = fullRevID;
+        constexpr slice vvSeparator  = ",;"_sl;
+        if ( currentRevID.findAnyByteOf(vvSeparator) ) {
+            try {
+                VersionVector vv = VersionVector::fromASCII(currentRevID);
+                currentRevID     = vv.current().asASCII();
+            } catch ( ... ) {
+                // it's not a VV even with comma or semi-colon in it.
+                throw;
+            }
+        }
+
         auto fullReplacementRevID =
                 replacementRevID ? alloc_slice(_db->convertVersionToAbsolute(replacementRevID)) : nullslice;
+        alloc_slice currentReplacementRevID = fullReplacementRevID;
+        if ( currentReplacementRevID && currentReplacementRevID.findAnyByteOf(vvSeparator) ) {
+            try {
+                VersionVector vv        = VersionVector::fromASCII(currentReplacementRevID);
+                currentReplacementRevID = vv.current().asASCII();
+            } catch ( ... ) {
+                // it's not a VV even with comma or semi-colon in it.
+                throw;
+            }
+        }
 
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
@@ -116,11 +139,11 @@ namespace litecore::repl {
         assignCollectionToMsg(msg, collectionIndex());
         msg.compressed = true;
         msg["id"_sl]   = request->docID;
-        if ( fullReplacementRevID ) {
-            msg["rev"_sl]      = fullReplacementRevID;
+        if ( currentReplacementRevID ) {
+            msg["rev"_sl]      = currentReplacementRevID;
             msg["replacedRev"] = fullRevID;
         } else
-            msg["rev"_sl] = fullRevID;
+            msg["rev"_sl] = currentRevID;
         msg["sequence"_sl] = narrow_cast<int64_t>((uint64_t)request->sequence);
         if ( root ) {
             if ( request->noConflicts ) msg["noconflicts"_sl] = true;
@@ -129,7 +152,7 @@ namespace litecore::repl {
 
             // Include the document history, but skip the current revision 'cause it's redundant
             alloc_slice history        = request->historyString(doc);
-            alloc_slice effectiveRevID = fullReplacementRevID ? fullReplacementRevID : fullRevID;
+            alloc_slice effectiveRevID = currentReplacementRevID ? currentReplacementRevID : currentRevID;
             if ( history.hasPrefix(effectiveRevID) && history.size > effectiveRevID.size )
                 msg["history"_sl] = history.from(effectiveRevID.size + 1);
 
