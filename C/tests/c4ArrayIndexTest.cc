@@ -358,26 +358,30 @@ TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Shared Path", "[C][ArrayIndex
     bool deleted = c4coll_deleteIndex(coll, "phones"_sl, ERROR_INFO());
     REQUIRE(deleted);
 
-    // We must re-create the Query objects because we deleted the index - which means the unnest tables may be missing.
-    cityQuery = c4query_new2(
-            db, kC4N1QLQuery,
-            R"(SELECT p.pid, c.address.city, c.address.state FROM profiles AS p UNNEST p.contacts AS c WHERE c.address.state = "CA")"_sl,
-            nullptr, ERROR_INFO());
-    REQUIRE(cityQuery);
-
-    phoneQuery = c4query_new2(
-            db, kC4N1QLQuery,
-            R"(SELECT prof.pid, c.address.city, c.address.state, p.type, p.numbers FROM profiles AS prof UNNEST prof.contacts AS c UNNEST c.phones AS p WHERE p.type = "mobile")"_sl,
-            nullptr, ERROR_INFO());
-    REQUIRE(phoneQuery);
-
-
+    // cityQuery is not affected by the deletion of index "phones"
     queryenum = REQUIRED(c4query_run(cityQuery, nullslice, nullptr));
     validateQuery(queryenum, {
                                      R"(["p-0001", "San Pedro", "CA"])",
                                      R"(["p-0001", "San Pedro", "CA"])",
                              });
-    queryenum = REQUIRED(c4query_run(phoneQuery, nullslice, nullptr));
+
+    // phoneQuery is affected by the deletion of index "phones"
+    // Following error will be logged,
+    // 2024-10-29T21:14:28.226339 DB ERROR SQLite error (code 1): no such table: 152b9815998e188eb99eb1612aafbb3ee6031535 in "SELECT fl_result(fl_value(prof.body, 'pid')), fl_result(fl_unnested_value(c.body, 'address.city')), fl_result(fl_unnested_value(c.body, 'address.state')), fl_result(fl_unnested_value(p.body, 'type')), fl_result(fl_unnested_value(p.body, 'numbers')) FROM "kv_.profiles" AS prof JOIN bc89db8a20fe759bf161b84adf2294d9bfe0c88d AS c ON c.docid=prof.rowid JOIN "152b9815998e188eb99eb1612aafbb3ee6031535" AS p ON p.docid=c.rowid WHERE fl_unnested_value(p.body, 'type') = 'mobile'". This table is referenced by an array index, which may have been deleted.
+    C4Error error;
+    queryenum = c4query_run(phoneQuery, nullslice, &error);
+    CHECK(!queryenum);  // This query relies on the index that has been deleted.
+    CHECK((error.domain == SQLiteDomain && error.code == 1));
+
+    // Recompile the query
+    phoneQuery = c4query_new2(
+            db, kC4N1QLQuery,
+            R"(SELECT prof.pid, c.address.city, c.address.state, p.type, p.numbers FROM profiles AS prof UNNEST prof.contacts AS c UNNEST c.phones AS p WHERE p.type = "mobile")"_sl,
+            nullptr, ERROR_INFO());
+    REQUIRE(phoneQuery);
+    queryenum = c4query_run(phoneQuery, nullslice, &error);
+    CHECK(queryenum);
+
     validateQuery(queryenum, {
                                      R"(["p-0001", "San Pedro", "CA", "mobile", ["310-9601308"]])",
                                      R"(["p-0001", "San Pedro", "CA", "mobile", ["310-4833623"]])",
@@ -654,6 +658,9 @@ TEST_CASE_METHOD(ArrayIndexTest, "Unnest Without Alias", "[C][Unnest]") {
 
 // 7. TestUnnestArrayLiteralNotSupport
 TEST_CASE_METHOD(ArrayIndexTest, "Unnest Array Literal Not Supported", "[C][Unnest]") {
+    C4Collection* coll = createCollection(db, {"profiles"_sl, "_default"_sl});
+    importTestData(coll);
+
     C4Error err{};
     c4::ref query = c4query_new2(
             db, kC4N1QLQuery,
