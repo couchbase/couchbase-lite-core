@@ -148,20 +148,6 @@ struct C4Database
     /// Calls the callback function for each collection _in each scope_.
     virtual void forEachCollection(const CollectionSpecCallback&) const = 0;
 
-#ifndef C4_STRICT_COLLECTION_API
-    // Shims to ease the pain of converting to collections. These delegate to the default collection.
-    uint64_t             getDocumentCount() const;
-    C4SequenceNumber     getLastSequence() const;
-    Retained<C4Document> getDocument(slice docID, bool mustExist = true,
-                                     C4DocContentLevel content = kDocGetCurrentRev) const;
-    Retained<C4Document> getDocumentBySequence(C4SequenceNumber sequence) const;
-    Retained<C4Document> putDocument(const C4DocPutRequest& rq, size_t* C4NULLABLE outCommonAncestorIndex,
-                                     C4Error* outError);
-    bool                 purgeDocument(slice docID);
-    C4Timestamp          getExpiration(slice docID) const;
-    bool                 setExpiration(slice docID, C4Timestamp timestamp);
-#endif
-
     // Transactions:
 
     /** Manages a transaction safely. The constructor begins a transaction, and \ref commit
@@ -225,14 +211,6 @@ struct C4Database
 
     Retained<C4Query> newQuery(C4QueryLanguage language, slice queryExpression,
                                int* C4NULLABLE outErrorPos = nullptr) const;
-
-#ifndef C4_STRICT_COLLECTION_API
-    void        createIndex(slice name, slice indexSpec, C4QueryLanguage indexSpecLanguage, C4IndexType indexType,
-                            const C4IndexOptions* C4NULLABLE indexOptions = nullptr);
-    void        deleteIndex(slice name);
-    alloc_slice getIndexesInfo(bool fullInfo = true) const;
-    alloc_slice getIndexRows(slice name) const;
-#endif
 
     // Replicator:
 

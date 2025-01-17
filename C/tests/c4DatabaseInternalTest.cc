@@ -18,6 +18,7 @@
 #include "c4Collection.h"
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
+#include "c4Database.hh"
 #include <cmath>
 #include <cerrno>
 #include <iostream>
@@ -196,7 +197,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     alloc_slice updatedBody = json2fleece("{'foo':1, 'bar':false, 'status':'updated!'}");
 
     // Get a nonexistent document:
-    REQUIRE(c4doc_get(db, C4STR("nonexistent"), true, &c4err) == NULL);
+    auto defaultColl = c4db_getDefaultCollection(db, nullptr);
+    REQUIRE(c4coll_getDoc(defaultColl, C4STR("nonexistent"), true, kDocGetCurrentRev, &c4err) == NULL);
     REQUIRE(c4err.domain == LiteCoreDomain);
     REQUIRE(c4err.code == kC4ErrorNotFound);
 
@@ -210,8 +212,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_release(doc);
 
     // Read it back:
-    auto defaultColl = c4db_getDefaultCollection(db, nullptr);
-    doc              = c4coll_getDoc(defaultColl, docID, true, kDocGetCurrentRev, ERROR_INFO(&c4err));
+    doc = c4coll_getDoc(defaultColl, docID, true, kDocGetCurrentRev, ERROR_INFO(&c4err));
     REQUIRE(doc);
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.revID == revID1);
@@ -539,9 +540,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     c4doc_release(doc);
 
     // No-op forceInsert: of already-existing revision:
-    C4SequenceNumber lastSeq = c4db_getLastSequence(db);
+    C4SequenceNumber lastSeq = c4coll_getLastSequence(defaultColl);
     forceInsert(docID, history, historyCount, body);
-    REQUIRE(c4db_getLastSequence(db) == lastSeq);
+    REQUIRE(c4coll_getLastSequence(defaultColl) == lastSeq);
 
     // Insert a conflict:
     _remoteID                           = 1;  // Treat insertions as coming from a remote db by the replicator
@@ -584,7 +585,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
 
     // Make sure no duplicate rows were inserted for the common revisions:
     // LiteCore does note assigns sequence to inserted ancestor revs
-    REQUIRE(c4db_getLastSequence(db) == 3);
+    REQUIRE(c4coll_getLastSequence(defaultColl) == 3);
 
     // Make sure the earlier revision wins the conflict:
     doc = getDoc(docID);

@@ -88,14 +88,6 @@ C4DocEnumerator::C4DocEnumerator(C4Collection* collection, C4SequenceNumber sinc
 C4DocEnumerator::C4DocEnumerator(C4Collection* collection, const C4EnumeratorOptions& options)
     : _impl(new Impl(collection, options)) {}
 
-#ifndef C4_STRICT_COLLECTION_API
-C4DocEnumerator::C4DocEnumerator(C4Database* database, const C4EnumeratorOptions& options)
-    : C4DocEnumerator(database->getDefaultCollection(), options) {}
-
-C4DocEnumerator::C4DocEnumerator(C4Database* database, C4SequenceNumber since, const C4EnumeratorOptions& options)
-    : C4DocEnumerator(database->getDefaultCollection(), since, options) {}
-#endif
-
 C4DocEnumerator::~C4DocEnumerator() = default;
 
 bool C4DocEnumerator::getDocumentInfo(C4DocumentInfo& info) const noexcept { return _impl && _impl->getDocInfo(&info); }
