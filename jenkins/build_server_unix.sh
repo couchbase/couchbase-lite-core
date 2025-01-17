@@ -136,15 +136,18 @@ build_binaries () {
         # package up the strip symbols
         cp -rp ${project_dir}/libLiteCore.dylib.dSYM  ./install/lib
     else
+        cxx=${CXX:-g++}
+        cc=${CC:-gcc}
         # copy C++ stdlib, etc to output
-        libstdcpp=`g++ --print-file-name=libstdc++.so`
+        echo "Copying libs from compiler"
+        libstdcpp=`$cxx --print-file-name=libstdc++.so`
         libstdcppname=`basename "$libstdcpp"`
-        libgcc_s=`gcc --print-file-name=libgcc_s.so`
+        libgcc_s=`$cc --print-file-name=libgcc_s.so.1`
         libgcc_sname=`basename "$libgcc_s"`
 
-        cp -p "$libstdcpp" "./install/lib/$libstdcppname"
-        ln -s "$libstdcppname" "./install/lib/${libstdcppname}.6"
-        cp -p "${libgcc_s}" "./install/lib"
+        cp -p "$libstdcpp" "./install/lib/$libstdcppname" -v
+        ln -s "$libstdcppname" "./install/lib/${libstdcppname}.6" -v
+        cp -p "${libgcc_s}" "./install/lib" -v
     fi
     if [[ -z ${SKIP_TESTS} ]] && [[ ${EDITION} == 'enterprise' ]]; then
         chmod 777 ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/test_unix.sh
