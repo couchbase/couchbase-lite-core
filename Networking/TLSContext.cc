@@ -57,7 +57,6 @@ namespace litecore::net {
     TLSContext::~TLSContext() = default;
 
     void TLSContext::setRootCerts(slice certsData) {
-        lock_guard lock(_mutex);
         if ( certsData ) {
             _context->set_root_certs(string(certsData));
         } else {
@@ -82,12 +81,10 @@ namespace litecore::net {
 #endif
 
     void TLSContext::requirePeerCert(bool require) {
-        lock_guard lock(_mutex);
         _context->require_peer_cert(tls_context::role_t(_role), require, false);
     }
 
     void TLSContext::allowOnlyCert(slice certData) {
-        lock_guard lock(_mutex);
         if ( certData ) {
             _context->allow_only_certificate(string(certData));
         } else {
@@ -98,7 +95,6 @@ namespace litecore::net {
     void TLSContext::allowOnlyCert(crypto::Cert* cert) { allowOnlyCert(cert->data()); }
 
     void TLSContext::allowOnlySelfSigned(bool onlySelfSigned) {
-        lock_guard lock(_mutex);
         if ( _onlySelfSigned == onlySelfSigned ) { return; }
 
         _onlySelfSigned = onlySelfSigned;
@@ -118,25 +114,23 @@ namespace litecore::net {
     }
 
     void TLSContext::setCertAuthCallback(const std::function<bool(fleece::slice)>& callback) {
-        lock_guard lock(_mutex);
         _context->set_auth_callback([=](const string& certData) { return callback(slice(certData)); });
 
         resetRootCertFinder();
     }
 
     void TLSContext::setIdentity(crypto::Identity* id) {
-        lock_guard lock(_mutex);
         _context->set_identity(id->cert->context(), id->privateKey->context());
         _identity = id;
     }
 
     void TLSContext::setIdentity(slice certData, slice keyData) {
-        lock_guard lock(_mutex);
         _context->set_identity(string(certData), string(keyData));
     }
 
     unique_ptr<tls_socket> TLSContext::wrapSocket(unique_ptr<stream_socket> socket, const string& peer_name) {
-        lock_guard lock(_mutex);
+        // (This method should _not_ lock the mutex, because the entire TLS handshake runs
+        // synchronously during the `wrap_socket` call.
         return _context->wrap_socket(std::move(socket), tls_context::role_t(_role), peer_name);
     }
 

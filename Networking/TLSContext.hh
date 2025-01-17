@@ -86,7 +86,8 @@ namespace litecore::net {
         void setIdentity(crypto::Identity* NONNULL);
         void setIdentity(fleece::slice certData, fleece::slice privateKeyData);
 
-        /// Wraps a socket in a TLS adapter that will perform the handshake and crypto.
+        /// Performs the TLS handshake, then returns a wrapper socket that can be used for I/O.
+        /// Be sure to check the returned socket's error status to see if the handshake failed.
         std::unique_ptr<sockpp::tls_socket> wrapSocket(std::unique_ptr<sockpp::stream_socket>,
                                                        const std::string& peer_name);
 
@@ -97,7 +98,6 @@ namespace litecore::net {
       private:
         void resetRootCertFinder();
 
-        std::mutex                               _mutex;
         std::unique_ptr<sockpp::mbedtls_context> _context;
         fleece::Retained<crypto::Identity>       _identity;
         role_t                                   _role;
