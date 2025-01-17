@@ -42,13 +42,10 @@ namespace litecore::net {
             mbedLogLevel = 4;
         _context->set_logger(mbedLogLevel, [=](int level, const char* filename, int line, const char* message) {
             // mbedTLS logging callback:
-            static const LogLevel kLogLevels[] = {LogLevel::Error, LogLevel::Error, LogLevel::Verbose,
-                                                  LogLevel::Verbose, LogLevel::Debug};
+            static const LogLevel kLogLevels[] = {LogLevel::Info, LogLevel::Info, LogLevel::Verbose, LogLevel::Verbose,
+                                                  LogLevel::Debug};
             string_view           str(message);
             if ( str.ends_with('\n') ) str = str.substr(0, str.size() - 1);
-            // A kludge to downgrade MBEDTLS_ERR_NET_CONN_RESET and MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY,
-            // which happen in normal use, so they're not logged as errors.
-            if ( level <= 1 && (str.ends_with("(-0x0050)") || str.ends_with("(-0x7880)")) ) level = 2;
             TLSLogDomain.log(kLogLevels[level], "mbedTLS(%s): %.*s", (role == Client ? "C" : "S"), int(str.size()),
                              str.data());
         });
