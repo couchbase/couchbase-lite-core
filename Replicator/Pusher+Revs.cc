@@ -152,8 +152,11 @@ namespace litecore::repl {
             // Include the document history, but skip the current revision 'cause it's redundant
             alloc_slice history        = request->historyString(doc);
             alloc_slice effectiveRevID = currentReplacementRevID ? currentReplacementRevID : currentRevID;
-            if ( history.hasPrefix(effectiveRevID) && history.size > effectiveRevID.size )
-                msg["history"_sl] = history.from(effectiveRevID.size + 1);
+            if ( history.hasPrefix(effectiveRevID) && history.size > effectiveRevID.size ) {
+                slice historyTruncated = history.from(effectiveRevID.size + 1);
+                while ( historyTruncated.hasPrefix(' ') ) historyTruncated = historyTruncated.from(1);
+                msg["history"_sl] = historyTruncated;
+            }
 
             bool sendLegacyAttachments =
                     (request->legacyAttachments && (revisionFlags & kRevHasAttachments) && !_db->disableBlobSupport());

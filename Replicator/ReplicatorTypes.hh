@@ -110,6 +110,8 @@ namespace litecore::repl {
 
       protected:
         ~RevToInsert() override;
+
+        alloc_slice _curVersAlloc;  // storage used by history();
     };
 
     /** Metadata of a blob to download. */
