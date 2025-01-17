@@ -15,10 +15,13 @@
 #include "fleece/slice.hh"
 #include <functional>
 #include <memory>
+#include <mutex>
 
 namespace sockpp {
     class mbedtls_context;
-}
+    class stream_socket;
+    class tls_socket;
+}  // namespace sockpp
 
 namespace litecore {
     class LogDomain;
@@ -83,6 +86,10 @@ namespace litecore::net {
         void setIdentity(crypto::Identity* NONNULL);
         void setIdentity(fleece::slice certData, fleece::slice privateKeyData);
 
+        /// Wraps a socket in a TLS adapter that will perform the handshake and crypto.
+        std::unique_ptr<sockpp::tls_socket> wrapSocket(std::unique_ptr<sockpp::stream_socket>,
+                                                       const std::string& peer_name);
+
       protected:
         ~TLSContext() override;
         static bool findSigningRootCert(const std::string& certStr, std::string& rootStr);
@@ -90,12 +97,11 @@ namespace litecore::net {
       private:
         void resetRootCertFinder();
 
+        std::mutex                               _mutex;
         std::unique_ptr<sockpp::mbedtls_context> _context;
         fleece::Retained<crypto::Identity>       _identity;
         role_t                                   _role;
         bool                                     _onlySelfSigned{false};
-
-        friend class TCPSocket;
     };
 
 }  // namespace litecore::net

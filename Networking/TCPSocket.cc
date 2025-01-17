@@ -75,10 +75,7 @@ namespace litecore::net {
 
     bool TCPSocket::wrapTLS(slice hostname) {
         if ( !_tlsContext ) _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
-        string hostnameStr(hostname);
-        auto   oldSocket = std::move(_socket);
-        return setSocket(_tlsContext->_context->wrap_socket(
-                std::move(oldSocket), (_isClient ? tls_context::CLIENT : tls_context::SERVER), hostnameStr));
+        return setSocket(_tlsContext->wrapSocket(std::move(_socket), string(hostname)));
     }
 
     bool TCPSocket::connected() const { return _socket && !_socket->is_shutdown(); }
