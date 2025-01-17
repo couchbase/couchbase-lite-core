@@ -168,8 +168,15 @@ namespace litecore::REST {
     }
 
     void Server::handleConnection(sockpp::stream_socket&& sock) {
-        auto responder = make_unique<ResponderSocket>(_tlsContext);
-        if ( !responder->acceptSocket(std::move(sock)) || (_tlsContext && !responder->wrapTLS()) ) {
+        auto   responder = make_unique<ResponderSocket>(_tlsContext);
+        bool   ok        = responder->acceptSocket(std::move(sock));
+        string peerAddr  = ok ? responder->peerAddress() : "???";
+        if ( ok && _tlsContext ) {
+            c4log(ListenerLog, kC4LogVerbose, "Incoming TLS connection from %s -- starting handshake",
+                  peerAddr.c_str());
+            ok = responder->wrapTLS();
+        }
+        if ( !ok ) {
             C4Error error       = responder->error();
             string  description = error.description();
             if ( error.domain == NetworkDomain ) {
@@ -178,20 +185,20 @@ namespace litecore::REST {
                 replace(description, "client", "server");
                 replace(description, "CLIENT", "client");
             }
-            c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %s", description.c_str());
+            c4log(ListenerLog, kC4LogError, "Error accepting incoming connection from %s: %s", peerAddr.c_str(),
+                  description.c_str());
             return;
         }
 
-        string peer             = responder->peerAddress();
-        bool   loggedConnection = false;
+        bool loggedConnection = false;
         if ( c4log_willLog(ListenerLog, kC4LogVerbose) ) {
             if ( auto cert = responder->peerTLSCertificate() ) {
-                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
-                      responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
+                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s", peerAddr.c_str(),
+                      cert->subjectPublicKey()->digestString().c_str());
                 loggedConnection = true;
             }
         }
-        if ( !loggedConnection ) c4log(ListenerLog, kC4LogInfo, "Accepted connection from %s", peer.c_str());
+        if ( !loggedConnection ) c4log(ListenerLog, kC4LogInfo, "Accepted connection from %s", peerAddr.c_str());
 
         //TODO: Increment/decrement _connectionCount
         _delegate.handleConnection(std::move(responder));

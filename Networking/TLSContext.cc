@@ -46,8 +46,9 @@ namespace litecore::net {
                                                   LogLevel::Verbose, LogLevel::Debug};
             string_view           str(message);
             if ( str.ends_with('\n') ) str = str.substr(0, str.size() - 1);
-            // A kludge to downgrade MBEDTLS_ERR_NET_CONN_RESET, which happens in normal use:
-            if ( level <= 1 && str.ends_with("(-0x0050)") ) level = 2;
+            // A kludge to downgrade MBEDTLS_ERR_NET_CONN_RESET and MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY,
+            // which happen in normal use, so they're not logged as errors.
+            if ( level <= 1 && (str.ends_with("(-0x0050)") || str.ends_with("(-0x7880)")) ) level = 2;
             TLSLogDomain.log(kLogLevels[level], "mbedTLS(%s): %.*s", (role == Client ? "C" : "S"), int(str.size()),
                              str.data());
         });
@@ -56,6 +57,7 @@ namespace litecore::net {
     TLSContext::~TLSContext() = default;
 
     void TLSContext::setRootCerts(slice certsData) {
+        lock_guard lock(_mutex);
         if ( certsData ) {
             _context->set_root_certs(string(certsData));
         } else {
@@ -80,10 +82,12 @@ namespace litecore::net {
 #endif
 
     void TLSContext::requirePeerCert(bool require) {
+        lock_guard lock(_mutex);
         _context->require_peer_cert(tls_context::role_t(_role), require, false);
     }
 
     void TLSContext::allowOnlyCert(slice certData) {
+        lock_guard lock(_mutex);
         if ( certData ) {
             _context->allow_only_certificate(string(certData));
         } else {
@@ -94,6 +98,7 @@ namespace litecore::net {
     void TLSContext::allowOnlyCert(crypto::Cert* cert) { allowOnlyCert(cert->data()); }
 
     void TLSContext::allowOnlySelfSigned(bool onlySelfSigned) {
+        lock_guard lock(_mutex);
         if ( _onlySelfSigned == onlySelfSigned ) { return; }
 
         _onlySelfSigned = onlySelfSigned;
@@ -113,18 +118,26 @@ namespace litecore::net {
     }
 
     void TLSContext::setCertAuthCallback(const std::function<bool(fleece::slice)>& callback) {
+        lock_guard lock(_mutex);
         _context->set_auth_callback([=](const string& certData) { return callback(slice(certData)); });
 
         resetRootCertFinder();
     }
 
     void TLSContext::setIdentity(crypto::Identity* id) {
+        lock_guard lock(_mutex);
         _context->set_identity(id->cert->context(), id->privateKey->context());
         _identity = id;
     }
 
     void TLSContext::setIdentity(slice certData, slice keyData) {
+        lock_guard lock(_mutex);
         _context->set_identity(string(certData), string(keyData));
+    }
+
+    unique_ptr<tls_socket> TLSContext::wrapSocket(unique_ptr<stream_socket> socket, const string& peer_name) {
+        lock_guard lock(_mutex);
+        return _context->wrap_socket(std::move(socket), tls_context::role_t(_role), peer_name);
     }
 
     void TLSContext::resetRootCertFinder() {
