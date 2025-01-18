@@ -94,8 +94,7 @@ C4BlobStore::C4BlobStore(slice dirPath, C4DatabaseFlags flags, const C4Encryptio
     FilePath dir(_dirPath, "");
     if ( dir.exists() ) {
         dir.mustExistAsDir();
-    } else {
-        if ( !(flags & kC4DB_Create) ) error::_throw(error::NotFound);
+    } else if ( !(flags & kC4DB_ReadOnly) ) {
         dir.mkdir();
     }
 }

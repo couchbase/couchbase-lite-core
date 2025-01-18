@@ -11,41 +11,23 @@
 //
 
 #include "Headers.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"
 #include "slice_stream.hh"
 #include <cstring>
 
-#include <utility>
 #include "betterassert.hh"
 
 namespace litecore::websocket {
+    using namespace std;
     using namespace fleece;
 
-    Headers::Headers(const fleece::alloc_slice& encoded) : _backingStore(encoded) {
+    Headers::Headers(const fleece::alloc_slice& encoded) : _backingStore{encoded} {
         readFrom(ValueFromData(encoded).asDict());
     }
 
     Headers::Headers(Dict dict) { readFrom(dict); }
-
-    Headers::Headers(const Headers& other) { *this = other; }
-
-    Headers::Headers(Headers&& other) noexcept
-        : _map(std::move(other._map))
-        , _backingStore(std::move(other._backingStore))
-        , _writer(std::move(other._writer)) {}
-
-    Headers& Headers::operator=(const Headers& other) {
-        clear();
-        if ( other._writer.length() == 0 ) {
-            _map          = other._map;
-            _backingStore = other._backingStore;
-        } else {
-            setBackingStore(other._backingStore);
-            for ( auto& entry : other._map ) add(entry.first, entry.second);
-        }
-        return *this;
-    }
 
     void Headers::readFrom(Dict dict) {
         for ( Dict::iterator i(dict); i; ++i ) {
@@ -59,25 +41,28 @@ namespace litecore::websocket {
         }
     }
 
-    void Headers::setBackingStore(alloc_slice backingStore) {
-        assert(_map.empty());
-        _backingStore = std::move(backingStore);
-    }
-
     void Headers::clear() {
         _map.clear();
-        _backingStore = nullslice;
-        _writer.reset();
+        _backingStore.clear();
     }
 
     slice Headers::store(slice s) {
-        if ( _backingStore.containsAddressRange(s) ) return s;
-        return {_writer.write(s), s.size};
+        for ( auto& stored : _backingStore ) {
+            if ( stored.containsAddressRange(s) ) return s;
+        }
+        _backingStore.emplace_back(s);
+        return _backingStore.back();
     }
 
     void Headers::add(slice name, slice value) {
         assert(name);
         if ( value ) _map.insert({store(name), store(value)});
+    }
+
+    void Headers::set(slice name, slice value) {
+        assert(name);
+        _map.erase(name);
+        add(name, value);
     }
 
     slice Headers::get(slice name) const {
@@ -92,6 +77,15 @@ namespace litecore::websocket {
         int64_t n = v.readSignedDecimal();
         if ( v.size > 0 ) return defaultValue;
         return n;
+    }
+
+    std::string Headers::getAll(slice name) const {
+        string all;
+        forEach(name, [&all](slice value) {
+            if ( !all.empty() ) all += ',';
+            all += string_view(value);
+        });
+        return all;
     }
 
     void Headers::forEach(fleece::function_ref<void(slice, slice)> callback) const {
