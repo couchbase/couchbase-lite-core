@@ -1948,8 +1948,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithoutDelta / timeWithDelta);
 }
 
-// Disabled, to be re-enabled with CBL-5621
-#if 0
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",
                  "[.SyncServerCollection][Delta]") {
@@ -2051,7 +2049,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     }
     CHECK(n == kNumDocs);
 }
-#endif
 
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.SyncServerCollection][Delta]") {
