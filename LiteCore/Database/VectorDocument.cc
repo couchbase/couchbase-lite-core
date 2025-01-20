@@ -620,6 +620,33 @@ namespace litecore {
                 });
             }
 
+            // Conflict may be caused by our VV not containing any version from the same author as requested version.
+            // If that is the case, we should set the status to kRevsLocalIsOlder, and find the correct latest version
+            // so that the remote can handle giving us the correct rev.
+            if ( status == kRevsConflict && recUsesVVs && requestedVec.count() == 1
+                 && !localVec.contains(requestedVec.current().author()) ) {
+                cmp    = kOlder;
+                status = kRevsLocalIsOlder;
+
+
+                alloc_slice  latest;
+                auto&        store = asInternal(collection())->keyStore();
+                VectorRecord vectorRecord{store, rec.key};
+
+                // If this document contains a version from any remote which has the same author as the requested vec,
+                // return the latest. Otherwise, return our current version.
+                if ( auto ver = vectorRecord.findLatestWithAuthor(requestedVec.current().author()); ver ) {
+                    latest = ver->asASCII(mySourceID);
+                } else {
+                    latest = localVec.current().asASCII(mySourceID);
+                }
+
+                char statusChar = static_cast<char>('0' + char(status));
+                result.str("");
+                result << statusChar << '[' << '"' << latest << '"' << ']';
+                return alloc_slice(result.str());
+            }
+
             char statusChar = static_cast<char>('0' + char(status));
             if ( cmp == kNewer || cmp == kSame ) {
                 // If I already have this revision, just return the status byte:

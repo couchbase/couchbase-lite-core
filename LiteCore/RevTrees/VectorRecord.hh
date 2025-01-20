@@ -15,6 +15,8 @@
 #include "RevID.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
+
+#include <SourceID.hh>
 #include <iosfwd>
 #include <optional>
 
@@ -220,6 +222,8 @@ namespace litecore {
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
+
+        std::optional<Version> findLatestWithAuthor(SourceID author);
 
         //---- For testing:
 
