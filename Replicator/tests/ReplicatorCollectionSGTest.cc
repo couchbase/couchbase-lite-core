@@ -1963,7 +1963,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
 
     vector<string> docIDs(kNumDocs);
 
-    for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+    for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
         docIDs[docNo] = stringprintf("%sdoc-%03d", docPrefix.c_str(), docNo);
     }
 
@@ -1971,7 +1971,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     auto populateDB = [&]() {
         TransactionHelper t(db);
         std::srand(123456);  // start random() sequence at a known place
-        for (const string& docID : docIDs) {
+        for ( const string& docID : docIDs ) {
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
@@ -1995,7 +1995,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     replicate(replParams);
 
     // -------- Updating docs on SG --------
-    for (const string& docID : docIDs) {
+    for ( const string& docID : docIDs ) {
         C4Error             error;
         c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, ERROR_INFO(error));
         REQUIRE(doc);
@@ -2022,9 +2022,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
                      FLDict flbody, void* context) { return true; };
 
     // -------- Pulling changes from SG --------
-#    ifdef LITECORE_CPPTEST
+#ifdef LITECORE_CPPTEST
     _expectedDocPullErrors = {docPrefix + "doc-001"};
-#    endif
+#endif
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replParams.setPullFilter(_pullFilter).setCallbackContext(this);
     {
