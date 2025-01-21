@@ -16,7 +16,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
 
-#include <SourceID.hh>
+#include "SourceID.hh"
 #include <iosfwd>
 #include <optional>
 
