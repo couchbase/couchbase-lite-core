@@ -1956,7 +1956,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     initTest({Tulips}, {channelID}, "test_user");
 
     static constexpr int         kNumDocs = 10, kNumProps = 100;
-    static constexpr int         kDocBufSize = 80;
     static constexpr const char* cblTicket   = "cbl-4499";
 
     const string docPrefix = idPrefix + cblTicket + "_";
