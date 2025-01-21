@@ -227,8 +227,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Random RevID", "[Document][C]") {
             kNotEncryptable = R"({"foo":1234,"nested":[0,1,{"SSN":{"type":"encryptable","value":"123-45-6789"}},3,4]})";
 
     slice json;
-          SECTION("verify sha1 digest") { json = kNotEncryptable; }
-          SECTION("verify encryptable") { json = kEncryptable; }
+
+    SECTION("verify sha1 digest") { json = kNotEncryptable; }
+    SECTION("verify encryptable") { json = kEncryptable; }
     if ( !json ) { return; }
     bool clear = json != kEncryptable;
 
