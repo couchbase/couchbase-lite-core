@@ -127,7 +127,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         // Single version:
         CHECK(findDocAncestor(doc1, "10@BobBobBobBobBobBobBobA"_sl) == "2");
         CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA"_sl) == "3[]");
-        CHECK(findDocAncestor(doc1, "1@DaveDaveDaveDaveDaveDA"_sl) == "3[]");
+
+        // Single version with a unknown author returns the latest rev and kRevOlder
+        CHECK(findDocAncestor(doc1, "1@DaveDaveDaveDaveDaveDA"_sl) == R"(1["3@AliceAliceAliceAliceAA"])");
 
         // Limit number of results:
         C4Slice newRevID = "11@BobBobBobBobBobBobBobA; 3@AliceAliceAliceAliceAA"_sl;
@@ -225,8 +227,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Random RevID", "[Document][C]") {
             kNotEncryptable = R"({"foo":1234,"nested":[0,1,{"SSN":{"type":"encryptable","value":"123-45-6789"}},3,4]})";
 
     slice json;
-    SECTION("verify sha1 digest") { json = kNotEncryptable; }
-    SECTION("verify encryptable") { json = kEncryptable; }
+          SECTION("verify sha1 digest") { json = kNotEncryptable; }
+          SECTION("verify encryptable") { json = kEncryptable; }
     if ( !json ) { return; }
     bool clear = json != kEncryptable;
 
