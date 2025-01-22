@@ -53,7 +53,13 @@ namespace litecore {
             switch ( queryLanguage ) {
                 case QueryLanguage::kJSON:
                     try {
-                        _doc = Doc::fromJSON(expression);
+                        if ( const char* optWhere = optionWhere() ) {
+                            std::stringstream ss;
+                            ss << R"({"WHAT": )" << expression.asString() << R"(, "WHERE": )" << optWhere << "}";
+                            _doc = Doc::fromJSON(ss.str());
+                        } else {
+                            _doc = Doc::fromJSON(expression);
+                        }
                     } catch ( const FleeceException& ) {
                         error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
                     }
@@ -63,13 +69,23 @@ namespace litecore {
                         int         errPos;
                         alloc_slice json;
                         if ( !expression.empty() ) {
-                            FLMutableDict result = n1ql::parse(string(expression), &errPos);
+                            MutableDict* result   = nullptr;
+                            bool         hasWhere = false;
+                            if ( const char* optWhere = optionWhere() ) {
+                                hasWhere = true;
+                                std::stringstream ss;
+                                ss << "SELECT " << expression.asString() << " FROM _ WHERE " << optWhere;
+                                result = (MutableDict*)n1ql::parse(ss.str(), &errPos);
+                            } else {
+                                result = (MutableDict*)n1ql::parse(expression.asString(), &errPos);
+                            }
                             if ( !result ) { throw Query::parseError("N1QL syntax error in index expression", errPos); }
-                            json = ((MutableDict*)result)->toJSON(true);
-                            FLMutableDict_Release(result);
+                            if ( hasWhere ) result->remove("FROM"_sl);
+                            json = result->toJSON(true);
+                            FLMutableDict_Release((FLMutableDict)result);
                         } else {
                             // n1ql parser won't compile empty string to empty array. Do it manually.
-                            json = "[]";
+                            json = "[]";  // empty WHAT cannot followed by WHERE clause.
                         }
                         _doc = Doc::fromJSON(json);
                     } catch ( const std::runtime_error& ) {
@@ -153,6 +169,15 @@ namespace litecore {
             }
         }
         return _unnestDoc;
+    }
+
+    const char* IndexSpec::optionWhere() const {
+        if ( const FTSOptions* optFTS = ftsOptions() ) {
+            return optFTS->where;
+        } else if ( const ValueOptions* optValue = valueOptions() ) {
+            return optValue->where;
+        } else
+            return nullptr;
     }
 
 }  // namespace litecore

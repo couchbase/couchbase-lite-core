@@ -45,6 +45,11 @@ namespace litecore {
             bool        ignoreDiacritics{};  ///< True to strip diacritical marks/accents from letters
             bool        disableStemming{};   ///< Disables stemming
             const char* stopWords{};         ///< NULL for default, or comma-delimited string, or empty
+            const char* where;
+        };
+
+        struct ValueOptions {
+            const char* where;
         };
 
         /// Options for an ArrayIndex
@@ -60,7 +65,7 @@ namespace litecore {
         static constexpr vectorsearch::SQEncoding DefaultEncoding{8};
 
         /// Index options. If not empty (the first state), must match the index type.
-        using Options = std::variant<std::monostate, FTSOptions, VectorOptions, ArrayOptions>;
+        using Options = std::variant<std::monostate, FTSOptions, VectorOptions, ArrayOptions, ValueOptions>;
 
         /// Constructs an index spec.
         /// @param name_  Name of the index (must be unique in its collection.)
@@ -89,6 +94,8 @@ namespace litecore {
 
         const ArrayOptions* arrayOptions() const { return std::get_if<ArrayOptions>(&options); }
 
+        const ValueOptions* valueOptions() const { return std::get_if<ValueOptions>(&options); }
+
         /** The required WHAT clause: the list of expressions to index */
         const fleece::impl::Array* NONNULL what() const;
 
@@ -107,6 +114,8 @@ namespace litecore {
       private:
         fleece::impl::Doc* doc() const;
         fleece::impl::Doc* unnestDoc() const;
+
+        const char* optionWhere() const;
 
         mutable Retained<fleece::impl::Doc> _doc;
         mutable Retained<fleece::impl::Doc> _unnestDoc;
