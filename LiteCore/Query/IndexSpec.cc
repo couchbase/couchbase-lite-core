@@ -75,7 +75,8 @@ namespace litecore {
                             std::stringstream ss;
                             if ( canPartialIndex() && !whereClause.empty() ) {
                                 hasWhere = true;
-                                ss << "SELECT " << expression.asString() << " FROM _ WHERE " << whereClause.asString();
+                                ss << "SELECT ( " << expression.asString() << " ) FROM _ WHERE ( "
+                                   << whereClause.asString() << " )";
                                 result = (MutableDict*)n1ql::parse(ss.str(), &errPos);
                             } else {
                                 result = (MutableDict*)n1ql::parse(expression.asString(), &errPos);
