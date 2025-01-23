@@ -562,14 +562,26 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     addNumberedDocs(1, 100);
     addArrayDocs(101, 100);
 
-    store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["=",[".type"],"number"]})"_sl);
-
     auto [queryJson, expectOptimized] =
             GENERATE(pair<const char*, bool>{"['AND', ['=', ['.type'], 'number'], "
                                              "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]",
                                              true},
                      pair<const char*, bool>{"['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]", false});
-    logSection(string("Query: ") + queryJson);
+
+    SECTION("JSON Index Spec with combined \"what\" and \"where\"") {
+        REQUIRE(store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["=",[".type"],"number"]})"_sl));
+    }
+
+    SECTION("JSON Index Spec with separate \"what\" and \"where\"") {
+        REQUIRE(store->createIndex(
+                {"nums", IndexSpec::kValue, R"([[".num"]])", R"(["=",[".type"],"number"])", QueryLanguage::kJSON}));
+    }
+
+    SECTION("N1QL Index Spec") {
+        REQUIRE(store->createIndex({"nums", IndexSpec::kValue, "num", "type = 'number'", QueryLanguage::kN1QL}));
+    }
+
+    logSection(string("Query: ") + queryJson + (expectOptimized ? ", " : ", not ") + "optimized");
     Retained<Query> query = store->compileQuery(json5(queryJson));
     checkOptimized(query, expectOptimized);
 

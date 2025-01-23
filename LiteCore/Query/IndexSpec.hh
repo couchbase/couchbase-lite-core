@@ -39,6 +39,10 @@ namespace litecore {
             kVector,      ///< Index of ML vector similarity. Uses IndexSpec::VectorOptions.
         };
 
+        static bool canPartialIndex(Type type_) { return type_ == kValue || type_ == kFullText; }
+
+        bool canPartialIndex() const { return canPartialIndex(type); }
+
         /// Options for a full-text index.
         struct FTSOptions {
             const char* language{};          ///< NULL or an ISO language code ("en", etc)
@@ -71,6 +75,19 @@ namespace litecore {
         IndexSpec(std::string name_, Type type_, alloc_slice expression_,
                   QueryLanguage queryLanguage = QueryLanguage::kJSON, Options options_ = {});
 
+        /// Constructs an index spec.
+        /// @param name_  Name of the index (must be unique in its collection.)
+        /// @param type_  Type of the index.
+        /// @param expression_  The value(s) to be indexed.
+        /// @param whereClause_ The where clause for the partial index
+        /// @param queryLanguage  Language used for `expression_`; either JSON or N1QL.
+        /// @param options_  Options; if given, its type must match the index type.
+        IndexSpec(std::string name_, Type type_, string_view expression_, string_view whereClause_ = {},
+                  QueryLanguage queryLanguage = QueryLanguage::kJSON, Options options_ = {})
+            : IndexSpec(name_, type_, alloc_slice(expression_), queryLanguage, options_) {
+            const_cast<alloc_slice&>(this->whereClause) = whereClause_;
+        }
+
         IndexSpec(const IndexSpec&) = delete;
         IndexSpec(IndexSpec&&);
 
@@ -101,6 +118,7 @@ namespace litecore {
         std::string const name;           ///< Name of index
         Type const        type;           ///< Type of index
         alloc_slice const expression;     ///< The query expression
+        alloc_slice const whereClause;    ///< The where clause. If given, expression should be the what clause
         QueryLanguage     queryLanguage;  ///< Is expression JSON or N1QL?
         Options const     options;        ///< Options for FTS and vector indexes
 

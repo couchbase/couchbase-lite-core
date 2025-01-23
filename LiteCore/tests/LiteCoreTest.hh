@@ -146,4 +146,11 @@ class DataFileTestFixture
     alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 
     string _databaseName{"db"};
+
+  protected:
+    static void logSection(const string& name, int level = 0) {
+        size_t      numSpaces = 8 + level * 4;
+        std::string spaces(numSpaces, ' ');
+        fprintf(stderr, "%s--- %s\n", spaces.c_str(), name.c_str());
+    }
 };
