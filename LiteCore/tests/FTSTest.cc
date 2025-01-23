@@ -170,25 +170,24 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words In Target", "[Query][FTS]"
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
     // the WHERE clause prevents row 4 from being indexed/searched.
     IndexSpec::FTSOptions options{"english", true};
-    switch ( GENERATE(0, 1, 2) ) {
-        case 0:
-            logSection("JSON Index Spec with combinged \"what\" and \"where\"");
-            REQUIRE(store->createIndex(
-                    "sentence", R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
-                    IndexSpec::kFullText, options));
-            break;
-        case 1:
-            logSection("JSON Index Spec with option \"where\"");
-            options.where = R"-([">", ["length()", [".sentence"]], 70])-";
-            REQUIRE(store->createIndex("sentence", R"-([[".sentence"]])-", IndexSpec::kFullText, options));
-            break;
-        case 2:
-            logSection("N1QL Index Spec");
-            options.where = "length(sentence) > 70";
-            REQUIRE(store->createIndex("sentence", "sentence", QueryLanguage::kN1QL, IndexSpec::kFullText, options));
-            break;
-        default:
-            break;
+
+    SECTION("JSON Index Spec with combinged \"what\" and \"where\"") {
+        REQUIRE(store->createIndex({"sentence",
+                                    IndexSpec::kFullText,
+                                    R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
+                                    {},
+                                    QueryLanguage::kJSON,
+                                    options}));
+    }
+
+    SECTION("JSON Index Spec with separate \"what\" and \"where\"") {
+        REQUIRE(store->createIndex({"sentence", IndexSpec::kFullText, R"-([[".sentence"]])-",
+                                    R"-([">", ["length()", [".sentence"]], 70])-", QueryLanguage::kJSON, options}));
+    }
+
+    SECTION("N1QL Index Spec") {
+        REQUIRE(store->createIndex({"sentence", IndexSpec::kFullText, "sentence", "length(sentence) > 70",
+                                    QueryLanguage::kN1QL, options}));
     }
 
     testQuery("['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\

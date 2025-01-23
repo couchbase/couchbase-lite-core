@@ -53,9 +53,10 @@ namespace litecore {
             switch ( queryLanguage ) {
                 case QueryLanguage::kJSON:
                     try {
-                        if ( const char* optWhere = optionWhere() ) {
+                        if ( canPartialIndex() && !whereClause.empty() ) {
                             std::stringstream ss;
-                            ss << R"({"WHAT": )" << expression.asString() << R"(, "WHERE": )" << optWhere << "}";
+                            ss << R"({"WHAT": )" << expression.asString() << R"(, "WHERE": )" << whereClause.asString()
+                               << "}";
                             _doc = Doc::fromJSON(ss.str());
                         } else {
                             _doc = Doc::fromJSON(expression);
@@ -69,27 +70,36 @@ namespace litecore {
                         int         errPos;
                         alloc_slice json;
                         if ( !expression.empty() ) {
-                            MutableDict* result   = nullptr;
-                            bool         hasWhere = false;
-                            if ( const char* optWhere = optionWhere() ) {
+                            MutableDict*      result   = nullptr;
+                            bool              hasWhere = false;
+                            std::stringstream ss;
+                            if ( canPartialIndex() && !whereClause.empty() ) {
                                 hasWhere = true;
-                                std::stringstream ss;
-                                ss << "SELECT " << expression.asString() << " FROM _ WHERE " << optWhere;
+                                ss << "SELECT " << expression.asString() << " FROM _ WHERE " << whereClause.asString();
                                 result = (MutableDict*)n1ql::parse(ss.str(), &errPos);
                             } else {
                                 result = (MutableDict*)n1ql::parse(expression.asString(), &errPos);
                             }
-                            if ( !result ) { throw Query::parseError("N1QL syntax error in index expression", errPos); }
+                            if ( !result ) {
+                                string errExpr = "Invalid N1QL in index expression \"";
+                                if ( ss.peek() != EOF ) errExpr += ss.str();
+                                else
+                                    errExpr += expression.asString();
+                                errExpr += "\"";
+                                throw Query::parseError(errExpr.c_str(), errPos);
+                            }
                             if ( hasWhere ) result->remove("FROM"_sl);
                             json = result->toJSON(true);
                             FLMutableDict_Release((FLMutableDict)result);
                         } else {
                             // n1ql parser won't compile empty string to empty array. Do it manually.
-                            json = "[]";  // empty WHAT cannot followed by WHERE clause.
+                            json = "[]";  // empty WHAT cannot be followed by WHERE clause.
                         }
                         _doc = Doc::fromJSON(json);
-                    } catch ( const std::runtime_error& ) {
-                        error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
+                    } catch ( const std::runtime_error& exc ) {
+                        if ( dynamic_cast<const Query::parseError*>(&exc) ) throw;
+                        else
+                            error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
                     }
                     break;
             }
@@ -169,15 +179,6 @@ namespace litecore {
             }
         }
         return _unnestDoc;
-    }
-
-    const char* IndexSpec::optionWhere() const {
-        if ( const FTSOptions* optFTS = ftsOptions() ) {
-            return optFTS->where;
-        } else if ( const ValueOptions* optValue = valueOptions() ) {
-            return optValue->where;
-        } else
-            return nullptr;
     }
 
 }  // namespace litecore

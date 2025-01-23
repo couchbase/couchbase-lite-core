@@ -39,17 +39,16 @@ namespace litecore {
             kVector,      ///< Index of ML vector similarity. Uses IndexSpec::VectorOptions.
         };
 
+        static bool canPartialIndex(Type type_) { return type_ == kValue || type_ == kFullText; }
+
+        bool canPartialIndex() const { return canPartialIndex(type); }
+
         /// Options for a full-text index.
         struct FTSOptions {
             const char* language{};          ///< NULL or an ISO language code ("en", etc)
             bool        ignoreDiacritics{};  ///< True to strip diacritical marks/accents from letters
             bool        disableStemming{};   ///< Disables stemming
             const char* stopWords{};         ///< NULL for default, or comma-delimited string, or empty
-            const char* where;
-        };
-
-        struct ValueOptions {
-            const char* where;
         };
 
         /// Options for an ArrayIndex
@@ -65,7 +64,7 @@ namespace litecore {
         static constexpr vectorsearch::SQEncoding DefaultEncoding{8};
 
         /// Index options. If not empty (the first state), must match the index type.
-        using Options = std::variant<std::monostate, FTSOptions, VectorOptions, ArrayOptions, ValueOptions>;
+        using Options = std::variant<std::monostate, FTSOptions, VectorOptions, ArrayOptions>;
 
         /// Constructs an index spec.
         /// @param name_  Name of the index (must be unique in its collection.)
@@ -75,6 +74,19 @@ namespace litecore {
         /// @param options_  Options; if given, its type must match the index type.
         IndexSpec(std::string name_, Type type_, alloc_slice expression_,
                   QueryLanguage queryLanguage = QueryLanguage::kJSON, Options options_ = {});
+
+        /// Constructs an index spec.
+        /// @param name_  Name of the index (must be unique in its collection.)
+        /// @param type_  Type of the index.
+        /// @param expression_  The value(s) to be indexed.
+        /// @param whereClause_ The where clause for the partial index
+        /// @param queryLanguage  Language used for `expression_`; either JSON or N1QL.
+        /// @param options_  Options; if given, its type must match the index type.
+        IndexSpec(std::string name_, Type type_, string_view expression_, string_view whereClause_ = {},
+                  QueryLanguage queryLanguage = QueryLanguage::kJSON, Options options_ = {})
+            : IndexSpec(name_, type_, alloc_slice(expression_), queryLanguage, options_) {
+            const_cast<alloc_slice&>(this->whereClause) = whereClause_;
+        }
 
         IndexSpec(const IndexSpec&) = delete;
         IndexSpec(IndexSpec&&);
@@ -94,8 +106,6 @@ namespace litecore {
 
         const ArrayOptions* arrayOptions() const { return std::get_if<ArrayOptions>(&options); }
 
-        const ValueOptions* valueOptions() const { return std::get_if<ValueOptions>(&options); }
-
         /** The required WHAT clause: the list of expressions to index */
         const fleece::impl::Array* NONNULL what() const;
 
@@ -108,14 +118,13 @@ namespace litecore {
         std::string const name;           ///< Name of index
         Type const        type;           ///< Type of index
         alloc_slice const expression;     ///< The query expression
+        alloc_slice const whereClause;    ///< The where clause. If given, expression should be the what clause
         QueryLanguage     queryLanguage;  ///< Is expression JSON or N1QL?
         Options const     options;        ///< Options for FTS and vector indexes
 
       private:
         fleece::impl::Doc* doc() const;
         fleece::impl::Doc* unnestDoc() const;
-
-        const char* optionWhere() const;
 
         mutable Retained<fleece::impl::Doc> _doc;
         mutable Retained<fleece::impl::Doc> _unnestDoc;
