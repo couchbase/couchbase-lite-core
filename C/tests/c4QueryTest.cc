@@ -285,6 +285,37 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     CHECK(run() == (vector<string>{"0000015", "0000099"}));
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query partial value index", "[Query][C]") {
+    C4Error err;
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    for ( int withIndex = 0; withIndex < 2; ++withIndex ) {
+        if ( withIndex ) {
+            C4IndexOptions options{};
+            options.where = "gender = 'female'";
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("length"), c4str("length(name.first)"), kC4N1QLQuery,
+                                       kC4ValueIndex, &options, WITH_ERROR(&err)));
+        }
+        c4query_release(query);
+        const char* queryStr = "SELECT META().id FROM _ WHERE length(name.first) = 9 AND gender = 'female'";
+        query                = c4query_new2(db, kC4N1QLQuery, c4str(queryStr), nullptr, ERROR_INFO(err));
+        REQUIRE(query);
+        checkExplanation(withIndex);
+        CHECK(run() == (vector<string>{"0000099"}));
+
+        if ( withIndex ) {
+            c4query_release(query);
+            // Logically equivalent query, changing gender = 'female' to gender != 'male'.
+            // Because the condition is not exact as the condition in partial index, it would not use
+            // the index.
+            const char* queryStr2 = "SELECT META().id FROM _ WHERE length(name.first) = 9 AND gender != 'male'";
+            query                 = c4query_new2(db, kC4N1QLQuery, c4str(queryStr2), nullptr, ERROR_INFO(err));
+            REQUIRE(query);
+            checkExplanation(!withIndex);
+            CHECK(run() == (vector<string>{"0000099"}));
+        }
+    }
+}
+
 static bool lookForIndex(C4Database* db, slice name) {
     bool found       = false;
     auto defaultColl = C4QueryTest::getCollection(db, kC4DefaultCollectionSpec);
