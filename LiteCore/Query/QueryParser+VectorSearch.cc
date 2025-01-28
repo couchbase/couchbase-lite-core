@@ -19,6 +19,7 @@
 #include "Dict.hh"
 #include "Logging.hh"
 #include "MutableArray.hh"
+#include <algorithm>
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -101,9 +102,9 @@ namespace litecore {
                 int64_t maxResults;
                 auto    limitVal = getCaseInsensitive(select, "LIMIT");
                 require(limitVal, "a LIMIT must be given when using APPROX_VECTOR_DISTANCE()");
-                maxResults = limitVal->asInt();
-                require(limitVal->isInteger() && maxResults > 0,
-                        "LIMIT must be a positive integer when using APPROX_VECTOR_DISTANCE()");
+                require(limitVal->isInteger(),
+                        "a LIMIT must be given as a literal when using APPROX_VECTOR_DISTANCE()");
+                maxResults = std::max<int64_t>(limitVal->asInt(), 0);
                 require(maxResults <= kMaxMaxResults, "LIMIT must not exceed %u when using APPROX_VECTOR_DISTANCE()",
                         kMaxMaxResults);
 
