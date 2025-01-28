@@ -235,8 +235,10 @@ namespace litecore {
                     {
                         switch ( sqlite3_value_subtype(arg) ) {
                             case 0:
-                                // Untagged blob is already Fleece data
-                                break;
+                                if ( sqlite3_value_bytes(arg) > 0 ) {
+                                    // Untagged blob with size is already Fleece data
+                                    break;
+                                }  // Untagged blob with 0 size is null, so fall through into the Null case.
                             case kFleeceNullSubtype:
                                 {
                                     // A tagged Fleece/JSON null:
