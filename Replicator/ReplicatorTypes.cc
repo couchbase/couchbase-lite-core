@@ -98,6 +98,7 @@ namespace litecore::repl {
         historyBuf.reset();
         deltaSrc.reset();
         deltaSrcRevID.reset();
+        _curVersAlloc.reset();
     }
 
     void RevToInsert::trim() {
@@ -108,8 +109,28 @@ namespace litecore::repl {
     vector<C4String> RevToInsert::history() {
         vector<C4String> history;
         history.reserve(10);
-        history.push_back(revID);
-        for ( const void *pos = historyBuf.buf, *end = historyBuf.end(); pos < end; ) {
+
+        // For version vector, the merged versions if exists will appear
+        // in the history property of the rev message. The VersionVector class
+        // used for parsing the history expects the current version to be
+        // together with its merged version in the cv, mv, mv; format.
+        // This code below will check for the merge versions from the history
+        // and put them together with the current version (revID).
+
+        const void* pos = historyBuf.buf;
+        auto        sc  = historyBuf.findByte(';');  // RevTree will not have ';'.
+        if ( sc ) {
+            while ( pos < sc && *(char*)pos == ' ' ) pos = (char*)pos + 1;
+            _curVersAlloc = revID;
+            _curVersAlloc.append(", ");
+            _curVersAlloc.append(slice(pos, sc + 1));
+            history.push_back(_curVersAlloc);
+            pos = (char*)sc + 1;
+        } else {
+            history.push_back(revID);
+        }
+
+        for ( const void* end = historyBuf.end(); pos < end; ) {
             while ( pos < end && *(char*)pos == ' ' ) pos = (char*)pos + 1;
             auto comma = slice(pos, end).findByteOrEnd(',');
             history.push_back(slice(pos, comma));

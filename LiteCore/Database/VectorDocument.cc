@@ -190,8 +190,11 @@ namespace litecore {
         }
 
         alloc_slice getSelectedRevIDGlobalForm() const override {
-            if ( auto rev = _selectedRevision(); rev ) return rev->versionVector().asASCII(mySourceID());
-            else
+            if ( auto rev = _selectedRevision(); rev ) {
+                if ( rev->hasVersionVector() ) return rev->versionVector().asASCII(mySourceID());
+                else
+                    return C4Document::getSelectedRevIDGlobalForm();
+            } else
                 return nullslice;
         }
 

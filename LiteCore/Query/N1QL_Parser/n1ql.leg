@@ -345,6 +345,11 @@ propertyPath =
 propertyName
     = IDENTIFIER
 
+metaPath =
+    p:IDENTIFIER
+        ('.' _ p2:IDENTIFIER            { p = p.as<string>() + string(".") + p2.as<string>(); }
+        )*                              { $$ = p; }
+
 indexTable =                            { a = string(""); }
     (a:collectionAlias _ '.' _ )?
     i:indexName                         { string c = quoteIdentity(a.as<string>());
@@ -356,7 +361,7 @@ indexTable =                            { a = string(""); }
 
 function =
     "meta"i _ '(' _                    { f = op("meta()");}
-    (c:IDENTIFIER _                    { appendAny(f, c.as<string>());}
+    (c:metaPath _                      { appendAny(f, c.as<string>());}
     )? ')' _                           { $$ = f;}
   | "match"i _ '(' _                   { f = op("MATCH()");}
     ind:indexTable _ ',' _             { appendAny(f, ind.as<string>());}

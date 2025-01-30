@@ -16,6 +16,7 @@
 #include "c4Database.hh"
 #include "Defer.hh"
 #include "fleece/Mutable.hh"
+#include <future>
 
 static constexpr slice            GuitarsName = "guitars"_sl;
 static constexpr C4CollectionSpec Guitars     = {GuitarsName, kC4DefaultScopeID};
@@ -1053,6 +1054,43 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Filters & docIDs with Multiple
         // All 10 docs in Tulips are pushed to db2
         CHECK(c4coll_getDocumentCount(tulips2) == 30);
     }
+}
+
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Remote RevID Continuous Push", "[Push]") {
+    // 1. Create 1 doc
+    // 2. Start a continuous push replicator
+    // 3. Wait until idle
+    // 4. Update the doc.
+    // 5. Wait until idle and stop
+    // 6. Check the log if the proposeChange contains the remoteRevID when the update is push
+    C4Collection* roses = getCollection(db, Roses);
+    {
+        auto              body = json2fleece("{'ok':'really!'}");
+        TransactionHelper t(db);
+        C4DocPutRequest   rq = {};
+        rq.body              = body;
+        rq.docID             = slice("doc1");
+        rq.revFlags          = 0;
+        rq.save              = true;
+        C4Error c4err;
+        auto    doc = c4coll_putDoc(roses, &rq, nullptr, &c4err);
+        c4doc_release(doc);
+    }
+
+    std::future<void> future;
+    _callbackWhenIdle = [this, roses, &future]() {
+        c4::ref<C4Document> doc1 = c4coll_getDoc(roses, slice("doc1"), true, kDocGetAll, ERROR_INFO());
+        TransactionHelper   t(db);
+        c4::ref<C4Document> doc = c4doc_update(doc1, json2fleece("{'ok':'no way!'}"), 0, nullptr);
+        future                  = std::async(std::launch::async, [this]() {
+            sleepFor(1s);
+            stopWhenIdle();
+        });
+        _callbackWhenIdle       = nullptr;
+    };
+
+    _expectedDocumentCount = 2;
+    runPushReplication({Roses}, {Roses}, kC4Continuous);
 }
 
 #endif
