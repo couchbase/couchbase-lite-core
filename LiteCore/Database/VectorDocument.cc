@@ -623,11 +623,9 @@ namespace litecore {
             // Conflict may be caused by our VV not containing any version from the same author as requested version.
             // If that is the case, we should set the status to kRevsLocalIsOlder, and find the correct latest version
             // so that the remote can handle giving us the correct rev.
-            if ( status == kRevsConflict && recUsesVVs && requestedVec.count() == 1
+            if ( status & kRevsConflict && recUsesVVs && requestedVec.count() == 1
                  && !localVec.contains(requestedVec.current().author()) ) {
-                cmp    = kOlder;
                 status = kRevsLocalIsOlder;
-
 
                 alloc_slice  latest;
                 auto&        store = asInternal(collection())->keyStore();
