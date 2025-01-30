@@ -55,6 +55,7 @@ namespace litecore {
               "type INTEGER NOT NULL, "   // C4IndexType
               "keyStore TEXT NOT NULL, "  // Name of the KeyStore it indexes
               "expression TEXT, "         // Indexed property expression (JSON or N1QL)
+              "whereClause TEXT, "        // Property whereClause for partial index (JSON or N1QL)
               "indexTableName TEXT, "     // Index's SQLite name
               "lastSeq TEXT)");           // indexed sequences, for lazy indexes, else null
         ensureSchemaVersionAtLeast(SchemaVersion::WithIndexTable);
@@ -64,18 +65,23 @@ namespace litecore {
 
     void SQLiteDataFile::registerIndex(const litecore::IndexSpec& spec, const string& keyStoreName,
                                        const string& indexTableName) {
-        SQLite::Statement stmt(*this, "INSERT INTO indexes (name, type, keyStore, expression, indexTableName) "
-                                      "VALUES (?, ?, ?, ?, ?)");
+        SQLite::Statement stmt(*this,
+                               "INSERT INTO indexes (name, type, keyStore, expression, indexTableName, whereClause) "
+                               "VALUES (?, ?, ?, ?, ?, ?)");
         // CBL-6000 adding prefix to distinguish between JSON and N1QL expression
         string prefixedExpression{spec.queryLanguage == QueryLanguage::kJSON   ? "=j"
                                   : spec.queryLanguage == QueryLanguage::kN1QL ? "=n"
                                                                                : ""};
+        // whereClause must be in the same queryLanguage as expression.
+
         prefixedExpression += spec.expression.asString();
         stmt.bindNoCopy(1, spec.name);
         stmt.bind(2, spec.type);
         stmt.bindNoCopy(3, keyStoreName);
         stmt.bindNoCopy(4, prefixedExpression.c_str(), (int)prefixedExpression.length());
         if ( spec.type != IndexSpec::kValue ) stmt.bindNoCopy(5, indexTableName);
+        if ( !spec.whereClause.empty() ) stmt.bindNoCopy(6, (char*)spec.whereClause.buf, (int)spec.whereClause.size);
+
         LogStatement(stmt);
         stmt.exec();
     }
@@ -99,6 +105,16 @@ namespace litecore {
                     case IndexSpec::kFullText:
                     case IndexSpec::kVector:
                         same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
+                        if ( spec.type == IndexSpec::kFullText ) {
+                            if ( same ) {
+                                auto whatA = spec.what(), whatB = existingSpec->what();
+                                same = whatA ? whatA->isEqual(whatB) : !whatB;
+                            }
+                            if ( same ) {
+                                auto whereA = spec.where(), whereB = existingSpec->where();
+                                same = whereA ? whereA->isEqual(whereB) : !whereB;
+                            }
+                        }
                         break;
                     case IndexSpec::kArray:
                         same = schemaExistsWithSQL(spec.name, "index", hexName(indexTableName), indexSQL);
@@ -194,7 +210,7 @@ namespace litecore {
 
     vector<SQLiteIndexSpec> SQLiteDataFile::getIndexes(const KeyStore* store) const {
         if ( indexTableExists() ) {
-            string sql = "SELECT name, type, expression, keyStore, indexTableName, lastSeq "
+            string sql = "SELECT name, type, expression, keyStore, indexTableName, lastSeq, whereClause "
                          "FROM indexes ORDER BY name";
             if ( _schemaVersion < SchemaVersion::WithIndexesLastSeq ) {
                 // If schema doesn't have the `lastSeq` column, don't query it:
@@ -251,7 +267,7 @@ namespace litecore {
     // Gets info of a single index. (Subroutine of create/deleteIndex.)
     optional<SQLiteIndexSpec> SQLiteDataFile::getIndex(slice name) {
         if ( !indexTableExists() ) return nullopt;
-        string sql = "SELECT name, type, expression, keyStore, indexTableName, lastSeq "
+        string sql = "SELECT name, type, expression, keyStore, indexTableName, lastSeq, whereClause "
                      "FROM indexes WHERE name=?";
         if ( _schemaVersion < SchemaVersion::WithIndexesLastSeq ) {
             // If schema doesn't have the `lastSeq` column, don't query it:
@@ -320,6 +336,7 @@ namespace litecore {
 
         SQLiteIndexSpec spec{name, type, expression, queryLanguage, options, keyStoreName, indexTableName};
         if ( auto col5 = stmt.getColumn(5); col5.isText() ) spec.indexedSequences = col5.getText();
+        if ( auto col6 = stmt.getColumn(6); col6.isText() ) spec.setWhereClause({col6.getText()});
         return spec;
     }
 

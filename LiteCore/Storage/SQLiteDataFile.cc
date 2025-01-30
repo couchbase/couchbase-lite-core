@@ -382,6 +382,16 @@ namespace litecore {
                     }
                 }
             });
+
+            (void)upgradeSchema(SchemaVersion::WithIndexesWhereColumn, "Adding indexes.whereClause column", [&] {
+                string sql;
+                if ( getSchema("indexes", "table", "indexes", sql) ) {
+                    // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
+                    if ( sql.find("whereClause") == string::npos ) {
+                        _exec("ALTER TABLE indexes ADD COLUMN whereClause TEXT");
+                    }
+                }
+            });
         });
 
         // Configure number of extra threads to be used by SQLite:
