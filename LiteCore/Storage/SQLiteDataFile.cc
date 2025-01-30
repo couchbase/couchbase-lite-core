@@ -368,18 +368,17 @@ namespace litecore {
             (void)upgradeSchema(SchemaVersion::WithExpirationColumn, "Adding `expiration` column", [&] {
                 // Add the 'expiration' column to every KeyStore:
                 for ( string& name : allKeyStoreNames() ) {
+                    // Only update data tables, not FTS index tables
                     if ( name.find("::") == string::npos ) {
+                        string tableName = SQLiteKeyStore::tableName(name);
                         string sql;
                         // We need to check for existence of the expiration column first.
                         // Do not add it if it already exists in the table.
-                        if ( getSchema("kv_" + name, "table", "kv_" + name, sql)
-                             && sql.find("expiration") != string::npos )
+                        if ( getSchema(tableName, "table", tableName, sql) && sql.find("expiration") != string::npos )
                             continue;
-                        // Only update data tables, not FTS index tables
-                        _exec(format(
-                                "ALTER TABLE \"kv_%s\" ADD COLUMN expiration INTEGER; "
-                                "CREATE INDEX \"kv_%s_expiration\" ON \"kv_%s\" (expiration) WHERE expiration not null",
-                                name.c_str(), name.c_str(), name.c_str()));
+                        _exec(format("ALTER TABLE \"%s\" ADD COLUMN expiration INTEGER; "
+                                     "CREATE INDEX \"%s_expiration\" ON \"%s\" (expiration) WHERE expiration not null",
+                                     tableName.c_str(), tableName.c_str(), tableName.c_str()));
                     }
                 }
             });
