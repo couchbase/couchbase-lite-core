@@ -37,7 +37,7 @@ try {
     Set-Location LiteCore\tests\Debug
     .\CppTests -r list
     if($LASTEXITCODE -ne 0) {
-        Write-Host "C++ tests failed!" -ForegroundColor Red
+        Write-Host "C++ tests failed (exit code: $LASTEXITCODE)!" -ForegroundColor Red
         exit 1
     }
 
@@ -45,7 +45,7 @@ try {
     Set-Location ..\..\..\C\tests\Debug
     .\C4Tests -r list
     if($LASTEXITCODE -ne 0) {
-        Write-Host "C tests failed!" -ForegroundColor Red
+        Write-Host "C tests failed (exit code: $LASTEXITCODE)!" -ForegroundColor Red
         exit 1
     }
 } finally {
