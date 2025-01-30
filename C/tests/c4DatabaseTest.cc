@@ -16,6 +16,7 @@
 #include "c4Test.hh"  // IWYU pragma: keep
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
+#include "c4Database.hh"
 #include "c4Index.h"
 #include "c4Query.h"
 #include "c4Collection.h"
@@ -91,7 +92,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
     CHECK(c4db_exists(slice(kDatabaseName), slice(TempDir())));
     auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     REQUIRE(c4coll_getDocumentCount(defaultColl) == 0);
-    REQUIRE(c4db_getLastSequence(db) == 0);
+    REQUIRE(c4coll_getLastSequence(defaultColl) == 0);
     C4UUID publicUUID, privateUUID;
     REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, WITH_ERROR()));
     REQUIRE(memcmp(&publicUUID, &privateUUID, sizeof(C4UUID)) != 0);
@@ -231,7 +232,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Doc", "[Database][Docume
     auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     CHECK(c4coll_getDocumentCount(defaultColl) == 1);
 
-    C4Document* doc = REQUIRED(c4doc_get(db, kDocID, true, WITH_ERROR()));
+    C4Document* doc = REQUIRED(c4coll_getDoc(defaultColl, kDocID, true, kDocGetCurrentRev, WITH_ERROR()));
     CHECK(doc->docID == kDocID);
     CHECK(doc->revID == kRevID);
     CHECK(doc->sequence == 1);
@@ -457,7 +458,8 @@ static constexpr int ms   = 1;
 
 static bool docExists(C4Database* db, slice docID) {
     C4Error err;
-    auto    doc = c4::make_ref(c4doc_get(db, docID, true, &err));
+    auto    defaultColl = c4db_getDefaultCollection(db, nullptr);
+    auto    doc         = c4::make_ref(c4coll_getDoc(defaultColl, docID, true, kDocGetCurrentRev, &err));
     if ( doc ) return true;
     CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     return false;
@@ -491,7 +493,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expira
     createRev(docID4, kRevID, kFleeceBody);
     REQUIRE(c4coll_setDocExpiration(defaultColl, docID4, expire + 100 * secs, WITH_ERROR()));
 
-    REQUIRE(!c4doc_setExpiration(db, "nonexistent"_sl, expire + 50 * secs, &err));
+    REQUIRE(!c4coll_setDocExpiration(defaultColl, "nonexistent"_sl, expire + 50 * secs, &err));
     CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
 
     CHECK(c4coll_getDocExpiration(defaultColl, docID, nullptr) == expire);
@@ -530,7 +532,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C
     REQUIRE(c4coll_setDocExpiration(defaultColl, "expire_me_first"_sl, expire, WITH_ERROR()));
 
     auto docExists = [&] {
-        auto doc = c4::make_ref(c4doc_get(db, "expire_me_first"_sl, true, &err));
+        auto doc = c4::make_ref(c4coll_getDoc(defaultColl, "expire_me_first"_sl, true, kDocGetCurrentRev, &err));
         return doc != nullptr;
     };
 
@@ -831,6 +833,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     string nuPath = string(slice(config.parentDirectory)) + string(kNuName) + ".cblite2" + kPathSeparator;
 
     C4Error error;
+
     SECTION("WITH SLASH") {}
     SECTION("WITHOUT SLASH") {
         srcPathStr.pop_back();
@@ -1060,7 +1063,8 @@ static void testEnumeratingDocsInOlderDB(C4Database* db, bool includeDeleted, bo
     if ( includeDeleted ) options.flags |= kC4IncludeDeleted;
     if ( isDescending ) options.flags |= kC4Descending;
 
-    c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+    auto                     defaultColl = c4db_getDefaultCollection(db, nullptr);
+    c4::ref<C4DocEnumerator> e           = c4coll_enumerateAllDocs(defaultColl, &options, ERROR_INFO());
     REQUIRE(e);
     unsigned         totalDocs = includeDeleted ? 100 : 50;
     unsigned         i         = isDescending ? totalDocs : 1;
@@ -1098,16 +1102,18 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
         return;
     }
 
+    auto defaultColl = c4db_getDefaultCollection(db, nullptr);
+
     // There are 50 live documents. 50 deleted documents.
     // getDocumentCount only counts live ones.
-    CHECK(50 == c4db_getDocumentCount(db));
+    CHECK(50 == c4coll_getDocumentCount(defaultColl));
 
     // These test databases contain 100 documents with IDs `doc1`...`doc100`.
     // Each doc has two properties: `n` whose integer value is the doc number (1..100)
     // and `even` whose boolean value is true iff `n` is even.
     // Documents 51-100 are deleted (but still have those properties, which is unusual.)
 
-    CHECK(c4coll_getDocumentCount(c4db_getDefaultCollection(db, ERROR_INFO())) == 50);
+    CHECK(c4coll_getDocumentCount(defaultColl) == 50);
 
     // Verify getting documents by ID:
     constexpr size_t bufSize = 20;
@@ -1115,7 +1121,6 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
     for ( unsigned i = 1; i <= 100; i++ ) {
         snprintf(docID, bufSize, "doc-%03u", i);
         INFO("Checking docID " << docID);
-        auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
         c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, slice(docID), true, kDocGetCurrentRev, ERROR_INFO());
         REQUIRE(doc);
         CHECK(((doc->flags & kDocDeleted) != 0) == (i > 50));
@@ -1133,8 +1138,7 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
     {
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags |= kC4IncludeDeleted;
-        auto                     defaultColl = C4DatabaseTest::getCollection(db, kC4DefaultCollectionSpec);
-        c4::ref<C4DocEnumerator> e           = c4coll_enumerateAllDocs(defaultColl, &options, ERROR_INFO());
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(defaultColl, &options, ERROR_INFO());
         REQUIRE(e);
         unsigned i = 1;
         while ( c4enum_next(e, ERROR_INFO(&error)) ) {
@@ -1154,7 +1158,7 @@ static void testOpeningOlderDBFixture(const string& dbPath, C4DatabaseFlags with
     {
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags &= ~kC4IncludeDeleted;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+        c4::ref<C4DocEnumerator> e = c4coll_enumerateAllDocs(defaultColl, &options, ERROR_INFO());
         REQUIRE(e);
         unsigned i = 1;
         while ( c4enum_next(e, ERROR_INFO(&error)) ) {
@@ -1265,6 +1269,7 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
     // NB: the database used in this test contains a value index of "firstName, lastName"
 
     C4DatabaseFlags withFlags{0};
+
     SECTION("Revision Tree") {}
     SECTION("Version Vector") { withFlags = kC4DB_VersionVectors; }
 
