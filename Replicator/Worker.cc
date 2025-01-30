@@ -95,6 +95,7 @@ namespace litecore::repl {
         , _loggingID(parent ? parent->replicator()->loggingName() : connection->name())
         , _connection(connection)
         , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
+        , _collectionSpec(coll != kNotCollectionIndex ? replicator()->collectionSpec(coll) : C4CollectionSpec{})
         , _collectionIndex(coll) {
         static std::once_flag f_once;
         std::call_once(f_once, [] {
@@ -320,12 +321,6 @@ namespace litecore::repl {
         if ( !err && collIn >= _options->workingCollectionCount() ) { err = kErrorIndexOutOfRange; }
 
         return std::make_pair(collIn, err);
-    }
-
-    const C4Collection* Worker::getCollection() const {
-        Assert(collectionIndex() != kNotCollectionIndex);
-        auto* nonConstThis = const_cast<Worker*>(this);
-        return nonConstThis->replicator()->collection(collectionIndex());
     }
 
     void Worker::addLoggingKeyValuePairs(std::stringstream& output) const {

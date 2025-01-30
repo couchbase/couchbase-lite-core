@@ -40,25 +40,19 @@ case "${OSTYPE}" in
               PKG_CMD='tar czf'
               PKG_TYPE='tar.gz'
               PROP_FILE=${WORKSPACE}/publish.prop
-              OS_NAME=`lsb_release -is`
-              if [[ "$OS_NAME" != "CentOS" ]]; then
-                  echo "Error: Unsupported Linux distro $OS_NAME"
-                  exit 2
-              fi
-
-              OS_VERSION=`lsb_release -rs`
-              if [[ $OS_VERSION =~ ^6.* ]]; then
-                  OS="centos6"
-              elif [[ ! $OS_VERSION =~ ^7.* ]]; then
-                  echo "Error: Unsupported CentOS version $OS_VERSION"
-                  exit 3
-              fi;;
+              ;;
     *)        echo "unknown: $OSTYPE"
               exit 1;;
 esac
 
-project_dir=couchbase-lite-core
-strip_dir=${project_dir}
+if [[ "$EDITION" == "enterprise" ]]; then
+    echo "Building enterprise edition (EDITION = enterprise)"
+    build_enterprise="ON"
+else
+    echo "Building community edition (EDITION = $EDITION)"
+    build_enterprise="OFF"
+fi
+
 ios_xcode_proj="couchbase-lite-core/Xcode/LiteCore.xcodeproj"
 macosx_lib="libLiteCore.dylib"
 
@@ -121,34 +115,22 @@ build_binaries () {
     CMAKE_BUILD_TYPE_NAME="cmake_build_type_${FLAVOR}"
     mkdir -p ${WORKSPACE}/build_${FLAVOR}
     pushd ${WORKSPACE}/build_${FLAVOR}
-    cmake -DEDITION=${EDITION} -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ..
+    cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
     make -j8
-    if [[ ${OS} == 'linux'  ]] || [[ ${OS} == 'centos6' ]]; then
-        ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh ${strip_dir}
+    if [[ ${OS} == 'linux' ]]; then
+        ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh $PWD
     else
-        pushd ${project_dir}
         dsymutil ${macosx_lib} -o libLiteCore.dylib.dSYM
         strip -x ${macosx_lib}
-        popd
     fi
     make install
     if [[ ${OS} == 'macosx' ]]; then
         # package up the strip symbols
-        cp -rp ${project_dir}/libLiteCore.dylib.dSYM  ./install/lib
-    else
-        # copy C++ stdlib, etc to output
-        libstdcpp=`g++ --print-file-name=libstdc++.so`
-        libstdcppname=`basename "$libstdcpp"`
-        libgcc_s=`gcc --print-file-name=libgcc_s.so`
-        libgcc_sname=`basename "$libgcc_s"`
-
-        cp -p "$libstdcpp" "./install/lib/$libstdcppname"
-        ln -s "$libstdcppname" "./install/lib/${libstdcppname}.6"
-        cp -p "${libgcc_s}" "./install/lib"
+        cp -rp libLiteCore.dylib.dSYM  ./install/lib
     fi
     if [[ -z ${SKIP_TESTS} ]] && [[ ${EDITION} == 'enterprise' ]]; then
         chmod 777 ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/test_unix.sh
-        cd ${WORKSPACE}/build_${FLAVOR}/${project_dir} && ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/test_unix.sh
+        cd ${WORKSPACE}/build_${FLAVOR}/ && ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/test_unix.sh
     fi
     popd
 }
@@ -175,7 +157,7 @@ create_pkgs () {
                 ${PKG_CMD} ${WORKSPACE}/${SYMBOLS_PKG_NAME}  lib/libLiteCore.dylib.dSYM
             else # linux
                 ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} *
-                cd ${WORKSPACE}/build_${FLAVOR}/${strip_dir}
+                cd ${WORKSPACE}/build_${FLAVOR}/
                 ${PKG_CMD} ${WORKSPACE}/${SYMBOLS_PKG_NAME} libLiteCore*.sym
             fi
             popd

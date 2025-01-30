@@ -26,7 +26,12 @@ namespace litecore::repl {
     class Puller;
     class ReplicatedRev;
 
-    static const array<string, 1> kCompatProtocols = {{string(blip::Connection::kWSProtocolName) + "+CBMobile_4"}};
+    enum class ProtocolVersion {
+        v3 = 3,
+        v4 = 4,
+    };
+
+    string toString(ProtocolVersion);
 
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
@@ -57,7 +62,8 @@ namespace litecore::repl {
 
         using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
 
-        static std::string ProtocolName();
+        /// A list of WebSocket subprotocol names supported by a Replicator with the given Options.
+        static std::vector<string> compatibleProtocols(C4DatabaseFlags, Options::Mode pushMode, Options::Mode pullMode);
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
@@ -109,9 +115,9 @@ namespace litecore::repl {
 
         slice remoteURL() const { return _remoteURL; }
 
-        C4Collection* collection(CollectionIndex i) const {
+        C4CollectionSpec collectionSpec(CollectionIndex i) const {
             Assert(i < _subRepls.size());
-            return _subRepls[i].collection;
+            return _subRepls[i].collectionSpec;
         }
 
       protected:
@@ -214,7 +220,8 @@ namespace litecore::repl {
             alloc_slice              checkpointJSONToSave;              // JSON waiting to be saved to the checkpts
             alloc_slice              remoteCheckpointDocID;             // Checkpoint docID to use with peer
             alloc_slice              remoteCheckpointRevID;             // Latest revID of remote checkpoint
-            Retained<C4Collection>   collection;
+            C4CollectionSpec         collectionSpec;                    // Collection being replicated
+            alloc_slice              collectionName, collectionScope;
         };
 
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;

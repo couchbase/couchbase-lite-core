@@ -251,10 +251,11 @@ class ReplicatorAPITest : public C4Test {
         }
 
         if ( s.level == kC4Idle ) {
-            C4Log("*** Replicator idle; stopping...");
             if ( _stopWhenIdle.load() ) {
+                C4Log("*** Replicator idle; stopping...");
                 c4repl_stop(r);
             } else if ( _callbackWhenIdle ) {
+                C4Log("*** Replicator idle");
                 _callbackWhenIdle();
             }
         }

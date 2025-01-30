@@ -28,19 +28,16 @@ namespace litecore::REST {
     using namespace litecore::net;
     using namespace litecore::crypto;
 
-    bool Body::hasContentType(slice contentType) const {
-        slice actualType = header("Content-Type");
-        return actualType.size >= contentType.size && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
-               && (actualType.size == contentType.size || actualType[contentType.size] == ';');
-    }
-
     alloc_slice Body::body() const { return _body; }
 
     Value Body::bodyAsJSON() const {
         if ( !_gotBodyFleece ) {
-            if ( hasContentType("application/json"_sl) ) {
-                alloc_slice b = body();
-                if ( b ) _bodyFleece = Doc::fromJSON(b, nullptr);
+            if ( header("Content-Type").hasPrefix("application/json") ) {
+                if ( alloc_slice b = body() ) {
+                    FLError err;
+                    _bodyFleece = Doc::fromJSON(b, &err);
+                    if ( !_bodyFleece ) Warn("HTTP Body has unparseable JSON (%d): %.*s", err, FMTSLICE(b));
+                }
             }
             _gotBodyFleece = true;
         }
