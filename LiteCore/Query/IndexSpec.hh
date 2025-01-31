@@ -121,12 +121,12 @@ namespace litecore {
         /** The nested unnestPath from arrayOptions, as separated by "[]." is turned to an array. */
         const fleece::impl::Array* unnestPaths() const;
 
-        std::string const   name;           ///< Name of index
-        Type const          type;           ///< Type of index
-        alloc_slice const   expression;     ///< The query expression
-        alloc_slice whereClause;    ///< The where clause. If given, expression should be the what clause
-        QueryLanguage       queryLanguage;  ///< Is expression JSON or N1QL?
-        Options const       options;        ///< Options for FTS and vector indexes
+        std::string const name;           ///< Name of index
+        Type const        type;           ///< Type of index
+        alloc_slice const expression;     ///< The query expression
+        alloc_slice       whereClause;    ///< The where clause. If given, expression should be the what clause
+        QueryLanguage     queryLanguage;  ///< Is expression JSON or N1QL?
+        Options const     options;        ///< Options for FTS and vector indexes
 
       private:
         fleece::impl::Doc* doc() const;
