@@ -85,7 +85,7 @@ namespace litecore {
         IndexSpec(std::string name_, Type type_, string_view expression_, string_view whereClause_ = {},
                   QueryLanguage queryLanguage = QueryLanguage::kJSON, Options options_ = {})
             : IndexSpec(name_, type_, alloc_slice(expression_), queryLanguage, options_) {
-            const_cast<alloc_slice&>(this->whereClause) = whereClause_;
+            setWhereClause(whereClause_);
         }
 
         IndexSpec(const IndexSpec&) = delete;
@@ -112,13 +112,19 @@ namespace litecore {
         /** The optional WHERE clause: the condition for a partial index */
         const fleece::impl::Array* where() const;
 
+        void setWhereClause(string_view whereClause_) {
+            if ( !whereClause_.empty() ) whereClause = alloc_slice::nullPaddedString(whereClause_);
+            else
+                whereClause.reset();
+        }
+
         /** The nested unnestPath from arrayOptions, as separated by "[]." is turned to an array. */
         const fleece::impl::Array* unnestPaths() const;
 
         std::string const name;           ///< Name of index
         Type const        type;           ///< Type of index
         alloc_slice const expression;     ///< The query expression
-        alloc_slice const whereClause;    ///< The where clause. If given, expression should be the what clause
+        alloc_slice       whereClause;    ///< The where clause. If given, expression should be the what clause
         QueryLanguage     queryLanguage;  ///< Is expression JSON or N1QL?
         Options const     options;        ///< Options for FTS and vector indexes
 
