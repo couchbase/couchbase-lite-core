@@ -48,8 +48,8 @@ namespace litecore {
         ContentOption                 _content;
     };
 
-    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(bool bySequence, sequence_t since,
-                                                              RecordEnumerator::Options options) {
+    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(RecordEnumerator::Options const& options) {
+        bool bySequence = (options.minSequence > 0_seq);
         if ( _db.options().writeable ) {
             if ( bySequence ) createSequenceIndex();
             if ( options.onlyConflicts ) createConflictsIndex();
@@ -64,12 +64,14 @@ namespace litecore {
         sql << (mayHaveExpiration() ? ", expiration" : ", 0");
         sql << " FROM " << quotedTableName();
 
-        bool writeAnd = false;
+        bool writeAnd = true;
         if ( bySequence ) {
-            sql << " WHERE sequence > ?";
-            writeAnd = true;
+            sql << " WHERE sequence >= ?";
+        } else if ( options.startKey ) {
+            sql << ((options.sortOption != kDescending) ? " WHERE key >= ?" : " WHERE key <= ?");
         } else {
             if ( !options.includeDeleted || options.onlyBlobs || options.onlyConflicts ) sql << " WHERE ";
+            writeAnd = false;
         }
 
         auto writeFlagTest = [&](DocumentFlags flag, const char* test) {
@@ -103,7 +105,9 @@ namespace litecore {
         }
 
 
-        if ( bySequence ) stmt->bind(1, (long long)since);
+        if ( bySequence ) stmt->bind(1, (long long)options.minSequence);
+        else if ( options.startKey )
+            stmt->bind(1, (const char*)options.startKey.buf, (int)options.startKey.size);
         return new SQLiteEnumerator(stmt, options.contentOption);
     }
 

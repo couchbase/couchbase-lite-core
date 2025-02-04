@@ -24,18 +24,16 @@ namespace litecore {
 
 
     // By-key constructor
-    RecordEnumerator::RecordEnumerator(KeyStore& store, Options options) : _store(&store) {
-        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)", this, store.name().c_str(), options.includeDeleted,
-                   options.onlyConflicts, options.onlyBlobs, options.sortOption);
-        _impl.reset(_store->newEnumeratorImpl(false, 0_seq, options));
-    }
-
-    // By-sequence constructor
-    RecordEnumerator::RecordEnumerator(KeyStore& store, sequence_t since, Options options) : _store(&store) {
-        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)", this, store.name().c_str(),
-                   (unsigned long long)since, options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
-                   options.sortOption);
-        _impl.reset(_store->newEnumeratorImpl(true, since, options));
+    RecordEnumerator::RecordEnumerator(KeyStore& store, Options const& options) : _store(&store) {
+        if ( options.minSequence != 0_seq ) {
+            LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)", this, store.name().c_str(),
+                       (unsigned long long)options.minSequence, options.includeDeleted, options.onlyConflicts,
+                       options.onlyBlobs, options.sortOption);
+        } else {
+            LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)", this, store.name().c_str(),
+                       options.includeDeleted, options.onlyConflicts, options.onlyBlobs, options.sortOption);
+        }
+        _impl.reset(_store->newEnumeratorImpl(options));
     }
 
     void RecordEnumerator::close() noexcept {
