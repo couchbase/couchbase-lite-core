@@ -32,6 +32,9 @@ set(
     Response.cc
     Server.cc
     EE/RESTSyncListener_stub.cc
+
+    ../Networking/P2P/Browser.cc    #FIXME: Should be moved to some other cmake file
+    ../Networking/P2P/BonjourBrowser.cc    #FIXME: Should be moved to some other cmake file
 )
 
 ### STATIC LIBRARY:
@@ -50,6 +53,7 @@ target_include_directories(
     ../Networking
     ../Networking/BLIP
     ../Networking/HTTP
+    ../Networking/P2P
     ../Networking/WebSockets
     ../Replicator
     ../vendor/fleece/API
@@ -79,3 +83,14 @@ target_link_libraries(
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
 setup_rest_build()
+
+if (APPLE)
+    target_link_libraries(
+            LiteCoreREST_Objects INTERFACE
+            "-framework Network"
+    )
+    target_link_libraries(
+            LiteCoreREST_Static INTERFACE
+            "-framework Network"
+    )
+endif()
