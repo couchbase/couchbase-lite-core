@@ -56,10 +56,10 @@ struct C4Database
     /** Attempts to discover and verify the named extension in the provided path */
     static void enableExtension(slice name, slice path);
 
-    static bool exists(slice name, slice inDirectory);
-    static void copyNamed(slice sourcePath, slice destinationName, const Config&);
-    static bool deleteNamed(slice name, slice inDirectory);
-    static bool deleteAtPath(slice path);
+    static bool               exists(slice name, slice inDirectory);
+    static void               copyNamed(slice sourcePath, slice destinationName, const Config&);
+    [[nodiscard]] static bool deleteNamed(slice name, slice inDirectory);
+    [[nodiscard]] static bool deleteAtPath(slice path);
 
     static Retained<C4Database> openNamed(slice name, const Config&);
 
