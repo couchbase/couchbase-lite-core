@@ -101,8 +101,9 @@ add_executable(
     ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
-    ${TOP}LiteCore/Support/TestsCommon.cc
+    ${TOP}Networking/P2P/tests/BrowserTest.cc
 
+    ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
     ${TOP}vendor/fleece/vendor/catch/CaseListReporter.cc
 )
@@ -139,6 +140,7 @@ target_include_directories(
     ${TOP}Networking
     ${TOP}Networking/BLIP
     ${TOP}Networking/HTTP
+    ${TOP}Networking/P2P
     ${TOP}Networking/WebSockets
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
