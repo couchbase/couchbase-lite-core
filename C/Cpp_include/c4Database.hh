@@ -184,6 +184,8 @@ struct C4Database
             db->endTransaction(false);
         }
 
+        bool isActive() const noexcept { return _db != nullptr; }
+
         ~Transaction() {
             if ( _db ) _db->endTransaction(false);
         }
