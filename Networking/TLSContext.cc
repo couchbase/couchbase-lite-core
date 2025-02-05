@@ -41,11 +41,13 @@ namespace litecore::net {
         else if ( logLevel == LogLevel::Debug )
             mbedLogLevel = 4;
         _context->set_logger(mbedLogLevel, [=](int level, const char* filename, int line, const char* message) {
-            static const LogLevel kLogLevels[] = {LogLevel::Error, LogLevel::Error, LogLevel::Verbose,
-                                                  LogLevel::Verbose, LogLevel::Debug};
-            size_t                len          = strlen(message);
-            if ( message[len - 1] == '\n' ) --len;
-            TLSLogDomain.log(kLogLevels[level], "mbedTLS(%s): %.*s", (role == Client ? "C" : "S"), int(len), message);
+            // mbedTLS logging callback:
+            static const LogLevel kLogLevels[] = {LogLevel::Info, LogLevel::Info, LogLevel::Verbose, LogLevel::Verbose,
+                                                  LogLevel::Debug};
+            string_view           str(message);
+            if ( str.ends_with('\n') ) str = str.substr(0, str.size() - 1);
+            TLSLogDomain.log(kLogLevels[level], "mbedTLS(%s): %.*s", (role == Client ? "C" : "S"), int(str.size()),
+                             str.data());
         });
     }
 
