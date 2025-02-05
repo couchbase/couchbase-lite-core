@@ -236,7 +236,7 @@ typedef struct C4ReplicatorParameters {
     "onlySelfSignedServer"  ///< Only accept self signed server certs (for P2P, bool)
 
 // HTTP options:
-#define kC4ReplicatorOptionExtraHeaders   "headers"  ///< Extra HTTP headers (string[])
+#define kC4ReplicatorOptionExtraHeaders   "headers"  ///< Extra HTTP headers (Dict)
 #define kC4ReplicatorOptionCookies        "cookies"  ///< HTTP Cookie header value (string)
 #define kC4ReplicatorOptionAuthentication "auth"     ///< Auth settings (Dict); see [1]
 #define kC4ReplicatorOptionProxyServer    "proxy"    ///< Proxy settings (Dict); see [3]]
@@ -251,15 +251,16 @@ typedef struct C4ReplicatorParameters {
 #define kC4ReplicatorCompressionLevel "BLIPCompressionLevel"  ///< Data compression level, 0..9
 
 // [1]: Auth dictionary keys:
-#define kC4ReplicatorAuthType     "type"      ///< Auth type; see [2] (string)
-#define kC4ReplicatorAuthUserName "username"  ///< User name for basic auth (string)
-#define kC4ReplicatorAuthPassword "password"  ///< Password for basic auth (string)
-#define kC4ReplicatorAuthEnableChallengeAuth                                                                           \
-    "challengeAuth"  ///< Use challenge auth instead of preemptive auth for basic auth, default is false (bool);       \
-                     ///< Implemented by BuiltInWebSocket.
+#define kC4ReplicatorAuthType          "type"           ///< Auth type; see [2] (string)
+#define kC4ReplicatorAuthUserName      "username"       ///< User name for basic auth (string)
+#define kC4ReplicatorAuthPassword      "password"       ///< Password for basic auth (string)
 #define kC4ReplicatorAuthClientCert    "clientCert"     ///< TLS client certificate (value platform-dependent)
 #define kC4ReplicatorAuthClientCertKey "clientCertKey"  ///< Client cert's private key (data)
 #define kC4ReplicatorAuthToken         "token"          ///< Session cookie or auth token (string)
+
+/// Use challenge auth instead of preemptive auth for basic auth, default is false (bool);
+/// Implemented by BuiltInWebSocket.
+#define kC4ReplicatorAuthEnableChallengeAuth "challengeAuth"
 
 // [2]: auth.type values:
 #define kC4AuthTypeBasic         "Basic"           ///< HTTP Basic (the default)
