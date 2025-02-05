@@ -238,6 +238,7 @@
 		277911BE2C66DD610044E660 /* Arena.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277911BD2C66DD610044E660 /* Arena.cc */; };
 		277911C12C6A96FA0044E660 /* Node.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277911C02C6A96FA0044E660 /* Node.cc */; };
 		277D40062C2F3DE700DBDC97 /* c4IndexUpdaterTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */; };
+		277DA44A2CEBEFFD001A15D0 /* c4ReplicatorImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277DA4492CEBEFFD001A15D0 /* c4ReplicatorImpl.cc */; };
 		277DA44D2CEBF110001A15D0 /* DatabasePool.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277DA44C2CEBF110001A15D0 /* DatabasePool.cc */; };
 		2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
 		278054952B3214BF009630D8 /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
@@ -1273,12 +1274,14 @@
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
+		277DA4492CEBEFFD001A15D0 /* c4ReplicatorImpl.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4ReplicatorImpl.cc; sourceTree = "<group>"; };
 		277DA44B2CEBF110001A15D0 /* DatabasePool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabasePool.hh; sourceTree = "<group>"; };
 		277DA44C2CEBF110001A15D0 /* DatabasePool.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabasePool.cc; sourceTree = "<group>"; };
 		277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSGTest.cc; sourceTree = "<group>"; };
 		278054D72B321BDB009630D8 /* LiteCore-iOS shell.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-iOS shell.xcconfig"; sourceTree = "<group>"; };
 		278054D82B321D54009630D8 /* LiteCore-IOS Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-IOS Tests.xcconfig"; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
+		2785C2682D012AA100F22817 /* c4Replicator+Pool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Replicator+Pool.hh"; sourceTree = "<group>"; };
 		278963601D7A376900493096 /* EncryptedStream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EncryptedStream.cc; path = ../Support/EncryptedStream.cc; sourceTree = "<group>"; };
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
 		278963651D7B3E0E00493096 /* Stream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Stream.hh; path = ../Support/Stream.hh; sourceTree = "<group>"; };
@@ -2789,7 +2792,10 @@
 				27491C9E1E7B2532001DC54B /* c4Socket.cc */,
 				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
+				2785C2682D012AA100F22817 /* c4Replicator+Pool.hh */,
+				D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */,
 				2743E35525F85F26006F696D /* c4Replicator_CAPI.cc */,
+				277DA4492CEBEFFD001A15D0 /* c4ReplicatorImpl.cc */,
 				275A73BD1ED255AF008CB57B /* c4ReplicatorImpl.hh */,
 				27D965252330394C00F4A51C /* c4RemoteReplicator.hh */,
 				27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */,
@@ -4583,6 +4589,7 @@
 				273D25F62564666A008643D2 /* VectorDocument.cc in Sources */,
 				27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */,
 				279976331E94AAD000B27639 /* IncomingRev+Blobs.cc in Sources */,
+				277DA44D2CEBF110001A15D0 /* DatabasePool.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */,
 				2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */,

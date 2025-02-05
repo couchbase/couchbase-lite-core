@@ -46,14 +46,15 @@ namespace litecore::repl {
 
         C4Error transactionErr = {};
         try {
-            DBAccess::Transaction transaction(_db->insertionDB());
+            DBAccess::Transaction transaction(*_db);
+            C4Collection*         collection = transaction.db()->getCollection(collectionSpec());
             // Before updating docs, write all pending changes to remote ancestors, in case any
             // of them apply to the docs we're updating:
-            _db->markRevsSyncedNow();
+            _db->markRevsSyncedNow(transaction.db());
 
             for ( RevToInsert* rev : *revs ) {
                 C4Error docErr;
-                bool    docSaved = insertRevisionNow(rev, &docErr);
+                bool    docSaved = insertRevisionNow(rev, collection, &docErr);
                 rev->trimBody();  // don't need body any more
                 if ( docSaved ) {
                     rev->owner->revisionProvisionallyInserted(rev->revocationMode != RevocationMode::kNone);
@@ -95,13 +96,12 @@ namespace litecore::repl {
     }
 
     // Inserts one revision. Returns only C4Errors, never throws exceptions.
-    bool Inserter::insertRevisionNow(RevToInsert* rev, C4Error* outError) {
+    bool Inserter::insertRevisionNow(RevToInsert* rev, C4Collection* collection, C4Error* outError) {
         try {
             if ( rev->flags & kRevPurged ) {
                 // Server says the document is no longer accessible, i.e. it's been
                 // removed from all channels the client has access to. Purge it.
-                auto locked = _db->insertionDB().useLocked();
-                if ( insertionCollection()->purgeDocument(rev->docID) ) {
+                if ( collection->purgeDocument(rev->docID) ) {
                     auto collPath = _options->collectionPath(collectionIndex());
                     logVerbose("    {'%.*s (%.*s)' removed (purged)}", SPLAT(rev->docID), SPLAT(collPath));
                 }
@@ -127,24 +127,24 @@ namespace litecore::repl {
                     put.deltaCB          = [](void* context, C4Document* doc, C4Slice delta, C4RevisionFlags* revFlags,
                                      C4Error* outError) -> C4SliceResult {
                         try {
-                            return ((Inserter*)context)->applyDeltaCallback(doc, delta, revFlags, outError);
+                            auto self = (Inserter*)context;
+                            return self->applyDeltaCallback(doc, delta, revFlags, outError);
                         } catch ( ... ) {
                             *outError = C4Error::fromCurrentException();
                             return {};
                         }
                     };
-                    put.deltaCBContext = this;
+                    put.deltaCBContext  = this;
+                    _callbackCollection = collection;
                 } else {
                     // If not a delta, encode doc body using database's real sharedKeys:
-                    bodyForDB = _db->reEncodeForDatabase(rev->doc);
+                    bodyForDB = _db->reEncodeForDatabase(rev->doc, collection->getDatabase());
                     rev->doc  = nullptr;
                 }
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                auto doc = _db->insertionDB().useLocked<Retained<C4Document>>([outError, &put, this](C4Database* db) {
-                    return insertionCollection()->putDocument(put, nullptr, outError);
-                });
+                auto doc = collection->putDocument(put, nullptr, outError);
                 if ( !doc ) return false;
                 auto collPath = _options->collectionPath(collectionIndex());
                 logVerbose("    {'%.*s (%.*s)' #%.*s <- %.*s} seq %" PRIu64, SPLAT(rev->docID), SPLAT(collPath),
@@ -169,7 +169,8 @@ namespace litecore::repl {
     // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
     C4SliceResult Inserter::applyDeltaCallback(C4Document* c4doc, C4Slice deltaJSON, C4RevisionFlags* revFlags,
                                                C4Error* outError) {
-        Doc          doc         = _db->applyDelta(c4doc, deltaJSON, true);
+        C4Database*  db          = _callbackCollection->getDatabase();
+        Doc          doc         = _db->applyDelta(c4doc, deltaJSON, db);
         alloc_slice  body        = doc.allocedData();
         Dict         root        = doc.root().asDict();
         FLSharedKeys sk          = nullptr;
@@ -181,7 +182,7 @@ namespace litecore::repl {
             if ( C4Document::hasOldMetaProperties(root) ) {
                 body = nullslice;
                 try {
-                    sk          = _db->insertionDB().useLocked()->getFleeceSharedKeys();
+                    sk          = db->getFleeceSharedKeys();
                     body        = C4Document::encodeStrippingOldMetaProperties(root, sk);
                     bodyChanged = true;
                 }
@@ -203,16 +204,6 @@ namespace litecore::repl {
             }
         }
         return C4SliceResult(body);
-    }
-
-    C4Collection* Inserter::insertionCollection() {
-        if ( _insertionCollection ) return _insertionCollection;
-
-        auto c4db = _db->insertionDB().useLocked();
-        auto coll = c4db->getCollection(getCollection()->getSpec());
-        if ( !coll ) C4Error::raise({LiteCoreDomain, kC4ErrorNotOpen});
-        _insertionCollection = coll;
-        return _insertionCollection;
     }
 
 }  // namespace litecore::repl
