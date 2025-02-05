@@ -125,6 +125,10 @@ namespace litecore::net {
         _context->set_identity(string(certData), string(keyData));
     }
 
+    unique_ptr<tls_socket> TLSContext::wrapSocket(unique_ptr<stream_socket> socket, const string& peer_name) {
+        return _context->wrap_socket(std::move(socket), tls_context::role_t(_role), peer_name);
+    }
+
     void TLSContext::resetRootCertFinder() {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
         _context->set_root_cert_locator(
