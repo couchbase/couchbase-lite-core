@@ -162,9 +162,10 @@ namespace litecore::net {
         /// (before the blank line).
         static std::string formatHTTP(slice http);
 
-        /** Utility function to parse HTTP headers. Reads header lines from HTTP data until
-            it reaches an empty line (CRLFCRLF). On return, \ref httpData will point to any
-            data remaining after the empty line. */
+        /// Utility function to parse HTTP headers. Reads header lines from HTTP data until
+        /// it reaches an empty line (CRLFCRLF). On return, \ref httpData will point to any
+        /// data remaining after the empty line.
+        /// @returns  True on success, false on parse error.
         static bool parseHeaders(fleece::slice_istream& httpData, websocket::Headers&);
 
         /// Given a "Sec-WebSocket-Key" header value, returns the "Sec-WebSocket-Accept" value.
