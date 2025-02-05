@@ -384,7 +384,7 @@ namespace litecore::net {
             slice_istream reader(line);
             chunkLength = (size_t)reader.readHex();
             if ( !reader.eof() ) {
-                setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
+                setError(WebSocketDomain, 400, "Invalid chunked response data");
                 return nullslice;
             }
 
@@ -396,7 +396,7 @@ namespace litecore::net {
             char crlf[2];
             if ( readExactly(crlf, 2) < 2 ) return nullslice;
             if ( crlf[0] != '\r' || crlf[1] != '\n' ) {
-                setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
+                setError(WebSocketDomain, 400, "Invalid chunked response data");
                 return nullslice;
             }
         } while ( chunkLength > 0 );
@@ -419,17 +419,23 @@ namespace litecore::net {
                 //TODO: There may be more response headers after the chunks
             } else {
                 body.reset();
-                setError(NetworkDomain, kNetErrUnknown, "Unsupported HTTP Transfer-Encoding");
+                setError(WebSocketDomain, 501, "Unsupported HTTP Transfer-Encoding");
                 // Other transfer encodings are "gzip", "deflate"
             }
 
-        } else if ( auto conn = headers["Connection"]; conn.caseEquivalent("close") ) {
-            // Connection:Close mode -- read till EOF:
-            body = readToEOF();
+        } else if ( auto conn = headers["Connection"] ) {
+            if ( conn.caseEquivalent("close") ) {
+                // Connection:Close mode -- read till EOF:
+                body = readToEOF();
+            } else {
+                body.reset();
+                setError(WebSocketDomain, 501, "Unsupported 'Connection' response header");
+            }
 
         } else {
             body.reset();
-            setError(WebSocketDomain, kCodeProtocolError, "Unsupported 'Connection' response header");
+            setError(WebSocketDomain, 400,
+                     "Response has neither 'Content-Length', 'Transfer-Encoding' nor 'Connection: close'");
         }
 
         return !!body;
@@ -604,14 +610,21 @@ namespace litecore::net {
         int err = _socket->last_error();
         Assert(err != 0);
         if ( err > 0 ) {
-            err           = socketToPosixErrCode(err);
-            string errStr = error::_what(error::POSIX, err);
-            LogWarn(WSLog, "%s got POSIX error %d \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"), err,
-                    errStr.c_str());
+            err = socketToPosixErrCode(err);
+            C4Error error;
             if ( err == EWOULDBLOCK )  // Occurs in blocking mode when I/O times out
-                setError(NetworkDomain, kC4NetErrTimeout);
+                error = C4Error{NetworkDomain, kC4NetErrTimeout};
             else
-                setError(POSIXDomain, err);
+                error = C4Error{POSIXDomain, err};
+            if ( error != _error ) {
+                _error         = error;
+                LogLevel level = LogLevel::Warning;
+                // As a server, it's normal for the client to close their socket, so don't warn.
+                if ( !_isClient && err == ECONNRESET ) level = LogLevel::Info;
+                string errStr = error::_what(error::POSIX, err);
+                WSLog.log(level, "%s got POSIX error %d \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"), err,
+                          errStr.c_str());
+            }
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
