@@ -13,25 +13,23 @@
 #pragma once
 #include "Response.hh"
 #include "HTTPTypes.hh"
-#include "Writer.hh"
-#include <functional>
-#include <map>
-#include <memory>
-#include <vector>
+
+#ifdef COUCHBASE_ENTERPRISE
 
 namespace litecore::net {
-    class ResponderSocket;
+    class TCPSocket;
 }  // namespace litecore::net
 
 namespace litecore::REST {
-    class Server;
 
     /** Incoming HTTP request; read-only */
     class Request : public Body {
       public:
         using Method = net::Method;
 
-        explicit Request(fleece::slice httpData);
+        /// Reads an HTTP request from a socket.
+        /// If any errors occur, it sets `socketError`.
+        explicit Request(net::TCPSocket*);
 
         bool isValid() const { return _method != Method::None; }
 
@@ -39,108 +37,42 @@ namespace litecore::REST {
 
         Method method() const { return _method; }
 
-        std::string path() const { return _path; }
+        std::string const& path() const LIFETIMEBOUND { return _path; }
 
+        size_t      pathLength() const;
         std::string path(int i) const;
+
+        std::string const& queries() const { return _queries; }
 
         std::string query(const char* param) const;
         int64_t     intQuery(const char* param, int64_t defaultValue = 0) const;
+        uint64_t    uintQuery(const char* param, uint64_t defaultValue = 0) const;
         bool        boolQuery(const char* param, bool defaultValue = false) const;
 
-      protected:
-        friend class Server;
+        std::string uri() const;
 
-        Request(Method, std::string path, std::string queries, websocket::Headers headers, fleece::alloc_slice body);
+        enum HTTPVersion { HTTP1_0, HTTP1_1 };
+
+        HTTPVersion httpVersion() const { return _version; }
+
+        bool keepAlive() const;
+
+        bool isValidWebSocketRequest();
+
+        C4Error socketError() const { return _error; }
+
+      protected:
+        Request(Method, std::string path, std::string queries, websocket::Headers headers, alloc_slice body);
         Request() = default;
 
-        bool readFromHTTP(fleece::slice httpData);  // data must extend at least to CRLF
+        bool readFromHTTP(slice httpData);  // data must extend at least to CRLF
 
         Method      _method{Method::None};
         std::string _path;
         std::string _queries;
-    };
-
-    /** Incoming HTTP request (inherited from Request), plus setters for the response. */
-    class RequestResponse : public Request {
-      public:
-        // Response status:
-
-        void respondWithStatus(HTTPStatus, const char* message = nullptr);
-        void respondWithError(C4Error);
-
-        void setStatus(HTTPStatus status, const char* message);
-
-        HTTPStatus status() const { return _status; }
-
-        static HTTPStatus errorToStatus(C4Error);
-
-        // Response headers:
-
-        void setHeader(const char* header, const char* value);
-
-        void setHeader(const char* header, int64_t value) { setHeader(header, std::to_string(value).c_str()); }
-
-        void addHeaders(const std::map<std::string, std::string>&);
-
-        // Response body:
-
-        void setContentLength(uint64_t length);
-        void uncacheable();
-
-        void write(fleece::slice);
-
-        void write(const char* content) { write(fleece::slice(content)); }
-
-        void printf(const char* format, ...) __printflike(2, 3);
-
-        fleece::JSONEncoder& jsonEncoder();
-
-        void writeStatusJSON(HTTPStatus status, const char* message = nullptr);
-        void writeErrorJSON(C4Error);
-
-        // Must be called after everything's written:
-        void finish();
-
-        // WebSocket stuff:
-
-        bool isValidWebSocketRequest();
-
-        void sendWebSocketResponse(const std::string& protocol);
-
-        void onClose(std::function<void()>&& callback);
-
-        std::unique_ptr<net::ResponderSocket> extractSocket();
-
-        std::string peerAddress();
-
-      protected:
-        RequestResponse(Server* server, std::unique_ptr<net::ResponderSocket>);
-        void sendStatus();
-        void sendHeaders();
-        void handleSocketError();
-
-      private:
-        friend class Server;
-
-        fleece::Retained<Server>              _server;
-        std::unique_ptr<net::ResponderSocket> _socket;
-        C4Error                               _error{};
-
-        std::vector<fleece::alloc_slice> _requestBody;
-
-        HTTPStatus  _status{HTTPStatus::OK};  // Response status code
-        std::string _statusMessage;           // Response custom status message
-        bool        _sentStatus{false};       // Sent the response line yet?
-
-        fleece::Writer _responseHeaderWriter;
-        bool           _endedHeaders{false};  // True after headers are ended
-        int64_t        _contentLength{-1};    // Content-Length, once it's set
-
-        fleece::Writer                       _responseWriter;   // Output stream for response body
-        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;      // Used for writing JSON to response
-        fleece::alloc_slice                  _responseBody;     // Finished response body
-        fleece::slice                        _unsentBody;       // Unsent portion of _responseBody
-        bool                                 _finished{false};  // Finished configuring the response?
+        HTTPVersion _version;
+        C4Error     _error{};
     };
 
 }  // namespace litecore::REST
+#endif

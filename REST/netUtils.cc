@@ -21,9 +21,8 @@
 #include "NumConversion.hh"
 #include <cassert>
 #include <ctime>
-// 'digittoint' function
+#include "StringUtil.hh"
 #ifndef __APPLE__
-#    include "StringUtil.hh"
 #    include "PlatformIO.hh"
 #endif
 
@@ -75,33 +74,40 @@ namespace litecore::REST {
         return result;
     }
 
-    string getURLQueryParam(slice queries, const char* name, char delimiter, size_t occurrence) {
-        auto        data     = (const char*)queries.buf;
-        size_t      data_len = queries.size;
-        const char* end      = data + data_len;
-
-        string dst;
-        if ( data == nullptr || name == nullptr || data_len == 0 ) { return dst; }
-        size_t name_len = strlen(name);
-
-        // data is "var1=val1&var2=val2...". Find variable first
-        for ( const char* p = data; p + name_len < end; p++ ) {
-            if ( (p == data || p[-1] == delimiter) && p[name_len] == '=' && !strncasecmp(name, p, name_len)
-                 && 0 == occurrence-- ) {
-                // Point p to variable value
-                p += name_len + 1;
-
-                // Point s to the end of the value
-                const char* s = (const char*)memchr(p, delimiter, (size_t)(end - p));
-                if ( s == nullptr ) { s = end; }
-                assert(s >= p);
-
-                // Decode variable into destination buffer
-                return URLDecode(slice(p, s - p), true);
+    bool iterateURLQueries(string_view queries, char delimiter, function_ref<bool(string_view, string_view)> callback) {
+        bool stop = false;
+        split(queries, string_view{&delimiter, 1}, [&](string_view query) {
+            if ( !stop ) {
+                string value;
+                if ( auto eq = query.find('='); eq != string::npos ) {
+                    value = query.substr(eq + 1);
+                    query = query.substr(0, eq);
+                }
+                stop = callback(query, value);
             }
-        }
-        return dst;
+        });
+        return stop;
     }
+
+    string getURLQueryParam(slice queries, string_view name, char delimiter, size_t occurrence) {
+        string value;
+        iterateURLQueries(queries, delimiter, [&](string_view k, string_view v) -> bool {
+            if ( name.size() == k.size() && 0 == strncasecmp(name.data(), k.data(), k.size()) && 0 == occurrence-- ) {
+                value = URLDecode(v);
+                return true;  // stop iteration
+            }
+            return false;
+        });
+        return value;
+    }
+
+    std::string timestamp() {
+        char   dateStr[100];
+        time_t t = time(nullptr);
+        strftime(dateStr, sizeof(dateStr), "%a, %d %b %Y %H:%M:%S GMT", gmtime(&t));  // faster than date::format()
+        return string(dateStr);
+    }
+
 
 }  // namespace litecore::REST
 
