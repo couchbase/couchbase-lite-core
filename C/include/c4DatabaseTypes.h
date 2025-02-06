@@ -30,14 +30,16 @@ C4API_BEGIN_DECLS
 
 
 /** Boolean options for C4DatabaseConfig. */
-typedef C4_OPTIONS(uint32_t, C4DatabaseFlags) {
-    kC4DB_Create        = 0x01, ///< Create the file if it doesn't exist
-    kC4DB_ReadOnly      = 0x02, ///< Open file read-only
-    kC4DB_AutoCompact   = 0x04, ///< Enable auto-compaction [UNIMPLEMENTED]
-    kC4DB_VersionVectors= 0x08, ///< Upgrade DB to version vectors instead of rev trees [EXPERIMENTAL]
-    kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
-    kC4DB_NonObservable = 0x40, ///< Disable database/collection observers, for slightly faster writes
-    kC4DB_DiskSyncFull  = 0x80, ///< Flush to disk after each transaction
+typedef C4_OPTIONS(uint32_t, C4DatabaseFlags){
+        kC4DB_Create          = 0x01,    ///< Create the file if it doesn't exist
+        kC4DB_ReadOnly        = 0x02,    ///< Open file read-only
+        kC4DB_AutoCompact     = 0x04,    ///< Enable auto-compaction [UNIMPLEMENTED]
+        kC4DB_VersionVectors  = 0x08,    ///< Upgrade DB to version vectors instead of rev trees
+        kC4DB_MmapDisabled    = 0x10,    ///< Disable MMAP in SQLite.
+        kC4DB_NoUpgrade       = 0x20,    ///< Disable upgrading an older-version database
+        kC4DB_NonObservable   = 0x40,    ///< Disable database/collection observers, for slightly faster writes
+        kC4DB_DiskSyncFull    = 0x80,    ///< Flush to disk after each transaction
+        kC4DB_NoHousekeeping  = 0x0200,  ///< Disable normal tasks like expiring docs and compaction
 };
 
 

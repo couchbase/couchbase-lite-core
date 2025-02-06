@@ -399,8 +399,8 @@ namespace litecore {
         _setLastSeqStmt.reset();
         _getPurgeCntStmt.reset();
         _setPurgeCntStmt.reset();
-        if (_sqlDb) {
-            if (options().writeable) {
+        if ( _sqlDb ) {
+            if ( options().writeable && !options().noHousekeeping ) {
                 withFileLock([this]() {
                     optimize();
                     vacuum(false);

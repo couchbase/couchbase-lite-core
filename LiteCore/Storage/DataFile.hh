@@ -68,15 +68,16 @@ namespace litecore {
 
         struct Options {
             KeyStore::Capabilities keyStores;
-            bool                create         :1;      ///< Should the db be created if it doesn't exist?
-            bool                writeable      :1;      ///< If false, db is opened read-only
-            bool                useDocumentKeys:1;      ///< Use SharedKeys for Fleece docs
-            bool                upgradeable    :1;      ///< DB schema can be upgraded
-            bool                diskSyncFull   :1;      ///< SQLite PRAGMA synchronous
-            EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
-            alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
-            DatabaseTag         dbTag;
-            static const Options defaults;
+            bool                   create : 1;           ///< Should the db be created if it doesn't exist?
+            bool                   writeable : 1;        ///< If false, db is opened read-only
+            bool                   useDocumentKeys : 1;  ///< Use SharedKeys for Fleece docs
+            bool                   upgradeable : 1;      ///< DB schema can be upgraded
+            bool                   diskSyncFull : 1;     ///< SQLite PRAGMA synchronous
+            bool                   noHousekeeping : 1;   ///< Disable automatic maintenance
+            EncryptionAlgorithm    encryptionAlgorithm;  ///< What encryption (if any)
+            alloc_slice            encryptionKey;        ///< Encryption key, if encrypting
+            DatabaseTag            dbTag;
+            static const Options   defaults;
         };
 
         DataFile(const FilePath &path, Delegate* delegate NONNULL, const Options* =nullptr);
