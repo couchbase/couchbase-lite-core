@@ -24,10 +24,33 @@ TEST_CASE("P2P Browser", "[P2P]") {
         else
             Log("EVENT: %s", Browser::kEventNames[event]);
         CHECK(&b == browser.get());
-        if (event == Browser::BrowserStopped)
-            sem.release();
+        switch (event) {
+            case Browser::PeerAdded:
+                b.resolveAddress(peer);
+            break;
+            case Browser::PeerAddressResolved: {
+                auto addr = peer->address().value();
+                Log("\taddress = %s:%d", string(addr).c_str(), addr.port());
+                break;
+            }
+            case Browser::PeerTxtChanged: {
+                stringstream out;
+                out << '{';
+                for (auto& [k, v] : peer->getAllMetadata())
+                    out << k << ": '" << string_view(v) << "', ";
+                out << '}';
+                Log("\ttxt = %s", out.str().c_str());
+                break;
+            }
+            case Browser::BrowserStopped:
+                sem.release();
+                break;
+            default:
+                break;
+        }
     };
-    browser = make_retained<BonjourBrowser>("_ssh._tcp", observer);
+    browser = make_retained<BonjourBrowser>("_ssh._tcp", "CppTests", observer);
+    browser->setMyPort(54321);
     browser->start();
 
     sem.try_acquire_for(chrono::seconds(5));    // wait five seconds for test to run, then stop
