@@ -420,21 +420,6 @@ bool c4db_maintenance(C4Database* database, C4MaintenanceType type, C4Error* out
     return tryCatch(outError, [=] { return database->maintenance(type); });
 }
 
-// semi-deprecated
-C4Timestamp c4db_nextDocExpiration(C4Database* db) noexcept {
-    C4Error err;
-    auto    coll = db->getDefaultCollection();
-    returnIfCollectionInvalid(coll, &err, C4Timestamp::Error);
-    return c4coll_nextDocExpiration(coll);
-}
-
-// semi-deprecated
-int64_t c4db_purgeExpiredDocs(C4Database* db, C4Error* outError) noexcept {
-    auto coll = db->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, 0);
-    return c4coll_purgeExpiredDocs(coll, outError);
-}
-
 bool c4db_rekey(C4Database* database, const C4EncryptionKey* newKey, C4Error* outError) noexcept {
     return tryCatch(outError, [=] { return database->rekey(newKey); });
 }
@@ -444,22 +429,6 @@ C4String c4db_getName(C4Database* database) noexcept { return slice(database->ge
 C4SliceResult c4db_getPath(C4Database* database) noexcept { return C4SliceResult(database->getPath()); }
 
 const C4DatabaseConfig2* c4db_getConfig2(C4Database* database) noexcept { return &database->getConfiguration(); }
-
-// semi-deprecated
-uint64_t c4db_getDocumentCount(C4Database* database) noexcept {
-    C4Error err;
-    auto    coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, &err, 0);
-    return c4coll_getDocumentCount(coll);
-}
-
-// semi-deprecated
-C4SequenceNumber c4db_getLastSequence(C4Database* database) noexcept {
-    C4Error err;
-    auto    coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, &err, 0_seq);
-    return c4coll_getLastSequence(coll);
-}
 
 bool c4db_getUUIDs(C4Database* database, C4UUID* publicUUID, C4UUID* privateUUID, C4Error* outError) noexcept {
     return tryCatch(outError, [&] {
@@ -484,13 +453,6 @@ bool c4db_beginTransaction(C4Database* database, C4Error* outError) noexcept {
 
 bool c4db_endTransaction(C4Database* database, bool commit, C4Error* outError) noexcept {
     return tryCatch(outError, [=] { database->endTransaction(commit); });
-}
-
-// semi-deprecated
-bool c4db_purgeDoc(C4Database* database, C4Slice docID, C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, false);
-    return c4coll_purgeDoc(coll, docID, outError);
 }
 
 bool c4_shutdown(C4Error* outError) noexcept {
@@ -544,41 +506,13 @@ bool c4raw_put(C4Database* database, C4Slice storeName, C4Slice key, C4Slice met
     return tryCatch(outError, [=] { database->putRawDocument(storeName, {key, meta, body}); });
 }
 
-// semi-deprecated
-bool c4db_createIndex(C4Database* database, C4Slice name, C4Slice indexSpecJSON, C4IndexType indexType,
-                      const C4IndexOptions* indexOptions, C4Error* outError) noexcept {
-    return c4db_createIndex2(database, name, indexSpecJSON, kC4JSONQuery, indexType, indexOptions, outError);
-}
-
-bool c4db_createIndex2(C4Database* database, C4Slice name, C4Slice indexSpec, C4QueryLanguage queryLanguage,
-                       C4IndexType indexType, const C4IndexOptions* indexOptions, C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, false);
-    return c4coll_createIndex(coll, name, indexSpec, queryLanguage, indexType, indexOptions, outError);
-}
-
 bool c4coll_isIndexTrained(C4Collection* collection, C4Slice name, C4Error* outError) noexcept {
     if ( outError ) *outError = kC4NoError;
     return tryCatch<bool>(outError, [=] { return collection->isIndexTrained(name); });
 }
 
-// semi-deprecated
-bool c4db_deleteIndex(C4Database* database, C4Slice name, C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, false);
-    return c4coll_deleteIndex(coll, name, outError);
-}
-
-// semi-deprecated
-C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, C4SliceResult{nullptr});
-    return c4coll_getIndexesInfo(coll, outError);
-}
-
-C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* outError) noexcept {
+C4SliceResult c4coll_getIndexRows(C4Collection* coll, C4String indexName, C4Error* outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&] {
-        auto coll = database->getDefaultCollection();
         returnIfCollectionInvalid(coll, outError, C4SliceResult{nullptr});
         return C4SliceResult(coll->getIndexRows(indexName));
     });
@@ -610,39 +544,6 @@ void c4db_clearCookies(C4Database* db) noexcept {
 C4Document* c4doc_retain(C4Document* doc) noexcept { return retain(doc); }
 
 void c4doc_release(C4Document* doc) noexcept { release(doc); }
-
-// semi-deprecated
-C4Document* c4db_getDoc(C4Database* database, C4Slice docID, bool mustExist, C4DocContentLevel content,
-                        C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, nullptr);
-    return c4coll_getDoc(coll, docID, mustExist, content, outError);
-}
-
-C4Document* c4doc_get(C4Database* database, C4Slice docID, bool mustExist, C4Error* outError) noexcept {
-    return c4db_getDoc(database, docID, mustExist, kDocGetCurrentRev, outError);
-}
-
-// semi-deprecated
-C4Document* c4doc_getBySequence(C4Database* database, C4SequenceNumber sequence, C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, nullptr);
-    return c4coll_getDocBySequence(coll, sequence, outError);
-}
-
-// semi-deprecated
-bool c4doc_setExpiration(C4Database* db, C4Slice docId, C4Timestamp timestamp, C4Error* outError) noexcept {
-    auto coll = db->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, false);
-    return c4coll_setDocExpiration(coll, docId, timestamp, outError);
-}
-
-// semi-deprecated
-C4Timestamp c4doc_getExpiration(C4Database* db, C4Slice docID, C4Error* outError) noexcept {
-    auto coll = db->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, C4Timestamp::Error);
-    return c4coll_getDocExpiration(coll, docID, outError);
-}
 
 bool c4doc_isRevRejected(C4Document* doc) noexcept { return doc->isRevRejected(); }
 
@@ -740,22 +641,6 @@ bool c4coll_markSynced(C4Collection* collection, C4String docID, C4String revID,
 }
 
 char* c4doc_generateID(char* docID, size_t bufferSize) noexcept { return C4Document::generateID(docID, bufferSize); }
-
-// semi-deprecated
-C4Document* c4doc_put(C4Database* database, const C4DocPutRequest* rq, size_t* outCommonAncestorIndex,
-                      C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, nullptr);
-    return c4coll_putDoc(coll, rq, outCommonAncestorIndex, outError);
-}
-
-// semi-deprecated
-C4Document* c4doc_create(C4Database* database, C4String docID, C4Slice revBody, C4RevisionFlags revFlags,
-                         C4Error* outError) noexcept {
-    auto coll = database->getDefaultCollection();
-    returnIfCollectionInvalid(coll, outError, nullptr);
-    return c4coll_createDoc(coll, docID, revBody, revFlags, outError);
-}
 
 C4Document* c4doc_update(C4Document* doc, C4Slice revBody, C4RevisionFlags revFlags, C4Error* outError) noexcept {
     return tryCatch<C4Document*>(outError, [&] {
@@ -866,24 +751,12 @@ C4DocEnumerator* c4coll_enumerateChanges(C4Collection* collection, C4SequenceNum
     });
 }
 
-// semi-deprecated
-C4DocEnumerator* c4db_enumerateChanges(C4Database* database, C4SequenceNumber since,
-                                       const C4EnumeratorOptions* c4options, C4Error* outError) noexcept {
-    return c4coll_enumerateChanges(database->getDefaultCollection(), since, c4options, outError);
-}
-
 C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection* collection, const C4EnumeratorOptions* C4NULLABLE c4options,
                                          C4Error* C4NULLABLE outError) noexcept {
     returnIfCollectionInvalid(collection, outError, nullptr);
     return tryCatch<C4DocEnumerator*>(outError, [&] {
         return new C4DocEnumerator(collection, c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
-}
-
-// semi-deprecated
-C4DocEnumerator* c4db_enumerateAllDocs(C4Database* database, const C4EnumeratorOptions* c4options,
-                                       C4Error* outError) noexcept {
-    return c4coll_enumerateAllDocs(database->getDefaultCollection(), c4options, outError);
 }
 
 bool c4enum_next(C4DocEnumerator* e, C4Error* outError) noexcept {

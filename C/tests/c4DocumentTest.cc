@@ -11,6 +11,7 @@
 //
 
 #include "c4Test.hh"  // IWYU pragma: keep
+#include "c4Database.hh"
 #include "c4Document+Fleece.h"
 #include "c4Collection.h"
 #include "fleece/Fleece.hh"
@@ -99,17 +100,18 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Get With Invalid ID", "[Document][C]") {
     ExpectingExceptions x;
-    C4Error             error = {};
-    CHECK(c4doc_get(db, nullslice, true, &error) == nullptr);
+    C4Error             error       = {};
+    auto                defaultColl = c4db_getDefaultCollection(db, nullptr);
+    CHECK(c4coll_getDoc(defaultColl, nullslice, true, kDocGetCurrentRev, &error) == nullptr);
     CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
 
     error = {};
-    CHECK(c4doc_get(db, ""_sl, true, &error) == nullptr);
+    CHECK(c4coll_getDoc(defaultColl, ""_sl, true, kDocGetCurrentRev, &error) == nullptr);
     CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
 
     error = {};
     std::string tooLong(300, 'x');
-    CHECK(c4doc_get(db, slice(tooLong), true, &error) == nullptr);
+    CHECK(c4coll_getDoc(defaultColl, slice(tooLong), true, kDocGetCurrentRev, &error) == nullptr);
     CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
 }
 
@@ -124,7 +126,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     REQUIRE(error.code == (int)kC4ErrorNotFound);
     c4doc_release(doc);
 
-    // Test c4db_getDoc, which also fails:
+    // Test c4coll_getDoc, which also fails:
     for ( C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll} ) {
         doc = c4coll_getDoc(defaultColl, kDocID, true, content, &error);
         REQUIRE(!doc);
@@ -191,7 +193,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     CHECK(doc == nullptr);
     CHECK(error == C4Error{LiteCoreDomain, kC4ErrorNotFound});
 
-    // Test c4db_getDoc:
+    // Test c4coll_getDoc:
     for ( C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll} ) {
         doc = c4coll_getDoc(defaultColl, kDocID, true, content, ERROR_INFO(error));
         REQUIRE(doc != nullptr);
@@ -257,7 +259,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         CHECK(docBodyEquals(doc, kFleeceBody2));
         c4doc_release(doc);
 
-        // Test c4db_getDoc:
+        // Test c4coll_getDoc:
         for ( C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll} ) {
             doc = c4coll_getDoc(defaultColl, kDocID, true, content, ERROR_INFO(error));
             REQUIRE(doc != nullptr);
