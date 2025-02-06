@@ -5,40 +5,13 @@
 #ifdef __APPLE__
 
 #include "BonjourBrowser.hh"
-#include <dispatch/dispatch.h>
-#include <Network/Network.h>
+#include "Error.hh"
+#include "NetworkInterfaces.hh"
+#include "StringUtil.hh"
+#include <dns_sd.h>
 
 namespace litecore::p2p {
     using namespace std;
-
-
-    // Smart pointer that handles retain/release for Network and Dispatch objects.
-    template <typename T, void* (*Retain)(void*), void (*Release)(void*)>
-    class OSRetained {
-    public:
-        // Constructor assumes you have a ref to the object, so it does not retain it!
-        explicit OSRetained(T *obj = nullptr)   : _obj(obj) { }
-        OSRetained(OSRetained const& r)         :_obj(r._obj) {Retain(_obj);}
-        ~OSRetained()                           {Release(_obj);}
-        operator T*() const                     {return _obj;}
-        T* operator* () const                   {return _obj;}
-        T* operator-> () const                  {return _obj;}
-
-        OSRetained& operator= (T* other) {
-            nw_retain(other._obj);
-            nw_release(_obj);
-            _obj = other;
-            return *this;
-        }
-    private:
-        T* _obj;
-    };
-
-    static void* xdispatch_retain(void* x) {dispatch_retain((dispatch_object_t)x); return x;}
-    static void xdispatch_release(void* x) {dispatch_release((dispatch_object_t)x);}
-
-    template <typename T> using NwRetained =       OSRetained<T, nw_retain, nw_release>;
-    template <typename T> using DispatchRetained = OSRetained<T, xdispatch_retain, xdispatch_release>;
 
 
 #pragma mark - BONJOUR PEER:
@@ -46,152 +19,364 @@ namespace litecore::p2p {
 
     class BonjourPeer : public Peer {
     public:
-        BonjourPeer(Browser* browser, string name, nw_endpoint_t endpt)
+        friend struct BonjourBrowser::Impl;
+
+        BonjourPeer(BonjourBrowser* browser, string name, int interface, string domain)
         :Peer(browser, std::move(name))
-        ,endpoint(endpt)
+        ,_interface(interface)
+        ,_domain(std::move(domain))
         { }
 
-        nw_endpoint_t const endpoint;
+        BonjourBrowser& browser() {return dynamic_cast<BonjourBrowser&>(*Peer::browser());}
 
-        std::vector<std::string> addresses() const override {
-            throw logic_error("UNIMPLEMENTED");//TODO
+        void resolved(struct sockaddr const* ap, int ttl) {
+            IPAddress address(*ap);
+            address.setPort(_port);
+            setAddress(&address);
         }
 
-        void setNwTxtRecord(nw_txt_record_t nwTxt) {
-            unique_lock lock(_mutex);
-            _nwTxtRecord = nwTxt;
+        void resolveFailed() {
+            setAddress(nullptr);
         }
 
-    private:
-        mutex mutable               _mutex;
-        NwRetained<nw_txt_record>   _nwTxtRecord;
+        bool setTxtRecord(slice txt) {
+            if (txt.size == 1 && txt[0] == 0)
+                txt = nullslice;
+            if (txt == _txtRecord)
+                return false;
+            _txtRecord = txt;
+            return true;
+        }
+
+        alloc_slice getMetadata(std::string_view key) const override {
+            if (_txtRecord) {
+                uint8_t len;
+                const void* val = TXTRecordGetValuePtr(uint16_t(_txtRecord.size), _txtRecord.buf,
+                                                        string(key).c_str(), &len);
+                if (val)
+                    return alloc_slice(val, len);
+            }
+            return nullslice;
+        }
+
+        unordered_map<string, alloc_slice> getAllMetadata() const override {
+            unordered_map<string, alloc_slice> metadata;
+            if (_txtRecord) {
+                auto txtLen = uint16_t(_txtRecord.size);
+                unsigned count = TXTRecordGetCount(txtLen, _txtRecord.buf);
+                char key[256];
+                for (unsigned i = 0; i < count; i++) {
+                    uint8_t valueLen;
+                    const void* value;
+                    auto err = TXTRecordGetItemAtIndex(txtLen, _txtRecord.buf, uint16_t(i), sizeof(key), key, &valueLen, &value);
+                    if (err) break;
+                    metadata.emplace(key, alloc_slice(value, valueLen));
+                }
+            }
+            return metadata;
+        }
+
+        int             _interface {};
+        string          _domain;
+        DNSServiceRef   _resolveRef {};     // reference to DNSServiceResolve task
+        DNSServiceRef   _getAddrRef {};     // reference to DNSServiceGetAddrInfo task
+        uint16_t        _port {};
+        alloc_slice     _txtRecord;
     };
 
 
 #pragma mark - BROWSER IMPL:
 
 
+    /// Internal implementation class of BonjourBrowser.
+    /// This class owns a dispatch queue, and all calls other than constructor/destructor
+    /// must be made on that queue.
     struct BonjourBrowser::Impl {
         explicit Impl(BonjourBrowser *owner)
         :_owner(owner)
         ,_queue(dispatch_queue_create("P2P Browser", DISPATCH_QUEUE_SERIAL))
         { }
 
+        ~Impl() {
+            if (_serviceRef) {
+                Warn("Browser was not stopped before deallocating!");
+                DNSServiceRefDeallocate(_serviceRef);
+            }
+            dispatch_release(_queue);
+        }
+
+
+        void check(DNSServiceErrorType err) const {
+            if (err) {
+                _owner->logError("got error %d", err);
+                error(error::Network, 999, stringprintf("DNSServiceError %d", err))._throw(1);
+            }
+        }
+
+        bool running() const {return _serviceRef != nullptr;}
+
+
         void start() {
-            if (_browser) return;
-            _owner->_logInfo("starting...");
-            auto descriptor = nw_browse_descriptor_create_bonjour_service(_owner->_serviceName.c_str(), nullptr);
-            _browser = nw_browser_create(descriptor, nullptr);
-            nw_browser_set_queue(_browser, _queue);
-            nw_browser_set_state_changed_handler(_browser,
-                                                 ^(nw_browser_state_t state, nw_error_t error) {
-                this->stateChanged(state, error);
-            });
-            nw_browser_set_browse_results_changed_handler(_browser,
-                                                          ^(nw_browse_result_t oldResult,
-                                                            nw_browse_result_t newResult,
-                                                            bool batchComplete) {
-                this->resultsChanged(oldResult, newResult, batchComplete);
-            });
-            nw_browser_start(_browser);
-            _selfRetain = _owner;
+            if (_serviceRef) return;
+
+            try {
+                _owner->_logInfo("browsing '%s'...", _owner->_serviceType.c_str());
+                _selfRetain = _owner;
+
+                check(DNSServiceCreateConnection(&_serviceRef));
+                check(DNSServiceSetDispatchQueue(_serviceRef, _queue));
+
+                // Start browser:
+                auto browseCallback = [](DNSServiceRef,
+                                         DNSServiceFlags flags,
+                                         uint32_t interface,
+                                         DNSServiceErrorType err,
+                                         const char *serviceName,
+                                         const char *regtype,
+                                         const char *domain,
+                                         void *ctx) -> void {
+                    reinterpret_cast<Impl*>(ctx)->browseResult(flags, err, interface, serviceName, domain);
+                };
+
+                _browseRef = _serviceRef;
+                check(DNSServiceBrowse(&_browseRef,
+                                       kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
+                                       kDNSServiceInterfaceIndexAny,
+                                       _owner->_serviceType.c_str(),
+                                       nullptr,
+                                       browseCallback,
+                                       this));
+
+                if (auto port = _owner->myPort())
+                    registerService(port, _owner->myTxtRecord());
+            } catch (...) {
+                if (_serviceRef) {
+                    stop();
+                } else {
+                    _owner->notify(BrowserStopped, nullptr); // notify even if ref wasn't created
+                    _selfRetain = nullptr;
+                }
+            }
         }
 
 
         void stop() {
-            if (_browser && !_stopping) {
-                _owner->_logInfo("stopping...");
-                _stopping = true;
-                nw_browser_cancel(_browser);
-                // canceling is asynchronous ... wait for state change to 'canceled'
-            }
-        }
-
-        void stateChanged(nw_browser_state_t state, nw_error_t error) {
-            static constexpr const char* kStateName[] = {"invalid", "ready", "failed", "cancelled", "waiting"};
-            if (error) {
-                // note:
-                _owner->logError("state changed: %s; error domain %d, code %d",
-                    kStateName[state], nw_error_get_error_domain(error), nw_error_get_error_code(error));
-            } else {
-                _owner->_logInfo("state changed: %s", kStateName[state]);
-            }
-            auto prevState = _state;
-            _state = state;
-            _error = error;
-            switch (state) {
-            case nw_browser_state_waiting:
-                if (prevState == nw_browser_state_ready)
-                    _owner->notify(BrowserOffline, nullptr);
-                break;
-            case nw_browser_state_ready:
-                _owner->notify(BrowserOnline, nullptr);
-                break;
-            case nw_browser_state_failed:
+            if (_serviceRef) {
+                _owner->_logInfo("stopping");
+                DNSServiceRefDeallocate(_serviceRef);
+                _serviceRef = _browseRef = _registerRef = nullptr;   // closing main ref closes shared refs too
                 _owner->notify(BrowserStopped, nullptr);
-                stop(); // cancel browser
-                break;
-            case nw_browser_state_cancelled:
-                if (prevState != nw_browser_state_failed)
-                    _owner->notify(BrowserStopped, nullptr);
-                _browser = nullptr;
-                _stopping = false;
-                _selfRetain = nullptr;  // might free me!
-                break;
-            default:
-                break;
+                _selfRetain = nullptr;
             }
         }
 
 
-        void resultsChanged(nw_browse_result_t oldResult,
-                               nw_browse_result_t newResult,
-                               bool batchComplete)
+        void browseResult(DNSServiceFlags flags,
+                          DNSServiceErrorType errorCode,
+                          int interface,
+                          const char *serviceName,
+                          const char *domain)
         {
-            auto changeBits = nw_browse_result_get_changes(oldResult, newResult);
-            _owner->_logInfo("results changed: %02x ; old=%p, new=%p", unsigned(changeBits), oldResult, newResult);
-            if (changeBits & nw_browse_result_change_identical)
-                return;
-            nw_endpoint_t endpt;
-            if (changeBits & nw_browse_result_change_result_removed)
-                endpt = nw_browse_result_copy_endpoint(oldResult);
-            else
-                endpt = nw_browse_result_copy_endpoint(newResult);
-            string name = nw_endpoint_get_bonjour_service_name(endpt);
-
-            if (changeBits & nw_browse_result_change_result_removed) {
-                _owner->removePeer(name);
+            if (errorCode) {
+                _owner->logError("browse error %d", errorCode);
+                stop();
+            } else if (string_view(serviceName) == _owner->_myName) {
+                _owner->_logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
+            } else if (flags & kDNSServiceFlagsAdd) {
+                _owner->_logInfo("flags=%04x; found '%s' in %s", flags, serviceName, domain);
+                auto peer = make_retained<BonjourPeer>(_owner, serviceName, interface, domain);
+                (void)_owner->addPeer(peer);
             } else {
-                Retained<BonjourPeer> peer;
-                if (changeBits & nw_browse_result_change_result_added) {
-                    peer = make_retained<BonjourPeer>(_owner, name, endpt);
-                    _owner->addPeer(peer);
-                } else {
-                    peer = dynamic_cast<BonjourPeer*>(_owner->peerNamed(name).get());
-                }
-                if (changeBits & nw_browse_result_change_txt_record_changed) {
-                    _owner->_logInfo("Got peer TXT record");
-                    peer->setNwTxtRecord(nw_browse_result_copy_txt_record_object(newResult));
-                }
+                _owner->_logInfo("flags=%04x; lost '%s'", flags, serviceName);
+                _owner->removePeer(serviceName);
+            }
+        }
+
+
+        //---- Resolving peer addresses:
+
+
+        void resolveAddress(Retained<BonjourPeer> peer) {
+            if (peer->_resolveRef || peer->_getAddrRef)
+                return; // already resolving
+
+            auto callback = [](DNSServiceRef sdRef,
+                               DNSServiceFlags flags,
+                               uint32_t interfaceIndex,
+                               DNSServiceErrorType err,
+                               const char *fullname,
+                               const char *hostname,
+                               uint16_t portBE,                  // In network byte order
+                               uint16_t txtLen,
+                               const unsigned char *txtRecord,
+                               void *ctx)
+            {
+                auto peer = reinterpret_cast<BonjourPeer*>(ctx);
+                auto impl = peer->browser()._impl.get();
+                impl->resolveResult(flags, err, fullname, hostname,
+                                    ntohs(portBE), slice(txtRecord, txtLen), peer);
+            };
+
+            peer->_resolveRef = _serviceRef;
+            check(DNSServiceResolve(&peer->_resolveRef,
+                                    kDNSServiceFlagsShareConnection,
+                                    peer->_interface,
+                                    peer->name().c_str(),
+                                    _owner->_serviceType.c_str(),
+                                    peer->_domain.c_str(),
+                                    callback,
+                                    peer));
+        }
+
+
+        void resolveResult(DNSServiceFlags flags,
+                           DNSServiceErrorType err,
+                           const char *fullname,
+                           const char *hostname,
+                           uint16_t port,
+                           slice txtRecord,
+                           BonjourPeer* peer)
+        {
+            Assert(peer->_resolveRef);
+            DNSServiceRefDeallocate(peer->_resolveRef);
+            peer->_resolveRef = nullptr;
+            if (err) {
+                peer->resolveFailed();
+                _owner->notify(PeerResolveFailed, peer);
+                return;
             }
 
+            peer->_port = port;
+            _owner->_logInfo("flags=%04x; resolved '%s' as hostname=%s, port=%d",
+                flags, fullname, hostname, port);
+
+            auto callback = [](DNSServiceRef,
+                               DNSServiceFlags flags,
+                               uint32_t interface,
+                               DNSServiceErrorType err,
+                               const char *hostname,
+                               const struct sockaddr *address,
+                               uint32_t ttl,
+                               void *ctx)
+            {
+                auto peer = reinterpret_cast<BonjourPeer*>(ctx);
+                auto impl = peer->browser()._impl.get();
+                impl->getAddrResult(flags, interface, err, hostname, address, ttl, peer);
+            };
+            peer->_getAddrRef = _serviceRef;
+            if (peer->setTxtRecord(txtRecord))
+                _owner->notify(PeerTxtChanged, peer);
+
+            check(DNSServiceGetAddrInfo(&peer->_getAddrRef,
+                                        kDNSServiceFlagsShareConnection,
+                                        peer->_interface,
+                                        kDNSServiceProtocol_IPv4, // could use 0 for both ipv4 and ipv6
+                                        hostname,
+                                        callback,
+                                        peer));
+        }
+
+
+        void getAddrResult(DNSServiceFlags flags,
+                           uint32_t interface,
+                           DNSServiceErrorType err,
+                           const char *hostname,
+                           const struct sockaddr *address,
+                           uint32_t ttl,
+                           BonjourPeer* peer) {
+            Assert(peer->_getAddrRef);
+            DNSServiceRefDeallocate(peer->_getAddrRef);
+            peer->_getAddrRef = nullptr;
+            if (err) {
+                peer->resolveFailed();
+                _owner->notify(PeerResolveFailed, peer);
+            } else {
+                _owner->_logInfo("flags=%04x; got IP address of '%s'", flags, hostname);
+                peer->resolved(address, ttl);
+                _owner->notify(PeerAddressResolved, peer);
+            }
+        }
+
+
+        //---- Service registration / advertising:
+
+
+        void registerService(uint16_t port, slice txtRecord) {
+            if (!_serviceRef) return;
+            Assert(_registerRef == nullptr);
+            Assert(port != 0);
+            _owner->_logInfo("registering my service '%s' on port %d", _owner->_myName.c_str(), port);
+            auto regCallback = [](DNSServiceRef,
+                                  DNSServiceFlags flags,
+                                  DNSServiceErrorType errorCode,
+                                  const char* name,
+                                  const char* regtype,
+                                  const char* domain,
+                                  void* ctx) {
+                reinterpret_cast<Impl*>(ctx)->regResult(flags, errorCode, name, domain);
+            };
+
+            _registerRef = _serviceRef;
+            check(DNSServiceRegister(&_registerRef,
+                                     kDNSServiceFlagsShareConnection | kDNSServiceFlagsNoAutoRename,
+                                     kDNSServiceInterfaceIndexAny,
+                                     _owner->_myName.c_str(),
+                                     _owner->_serviceType.c_str(),
+                                     nullptr,
+                                     nullptr,
+                                     port,
+                                     uint16_t(txtRecord.size),
+                                     txtRecord.buf,
+                                     regCallback,
+                                     this));
+        }
+
+
+        void unregisterService() {
+            if (_registerRef) {
+                _owner->_logInfo("unregistering my service '%s'", _owner->_myName.c_str());
+                DNSServiceRefDeallocate(_registerRef);
+                _registerRef = nullptr;
+            }
+        }
+
+
+        void updateTxtRecord(slice txtRecord) {
+            if (_registerRef) {
+                // TODO
+            }
+        }
+
+
+        void regResult(DNSServiceFlags flags,
+                       DNSServiceErrorType errorCode,
+                       const char* serviceName,
+                       const char* domain)
+        {
+            if (errorCode) {
+                _owner->logError("registration error %d", errorCode);
+                //TODO: Detect name conflict and retry, appending number to name
+                stop();
+            } else if (flags & kDNSServiceFlagsAdd) {
+                _owner->_logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
+            } else {
+                _owner->_logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
+            }
         }
 
         BonjourBrowser*             _owner;
-        DispatchRetained<dispatch_queue_s>            _queue {};
-        NwRetained<nw_browser>      _browser {};
-        nw_browser_state_t          _state {};
-        NwRetained<nw_error>        _error {};
+        dispatch_queue_t            _queue {};
+        DNSServiceRef               _serviceRef {}, _browseRef {}, _registerRef {};
         Retained<BonjourBrowser>    _selfRetain;
         bool                        _stopping {};
     };
 
 
 #pragma mark - BROWSER:
-    
 
-    BonjourBrowser::BonjourBrowser(string_view serviceName, Observer obs)
-    :Browser(serviceName, std::move(obs))
+
+    BonjourBrowser::BonjourBrowser(string_view serviceType, string_view myName, Observer obs)
+    :Browser(serviceType, myName, std::move(obs))
     ,_impl(new Impl(this))
     { }
 
@@ -199,6 +384,28 @@ namespace litecore::p2p {
 
     void BonjourBrowser::stop() {dispatch_async(_impl->_queue, ^{_impl->stop();});}
 
+    void BonjourBrowser::resolveAddress(Peer* peer) {
+        Retained<BonjourPeer> rp(dynamic_cast<BonjourPeer*>(peer));
+        dispatch_async(_impl->_queue, ^{_impl->resolveAddress(rp);});
+    }
+
+
+    void BonjourBrowser::setMyPort(uint16_t port) {
+        Browser::setMyPort(port);
+        dispatch_async(_impl->_queue, ^{
+            _impl->unregisterService();
+            if (port)
+                _impl->registerService(port, this->myTxtRecord());
+        });
+    }
+
+
+    void BonjourBrowser::setMyTxtRecord(alloc_slice txt) {
+        Browser::setMyTxtRecord(txt);
+        dispatch_async(_impl->_queue, ^{
+            _impl->updateTxtRecord(txt);
+        });
+    }
 }
 
 #endif //___APPLE__
