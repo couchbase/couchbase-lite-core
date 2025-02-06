@@ -18,6 +18,8 @@ namespace litecore::p2p {
         "BrowserStopped",
         "PeerAdded",
         "PeerRemoved",
+        "PeerAddressResolved",
+        "PeerResolveFailed",
         "PeerTxtChanged",
     };
 
@@ -29,39 +31,80 @@ namespace litecore::p2p {
     }
 
 
-    Browser::Browser(string_view serviceName, Observer obs)
+    Browser::Browser(string_view serviceType, string_view myName, Observer obs)
     :Logging(P2PLog)
-    ,_serviceName(serviceName)
+    ,_serviceType(serviceType)
+    ,_myName(myName)
     ,_observer(std::move(obs))
     {}
 
 
+    uint16_t Browser::myPort() const {
+        unique_lock lock(_mutex);
+        return _myPort;
+    }
+
+
+    alloc_slice Browser::myTxtRecord() const {
+        unique_lock lock(_mutex);
+        return _myTxtRecord;
+    }
+
+
+    void Browser::setMyPort(uint16_t port) {
+        unique_lock lock(_mutex);
+        _myPort = port;
+    }
+
+
+    void Browser::setMyTxtRecord(alloc_slice txt) {
+        unique_lock lock(_mutex);
+        _myTxtRecord = txt;
+    }
+
+
     Retained<Peer> Browser::peerNamed(string const& name) {
-        std::unique_lock lock(_mutex);
+        unique_lock lock(_mutex);
         if (auto i = _peers.find(name); i != _peers.end())
             return i->second;
         return nullptr;
     }
 
 
-    void Browser::addPeer(Retained<Peer> peer) {
-        std::unique_lock lock(_mutex);
-        bool added = _peers.emplace(peer->name(), peer).second;
-        Assert(added, "Peer '%s' already registered", peer->name().c_str());
-
-        lock.unlock();
-        notify(PeerAdded, peer);
+    bool Browser::addPeer(Retained<Peer> peer) {
+        unique_lock lock(_mutex);
+        auto [i, added] = _peers.emplace(peer->name(), peer);
+        if (added) {
+            lock.unlock();
+            notify(PeerAdded, peer);
+        }
+        return added;
     }
 
 
     void Browser::removePeer(string const& name) {
         if (Retained<Peer> peer = peerNamed(name)) {
-            std::unique_lock lock(_mutex);
+            unique_lock lock(_mutex);
             _peers.erase(name);
 
             lock.unlock();
             notify(PeerRemoved, peer);
         }
+    }
+
+
+    optional<IPAddress> Peer::address() const {
+        unique_lock lock(_mutex);
+        return _address;
+    }
+
+
+    void Peer::setAddress(IPAddress const* addrp) {
+        unique_lock lock(_mutex);
+        if (addrp)
+            _address = *addrp;
+        else
+            _address = nullopt;
     }
 
 }
