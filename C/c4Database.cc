@@ -149,6 +149,12 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2& config2) {
 
 /*static*/ void C4Database::shutdownLiteCore() { SQLiteDataFile::shutdown(); }
 
+Retained<C4Database> C4Database::openAgain() const {
+    auto config = _config;
+    config.flags |= kC4DB_NoHousekeeping;
+    return openNamed(getName(), config);
+}
+
 C4Collection* C4Database::getDefaultCollection() const {
     // Make a distinction: If the DB is open and the default collection is deleted
     // then simply return null.  If the DB is closed, an error should occur.
