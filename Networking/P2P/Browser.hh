@@ -5,11 +5,14 @@
 #pragma once
 #include "Base.hh"
 #include "Logging.hh"
+#include "NetworkInterfaces.hh"
 #include <functional>
 #include <mutex>
 #include <vector>
 
 namespace litecore::p2p {
+    using IPAddress = net::IPAddress;
+
     class Peer;
 
     extern LogDomain P2PLog;
@@ -25,6 +28,8 @@ namespace litecore::p2p {
             BrowserStopped,
             PeerAdded,
             PeerRemoved,
+            PeerAddressResolved,
+            PeerResolveFailed,
             PeerTxtChanged,
         };
 
@@ -32,24 +37,34 @@ namespace litecore::p2p {
 
         using Observer = std::function<void(Browser&, Event, Peer*)>;
 
-        explicit Browser(string_view serviceName, Observer obs);
+        explicit Browser(string_view serviceType, string_view myName, Observer obs);
 
         virtual void start() = 0;
         virtual void stop() = 0;
 
+        uint16_t myPort() const;
+        alloc_slice myTxtRecord() const;
+
+        virtual void setMyPort(uint16_t);
+        virtual void setMyTxtRecord(alloc_slice);
+
         Retained<Peer> peerNamed(string const& name);
 
+        virtual void resolveAddress(Peer*) = 0;
+
     protected:
-
         void notify(Event event, Peer* peer);
-
-        void addPeer(Retained<Peer> peer);
+        [[nodiscard]] bool addPeer(Retained<Peer> peer);
         void removePeer(string const& name);
 
-        string const _serviceName;
-        Observer const _observer;
-        std::mutex                  _mutex;
-        std::unordered_map<string,Retained<Peer>> _peers;
+        string const                                _serviceType;
+        string const                                _myName;
+        Observer const                              _observer;
+        std::mutex mutable                          _mutex;
+    private:
+        uint16_t                                    _myPort = 0;
+        alloc_slice                                 _myTxtRecord;
+        std::unordered_map<string,Retained<Peer>>   _peers;
     };
 
 
@@ -65,18 +80,25 @@ namespace litecore::p2p {
         /// Peer name.
         string const& name() const  {return _name;}
 
-        /// List of known addresses to connect to the peer.
-        /// Format of the string is protocol-dependent (e.g. numeric IPv4/IPv6)
-        virtual std::vector<std::string> addresses() const =0;
+        /// Request to asynchronously determine the peer's address.
+        void resolveAddress()       {_browser->resolveAddress(this);}
+
+        /// Peer's address, if known.
+        std::optional<IPAddress> address() const;
 
         /// Returns metadata associated with a key string (e.g. from an mDNS TXT record.)
-        virtual std::string getMetadata(std::string_view key) const {return "";}
+        virtual alloc_slice getMetadata(string_view key) const {return nullslice;}
+
+        virtual std::unordered_map<string,alloc_slice> getAllMetadata() const {return {};}
+
+    protected:
+        void setAddress(IPAddress const*);
 
     private:
         Browser* const      _browser;
         string const        _name;
         std::mutex mutable  _mutex;
-        alloc_slice         _txtRecord;
+        std::optional<IPAddress>    _address;
     };
 
 }  // namespace litecore::p2p
