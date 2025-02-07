@@ -315,6 +315,8 @@ namespace cbl {
                 reportError(outError, "MLModel input feature '%s' is of unsupported type %s; sorry!",
                             name.UTF8String, kMLFeatureTypeName[desc.type]);
                 return nil;
+            default:
+                break;
         }
         if (!feature) {
             reportError(nullptr, "input property '%s' has wrong type; should be %s",
@@ -474,6 +476,9 @@ namespace cbl {
                 enc.writeNull();
                 break;
             case MLFeatureTypeInvalid:
+                enc.writeNull();
+                break;
+            default:
                 enc.writeNull();
                 break;
         }
