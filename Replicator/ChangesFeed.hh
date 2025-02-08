@@ -56,8 +56,6 @@ namespace litecore::repl {
 
         void setLastSequence(C4SequenceNumber s) { _maxSequence = s; }
 
-        void setEchoLocalChanges(bool echo) { _echoLocalChanges = echo; }
-
         void setSkipDeletedDocs(bool skip) { _skipDeleted = skip; }
 
         void setCheckpointValid(bool valid) { _isCheckpointValid = valid; }
@@ -102,20 +100,19 @@ namespace litecore::repl {
         Delegate&              _delegate;
         RetainedConst<Options> _options;
         DBAccess&              _db;
+        C4CollectionSpec const _collectionSpec;
+        CollectionIndex const  _collectionIndex;
         bool                   _getForeignAncestors{false};  // True in propose-changes mode
       private:
         Checkpointer*                       _checkpointer;
-        DocIDSet                            _docIDs;                   // Doc IDs to filter to, or null
-        std::unique_ptr<C4DatabaseObserver> _changeObserver;           // Used in continuous push mode
-        C4SequenceNumber                    _maxSequence{0};           // Latest sequence I've read
-        bool                                _continuous;               // Continuous mode
-        bool                                _echoLocalChanges{false};  // True if including changes made by _db
-        bool                                _skipDeleted{false};       // True if skipping tombstones
+        DocIDSet                            _docIDs;              // Doc IDs to filter to, or null
+        std::unique_ptr<C4DatabaseObserver> _changeObserver;      // Used in continuous push mode
+        C4SequenceNumber                    _maxSequence{0};      // Latest sequence I've read
+        bool                                _continuous;          // Continuous mode
+        bool                                _skipDeleted{false};  // True if skipping tombstones
         bool                                _isCheckpointValid{true};
         bool                                _caughtUp{false};         // Delivered all historical changes
         std::atomic<bool>                   _notifyOnChanges{false};  // True if expecting change notification
-        CollectionIndex
-                _collectionIndex;  // Identifies the collection index (in the replicator) of the collection being used
     };
 
     class ReplicatorChangesFeed final : public ChangesFeed {

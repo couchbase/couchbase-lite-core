@@ -33,8 +33,8 @@ namespace litecore::repl {
 
 #pragma mark - CHECKPOINT ACCESSORS:
 
-    Checkpointer::Checkpointer(const Options* opt, fleece::slice remoteURL, C4Collection* collection)
-        : _options(opt), _remoteURL(remoteURL), _collection(collection) {}
+    Checkpointer::Checkpointer(const Options* opt, fleece::slice remoteURL, C4CollectionSpec const& spec)
+        : _options(opt), _collectionSpec(spec), _remoteURL(remoteURL) {}
 
     Checkpointer::~Checkpointer() = default;
 
@@ -198,11 +198,10 @@ namespace litecore::repl {
         // checkpointers would be inaccessible.  For this reason, the default
         // collection must remain unchanged.
         bool useSha1 = true;
-        if ( _collection != nullptr && _collection->getSpec() != kC4DefaultCollectionSpec ) {
-            auto spec  = _collection->getSpec();
-            auto index = _options->collectionSpecToIndex().at(spec);
-            enc.writeString(spec.name);
-            enc.writeString(spec.scope);
+        if ( _collectionSpec != kC4DefaultCollectionSpec ) {
+            auto index = _options->collectionSpecToIndex().at(_collectionSpec);
+            enc.writeString(_collectionSpec.name);
+            enc.writeString(_collectionSpec.scope);
 
             // CBL-501: Push only and pull only checkpoints create conflict
             // So include them in the derivation
@@ -310,7 +309,7 @@ namespace litecore::repl {
         CollectionIndex i = collectionIndex();
         return isDocumentIDAllowed(doc->docID())
                && (!_options->pushFilter(i)
-                   || _options->pushFilter(i)(_collection->getSpec(), doc->docID(), doc->selectedRev().revID,
+                   || _options->pushFilter(i)(_collectionSpec, doc->docID(), doc->selectedRev().revID,
                                               doc->selectedRev().flags, doc->getProperties(),
                                               _options->collectionCallbackContext(collectionIndex())));
     }
@@ -329,8 +328,9 @@ namespace litecore::repl {
         }
 
         read(db, false);
-        const auto dbLastSequence   = collection()->getLastSequence();
-        const auto replLastSequence = this->localMinSequence();
+        C4Collection* collection       = db->getCollection(_collectionSpec);
+        const auto    dbLastSequence   = collection->getLastSequence();
+        const auto    replLastSequence = this->localMinSequence();
         if ( replLastSequence >= dbLastSequence ) {
             // No changes since the last checkpoint
             return;
@@ -344,7 +344,7 @@ namespace litecore::repl {
             opts.flags |= kC4IncludeBodies;
         }
 
-        C4DocEnumerator e(collection(), replLastSequence, opts);
+        C4DocEnumerator e(collection, replLastSequence, opts);
         while ( e.next() ) {
             C4DocumentInfo info = e.documentInfo();
 
@@ -379,7 +379,8 @@ namespace litecore::repl {
         }
 
         read(db, false);
-        Retained<C4Document> doc = collection()->getDocument(docId, false, kDocGetCurrentRev);
+        C4Collection*        collection = db->getCollection(_collectionSpec);
+        Retained<C4Document> doc        = collection->getDocument(docId, false, kDocGetCurrentRev);
         return doc && !_checkpoint->isSequenceCompleted(doc->sequence()) && isDocumentAllowed(doc);
     }
 

@@ -258,7 +258,6 @@ __FLBuf_Release
 
 
 
-_c4listener_availableAPIs
 _c4listener_start
 _c4listener_free
 _c4listener_shareDB

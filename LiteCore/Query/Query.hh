@@ -15,6 +15,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include <atomic>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -54,7 +55,9 @@ namespace litecore {
 
         virtual unsigned columnCount() const noexcept = 0;
 
-        virtual const std::vector<std::string>& columnTitles() const noexcept = 0;
+        virtual const std::vector<std::string>& columnTitles() const noexcept LIFETIMEBOUND = 0;
+
+        virtual const std::set<std::string>& parameterNames() const noexcept LIFETIMEBOUND = 0;
 
         virtual alloc_slice getMatchedText(const FullTextTerm&) = 0;
 
@@ -140,7 +143,7 @@ namespace litecore {
 
         virtual bool hasFullText() const { return false; }
 
-        virtual const FullTextTerms& fullTextTerms() { return _fullTextTerms; }
+        virtual const FullTextTerms& fullTextTerms() LIFETIMEBOUND { return _fullTextTerms; }
 
         /** If the query results have changed since I was created, returns a new enumerator
             that will return the new results. Otherwise returns null. */

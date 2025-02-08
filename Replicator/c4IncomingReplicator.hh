@@ -22,8 +22,8 @@ namespace litecore {
     /** A passive replicator handling an incoming WebSocket connection, for P2P. */
     class C4IncomingReplicator final : public C4ReplicatorImpl {
       public:
-        C4IncomingReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params,
-                             WebSocket* openSocket NONNULL, slice logPrefix)
+        C4IncomingReplicator(DatabaseOrPool db, const C4ReplicatorParameters& params, WebSocket* openSocket NONNULL,
+                             slice logPrefix = {})
             : C4ReplicatorImpl(db, params), _openSocket(openSocket) {
             std::string logName = "C4IncomingRepl";
             if ( !logPrefix.empty() ) logName = logPrefix.asString() + "/" + logName;
@@ -34,10 +34,8 @@ namespace litecore {
 
         void createReplicator() override {
             Assert(_openSocket);
-
-            auto dbOpenedAgain = _database->openAgain();
-            _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4IncomingReplicator);
-            _replicator = new Replicator(dbOpenedAgain.get(), _openSocket, *this, _options);
+            _replicator = new Replicator(makeDBAccess(_database, DatabaseTag_C4IncomingReplicator), _openSocket, *this,
+                                         _options);
 
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to

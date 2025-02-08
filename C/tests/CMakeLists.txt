@@ -117,6 +117,8 @@ target_include_directories(
     ${TOP}vendor/fleece/API
     ${TOP}vendor/fleece/Fleece/Support
     ${TOP}C
+    ${TOP}C/include
+    ${TOP}C/Cpp_include
     ${TOP}Crypto
     ${TOP}Replicator
     ${TOP}Replicator/tests

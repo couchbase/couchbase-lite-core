@@ -53,8 +53,8 @@ pipeline {
                     agent { label 's61113u16 (litecore)' }
                     environment {
                        BRANCH = "${BRANCH_NAME}"
-                       CC = "gcc-10"
-                       CXX = "g++-10"
+                       CC = "gcc-11"
+                       CXX = "g++-11"
                     }
                     steps {
                         sh 'jenkins/jenkins_unix.sh'

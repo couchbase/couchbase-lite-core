@@ -38,13 +38,10 @@ namespace litecore::repl {
         , _delegate(delegate)
         , _options(options)
         , _db(db)
+        , _collectionSpec(checkpointer->collectionSpec())
+        , _collectionIndex(CollectionIndex(_options->collectionSpecToIndex().at(checkpointer->collectionSpec())))
         , _checkpointer(checkpointer)
         , _skipDeleted(_options->skipDeleted()) {
-        DebugAssert(_checkpointer);
-
-        // JIM: This breaks tons of encapsulation, and should be reworked
-        _collectionIndex =
-                (CollectionIndex)_options->collectionSpecToIndex().at(_checkpointer->collection()->getSpec());
         _continuous = _options->push(_collectionIndex) == kC4Continuous;
         filterByDocIDs(_options->docIDs(_collectionIndex));
     }
@@ -72,8 +69,8 @@ namespace litecore::repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _changeObserver = C4DatabaseObserver::create(_checkpointer->collection(),
-                                                         [this](C4DatabaseObserver*) { this->_dbChanged(); });
+            BorrowedCollection coll(_db.useWriteable(), _collectionSpec);
+            _changeObserver = C4DatabaseObserver::create(coll, [this](C4DatabaseObserver*) { this->_dbChanged(); });
         }
 
         Changes changes       = {};
@@ -94,25 +91,23 @@ namespace litecore::repl {
 
         // Run a by-sequence enumerator to find the changed docs:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        // TBD: pushFilter should be collection-aware.
+        // TODO: pushFilter should be collection-aware.
         if ( !_getForeignAncestors && !_options->pushFilter(_collectionIndex) ) options.flags &= ~kC4IncludeBodies;
         if ( !_skipDeleted ) options.flags |= kC4IncludeDeleted;
         if ( _db.usingVersionVectors() ) options.flags |= kC4IncludeRevHistory;
 
         try {
-            _db.useLocked([&](C4Database* db) {
-                Assert(db == _checkpointer->collection()->getDatabase());
-                C4DocEnumerator e(_checkpointer->collection(), _maxSequence, options);
-                changes.revs.reserve(limit);
-                while ( e.next() && limit > 0 ) {
-                    C4DocumentInfo info = e.documentInfo();
-                    auto           rev  = makeRevToSend(info, &e);
-                    if ( rev ) {
-                        changes.revs.push_back(rev);
-                        --limit;
-                    }
+            BorrowedCollection collection = _db.useCollection(_collectionSpec);
+            C4DocEnumerator    e(collection, _maxSequence, options);
+            changes.revs.reserve(limit);
+            while ( e.next() && limit > 0 ) {
+                C4DocumentInfo info = e.documentInfo();
+                auto           rev  = makeRevToSend(info, &e);
+                if ( rev ) {
+                    changes.revs.push_back(rev);
+                    --limit;
                 }
-            });
+            }
         } catch ( ... ) { changes.err = C4Error::fromCurrentException(); }
 
         if ( limit > 0 && !_caughtUp ) {
@@ -137,13 +132,13 @@ namespace litecore::repl {
             uint32_t nChanges = nextObservation.numChanges;
             if ( nChanges == 0 ) break;
 
-            if ( !nextObservation.external && !_echoLocalChanges ) {
-                logDebug("Observed %u of my own db changes #%" PRIu64 " ... #%" PRIu64 " (ignoring)", nChanges,
-                         static_cast<uint64_t>(c4changes[0].sequence),
-                         static_cast<uint64_t>(c4changes[nChanges - 1].sequence));
-                _maxSequence = c4changes[nChanges - 1].sequence;
-                continue;  // ignore changes I made myself
-            }
+            //TODO: Detect & ignore changes made by a concurrent pull replication from the same remote;
+            // i.e don't echo changes back to the peer we got them from in the first place!
+            // It's not harmful, but it's wasteful.
+            // (There used to be old code here that checked the `external` flag to do that,
+            // but it turned out it had been nonfunctional for quite a while. We'd need a better
+            // mechanism for discovering where the changes came from.) --Jens, Feb 2025
+
             logVerbose("Observed %u db changes #%" PRIu64 " ... #%" PRIu64, nChanges, (uint64_t)c4changes[0].sequence,
                        (uint64_t)c4changes[nChanges - 1].sequence);
 
@@ -212,7 +207,7 @@ namespace litecore::repl {
                     (_docIDs != nullptr && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) ) {
             return nullptr;
         } else {
-            auto rev = make_retained<RevToSend>(info, _checkpointer->collection()->getSpec(),
+            auto rev = make_retained<RevToSend>(info, _checkpointer->collectionSpec(),
                                                 _options->collectionCallbackContext(_collectionIndex));
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
@@ -227,13 +222,11 @@ namespace litecore::repl {
             C4Error              error;
             Retained<C4Document> doc;
             try {
-                _db.useLocked([&](C4Database* db) {
-                    if ( e ) doc = e->getDocument();
-                    else
-                        doc = _checkpointer->collection()->getDocument(
-                                rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
-                    if ( !doc ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
-                });
+                if ( e ) doc = e->getDocument();
+                else
+                    doc = _db.useCollection(_collectionSpec)
+                                  ->getDocument(rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
+                if ( !doc ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
             } catch ( ... ) { error = C4Error::fromCurrentException(); }
             if ( !doc ) {
                 _delegate.failedToGetChange(rev, error, false);
@@ -249,7 +242,7 @@ namespace litecore::repl {
             }
             if ( _options->pushFilter(_collectionIndex) ) {
                 // If there's a push filter, ask it whether to push the doc:
-                if ( !_options->pushFilter(_collectionIndex)(_checkpointer->collection()->getSpec(), doc->docID(),
+                if ( !_options->pushFilter(_collectionIndex)(_checkpointer->collectionSpec(), doc->docID(),
                                                              doc->selectedRev().revID, doc->selectedRev().flags,
                                                              doc->getProperties(),
                                                              _options->collectionCallbackContext(_collectionIndex)) ) {

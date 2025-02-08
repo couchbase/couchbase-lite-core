@@ -14,6 +14,7 @@
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "TLSContext.hh"
+#include "c4ExceptionUtils.hh"
 #include "c4Private.h"
 #include "Error.hh"
 #include "Logging.hh"
@@ -277,9 +278,13 @@ namespace litecore { namespace crypto {
                 // Create the signature:
                 NSData* data = inputData.uncopiedNSData();
                 CFErrorRef error;
-                NSData* sigData = CFBridgingRelease( SecKeyCreateSignature(_privateKeyRef,
-                                                                 digestAlgorithm,
-                                                                 (CFDataRef)data, &error) );
+                NSData* sigData;
+                {
+                    ExpectingExceptions x;
+                    sigData = CFBridgingRelease( SecKeyCreateSignature(_privateKeyRef,
+                                                                       digestAlgorithm,
+                                                                       (CFDataRef)data, &error) );
+                }
                 if (!sigData) {
                     warnCFError(error, "SecKeyCreateSignature");
                     return MBEDTLS_ERR_RSA_PRIVATE_FAILED;

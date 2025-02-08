@@ -78,9 +78,15 @@ function Build() {
         $MsArch = "x64"
     }
 
+    if($Edition -eq "enterprise") {
+        $build_enterprise = "ON"
+    } else {
+        $build_enterprise = "OFF"
+    }
+
     & "C:\Program Files\CMake\bin\cmake.exe" `
         -A $MsArch `
-        -DEDITION="$Edition" `
+        -DBUILD_ENTERPRISE=$build_enterprise `
         -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
         ..
 

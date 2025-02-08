@@ -35,6 +35,13 @@ struct C4DocEnumerator
     explicit C4DocEnumerator(C4Collection*              collection,
                              const C4EnumeratorOptions& options = kC4DefaultEnumeratorOptions);
 
+    /// Creates an enumerator on a collection, beginning at `startKey`.
+    /// (This means that if the order is descending, `startKey` will be the maximum key.)
+    /// If `startKey` is null, it's ignored and all documents are returned.
+    /// You must first call \ref next to step to the first document.
+    explicit C4DocEnumerator(C4Collection* collection, slice startKey,
+                             const C4EnumeratorOptions& options = kC4DefaultEnumeratorOptions);
+
     /// Creates an enumerator on a collection, ordered by sequence.
     /// You must first call \ref next to step to the first document.
     explicit C4DocEnumerator(C4Collection* collection, C4SequenceNumber since,

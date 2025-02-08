@@ -28,8 +28,7 @@ C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Database* db) {
 }
 
 C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Collection* coll) {
-    std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(coll->getDatabase(), false);
-    return acc->unresolvedDocsEnumerator(coll, true).release();
+    return DBAccess::unresolvedDocsEnumerator(coll, true).release();
 }
 
 unsigned DBAccessTestWrapper::numDeltasApplied() { return DBAccess::gNumDeltasApplied; }
