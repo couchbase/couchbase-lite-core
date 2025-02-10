@@ -289,6 +289,34 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     CHECK(run() == (vector<string>{"0000015", "0000099"}));
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query partial value index", "[Query][C]") {
+    C4Error              err;
+    auto                 defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    const vector<string> result{"0000099"};
+    for ( int withIndex = 0; withIndex < 2; ++withIndex ) {
+        if ( withIndex ) {
+            C4IndexOptions options{};
+            options.where = "gender = 'female'";
+            REQUIRE(c4coll_createIndex(defaultColl, C4STR("length"), c4str("length(name.first)"), kC4N1QLQuery,
+                                       kC4ValueIndex, &options, WITH_ERROR(&err)));
+        }
+        compileSelect("SELECT META().id FROM _ WHERE length(name.first) = 9 AND gender = 'female'", kC4N1QLQuery);
+        REQUIRE(query);
+        checkExplanation(withIndex);
+        CHECK(run() == result);
+
+        if ( withIndex ) {
+            // Logically equivalent query, changing gender = 'female' to gender != 'male'.
+            // Because the condition is not exact as the condition in partial index, it would not use
+            // the index.
+            compileSelect("SELECT META().id FROM _ WHERE length(name.first) = 9 AND gender != 'male'", kC4N1QLQuery);
+            REQUIRE(query);
+            checkExplanation(!withIndex);
+            CHECK(run() == result);
+        }
+    }
+}
+
 static bool lookForIndex(C4Database* db, slice name) {
     bool found       = false;
     auto defaultColl = C4QueryTest::getCollection(db, kC4DefaultCollectionSpec);
@@ -421,9 +449,18 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     C4Error err;
     auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
-    REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
-                               kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
-    compile(json5("['MATCH()', 'byStreet', 'Hwy']"));
+
+    bool useJSON = GENERATE(true, false);
+    if ( useJSON ) {
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"),
+                                   kC4JSONQuery, kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+        compile(json5("['MATCH()', 'byStreet', 'Hwy']"));
+    } else {
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("contact.address.street"), kC4N1QLQuery,
+                                   kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+        compileSelect("SELECT META().id FROM _ WHERE MATCH(byStreet, 'Hwy')", kC4N1QLQuery);
+    }
+
     auto results = runFTS();
     CHECK(results
           == (vector<vector<C4FullTextMatch>>{{{13, 0, 0, 10, 3}},
@@ -436,6 +473,57 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     REQUIRE(matched.buf != nullptr);
     CHECK(toString(matched) == "7 Wyoming Hwy");
     c4slice_free(matched);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS (Partial)", "[Query][C][FTS]") {
+    C4Error err;
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
+    // c.f. above test, "C4Query FTS". The query is the same.
+    // W/o "where" in options, there are five contacts whose street addresses contain "Hwy".
+
+    bool useJSON = GENERATE(false, true);
+
+    C4IndexOptions options{};
+    // With the following "where" option, the query picks 2 Californians.
+    if ( useJSON ) {
+        options.where = R"(["=", [".contact.address.state"], "CA"])";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"),
+                                   kC4JSONQuery, kC4FullTextIndex, &options, WITH_ERROR(&err)));
+        compile(json5("['MATCH()', 'byStreet', 'Hwy']"));
+    } else {
+        options.where = "contact.address.state = 'CA'";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("contact.address.street"), kC4N1QLQuery,
+                                   kC4FullTextIndex, &options, WITH_ERROR(&err)));
+        compileSelect("SELECT META().id FROM _ WHERE MATCH(byStreet, 'Hwy')", kC4N1QLQuery);
+    }
+
+    auto results = runFTS();
+    CHECK(results == (vector<vector<C4FullTextMatch>>{{{15, 0, 0, 11, 3}}, {{43, 0, 0, 12, 3}}}));
+
+    {
+        // Check we can get the where clause back via c4index_getOptions
+        auto           index = REQUIRED(c4coll_getIndex(defaultColl, C4STR("byStreet"), nullptr));
+        C4IndexOptions outOptions;
+        REQUIRE(c4index_getOptions(index, &outOptions));
+        CHECK(string(outOptions.where) == options.where);
+        c4index_release(index);
+    }
+
+    // By creating the index with different options.where, the original index will be deleted,
+    // and the index table will be based soly on the new where clause. We get one Texan.
+    if ( useJSON ) {
+        options.where = R"(["=", [".contact.address.state"], "TX"])";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"),
+                                   kC4JSONQuery, kC4FullTextIndex, &options, WITH_ERROR(&err)));
+    } else {
+        options.where = "contact.address.state = 'TX'";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("contact.address.street"), kC4N1QLQuery,
+                                   kC4FullTextIndex, &options, WITH_ERROR(&err)));
+    }
+
+    results = runFTS();
+    CHECK(results == (vector<vector<C4FullTextMatch>>{{{44, 0, 0, 12, 3}}}));
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple properties", "[Query][C][FTS]") {
@@ -1496,6 +1584,15 @@ TEST_CASE_METHOD(CollectionTest, "C4Query FTS Multiple collections", "[Query][C]
 
     CHECK(run().size() == 50);
     CHECK(runFTS().size() == 50);
+
+    auto deleted = c4coll_deleteIndex(names, C4STR("byStreet"), nullptr);
+    CHECK(deleted);
+    // The query won't run after the index is deleted. We should see following error in the log,
+    // 2024-10-29T20:57:00.896439 DB ERROR SQLite error (code 1): no such table: kv_.namedscope.names::by\Street in "SELECT "namedscope.names".rowid, offsets(fts1."kv_.namedscope.names::by\Street"), offsets(fts2."kv_.wiki::by\Text"), fl_result("namedscope.names".key), fl_result(wiki.key) FROM "kv_.namedscope.names" AS "namedscope.names" INNER JOIN "kv_.wiki" AS wiki ON (fl_value("namedscope.names".body, 'birthday') != fl_value(wiki.body, 'title')) JOIN "kv_.namedscope.names::by\Street" AS fts1 ON fts1.docid = "namedscope.names".rowid JOIN "kv_.wiki::by\Text" AS fts2 ON fts2.docid = wiki.rowid WHERE fts1."kv_.namedscope.names::by\Street" MATCH 'Hwy' AND fts2. This table is referenced by an FTS index, which may have been deleted.
+    C4Error error;
+    auto    qenum = c4query_run(query, c4str(nullptr), &error);
+    CHECK(!qenum);
+    CHECK((error.domain == SQLiteDomain && error.code == 1));
 }
 
 #pragma mark - OBSERVERS:

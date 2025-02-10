@@ -36,6 +36,7 @@
 #include <sqlite3.h>
 #include <sstream>
 #include <mutex>
+#include <regex>
 #include <thread>
 #include <cinttypes>
 #ifdef _WIN32
@@ -114,6 +115,28 @@ namespace litecore {
 
     void LogStatement(const SQLite::Statement& st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
 
+    static std::pair<bool, std::string> enhanceSQLiteErrorLog(int errCode, const char* msg) {
+        std::regex  noTableRegx{"no such table: (\\S+) in "};
+        std::cmatch match;
+        const char* extra = nullptr;
+        if ( std::regex_search(msg, match, noTableRegx) ) {
+            if ( std::regex_search(match.suffix().str(), std::regex{"fl_unnested_value"})
+                 && std::regex_match(match[1].str(), std::regex{"[0-9a-z]{40}"}) ) {
+                extra = "This table is referenced by an array index, which may have been deleted.";
+            } else if ( std::regex_match(match[1].str(), std::regex{"kv_\\..+::.+"}) ) {
+                // example target: match[1].str() = "kv_.namedscope.names::by\\Street"
+                // where "::" = KeyStore::kIndexSeparator
+                extra = "This table is referenced by an FTS index, which may have been deleted.";
+            }
+        }
+        std::string enhanced;
+        if ( extra ) {
+            enhanced = msg;
+            enhanced += ". "s + extra;
+        }
+        return std::make_pair(extra, enhanced);
+    }
+
     static void sqlite3_log_callback(void* /*pArg*/, int errCode, const char* msg) {
         switch ( errCode & 0xFF ) {
             case SQLITE_OK:
@@ -132,7 +155,11 @@ namespace litecore {
                 LogWarn(DBLog, "SQLite warning: %s", msg);
                 break;
             default:
-                LogError(DBLog, "SQLite error (code %d): %s", errCode, msg);
+                {
+                    auto [enhanced, enhancedMsg] = enhanceSQLiteErrorLog(errCode, msg);
+                    if ( enhanced ) msg = enhancedMsg.c_str();
+                    LogError(DBLog, "SQLite error (code %d): %s", errCode, msg);
+                }
                 break;
         }
     }
@@ -343,6 +370,7 @@ namespace litecore {
             (void)upgradeSchema(SchemaVersion::WithExpirationColumn, "Adding `expiration` column", [&] {
                 // Add the 'expiration' column to every KeyStore:
                 for ( string& name : allKeyStoreNames() ) {
+                    // Only update data tables, not FTS index tables
                     if ( name.find("::") == string::npos ) {
                         string tableName = SQLiteKeyStore::tableName(name);
                         string sql;
@@ -355,6 +383,16 @@ namespace litecore {
                                 "ALTER TABLE \"%s\" ADD COLUMN expiration INTEGER; "
                                 "CREATE INDEX \"%s_expiration\" ON \"%s\" (expiration) WHERE expiration not null",
                                 tableName.c_str(), tableName.c_str(), tableName.c_str()));
+                    }
+                }
+            });
+
+            (void)upgradeSchema(SchemaVersion::WithIndexesWhereColumn, "Adding indexes.whereClause column", [&] {
+                string sql;
+                if ( getSchema("indexes", "table", "indexes", sql) ) {
+                    // Check if the table needs to be updated to add the 'lastSeq' column: (v3.2)
+                    if ( sql.find("whereClause") == string::npos ) {
+                        _exec("ALTER TABLE indexes ADD COLUMN whereClause TEXT");
                     }
                 }
             });
