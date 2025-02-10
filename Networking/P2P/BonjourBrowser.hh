@@ -21,6 +21,8 @@ public:
     void setMyTxtRecord(alloc_slice) override;
 
     void resolveAddress(Peer*) override;
+    void startMonitoring(Peer*) override;
+    void stopMonitoring(Peer*) override;
 
 private:
     friend class BonjourPeer;
