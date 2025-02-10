@@ -40,6 +40,7 @@ typedef C4_OPTIONS(uint32_t, C4DatabaseFlags){
         kC4DB_NonObservable   = 0x40,    ///< Disable database/collection observers, for slightly faster writes
         kC4DB_DiskSyncFull    = 0x80,    ///< Flush to disk after each transaction
         kC4DB_FakeVectorClock = 0x0100,  ///< Use counters instead of timestamps in version vectors (TESTS ONLY)
+        kC4DB_NoHousekeeping  = 0x0200,  ///< Disable normal tasks like expiring docs and compaction
 };
 
 

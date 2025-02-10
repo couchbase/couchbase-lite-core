@@ -378,7 +378,8 @@ namespace litecore {
 
         void startHousekeeping() {
             if ( !_housekeeper && isValid() ) {
-                if ( (getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0 ) {
+                auto flags = _database->getConfiguration().flags;
+                if ( (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) == 0 ) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->setParentObjectRef(getObjectRef());
                     _housekeeper->start();
