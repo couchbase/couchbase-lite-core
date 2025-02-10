@@ -26,7 +26,8 @@ TEST_CASE("P2P Browser", "[P2P]") {
         CHECK(&b == browser.get());
         switch (event) {
             case Browser::PeerAdded:
-                b.resolveAddress(peer);
+                b.startMonitoring(peer);
+                //b.resolveAddress(peer);
             break;
             case Browser::PeerAddressResolved: {
                 auto addr = peer->address().value();
