@@ -95,16 +95,21 @@ namespace litecore::p2p {
 
     optional<IPAddress> Peer::address() const {
         unique_lock lock(_mutex);
+        if (_address && c4_now() > _addressExpiration)
+            return nullopt;
         return _address;
     }
 
 
-    void Peer::setAddress(IPAddress const* addrp) {
+    void Peer::setAddress(IPAddress const* addrp, C4Timestamp expiration) {
         unique_lock lock(_mutex);
-        if (addrp)
+        if (addrp) {
             _address = *addrp;
-        else
+            _addressExpiration = expiration;
+        } else {
             _address = nullopt;
+            _addressExpiration = {};
+        }
     }
 
 }
