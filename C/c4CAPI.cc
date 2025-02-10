@@ -484,10 +484,13 @@ C4Database* c4db_openNamed(C4String name,
 }
 
 
-C4Database* c4db_openAgain(C4Database* db,
+C4Database* c4db_openAgain(C4Database* database,
                            C4Error *outError) noexcept
 {
-    return c4db_openNamed(c4db_getName(db), c4db_getConfig2(db), outError);
+    if ( database == nullptr ) return nullptr;
+    return tryCatch<C4Database*>(outError, [=] {
+        return database->openAgain().detach();
+    });
 }
 
 
