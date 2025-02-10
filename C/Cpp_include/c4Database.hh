@@ -67,7 +67,7 @@ struct C4Database
 
     static void shutdownLiteCore();
 
-    Retained<C4Database> openAgain() const { return openNamed(getName(), getConfiguration()); }
+    Retained<C4Database> openAgain() const;
 
     virtual void close()                                      = 0;
     virtual void closeAndDeleteFile()                         = 0;

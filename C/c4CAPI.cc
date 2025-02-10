@@ -394,7 +394,7 @@ C4Database* c4db_openNamed(C4String name, const C4DatabaseConfig2* config, C4Err
 }
 
 C4Database* c4db_openAgain(C4Database* db, C4Error* outError) noexcept {
-    return c4db_openNamed(c4db_getName(db), c4db_getConfig2(db), outError);
+    return tryCatch<C4Database*>(outError, [=] { return db->openAgain().detach(); });
 }
 
 bool c4db_copyNamed(C4String sourcePath, C4String destinationName, const C4DatabaseConfig2* config,
