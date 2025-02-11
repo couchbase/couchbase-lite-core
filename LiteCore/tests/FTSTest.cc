@@ -170,8 +170,26 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words In Target", "[Query][FTS]"
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
     // the WHERE clause prevents row 4 from being indexed/searched.
     IndexSpec::FTSOptions options{"english", true};
-    store->createIndex("sentence", R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
-                       IndexSpec::kFullText, options);
+
+    SECTION("JSON Index Spec with combinged \"what\" and \"where\"") {
+        REQUIRE(store->createIndex({"sentence",
+                                    IndexSpec::kFullText,
+                                    R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
+                                    {},
+                                    QueryLanguage::kJSON,
+                                    options}));
+    }
+
+    SECTION("JSON Index Spec with separate \"what\" and \"where\"") {
+        REQUIRE(store->createIndex({"sentence", IndexSpec::kFullText, R"-([[".sentence"]])-",
+                                    R"-([">", ["length()", [".sentence"]], 70])-", QueryLanguage::kJSON, options}));
+    }
+
+    SECTION("N1QL Index Spec") {
+        REQUIRE(store->createIndex({"sentence", IndexSpec::kFullText, "sentence", "length(sentence) > 70",
+                                    QueryLanguage::kN1QL, options}));
+    }
+
     testQuery("['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",

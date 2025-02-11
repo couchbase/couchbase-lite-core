@@ -93,7 +93,9 @@ namespace c4 {
 
         ref(const ref& r) noexcept : _obj(retainRef(r._obj)) {}
 
-        ~ref() noexcept { releaseRef(_obj); }
+        ~ref() noexcept {
+            if ( _obj ) releaseRef(_obj);
+        }
 
         static ref retaining(T* t) { return ref(retainRef(t)); }
 

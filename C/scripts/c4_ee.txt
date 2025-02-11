@@ -1,7 +1,6 @@
 # Couchbase Lite (used for bindings generation)
 # New API should go below the 'C4Tests' comment line below first
 
-c4listener_availableAPIs
 c4listener_start
 c4listener_free
 c4listener_shareDB
