@@ -37,13 +37,14 @@ struct C4IndexImpl final : public C4Index {
     slice getExpression() const noexcept { return _spec.expression; }
 
     bool getOptions(C4IndexOptions& opts) const noexcept {
-        opts = {};
+        opts            = {};
+        bool hasOptions = false;
         if ( auto ftsOpts = _spec.ftsOptions() ) {
             opts.language         = ftsOpts->language;
             opts.ignoreDiacritics = ftsOpts->ignoreDiacritics;
             opts.disableStemming  = ftsOpts->disableStemming;
             opts.stopWords        = ftsOpts->stopWords;
-            return true;
+            hasOptions            = true;
 
 #ifdef COUCHBASE_ENTERPRISE
         } else if ( auto vecOpts = _spec.vectorOptions() ) {
@@ -87,14 +88,18 @@ struct C4IndexImpl final : public C4Index {
             if ( vecOpts->minTrainingCount ) opts.vector.minTrainingSize = unsigned(*vecOpts->minTrainingCount);
             if ( vecOpts->maxTrainingCount ) opts.vector.maxTrainingSize = unsigned(*vecOpts->maxTrainingCount);
             opts.vector.lazy = vecOpts->lazyEmbedding;
-            return true;
+            hasOptions       = true;
 #endif
         } else if ( auto arrOpts = _spec.arrayOptions() ) {
             opts.unnestPath = (const char*)arrOpts->unnestPath.buf;
-            return true;
-        } else {
-            return false;
+            hasOptions      = true;
         }
+
+        if ( !_spec.whereClause.empty() ) {
+            opts.where = (char*)_spec.whereClause.buf;
+            hasOptions = true;
+        }
+        return hasOptions;
     }
 
 #ifdef COUCHBASE_ENTERPRISE

@@ -50,12 +50,6 @@ class QueryTest : public DataFileTestFixture {
         if ( slice keyStoreName = kKeyStoreNameOptions[option] ) store = &db->getKeyStore(keyStoreName);
     }
 
-    static void logSection(const string& name, int level = 0) {
-        size_t      numSpaces = 8 + level * 4;
-        std::string spaces(numSpaces, ' ');
-        fprintf(stderr, "%s--- %s\n", spaces.c_str(), name.c_str());
-    }
-
     static string numberString(int n) {
         static const char* kDigit[10] = {"zero", "one", "two",   "three", "four",
                                          "five", "six", "seven", "eight", "nine"};
