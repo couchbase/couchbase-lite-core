@@ -69,7 +69,7 @@ namespace litecore::repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            BorrowedCollection coll(_db.useWriteable(), _collectionSpec);
+            BorrowedCollection coll = _db.useCollection(_collectionSpec);
             _changeObserver = C4DatabaseObserver::create(coll, [this](C4DatabaseObserver*) { this->_dbChanged(); });
         }
 
