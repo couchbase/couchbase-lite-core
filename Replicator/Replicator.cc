@@ -567,8 +567,8 @@ namespace litecore::repl {
     }
 
     void Replicator::endedDocument(ReplicatedRev* d) {
-        logInfo("documentEnded %.*s %.*s flags=%02x (%d/%d)", SPLAT(d->docID), SPLAT(d->revID), d->flags,
-                d->error.domain, d->error.code);
+        logInfo("documentEnded (%-s) %.*s %.*s flags=%02x (%d/%d)", (d->dir() == Dir::kPushing ? "push" : "pull"),
+                SPLAT(d->docID), SPLAT(d->revID), d->flags, d->error.domain, d->error.code);
         d->trim();  // free up unneeded stuff
         if ( _delegate ) {
             if ( d->isWarning && (d->flags & kRevIsConflict) ) {
