@@ -76,11 +76,11 @@ namespace litecore {
         /// @param type_  Type of the index.
         /// @param expression_  The value(s) to be indexed.
         /// @param whereClause_ The where clause for the partial index
-        /// @param queryLanguage  Language used for `expression_`; either JSON or N1QL.
+        /// @param queryLanguage_  Language used for `expression_`; either JSON or N1QL.
         /// @param options_  Options; if given, its type must match the index type.
         IndexSpec(std::string name_, Type type_, string_view expression_, string_view whereClause_ = {},
-                  QueryLanguage queryLanguage = QueryLanguage::kJSON, Options options_ = {})
-            : IndexSpec(name_, type_, alloc_slice(expression_), queryLanguage, options_) {
+                  QueryLanguage queryLanguage_ = QueryLanguage::kJSON, Options options_ = {})
+            : IndexSpec(name_, type_, alloc_slice(expression_), queryLanguage_, options_) {
             setWhereClause(whereClause_);
         }
 
