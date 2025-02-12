@@ -407,6 +407,10 @@ if(LITECORE_PERF_TESTING_MODE)
     )
 endif()
 
+
+add_subdirectory(tool_support EXCLUDE_FROM_ALL)
+
+
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)
