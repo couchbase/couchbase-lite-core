@@ -481,8 +481,16 @@ namespace litecore {
                     error::_throw(error::InvalidParameter, "Invalid index type");
                     break;
             }
-            return keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage,
-                                          (IndexSpec::Type)indexType, options);
+            if ( indexOptions ) {
+                constexpr const char* indexTypeNames[] = {"Value", "FullText", "Array", "Predictive", "Vector"};
+                if ( indexOptions->where && !IndexSpec::canPartialIndex((IndexSpec::Type)indexType) )
+                    error::_throw(error::InvalidParameter, "%s index does support partial index.",
+                                  indexTypeNames[indexType]);
+            }
+
+            return keyStore().createIndex({indexName.asString(), (IndexSpec::Type)indexType, indexSpec,
+                                           slice{indexOptions ? indexOptions->where : nullptr},
+                                           (QueryLanguage)indexLanguage, options});
         }
 
         Retained<C4Index> getIndex(slice name) override { return C4Index::getIndex(this, name); }

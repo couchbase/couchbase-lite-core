@@ -1334,6 +1334,33 @@ TEST_CASE("Database Upgrade from 3.1 with peerCheckpoints table", "[Database][Up
     CHECK(db);
 }
 
+TEST_CASE("Database Upgrade to WithIndexesWhereColumn", "[Database][Upgrade][C]") {
+    // This db has table "indexes". This test ensures that the column whereClause is
+    // successfully added to the table.
+    string dbPath = "upgrade_2.8_index.cblite2";
+
+    C4DatabaseFlags withFlags{0};
+    C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
+    C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
+    auto              name   = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
+    C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
+    C4Error             err;
+    c4::ref<C4Database> db = REQUIRED(c4db_openNamed(name, &config, WITH_ERROR(&err)));
+
+    auto           defaultColl = REQUIRED(c4db_getDefaultCollection(db, nullptr));
+    C4IndexOptions options{};
+    options.where = "gender = 'female'";
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("length"), c4str("length(name.first)"), kC4N1QLQuery, kC4ValueIndex,
+                               &options, WITH_ERROR(&err)));
+
+    // Check we can get the where clause back via c4index_getOptions
+    auto           index = REQUIRED(c4coll_getIndex(defaultColl, C4STR("length"), nullptr));
+    C4IndexOptions outOptions;
+    REQUIRE(c4index_getOptions(index, &outOptions));
+    CHECK(string(outOptions.where) == options.where);
+    c4index_release(index);
+}
+
 static void setRemoteRev(C4Database* db, slice docID, slice revID, C4RemoteID remote) {
     auto        defaultColl = c4db_getDefaultCollection(db, nullptr);
     C4Document* doc         = c4coll_getDoc(defaultColl, docID, true, kDocGetAll, ERROR_INFO());
