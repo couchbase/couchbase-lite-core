@@ -20,25 +20,22 @@
 #include <sstream>
 using namespace std;
 
-
 void ArgumentTokenizer::reset() {
     _args.clear();
     _input.clear();
-    _current = nullptr;
-    _hasArgument = false;
+    _current            = nullptr;
+    _hasArgument        = false;
     _spaceAfterArgument = false;
-    _startOfArg = nullptr;
-    _argument = "";
+    _startOfArg         = nullptr;
+    _argument           = "";
 }
-
 
 void ArgumentTokenizer::reset(std::string input) {
     reset();
-    _input = std::move(input);
+    _input   = std::move(input);
     _current = _input.c_str();
     next();
 }
-
 
 void ArgumentTokenizer::reset(std::vector<std::string> args) {
     reset();
@@ -46,50 +43,47 @@ void ArgumentTokenizer::reset(std::vector<std::string> args) {
     next();
 }
 
-
 bool ArgumentTokenizer::next() {
-    _hasArgument = true;
+    _hasArgument        = true;
     _spaceAfterArgument = false;
-    if (!_args.empty()) {
+    if ( !_args.empty() ) {
         _argument = _args[0];
         _args.erase(_args.begin());
-        return true;                                // --> Return argument from _args
+        return true;  // --> Return argument from _args
     }
 
-    if (_current) {
-        _startOfArg = _current;
-        char quoteChar = 0;
-        bool inQuote = false;
-        bool argHasQuotes = false;
-        bool forceAppend = false;
+    if ( _current ) {
+        _startOfArg         = _current;
+        char   quoteChar    = 0;
+        bool   inQuote      = false;
+        bool   argHasQuotes = false;
+        bool   forceAppend  = false;
         string nextArg;
-        while(*_current) {
+        while ( *_current ) {
             char c = *_current;
             _current++;
-            if(c == '\r' || c == '\n') {
-                continue;
-            }
+            if ( c == '\r' || c == '\n' ) { continue; }
 
-            if(!forceAppend) {
-                if(c == '\\') {
+            if ( !forceAppend ) {
+                if ( c == '\\' ) {
                     forceAppend = true;
                     continue;
-                } else if(c == '"' || c == '\'') {
-                    if(quoteChar != 0 && c == quoteChar) {
-                        inQuote = false;
+                } else if ( c == '"' || c == '\'' ) {
+                    if ( quoteChar != 0 && c == quoteChar ) {
+                        inQuote   = false;
                         quoteChar = 0;
                         continue;
-                    } else if(quoteChar == 0) {
-                        inQuote = true;
+                    } else if ( quoteChar == 0 ) {
+                        inQuote      = true;
                         argHasQuotes = true;
-                        quoteChar = c;
+                        quoteChar    = c;
                         continue;
                     }
-                } else if(c == ' ' && !inQuote) {
-                    if (!nextArg.empty() || argHasQuotes) {
-                        _argument = nextArg;
+                } else if ( c == ' ' && !inQuote ) {
+                    if ( !nextArg.empty() || argHasQuotes ) {
+                        _argument           = nextArg;
                         _spaceAfterArgument = true;
-                        return true;                // --> Return non-final argument
+                        return true;  // --> Return non-final argument
                     }
                     continue;
                 }
@@ -100,44 +94,36 @@ bool ArgumentTokenizer::next() {
             nextArg.append(1, c);
         }
 
-        if(inQuote)
-            throw runtime_error("Invalid input line: Unclosed quote");
-        if (forceAppend)
-            throw runtime_error("Invalid input line: missing character after '\\'");
+        if ( inQuote ) throw runtime_error("Invalid input line: Unclosed quote");
+        if ( forceAppend ) throw runtime_error("Invalid input line: missing character after '\\'");
 
         _current = nullptr;
-        if(nextArg.length() > 0) {
-            _argument = nextArg;                    // --> Return final argument
+        if ( nextArg.length() > 0 ) {
+            _argument = nextArg;  // --> Return final argument
             return true;
         }
     }
     reset();
-    return false;                                   // --> Return nothing
+    return false;  // --> Return nothing
 }
-
 
 string ArgumentTokenizer::restOfInput() {
     string result;
-    if (_startOfArg) {
+    if ( _startOfArg ) {
         result = string(_startOfArg);
-    } else if (_hasArgument) {
+    } else if ( _hasArgument ) {
         stringstream rest;
         rest << _argument;
-        for (const string &arg : _args)
-            rest << ' ' << arg;
+        for ( const string& arg : _args ) rest << ' ' << arg;
         result = rest.str();
     }
     reset();
     return result;
 }
 
-
-bool ArgumentTokenizer::_tokenize(std::vector<std::string> &outArgs) {
+bool ArgumentTokenizer::_tokenize(std::vector<std::string>& outArgs) {
     try {
-        for (outArgs.clear(); hasArgument(); next())
-            outArgs.emplace_back(std::move(_argument));
+        for ( outArgs.clear(); hasArgument(); next() ) outArgs.emplace_back(std::move(_argument));
         return true;
-    } catch (const runtime_error &x) {
-        return false;
-    }
+    } catch ( const runtime_error& x ) { return false; }
 }
