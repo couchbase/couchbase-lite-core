@@ -70,11 +70,13 @@ function(setup_litecore_build_win)
         )
     endforeach()
 
-    target_include_directories(
-        LiteCore PRIVATE
-        vendor/fleece/API
-        vendor/fleece/Fleece/Support
-    )
+    if(LITECORE_BUILD_SHARED)
+        target_include_directories(
+            LiteCore PRIVATE
+            vendor/fleece/API
+            vendor/fleece/Fleece/Support
+        )
+    endif()
 
     # Link with subproject libz and Windows sockets lib
     foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
@@ -127,7 +129,9 @@ function(setup_litecore_build_win)
 
     target_include_directories(LiteCoreWebSocket PRIVATE MSVC)
 
-    install(FILES $<TARGET_PDB_FILE:LiteCore> DESTINATION bin OPTIONAL)
+    if(LITECORE_BUILD_SHARED)
+        install(FILES $<TARGET_PDB_FILE:LiteCore> DESTINATION bin OPTIONAL)
+    endif()
 endfunction()
 
 function(setup_support_build)
