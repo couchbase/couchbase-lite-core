@@ -86,6 +86,11 @@ struct C4Database
     virtual C4UUID      getPublicUUID() const  = 0;
     virtual C4UUID      getPrivateUUID() const = 0;
 
+    /// Generates new public and private UUIDs for a freshly copied database, but saves the old
+    /// ones as backups so the replicator can avoid losing saved checkpoints.
+    /// Normally done by \ref copyNamed as its final step, but exposed so it can be done separately.
+    virtual void resetUUIDs() = 0;
+
     // Scopes:
 
     using ScopeCallback = fleece::function_ref<void(slice)>;
