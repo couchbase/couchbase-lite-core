@@ -30,6 +30,6 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
-target_link_libraries(tool_support PUBLIC
-    ${LITECORE_LIBRARIES_PRIVATE}
+target_link_libraries(tool_support INTERFACE
+    FleeceStatic
 )
