@@ -71,7 +71,7 @@ namespace litecore {
 
         SourceID mySourceID() const;
 
-        void resetUUIDs();
+        void resetUUIDs() override;
 
         ExclusiveTransaction& transaction() const;
         void                  mustBeInTransaction() const;
