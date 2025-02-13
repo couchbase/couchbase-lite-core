@@ -14,7 +14,7 @@ components:
     parent-repo: vendor/fleece
   libicu:
     bd-id: a7441c50-9be3-493b-82ed-19666236acef
-    versions: [ 71.1 ]
+    versions: [ 76.1 ]
   libstemmer:
     bd-id: 2bb510eb-0940-4656-82fe-11631fbf2416
     # See [0]
