@@ -18,6 +18,7 @@
 #include "c4Collection.hh"
 #include "c4ExceptionUtils.hh"
 #include <sstream>
+#include <chrono>
 
 namespace litecore {
     using namespace std;
