@@ -129,8 +129,8 @@ namespace litecore::qt {
         bool explicitCollection = false;
         if ( slice collection = optionalString(getCaseInsensitive(dict, "COLLECTION"), "COLLECTION") ) {
             explicitCollection = true;
-            if ( collection == "_" || collection == kDefaultCollectionName ) {
-                _collection = "";
+            if ( collection == "_" ) {
+                _collection = kDefaultCollectionName;
                 _columnName = collection;
             } else {
                 _collection = collection;
@@ -432,7 +432,9 @@ namespace litecore::qt {
         addIndexes(ctx);
 
         for ( SourceNode* source : _sources ) {
-            if ( !source->_usesDeleted && source->_collection.empty() && source->isCollection() ) {
+            string_view coll{source->collection()};
+            if ( coll.empty() ) coll = ctx.delegate.translatorDefaultCollection();
+            if ( !source->_usesDeleted && coll == "_default" && source->isCollection() ) {
                 // The default collection may contain deleted documents in its main table,
                 // so if the query didn't ask for deleted docs, add a condition to the WHERE
                 // or ON clause that only passes live docs:
@@ -481,6 +483,7 @@ namespace litecore::qt {
                 isFrom = true;
                 require(_sources.empty(), "multiple non-join FROM items");
                 ctx.from = source;
+                ctx.delegate.assignTableNameToMainSource(source, ctx);
             }
             ctx.sources.emplace_back(source);
         }
