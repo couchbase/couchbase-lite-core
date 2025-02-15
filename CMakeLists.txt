@@ -37,7 +37,7 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
         - platform_win_desktop
 ]]#
 
-cmake_minimum_required (VERSION 3.20.3)
+cmake_minimum_required (VERSION 3.21.0)
 
 # Mac/apple setup -- must appear before the first "project()" line"
 set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
@@ -48,8 +48,10 @@ endif()
 
 option(LITECORE_MACOS_FAT_DEBUG "Builds all architectures for a debug build (off by default for speed)" OFF)
 
-if (NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR LITECORE_MACOS_FAT_DEBUG)
-    set(CMAKE_OSX_ARCHITECTURES x86_64;arm64)
+if(PROJECT_IS_TOP_LEVEL)
+    if (NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR LITECORE_MACOS_FAT_DEBUG)
+        set(CMAKE_OSX_ARCHITECTURES x86_64;arm64 CACHE STRING "" FORCE)
+    endif()
 endif()
 
 if(DEFINED ENV{VERSION})
