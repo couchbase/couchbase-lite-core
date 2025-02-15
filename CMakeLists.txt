@@ -48,7 +48,7 @@ endif()
 
 option(LITECORE_MACOS_FAT_DEBUG "Builds all architectures for a debug build (off by default for speed)" OFF)
 
-if(PROJECT_IS_TOP_LEVEL)
+if(NOT DEFINED CMAKE_OSX_ARCHITECTURES)
     if (NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") OR LITECORE_MACOS_FAT_DEBUG)
         set(CMAKE_OSX_ARCHITECTURES x86_64;arm64 CACHE STRING "" FORCE)
     endif()
