@@ -88,7 +88,7 @@ function Build() {
         -A $MsArch `
         -DBUILD_ENTERPRISE=$build_enterprise `
         -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
-        ..
+        -S ..\couchbase-lite-core
 
     if($LASTEXITCODE -ne 0) {
         throw "CMake failed"
