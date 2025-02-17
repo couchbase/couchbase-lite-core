@@ -134,7 +134,7 @@ ${CMAKE} \
     -DBUILD_ENTERPRISE=${build_enterprise} \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=Debug \
-    ..
+    -S ../couchbase-lite-core
 
 ${NINJA} install
 
