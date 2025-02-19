@@ -36,7 +36,9 @@ struct C4PeerAddress {
 };
 
 
-/** A discovered peer device. */
+/** A discovered peer device.
+ *  @note  This class is thread-safe.
+ *  @note  This class is concrete, but may be subclassed by platform code if desired. */
 class C4Peer : public fleece::RefCounted {
 public:
     C4Peer(std::string id_, std::string displayName_) :id(std::move(id_)), displayName(std::move(displayName_)) { }
@@ -44,14 +46,22 @@ public:
     std::string const id;             ///< Uniquely identifies this C4Peer (e.g. DNS-SD service name + domain)
     std::string const displayName;    ///< Arbitrary human-readable name registered by the peer
 
+    /// Request to discover or refresh the address(es) of this peer.
+    /// When complete, the `addresses` property will be set and C4PeerDiscovery observers'
+    /// `peerAddressesResolved` methods will be called.
     void resolveAddresses();
 
     /// All currently resolved addresses.
     std::vector<C4PeerAddress> addresses() const;
 
+    /// If address resolution failed, this property will be set.
+    C4Error resolveError() const;
+
     using Metadata = std::unordered_map<std::string, fleece::alloc_slice>;
 
-    void monitorMetadata(bool);
+    /// Request to get the metadata of this peer and monitor it for changes, or to stop monitoring.
+    /// When new metadata is available, C4PeerDiscovery observers' `peerMetadataChanged` methods will be called.
+    void monitorMetadata(bool enable);
 
     /// Returns metadata (such as a TXT record entry) associated with a key, if any.
     fleece::alloc_slice getMetadata(std::string const& key) const;
@@ -71,7 +81,8 @@ private:
 };
 
 
-/** Singleton interface that provides the set of currently discovered C4Peers. */
+/** Singleton that provides the set of currently discovered C4Peers.
+ *  @note  This class is thread-safe. */
 class C4PeerDiscovery {
 public:
     static void startBrowsing();
@@ -96,17 +107,14 @@ public:
     static void addObserver(Observer*);
     static void removeObserver(Observer*);
 
-private:
-    friend class C4PeerDiscoveryProvider;
     C4PeerDiscovery() = delete;
-    static void notify(C4Peer*, void (Observer::*method)(C4Peer*));
-    static void notifyBrowsing(bool state, C4Error);
 };
 
 
-/** Singleton interface that provides the data for C4PeerDiscovery.
+/** Interface for service that provides the data for C4PeerDiscovery.
  *  Platform code should set the callbacks to point to its own functions,
- *  and respond (asynchronously) by calling the appropriate interface functions. */
+ *  and respond (asynchronously) by calling the appropriate methods.
+ *  @note  This class is thread-safe. */
 class C4PeerDiscoveryProvider {
 public:
     /// Provider callback that begins browsing for peers. */

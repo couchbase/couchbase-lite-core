@@ -23,6 +23,12 @@ vector<C4PeerAddress> C4Peer::addresses() const {
 }
 
 
+C4Error C4Peer::resolveError() const {
+    unique_lock lock(_mutex);
+    return _error;
+}
+
+
 void C4Peer::monitorMetadata(bool monitor) {
     C4PeerDiscoveryProvider::monitorMetadata(this, monitor);
 }
@@ -52,11 +58,13 @@ bool C4Peer::setMetadata(Metadata md) {
 
 bool C4Peer::setAddresses(std::span<const C4PeerAddress> addrs, C4Error error) {
     unique_lock lock(_mutex);
-    if (error != _error) {
+    if (error) {
         _error = error;
         _addresses.clear();
         return true;
-    } else if (addrs.size() != _addresses.size() || !std::equal(addrs.begin(), addrs.end(), _addresses.begin())) {
+    }
+    _error = kC4NoError;
+    if (addrs.size() != _addresses.size() || !std::equal(addrs.begin(), addrs.end(), _addresses.begin())) {
         _addresses.resize(addrs.size());
         std::ranges::copy(addrs, _addresses.begin());
         return true;
@@ -106,22 +114,13 @@ void C4PeerDiscovery::removeObserver(Observer* obs) {
 }
 
 
-void C4PeerDiscovery::notify(C4Peer* peer, void(Observer::* method)(C4Peer*)) {
+static void notify(C4Peer* peer, void(C4PeerDiscovery::Observer::* method)(C4Peer*)) {
     unique_lock lock(sDiscoveryMutex);
-    vector<Observer*> observers = sObservers;
+    vector<C4PeerDiscovery::Observer*> observers = sObservers;
     lock.unlock();
 
     for (auto obs : observers)
         (obs->*method)(peer);
-}
-
-void C4PeerDiscovery::notifyBrowsing(bool state, C4Error error) {
-    unique_lock lock(sDiscoveryMutex);
-    vector<Observer*> observers = sObservers;
-    lock.unlock();
-
-    for (auto obs : observers)
-        obs->browsing(state, error);
 }
 
 
@@ -132,7 +131,14 @@ C4PeerDiscovery::Observer::~Observer() = default;
 
 
 void C4PeerDiscoveryProvider::browsing(bool state, C4Error error) {
-    C4PeerDiscovery::notifyBrowsing(state, error);
+    unique_lock lock(sDiscoveryMutex);
+    if (state == false)
+        sPeers.clear();
+    auto observers = sObservers;
+    lock.unlock();
+
+    for (auto obs : observers)
+        obs->browsing(state, error);
 }
 
 
@@ -142,7 +148,7 @@ Retained<C4Peer> C4PeerDiscoveryProvider::addPeer(C4Peer* peer) {
     lock.unlock();
 
     if (added) {
-        C4PeerDiscovery::notify(peer, &C4PeerDiscovery::Observer::addedPeer);
+        notify(peer, &C4PeerDiscovery::Observer::addedPeer);
         return peer;
     } else {
         return i->second;
@@ -160,17 +166,17 @@ bool C4PeerDiscoveryProvider::removePeer(string_view id) {
 
     if (!peer)
         return false;
-    C4PeerDiscovery::notify(peer, &C4PeerDiscovery::Observer::removedPeer);
+    notify(peer, &C4PeerDiscovery::Observer::removedPeer);
     return true;
 }
 
 
 void C4PeerDiscoveryProvider::setMetadata(C4Peer* peer, C4Peer::Metadata md) {
     if (peer->setMetadata(std::move(md)))
-        C4PeerDiscovery::notify(peer, &C4PeerDiscovery::Observer::peerMetadataChanged);
+        notify(peer, &C4PeerDiscovery::Observer::peerMetadataChanged);
 }
 
 void C4PeerDiscoveryProvider::setAddresses(C4Peer* peer, span<const C4PeerAddress> addrs, C4Error error) {
     if (peer->setAddresses(addrs, error))
-        C4PeerDiscovery::notify(peer, &C4PeerDiscovery::Observer::peerMetadataChanged);
+        notify(peer, &C4PeerDiscovery::Observer::peerMetadataChanged);
 }
