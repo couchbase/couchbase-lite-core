@@ -58,7 +58,11 @@ public:
     }
 
     void peerAddressesResolved(C4Peer* peer) override {
-        Log("*** Peer %s address resolved (%zu)", peer->id.c_str(), peer->addresses().size());
+        if (auto addrs = peer->addresses(); addrs.empty())
+            Warn("*** Peer %s address failed to resolve: %s",
+                peer->id.c_str(), peer->resolveError().description().c_str());
+        else
+            Log("*** Peer %s address resolved to %s", peer->id.c_str(), addrs[0].address.c_str());
     }
 
     binary_semaphore sem{0};

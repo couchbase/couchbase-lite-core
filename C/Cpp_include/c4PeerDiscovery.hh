@@ -25,12 +25,10 @@ struct C4PeerAddress {
     enum Type {
         IPv4, IPv6, BT
     };
-    static constexpr size_t kMaxAddressSize = 32;   // ??? Is this enough for BT?
-    using Data = std::array<std::byte,kMaxAddressSize>;
 
-    Type        type;       ///< type of address; identifies structure of data
+    std::string address {}; ///< address in string form
+    Type        type;       ///< type of address
     C4Timestamp expiration; ///< time when this info becomes stale
-    Data        data {};    ///< raw address data
 
     friend bool operator==(C4PeerAddress const&, C4PeerAddress const&) = default;
 };
@@ -51,8 +49,8 @@ public:
     /// `peerAddressesResolved` methods will be called.
     void resolveAddresses();
 
-    /// All currently resolved addresses.
-    std::vector<C4PeerAddress> addresses() const;
+    /// All currently resolved and non-expired addresses.
+    std::vector<C4PeerAddress> addresses();
 
     /// If address resolution failed, this property will be set.
     C4Error resolveError() const;
