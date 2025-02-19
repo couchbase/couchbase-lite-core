@@ -1948,8 +1948,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithoutDelta / timeWithDelta);
 }
 
-// Disabled, to be re-enabled with CBL-5621
-#if 0
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",
                  "[.SyncServerCollection][Delta]") {
@@ -1958,14 +1956,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     initTest({Tulips}, {channelID}, "test_user");
 
     static constexpr int         kNumDocs = 10, kNumProps = 100;
-    static constexpr int         kDocBufSize = 80;
-    static constexpr const char* cblTicket   = "cbl-4499";
+    static constexpr const char* cblTicket = "cbl-4499";
 
     const string docPrefix = idPrefix + cblTicket + "_";
 
     vector<string> docIDs(kNumDocs);
 
-    for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+    for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
         docIDs[docNo] = stringprintf("%sdoc-%03d", docPrefix.c_str(), docNo);
     }
 
@@ -1973,7 +1970,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     auto populateDB = [&]() {
         TransactionHelper t(db);
         std::srand(123456);  // start random() sequence at a known place
-        for (const string& docID : docIDs) {
+        for ( const string& docID : docIDs ) {
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
@@ -1997,7 +1994,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     replicate(replParams);
 
     // -------- Updating docs on SG --------
-    for (const string& docID : docIDs) {
+    for ( const string& docID : docIDs ) {
         C4Error             error;
         c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, ERROR_INFO(error));
         REQUIRE(doc);
@@ -2024,9 +2021,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
                      FLDict flbody, void* context) { return true; };
 
     // -------- Pulling changes from SG --------
-#    ifdef LITECORE_CPPTEST
+#ifdef LITECORE_CPPTEST
     _expectedDocPullErrors = {docPrefix + "doc-001"};
-#    endif
+#endif
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replParams.setPullFilter(_pullFilter).setCallbackContext(this);
     {
@@ -2051,7 +2048,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     }
     CHECK(n == kNumDocs);
 }
-#endif
 
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.SyncServerCollection][Delta]") {
