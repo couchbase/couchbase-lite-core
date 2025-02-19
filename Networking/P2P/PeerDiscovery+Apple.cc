@@ -2,6 +2,7 @@
 // Created by Jens Alfke on 2/3/25.
 //
 
+#include <arpa/inet.h>
 #ifdef __APPLE__
 
 #include "PeerDiscovery+Apple.hh"
@@ -26,7 +27,10 @@ namespace litecore::p2p {
 
 
     static C4Error convertErrorCode(DNSServiceErrorType err) {
-        return C4Error::make(NetworkDomain, 999, stringprintf("DNSServiceError %d", err));
+        if (err)
+            return C4Error::make(NetworkDomain, 999, stringprintf("DNSServiceError %d", err));
+        else
+            return kC4NoError;
     }
 
     static void freeServiceRef(DNSServiceRef& ref) {
@@ -78,18 +82,18 @@ namespace litecore::p2p {
         }
 
         void resolved(struct sockaddr const& addr, uint32_t ttl) {
-            C4PeerAddress address;
-            memcpy(&address.data, &addr, sizeof(addr));
-            // Insert the port number into the sockaddr:
-            if (addr.sa_family == AF_INET6) {
-                address.type = C4PeerAddress::IPv6;
-                reinterpret_cast<sockaddr_in6*>(&address.data)->sin6_port = htons(_port);
-            } else {
-                assert(addr.sa_family == AF_INET);
-                address.type = C4PeerAddress::IPv4;
-                reinterpret_cast<sockaddr_in*>(&address.data)->sin_port = htons(_port);
-            }
-            address.expiration = c4_now() + 1000LL * ttl;
+            char buf[INET6_ADDRSTRLEN];
+            inet_ntop(addr.sa_family, &addr, buf, sizeof(buf));
+            string str;
+            if (addr.sa_family == AF_INET)
+                str = stringprintf("%s:%d", buf, _port);
+            else
+                str = stringprintf("[%s]:%d", buf, _port);
+            C4PeerAddress address {
+                .address = std::move(str),
+                .type = (addr.sa_family == AF_INET ? C4PeerAddress::IPv4 : C4PeerAddress::IPv6),
+                .expiration = c4_now() + 1000LL * ttl
+            };
             C4PeerDiscoveryProvider::setAddresses(this, {&address, 1});
         }
 
