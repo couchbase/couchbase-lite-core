@@ -3,7 +3,7 @@
 //
 
 #include "c4PeerDiscovery.hh"
-#include "BonjourBrowser.hh" //TEMP shouldn't need this
+#include "PeerDiscovery+Apple.hh" //TEMP shouldn't need this
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
