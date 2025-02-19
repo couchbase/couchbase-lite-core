@@ -2,8 +2,9 @@
 // Created by Jens Alfke on 2/4/25.
 //
 
-#include "Browser.hh"
+#include "c4PeerDiscovery.hh"
 #include "BonjourBrowser.hh" //TEMP shouldn't need this
+#include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
 #include <semaphore>
@@ -14,47 +15,59 @@ using namespace fleece;
 using namespace litecore::p2p;
 
 
-TEST_CASE("P2P Browser", "[P2P]") {
-    Retained<Browser> browser;
-    binary_semaphore sem{0};
+class P2PTest : public C4PeerDiscovery::Observer {
+public:
+    P2PTest() {
+        InitializeBonjourProvider("_ssh._tcp");
+        C4PeerDiscovery::addObserver(this);
+    }
 
-    auto observer = [&](Browser& b, Browser::Event event, Peer* peer) {
-        if (peer)
-            Log("EVENT: %s, peer %p '%s'", Browser::kEventNames[event], peer, peer->name().c_str());
-        else
-            Log("EVENT: %s", Browser::kEventNames[event]);
-        CHECK(&b == browser.get());
-        switch (event) {
-            case Browser::PeerAdded:
-                b.startMonitoring(peer);
-                //b.resolveAddress(peer);
-            break;
-            case Browser::PeerAddressResolved: {
-                auto addr = peer->address().value();
-                Log("\taddress = %s:%d", string(addr).c_str(), addr.port());
-                break;
-            }
-            case Browser::PeerTxtChanged: {
-                stringstream out;
-                out << '{';
-                for (auto& [k, v] : peer->getAllMetadata())
-                    out << k << ": '" << string_view(v) << "', ";
-                out << '}';
-                Log("\ttxt = %s", out.str().c_str());
-                break;
-            }
-            case Browser::BrowserStopped:
-                sem.release();
-                break;
-            default:
-                break;
+    ~P2PTest() {
+        C4PeerDiscovery::removeObserver(this);
+    }
+
+    void browsing(bool active, C4Error error) override {
+        if (active)
+            Log("*** Browsing started");
+        else {
+            if (!error)
+                Log("*** Browsing stopped!");
+            else
+                Warn("Browsing failed: %s", error.description().c_str());
+            sem.release();
         }
-    };
-    browser = make_retained<BonjourBrowser>("_ssh._tcp", "CppTests", observer);
-    browser->setMyPort(54321);
-    browser->start();
+    }
 
+    void addedPeer(C4Peer* peer) override {
+        Log("*** Added peer %s", peer->id.c_str());
+        peer->monitorMetadata(true);
+        peer->resolveAddresses();
+    }
+
+    void removedPeer(C4Peer* peer) override {
+        Log("*** Removed peer %s", peer->id.c_str());
+    }
+
+    void peerMetadataChanged(C4Peer* peer) override {
+        stringstream out;
+        out << '{';
+        for (auto& [k, v] : peer->getAllMetadata())
+            out << k << ": '" << string_view(v) << "', ";
+        out << '}';
+        Log("*** Peer %s metadata changed: %s", peer->id.c_str(), out.str().c_str());
+    }
+
+    void peerAddressesResolved(C4Peer* peer) override {
+        Log("*** Peer %s address resolved (%zu)", peer->id.c_str(), peer->addresses().size());
+    }
+
+    binary_semaphore sem{0};
+};
+
+
+TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
+    C4PeerDiscovery::startBrowsing();
     sem.try_acquire_for(chrono::seconds(5));    // wait five seconds for test to run, then stop
-    browser->stop();
+    C4PeerDiscovery::stopBrowsing();
     sem.acquire();
 }

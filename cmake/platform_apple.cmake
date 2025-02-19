@@ -27,6 +27,7 @@ function(set_litecore_source)
         LiteCore/Support/StringUtil_Apple.mm
         LiteCore/Support/Instrumentation.cc
         Crypto/PublicKey+Apple.mm
+        Networking/P2P/PeerDiscovery+Apple.cc
         PARENT_SCOPE
     )
 endfunction()
