@@ -17,8 +17,15 @@ void C4Peer::resolveAddresses() {
     C4PeerDiscoveryProvider::resolveAddresses(this);
 }
 
-vector<C4PeerAddress> C4Peer::addresses() const {
+vector<C4PeerAddress> C4Peer::addresses() {
     unique_lock lock(_mutex);
+    C4Timestamp now = c4_now();
+    for (auto i = _addresses.begin(); i != _addresses.end();) {
+        if (i->expiration < now)
+            _addresses.erase(i);
+        else
+            ++i;
+    }
     return _addresses;
 }
 
@@ -178,5 +185,5 @@ void C4PeerDiscoveryProvider::setMetadata(C4Peer* peer, C4Peer::Metadata md) {
 
 void C4PeerDiscoveryProvider::setAddresses(C4Peer* peer, span<const C4PeerAddress> addrs, C4Error error) {
     if (peer->setAddresses(addrs, error))
-        notify(peer, &C4PeerDiscovery::Observer::peerMetadataChanged);
+        notify(peer, &C4PeerDiscovery::Observer::peerAddressesResolved);
 }
