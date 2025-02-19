@@ -24,6 +24,7 @@ function(set_litecore_source_base)
         C/c4Index.cc
         C/c4Log.cc
         C/c4Observer.cc
+        C/c4PeerDiscovery.cc
         C/c4PredictiveQuery.cc
         C/c4Query.cc
         Crypto/SecureRandomize.cc
