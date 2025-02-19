@@ -57,7 +57,7 @@ IF (NOT CBDeps_INCLUDED)
       EXECUTE_PROCESS (
         COMMAND "${CBDEP_EXE}"
           -p linux
-          install -d "${cbdep_INSTALL_DIR}"
+          install -C -d "${cbdep_INSTALL_DIR}"
           ${cbdep_PACKAGE} ${cbdep_VERSION}
         RESULT_VARIABLE _cbdep_result
         OUTPUT_VARIABLE _cbdep_out
@@ -72,6 +72,10 @@ IF (NOT CBDeps_INCLUDED)
          CACHE STRING "Version of cbdep package '${cbdep_PACKAGE}'" FORCE)
     SET (CBDEP_${cbdep_PACKAGE}_DIR "${cbdep_TARGET_DIR}"
          CACHE STRING "Install location of cbdep package '${cbdep_PACKAGE}'" FORCE)
+    IF (IS_DIRECTORY "${cbdep_TARGET_DIR}/cmake")
+      SET ("${cbdep_PACKAGE}_ROOT" "${cbdep_TARGET_DIR}")
+      FIND_PACKAGE (${cbdep_PACKAGE} REQUIRED)
+    ENDIF ()
     MESSAGE (STATUS "Using cbdeps package ${cbdep_PACKAGE} ${cbdep_VERSION}")
   ENDFUNCTION (CBDEP_INSTALL)
 

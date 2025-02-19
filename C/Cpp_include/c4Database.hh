@@ -56,10 +56,10 @@ struct C4Database
     /** Attempts to discover and verify the named extension in the provided path */
     static void enableExtension(slice name, slice path);
 
-    static bool exists(slice name, slice inDirectory);
-    static void copyNamed(slice sourcePath, slice destinationName, const Config&);
-    static bool deleteNamed(slice name, slice inDirectory);
-    static bool deleteAtPath(slice path);
+    static bool               exists(slice name, slice inDirectory);
+    static void               copyNamed(slice sourcePath, slice destinationName, const Config&);
+    [[nodiscard]] static bool deleteNamed(slice name, slice inDirectory);
+    [[nodiscard]] static bool deleteAtPath(slice path);
 
     static Retained<C4Database> openNamed(slice name, const Config&);
 
@@ -67,7 +67,7 @@ struct C4Database
 
     static void shutdownLiteCore();
 
-    Retained<C4Database> openAgain() const { return openNamed(getName(), getConfiguration()); }
+    Retained<C4Database> openAgain() const;
 
     virtual void close()                                      = 0;
     virtual void closeAndDeleteFile()                         = 0;
@@ -85,6 +85,11 @@ struct C4Database
     virtual alloc_slice getSourceID() const    = 0;
     virtual C4UUID      getPublicUUID() const  = 0;
     virtual C4UUID      getPrivateUUID() const = 0;
+
+    /// Generates new public and private UUIDs for a freshly copied database, but saves the old
+    /// ones as backups so the replicator can avoid losing saved checkpoints.
+    /// Normally done by \ref copyNamed as its final step, but exposed so it can be done separately.
+    virtual void resetUUIDs() = 0;
 
     // Scopes:
 
@@ -148,20 +153,6 @@ struct C4Database
     /// Calls the callback function for each collection _in each scope_.
     virtual void forEachCollection(const CollectionSpecCallback&) const = 0;
 
-#ifndef C4_STRICT_COLLECTION_API
-    // Shims to ease the pain of converting to collections. These delegate to the default collection.
-    uint64_t             getDocumentCount() const;
-    C4SequenceNumber     getLastSequence() const;
-    Retained<C4Document> getDocument(slice docID, bool mustExist = true,
-                                     C4DocContentLevel content = kDocGetCurrentRev) const;
-    Retained<C4Document> getDocumentBySequence(C4SequenceNumber sequence) const;
-    Retained<C4Document> putDocument(const C4DocPutRequest& rq, size_t* C4NULLABLE outCommonAncestorIndex,
-                                     C4Error* outError);
-    bool                 purgeDocument(slice docID);
-    C4Timestamp          getExpiration(slice docID) const;
-    bool                 setExpiration(slice docID, C4Timestamp timestamp);
-#endif
-
     // Transactions:
 
     /** Manages a transaction safely. The constructor begins a transaction, and \ref commit
@@ -183,6 +174,8 @@ struct C4Database
             _db     = nullptr;
             db->endTransaction(false);
         }
+
+        bool isActive() const noexcept { return _db != nullptr; }
 
         ~Transaction() {
             if ( _db ) _db->endTransaction(false);
@@ -225,14 +218,6 @@ struct C4Database
 
     Retained<C4Query> newQuery(C4QueryLanguage language, slice queryExpression,
                                int* C4NULLABLE outErrorPos = nullptr) const;
-
-#ifndef C4_STRICT_COLLECTION_API
-    void        createIndex(slice name, slice indexSpec, C4QueryLanguage indexSpecLanguage, C4IndexType indexType,
-                            const C4IndexOptions* C4NULLABLE indexOptions = nullptr);
-    void        deleteIndex(slice name);
-    alloc_slice getIndexesInfo(bool fullInfo = true) const;
-    alloc_slice getIndexRows(slice name) const;
-#endif
 
     // Replicator:
 

@@ -57,11 +57,11 @@ C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API;
 
     @warning This is for testing/debugging/troubleshooting only!
 
-    @param database  The index's database.
+    @param collection The index's collection.
     @param indexName  The name of the index.
     @param error  On failure, an error will be stored here.
     @returns  On success, an encoded Fleece array of arrays. */
-C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* C4NULLABLE error) C4API;
+C4SliceResult c4coll_getIndexRows(C4Collection* collection, C4String indexName, C4Error* C4NULLABLE error) C4API;
 
 C4StringResult c4db_getSourceID(C4Database* database) C4API;
 

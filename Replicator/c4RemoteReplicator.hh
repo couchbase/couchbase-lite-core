@@ -17,6 +17,7 @@
 #include "c4ReplicatorImpl.hh"
 #include "c4Socket+Internal.hh"
 #include "Address.hh"
+#include "DBAccess.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
 #include <algorithm>
@@ -38,9 +39,9 @@ namespace litecore {
         // This can be overridden by setting the option `kC4ReplicatorOptionMaxRetryInterval`.
         static constexpr unsigned kDefaultMaxRetryDelay = 5 * 60;
 
-        C4RemoteReplicator(C4Database* db NONNULL, const C4ReplicatorParameters& params, const C4Address& serverAddress,
+        C4RemoteReplicator(DatabaseOrPool db, const C4ReplicatorParameters& params, const C4Address& serverAddress,
                            C4String remoteDatabaseName, slice logPrefix)
-            : C4ReplicatorImpl(db, params)
+            : C4ReplicatorImpl(std::move(db), params)
             , _url(effectiveURL(serverAddress, remoteDatabaseName))
             , _retryTimer([this] { retry(false); }) {
             std::string logName = "C4RemoteRepl";
@@ -110,10 +111,15 @@ namespace litecore {
         alloc_slice URL() const noexcept override { return _url; }
 
         void createReplicator() override {
-            auto dbOpenedAgain = _database->openAgain();
-            _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
-            auto dbAccess =
-                    make_shared<DBAccess>(dbOpenedAgain, _options->properties["disable_blob_support"_sl].asBool());
+            bool                      disableBlobs = _options->properties["disable_blob_support"_sl].asBool();
+            std::shared_ptr<DBAccess> dbAccess;
+            if ( _database.index() == 0 ) {
+                auto dbOpenedAgain = std::get<0>(_database)->openAgain();
+                _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
+                dbAccess = make_shared<DBAccess>(dbOpenedAgain, disableBlobs);
+            } else {
+                dbAccess = std::make_shared<DBAccess>(std::get<1>(_database), disableBlobs);
+            }
             auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
             _replicator    = new Replicator(dbAccess, webSocket, *this, _options);
 
@@ -208,8 +214,19 @@ namespace litecore {
 
         // Options to pass to the C4Socket
         alloc_slice socketOptions() const {
+            // Get the database flags and the push/pull modes:
+            auto             cfg      = std::visit([](auto db) { return db->getConfiguration(); }, _database);
+            C4ReplicatorMode pushMode = kC4Disabled, pullMode = kC4Disabled;
+            for ( CollectionIndex i = 0; i < _options->collectionCount(); ++i ) {
+                pushMode = std::max(pushMode, _options->push(i));
+                pullMode = std::max(pullMode, _options->pull(i));
+            }
+            // From those, determine the compatible WS protocols:
+            auto protocols = Replicator::compatibleProtocols(cfg.flags, pushMode, pullMode);
+
+            // Construct new Options including the protocols:
             Replicator::Options opts(kC4Disabled, kC4Disabled, _options->properties);
-            opts.setProperty(kC4SocketOptionWSProtocols, Replicator::ProtocolName().c_str());
+            opts.setProperty(kC4SocketOptionWSProtocols, join(protocols, ",").c_str());
             return opts.properties.data();
         }
 

@@ -31,8 +31,6 @@ _c4db_close
 _c4db_delete
 _c4db_rekey
 _c4db_getPath
-_c4db_getDocumentCount
-_c4db_getLastSequence
 _c4db_getUUIDs
 _c4db_getExtraInfo
 _c4db_setExtraInfo
@@ -50,9 +48,6 @@ _c4raw_put
 
 _c4doc_retain
 _c4doc_release
-_c4doc_get
-_c4doc_getBySequence
-_c4db_purgeDoc
 _c4doc_isRevRejected
 _c4doc_selectRevision
 _c4doc_selectCurrentRevision
@@ -62,26 +57,15 @@ _c4doc_selectParentRevision
 _c4doc_selectNextRevision
 _c4doc_selectNextLeafRevision
 _c4doc_selectCommonAncestorRevision
-_c4doc_put
-_c4doc_create
 _c4doc_update
 _c4doc_resolveConflict
 _c4doc_purgeRevision
 _c4doc_save
-_c4doc_setExpiration
-_c4doc_getExpiration
-_c4db_nextDocExpiration
-_c4db_purgeExpiredDocs
 _c4doc_isOldMetaProperty
 _c4doc_dictContainsBlobs
 
 _c4rev_getGeneration
 
-_c4db_enumerateChanges
-_c4db_enumerateAllDocs
-_c4db_createIndex
-_c4db_createIndex2
-_c4db_deleteIndex
 _c4enum_next
 _c4enum_getDocumentInfo
 _c4enum_getDocument
@@ -345,7 +329,6 @@ _c4db_exists
 _c4db_maintenance
 _c4db_getCookies
 _c4db_setCookie
-_c4db_getDoc
 
 _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
@@ -359,8 +342,6 @@ _c4doc_getProperties
 _c4doc_getRevisionBody
 _c4doc_getRevisionHistory
 _c4doc_getSelectedRevIDGlobalForm
-
-_c4db_getIndexesInfo
 
 _c4cert_getValidTimespan
 

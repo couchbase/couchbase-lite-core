@@ -72,11 +72,6 @@ namespace litecore {
         class PublicKey;
     }  // namespace crypto
 
-    namespace REST {
-        class Listener;
-        class RESTListener;
-    }  // namespace REST
-
     namespace websocket {
         class WebSocket;
     }

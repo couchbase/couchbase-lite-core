@@ -69,6 +69,10 @@ def check_other_commit(dir: str, parent_branch: str) -> str:
         # Special case reflecting the GitHub shift of master -> main
         if branch.endswith("main") and parent_branch == "master":
             return "main"
+
+        # Reverse of the above
+        if branch.endswith("master") and parent_branch == "main":
+            return "master"
     
     return None
 

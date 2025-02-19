@@ -100,6 +100,7 @@ function(set_litecore_source_base)
         vendor/vector_search/VectorIndexSpec.cc
         Replicator/c4Replicator.cc
         Replicator/c4Replicator_CAPI.cc
+        Replicator/c4ReplicatorImpl.cc
         Replicator/c4Socket.cc
         Replicator/ChangesFeed.cc
         Replicator/Checkpoint.cc
@@ -121,6 +122,7 @@ function(set_litecore_source_base)
         Replicator/Worker.cc
         LiteCore/Support/Arena.cc
         LiteCore/Support/Logging.cc
+        LiteCore/Support/DatabasePool.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc
         LiteCore/Support/EncryptedStream.cc

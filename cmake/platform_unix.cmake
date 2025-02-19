@@ -39,10 +39,12 @@ function(setup_litecore_build_unix)
             set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()
 
-        set_property(TARGET LiteCore       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        if(LITECORE_BUILD_SHARED)
+            set_property(TARGET LiteCore       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        endif()
     endif()
 
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
+    if(LITECORE_BUILD_SHARED AND CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
         # C/C++ atomic operations on ARM6/7 emit calls to functions in libatomic
         target_link_libraries(
             LiteCore PRIVATE
@@ -65,12 +67,13 @@ function(setup_litecore_build_unix)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_SAN_FLAGS}" CACHE INTERNAL "")
 
         # The linker also needs to be told, so it can link the appropriate sanitizer runtime libs:
-        foreach(target LiteCore CppTests C4Tests)
-            target_link_options(${target} PRIVATE
-                -fsanitize=address
-                -fsanitize=undefined
-            )
-        endforeach ()
+        if (LITECORE_BUILD_SHARED)
+            target_link_options(LiteCore PRIVATE -fsanitize=address -fsanitize=undefined)
+        endif()
+        if (LITECORE_BUILD_TESTS)
+            target_link_options(CppTests PRIVATE -fsanitize=address -fsanitize=undefined)
+            target_link_options(C4Tests  PRIVATE -fsanitize=address -fsanitize=undefined)
+        endif()
     else()
         set(LITECORE_COMPILE_OPTIONS
             -fstack-protector

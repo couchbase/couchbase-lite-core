@@ -18,7 +18,9 @@
 
 namespace sockpp {
     class mbedtls_context;
-}
+    class stream_socket;
+    class tls_socket;
+}  // namespace sockpp
 
 namespace litecore {
     class LogDomain;
@@ -83,6 +85,11 @@ namespace litecore::net {
         void setIdentity(crypto::Identity* NONNULL);
         void setIdentity(fleece::slice certData, fleece::slice privateKeyData);
 
+        /// Performs the TLS handshake, then returns a wrapper socket that can be used for I/O.
+        /// Be sure to check the returned socket's error status to see if the handshake failed.
+        std::unique_ptr<sockpp::tls_socket> wrapSocket(std::unique_ptr<sockpp::stream_socket>,
+                                                       const std::string& peer_name);
+
       protected:
         ~TLSContext() override;
         static bool findSigningRootCert(const std::string& certStr, std::string& rootStr);
@@ -94,8 +101,6 @@ namespace litecore::net {
         fleece::Retained<crypto::Identity>       _identity;
         role_t                                   _role;
         bool                                     _onlySelfSigned{false};
-
-        friend class TCPSocket;
     };
 
 }  // namespace litecore::net

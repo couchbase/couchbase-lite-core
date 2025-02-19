@@ -208,7 +208,8 @@ namespace litecore {
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore() = default;
 
-        KeyStore(const KeyStore&)            = delete;  // not copyable
+        KeyStore(const KeyStore&) = delete;  // not copyable
+
         KeyStore& operator=(const KeyStore&) = delete;
 
       protected:
@@ -219,8 +220,7 @@ namespace litecore {
 
         virtual void close() {}
 
-        virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence, sequence_t since,
-                                                          RecordEnumerator::Options) = 0;
+        virtual RecordEnumerator::Impl* newEnumeratorImpl(RecordEnumerator::Options const&) = 0;
 
         DataFile&          _db;            // The DataFile I'm contained in
         const std::string  _name;          // My name

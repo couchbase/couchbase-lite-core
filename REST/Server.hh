@@ -11,18 +11,19 @@
 //
 
 #pragma once
+#include "c4Compat.h"
 #include "fleece/RefCounted.hh"
 #include "fleece/InstanceCounted.hh"
-#include "Request.hh"
-#include "StringUtil.hh"
+#include "fleece/slice.hh"
 #include <atomic>
 #include <map>
 #include <mutex>
-#include <functional>
 #include <memory>
-#include <thread>
 #include <vector>
-#include <regex>
+
+#ifdef COUCHBASE_ENTERPRISE
+
+C4_ASSUME_NONNULL_BEGIN
 
 namespace sockpp {
     class acceptor;
@@ -35,21 +36,28 @@ namespace litecore::crypto {
 }
 
 namespace litecore::net {
+    class ResponderSocket;
     class TLSContext;
-}
+}  // namespace litecore::net
 
 namespace litecore::REST {
 
     using namespace fleece;
 
-    /** HTTP server with configurable URI handlers. */
+    /** A basic TCP server. Incoming TCP connections are passed on to its delegate. */
     class Server final
-        : public fleece::RefCounted
-        , public fleece::InstanceCountedIn<Server> {
+        : public RefCounted
+        , public InstanceCountedIn<Server> {
       public:
-        Server();
+        class Delegate {
+          public:
+            virtual ~Delegate()                                                  = default;
+            virtual void handleConnection(std::unique_ptr<net::ResponderSocket>) = 0;
+        };
 
-        void start(uint16_t port, slice networkInterface = nullslice, net::TLSContext* = nullptr);
+        explicit Server(Delegate&);
+
+        void start(uint16_t port, slice networkInterface = {}, net::TLSContext* C4NULLABLE = nullptr);
 
         virtual void stop();
 
@@ -61,51 +69,24 @@ namespace litecore::REST {
             "norbert.local". */
         std::vector<std::string> addresses() const;
 
-        /** A function that authenticates an HTTP request, given the "Authorization" header. */
-        using Authenticator = std::function<bool(slice)>;
-
-        void setAuthenticator(Authenticator auth) { _authenticator = std::move(auth); }
-
-        /** Extra HTTP headers to add to every response. */
-        void setExtraHeaders(const std::map<std::string, std::string>& headers);
-
-        /** A function that handles a request. */
-        using Handler = std::function<void(RequestResponse&)>;
-
-        /** Registers a handler function for a URI pattern.
-            Patterns use glob syntax: <http://man7.org/linux/man-pages/man7/glob.7.html>
-            Multiple patterns can be joined with a "|".
-            Patterns are tested in the order the handlers are added, and the first match is used.*/
-        void addHandler(net::Methods, const std::string& pattern, const Handler&);
-
         int connectionCount() { return _connectionCount; }
 
-      protected:
-        struct URIRule {
-            net::Methods methods;
-            std::string  pattern;
-            std::regex   regex;
-            Handler      handler;
-        };
-
-        URIRule* findRule(net::Method method, const std::string& path);
-        ~Server() override;
-
-        void dispatchRequest(RequestResponse*);
-
       private:
+        ~Server() override;
         void awaitConnection();
         void acceptConnection();
         void handleConnection(sockpp::stream_socket&&);
 
-        fleece::Retained<crypto::Identity> _identity;
-        fleece::Retained<net::TLSContext>  _tlsContext;
-        std::unique_ptr<sockpp::acceptor>  _acceptor;
-        std::mutex                         _mutex;
-        std::vector<URIRule>               _rules;
-        std::map<std::string, std::string> _extraHeaders;
-        std::atomic<int>                   _connectionCount{0};
-        Authenticator                      _authenticator;
+        std::mutex                        _mutex;
+        Delegate&                         _delegate;
+        Retained<crypto::Identity>        _identity;
+        Retained<net::TLSContext>         _tlsContext;
+        std::unique_ptr<sockpp::acceptor> _acceptor;
+        std::atomic<int>                  _connectionCount{0};
     };
 
 }  // namespace litecore::REST
+
+C4_ASSUME_NONNULL_END
+
+#endif

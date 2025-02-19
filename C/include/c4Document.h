@@ -40,36 +40,6 @@ C4API_BEGIN_DECLS
 CBL_CORE_API char* c4doc_generateID(char* buffer, size_t bufferSize) C4API;
 
 
-#ifndef C4_STRICT_COLLECTION_API
-
-/** Gets a document from the database given its ID.
-        The current revision is selected (if the document exists.)
-        You must call `c4doc_release()` when finished with the document.
-        \note The caller must use a lock for Database when this function is called.
-        @param database  The database to read from.
-        @param docID  The document's ID.
-        @param mustExist  Governs behavior if no document with that ID exists. If true, the call fails
-                            with error kC4NotFound. If false, a C4Document with no contents is returned.
-        @param content  How much content to retrieve: metadata only, current revision, or all revisions.
-        @param outError  On failure, error information is stored here.
-        @return  A new C4Document instance (which must be released), or NULL. */
-NODISCARD CBL_CORE_API C4Document* c4db_getDoc(C4Database* database, C4String docID, bool mustExist,
-                                               C4DocContentLevel content, C4Error* C4NULLABLE outError) C4API;
-
-/** Gets a document from the database given its ID (semi-deprecated).
-        This is the same as \ref c4db_getDoc with `content` equal to `kDocGetCurrentRev`. 
-        \note The caller must use a lock for Database when this function is called. */
-NODISCARD CBL_CORE_API C4Document* c4doc_get(C4Database* database, C4String docID, bool mustExist,
-                                             C4Error* C4NULLABLE outError) C4API;
-
-/** Gets a document from the database given its sequence number.
-        You must call `c4doc_release()` when finished with the document.
-        \note The caller must use a lock for Database when this function is called. */
-NODISCARD CBL_CORE_API C4Document* c4doc_getBySequence(C4Database*         database, C4SequenceNumber,
-                                                       C4Error* C4NULLABLE outError) C4API;
-
-#endif
-
 /** Saves changes to a C4Document.
         Must be called within a transaction.
         The revision history will be pruned to the maximum depth given.
@@ -89,18 +59,18 @@ NODISCARD CBL_CORE_API bool c4doc_save(C4Document* doc, uint32_t maxRevTreeDepth
     \note The caller must use a lock for Document when this function is called. */
 CBL_CORE_API bool c4doc_isRevRejected(C4Document* doc) C4API;
 
-/** Selects a specific revision of a document (or no revision, if revID is NULL.) 
+/** Selects a specific revision of a document (or no revision, if revID is NULL.)
     \note The caller must use a lock for Document when this function is called. */
 NODISCARD CBL_CORE_API bool c4doc_selectRevision(C4Document* doc, C4String revID, bool withBody,
                                                  C4Error* C4NULLABLE outError) C4API;
 
 /** Selects the current revision of a document.
-        (This is the first revision, in the order they appear in the document.) 
+        (This is the first revision, in the order they appear in the document.)
         \note The caller must use a lock for Document when this function is called. */
 CBL_CORE_API bool c4doc_selectCurrentRevision(C4Document* doc) C4API;
 
 /** Populates the body field of a doc's selected revision,
-        if it was initially loaded without its body. 
+        if it was initially loaded without its body.
         \note The caller must use a lock for Document when this function is called. */
 NODISCARD CBL_CORE_API bool c4doc_loadRevisionBody(C4Document* doc, C4Error* C4NULLABLE outError) C4API;
 
@@ -133,7 +103,7 @@ CBL_CORE_API C4SliceResult c4doc_getRevisionHistory(C4Document* doc, unsigned ma
 
 /** Returns the selected revision's ID in a form that will make sense to another peer/server.
         (This doesn't affect tree-based revIDs. In vector-based version IDs it uses the database's actual
-        peer ID instead of the shorthand "*" character.) 
+        peer ID instead of the shorthand "*" character.)
         \note The caller must use a lock for Document when this function is called. */
 CBL_CORE_API C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
@@ -239,82 +209,11 @@ NODISCARD CBL_CORE_API bool c4doc_resolveConflict(C4Document* doc, C4String winn
 
 /** @} */
 
-
-//////// PURGING & EXPIRATION:
-
-
-#ifndef C4_STRICT_COLLECTION_API
-
-/** \name Purging and Expiration
-        @{ */
-
-
-/** Removes all trace of a document and its revisions from the database. 
-    \note The caller must use a lock for Database when this function is called. */
-CBL_CORE_API bool c4db_purgeDoc(C4Database* database, C4String docID, C4Error* C4NULLABLE outError) C4API;
-
-
-/** Sets an expiration date on a document.  After this time the
-        document will be purged from the database.
-        \note The caller must use a lock for Database when this function is called.
-        @param db The database to set the expiration date in
-        @param docID The ID of the document to set the expiration date for
-        @param timestamp The timestamp of the expiration date, in milliseconds since 1/1/1970.
-                    A value of 0 indicates that the expiration should be cancelled.
-        @param outError Information about any error that occurred
-        @return true on sucess, false on failure */
-CBL_CORE_API bool c4doc_setExpiration(C4Database* db, C4String docID, C4Timestamp timestamp,
-                                      C4Error* C4NULLABLE outError) C4API;
-
-/** Returns the expiration time of a document, if one has been set, else 0.
-        \note The caller must use a lock for Database when this function is called.
-        @param db  The database to set the expiration date in
-        @param docID  The ID of the document to check
-        @param outError Information about any error that occurred
-        @return The timestamp of the expiration date, in milliseconds since 1/1/1970,
-                    or 0 if the document does not expire,
-                    or -1 if an error occurred. */
-CBL_CORE_API C4Timestamp c4doc_getExpiration(C4Database* db, C4String docID, C4Error* C4NULLABLE outError) C4API;
-
-#endif  // C4_STRICT_COLLECTION_API
-
-/** @} */
-
-
 //////// ADDING REVISIONS:
 
 
 /** \name Creating and Updating Documents
         @{ */
-
-#ifndef C4_STRICT_COLLECTION_API
-
-/** A high-level Put operation, to insert a new or downloaded revision.
-        * If request->existingRevision is true, then request->history must contain the revision's
-          history, with the revision's ID as the first item.
-        * Otherwise, a new revision will be created and assigned a revID. The parent revision ID,
-          if any, should be given as the single item of request->history.
-        Either way, on success the document is returned with the inserted revision selected.
-        Note that actually saving the document back to the database is optional -- it only happens
-        if request->save is true. You can set this to false if you want to review the changes
-        before saving, e.g. to run them through a validation function.
-        \note The caller must use a lock for Database when this function is called. */
-CBL_CORE_API C4Document* c4doc_put(C4Database* database, const C4DocPutRequest* request,
-                                   size_t* C4NULLABLE outCommonAncestorIndex, C4Error* C4NULLABLE outError) C4API;
-
-/** Convenience function to create a new document. This just a wrapper around c4doc_put.
-        If the document already exists, it will fail with the error kC4ErrorConflict.
-        \note The caller must use a lock for Database when this function is called.
-        @param db  The database to create the document in
-        @param docID  Document ID to create; if null, a UUID will be generated
-        @param body  Body of the document
-        @param revisionFlags  The flags of the new revision
-        @param error Information about any error that occurred
-        @return  On success, a new C4Document with the new revision selected; else NULL. */
-CBL_CORE_API C4Document* c4doc_create(C4Database* db, C4String docID, C4Slice body, C4RevisionFlags revisionFlags,
-                                      C4Error* C4NULLABLE error) C4API;
-
-#endif  // C4_STRICT_COLLECTION_API
 
 /** Adds a revision to a document already in memory as a C4Document. This is more efficient
         than c4doc_put because it doesn't have to read from the database before writing; but if
@@ -330,7 +229,6 @@ CBL_CORE_API C4Document* c4doc_create(C4Database* db, C4String docID, C4Slice bo
 CBL_CORE_API C4Document* c4doc_update(C4Document* doc, C4Slice revisionBody, C4RevisionFlags revisionFlags,
                                       C4Error* C4NULLABLE error) C4API;
 
-/** @} */
 /** @} */
 
 C4API_END_DECLS

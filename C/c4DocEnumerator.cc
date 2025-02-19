@@ -24,34 +24,36 @@ using namespace litecore;
 
 #pragma mark - DOC ENUMERATION:
 
-CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {kC4IncludeNonConflicted | kC4IncludeBodies};
+const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {kC4IncludeNonConflicted | kC4IncludeBodies};
+
+static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions& c4options, slice startKey) {
+    RecordEnumerator::Options options;
+    if ( c4options.flags & kC4Descending ) options.sortOption = kDescending;
+    else if ( c4options.flags & kC4Unsorted )
+        options.sortOption = kUnsorted;
+    options.includeDeleted = (c4options.flags & kC4IncludeDeleted) != 0;
+    options.onlyConflicts  = (c4options.flags & kC4IncludeNonConflicted) == 0;
+    if ( (c4options.flags & kC4IncludeBodies) == 0 ) options.contentOption = kMetaOnly;
+    else
+        options.contentOption = kEntireBody;
+    options.startKey = startKey;
+    return options;
+}
+
+static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions& c4options, C4SequenceNumber since) {
+    auto options        = recordOptions(c4options, nullslice);
+    options.minSequence = since + 1;
+    return options;
+}
 
 class C4DocEnumerator::Impl
     : public RecordEnumerator
-    , public fleece::InstanceCounted {
+    , public InstanceCounted {
   public:
-    Impl(C4Collection* collection, sequence_t since, const C4EnumeratorOptions& options)
-        : RecordEnumerator(asInternal(collection)->keyStore(), since, recordOptions(options))
+    Impl(C4Collection* collection, const C4EnumeratorOptions& c4Options, const RecordEnumerator::Options& options)
+        : RecordEnumerator(asInternal(collection)->keyStore(), options)
         , _collection(asInternal(collection))
-        , _options(options) {}
-
-    Impl(C4Collection* collection, const C4EnumeratorOptions& options)
-        : RecordEnumerator(asInternal(collection)->keyStore(), recordOptions(options))
-        , _collection(asInternal(collection))
-        , _options(options) {}
-
-    static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions& c4options) {
-        RecordEnumerator::Options options;
-        if ( c4options.flags & kC4Descending ) options.sortOption = kDescending;
-        else if ( c4options.flags & kC4Unsorted )
-            options.sortOption = kUnsorted;
-        options.includeDeleted = (c4options.flags & kC4IncludeDeleted) != 0;
-        options.onlyConflicts  = (c4options.flags & kC4IncludeNonConflicted) == 0;
-        if ( (c4options.flags & kC4IncludeBodies) == 0 ) options.contentOption = kMetaOnly;
-        else
-            options.contentOption = kEntireBody;
-        return options;
-    }
+        , _c4Options(c4Options) {}
 
     Retained<C4Document> getDoc() {
         if ( !hasRecord() ) return nullptr;
@@ -62,7 +64,8 @@ class C4DocEnumerator::Impl
         if ( !this->hasRecord() ) return false;
 
         revid vers(record().version());
-        if ( (_options.flags & kC4IncludeRevHistory) && vers.isVersion() ) _docRevID = vers.asVersionVector().asASCII();
+        if ( (_c4Options.flags & kC4IncludeRevHistory) && vers.isVersion() )
+            _docRevID = vers.asVersionVector().asASCII();
         else
             _docRevID = vers.expanded();
 
@@ -78,23 +81,18 @@ class C4DocEnumerator::Impl
 
   private:
     litecore::CollectionImpl* _collection;
-    C4EnumeratorOptions const _options;
+    C4EnumeratorOptions const _c4Options;
     alloc_slice               _docRevID;
 };
 
-C4DocEnumerator::C4DocEnumerator(C4Collection* collection, C4SequenceNumber since, const C4EnumeratorOptions& options)
-    : _impl(new Impl(collection, since, options)) {}
-
 C4DocEnumerator::C4DocEnumerator(C4Collection* collection, const C4EnumeratorOptions& options)
-    : _impl(new Impl(collection, options)) {}
+    : C4DocEnumerator(collection, nullslice, options) {}
 
-#ifndef C4_STRICT_COLLECTION_API
-C4DocEnumerator::C4DocEnumerator(C4Database* database, const C4EnumeratorOptions& options)
-    : C4DocEnumerator(database->getDefaultCollection(), options) {}
+C4DocEnumerator::C4DocEnumerator(C4Collection* collection, slice startKey, const C4EnumeratorOptions& options)
+    : _impl(new Impl(collection, options, recordOptions(options, startKey))) {}
 
-C4DocEnumerator::C4DocEnumerator(C4Database* database, C4SequenceNumber since, const C4EnumeratorOptions& options)
-    : C4DocEnumerator(database->getDefaultCollection(), since, options) {}
-#endif
+C4DocEnumerator::C4DocEnumerator(C4Collection* collection, C4SequenceNumber since, const C4EnumeratorOptions& options)
+    : _impl(new Impl(collection, options, recordOptions(options, since))) {}
 
 C4DocEnumerator::~C4DocEnumerator() = default;
 
