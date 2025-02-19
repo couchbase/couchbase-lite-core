@@ -140,7 +140,7 @@ namespace litecore {
         static bool        registerParentObject(unsigned object, unsigned parentObject);
         static void        unregisterObject(unsigned obj);
 
-        static std::string getObjectPath(unsigned obj) { return getObjectPath(obj, sObjectMap); }
+        static std::string getObjectPath(unsigned obj);
 
         static inline size_t addObjectPath(char* destBuf, size_t bufSize, unsigned obj);
         void vlog(LogLevel level, const Logging* logger, bool callback, const char* fmt, va_list) __printflike(5, 0);
