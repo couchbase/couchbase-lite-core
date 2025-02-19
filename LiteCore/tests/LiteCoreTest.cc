@@ -43,9 +43,6 @@ string TestFixture::sFixturesDir = "../LiteCore/tests/data/";
 string TestFixture::sFixturesDir = "LiteCore/tests/data/";
 #endif
 
-
-FilePath TestFixture::sTempDir = GetTempDirectory();
-
 string stringWithFormat(const char* format, ...) {
     va_list args;
     va_start(args, format);
@@ -62,6 +59,7 @@ void ExpectException(litecore::error::Domain domain, int code, const char* what,
     } catch ( std::runtime_error& x ) {
         Log("... caught exception %s", x.what());
         error err = error::convertRuntimeError(x).standardized();
+        INFO("ExpectException caught " << err.domain << '/' << err.code << ": " << err.what());
         CHECK(err.domain == domain);
         CHECK(err.code == code);
         if ( what ) CHECK(string_view(err.what()) == string_view(what));

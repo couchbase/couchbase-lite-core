@@ -65,11 +65,26 @@ namespace litecore::repl {
             {{WebSocketDomain, 503, 0}, false, "The server is over capacity"_sl},
             {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl}};
 
-    std::string Replicator::ProtocolName() {
-        stringstream result;
-        delimiter    delim(",");
-        for ( auto& name : kCompatProtocols ) result << delim << name;
-        return result.str();
+    string toString(ProtocolVersion version) {
+        return stringprintf("%s+CBMobile_%d", blip::Connection::kWSProtocolName, int(version));
+    }
+
+    vector<string> Replicator::compatibleProtocols(C4DatabaseFlags flags, Options::Mode pushMode,
+                                                   Options::Mode pullMode) {
+        bool v3, v4;
+        if ( flags & kC4DB_VersionVectors ) {
+            // Local db may have VVs. V4 is fine. V3 is OK if I don't push anything.
+            v4 = true;
+            v3 = (pushMode == kC4Disabled);
+        } else {
+            // Local db does not have VVs. V3 is fine. V4 is OK if I don't pull anything.
+            v3 = true;
+            v4 = (pullMode == kC4Disabled);
+        }
+        vector<string> result;
+        if ( v3 ) result.emplace_back(toString(ProtocolVersion::v3));
+        if ( v4 ) result.emplace_back(toString(ProtocolVersion::v4));
+        return result;
     }
 
     Replicator::Replicator(C4Database* db, websocket::WebSocket* webSocket, Delegate& delegate, Options* options)
@@ -100,7 +115,7 @@ namespace litecore::repl {
             _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
 
-            string dbLogName = db->useLocked<std::string>([](const C4Database* db) {
+            string dbLogName = db->useLocked([](const C4Database* db) {
                 DatabaseImpl* impl = asInternal(db);
                 return impl->dataFile()->loggingName();
             });
@@ -177,18 +192,20 @@ namespace litecore::repl {
 
     void Replicator::_findExistingConflicts() {
         // Active replicator
-        Stopwatch st;
+        Stopwatch        st;
+        BorrowedDatabase db = _db->useLocked();
         for ( CollectionIndex i = 0; i < _subRepls.size(); ++i ) {
             SubReplicator& sub = _subRepls[i];
             try {
-                unique_ptr<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(sub.collection, false);
+                C4Collection*               collection = db->getCollection(sub.collectionSpec);
+                unique_ptr<C4DocEnumerator> e          = _db->unresolvedDocsEnumerator(collection, false);
                 cLogInfo(i, "Scanning for pre-existing conflicts...");
                 unsigned nConflicts = 0;
                 while ( e->next() ) {
                     C4DocumentInfo info = e->documentInfo();
                     auto           rev  = retained(new RevToInsert(nullptr,                           /* incoming rev */
                                                                    info.docID, info.revID, nullslice, /* history buf */
-                                                                   info.flags & kDocDeleted, false, sub.collection->getSpec(),
+                                                                   info.flags & kDocDeleted, false, sub.collectionSpec,
                                                                    _options->collectionCallbackContext(i)));
                     rev->error          = C4Error::make(LiteCoreDomain, kC4ErrorConflict);
                     _docsEnded.push(rev);
@@ -550,8 +567,8 @@ namespace litecore::repl {
     }
 
     void Replicator::endedDocument(ReplicatedRev* d) {
-        logInfo("documentEnded %.*s %.*s flags=%02x (%d/%d)", SPLAT(d->docID), SPLAT(d->revID), d->flags,
-                d->error.domain, d->error.code);
+        logInfo("documentEnded (%-s) %.*s %.*s flags=%02x (%d/%d)", (d->dir() == Dir::kPushing ? "push" : "pull"),
+                SPLAT(d->docID), SPLAT(d->revID), d->flags, d->error.domain, d->error.code);
         d->trim();  // free up unneeded stuff
         if ( _delegate ) {
             if ( d->isWarning && (d->flags & kRevIsConflict) ) {
@@ -589,20 +606,6 @@ namespace litecore::repl {
                                    "Incompatible replication protocol "
                                    "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
-
-        const auto& compats = repl::kCompatProtocols;
-
-        string       acceptedProtocol;
-        stringstream s(headers["Sec-WebSocket-Protocol"].asString());
-        string       protocol;
-        while ( getline(s, protocol, ',') ) {
-            auto i = std::find(compats.begin(), compats.end(), protocol);
-            if ( i != compats.end() ) {
-                acceptedProtocol = protocol;
-                break;
-            }
-        }
-
         if ( _delegate ) _delegate->replicatorGotHTTPResponse(this, status, headers);
         if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
             _correlationID = x_corr;
@@ -689,7 +692,8 @@ namespace litecore::repl {
     bool Replicator::getLocalCheckpoint(bool reset, CollectionIndex coll) {
         SubReplicator& sub = _subRepls[coll];
         try {
-            if ( sub.checkpointer->read(_db->useLocked(), reset) ) {
+            auto db = _db->useWriteable();
+            if ( sub.checkpointer->read(db, reset) ) {
                 auto remote = sub.checkpointer->remoteMinSequence();
                 cLogInfo(coll, "Read local checkpoint '%.*s': %.*s", SPLAT(sub.checkpointer->initialCheckpointID()),
                          SPLAT(sub.checkpointer->checkpointJSON()));
@@ -701,7 +705,7 @@ namespace litecore::repl {
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
                 if ( _options->pull(coll) > kC4Passive && sub.puller
-                     && _db->useCollection(sub.collection)->getLastSequence() == 0_seq )
+                     && _db->useCollection(sub.collectionSpec)->getLastSequence() == 0_seq )
                     sub.puller->setSkipDeleted();
             }
             return true;
@@ -959,10 +963,9 @@ namespace litecore::repl {
                          SPLAT(sub.remoteCheckpointRevID));
 
                 try {
-                    _db->useLocked([&](C4Database* db) {
-                        _db->markRevsSyncedNow();
-                        sub.checkpointer->write(db, json);
-                    });
+                    auto db = _db->useWriteable();
+                    _db->markRevsSyncedNow(db);
+                    sub.checkpointer->write(db, json);
                     cLogInfo(coll, "Saved local checkpoint '%.*s': %.*s", SPLAT(sub.remoteCheckpointDocID),
                              SPLAT(json));
                 } catch ( ... ) { gotError(C4Error::fromCurrentException()); }
@@ -977,17 +980,14 @@ namespace litecore::repl {
         if ( !db ) { return false; }
 
         try {
-            bool attempted = false;
-            db->useLocked([this, spec, callback, &attempted](const Retained<C4Database>& db) {
-                for ( auto& _subRepl : _subRepls ) {
-                    if ( _subRepl.collection->getSpec() == spec ) {
-                        _subRepl.checkpointer->pendingDocumentIDs(db, callback);
-                        attempted = true;
-                        break;
-                    }
+            BorrowedDatabase c4db = db->useLocked();
+            for ( auto& _subRepl : _subRepls ) {
+                if ( _subRepl.collectionSpec == spec ) {
+                    _subRepl.checkpointer->pendingDocumentIDs(c4db, callback);
+                    return true;
                 }
-            });
-            return attempted;
+            }
+            return false;
         } catch ( const error& err ) {
             if ( error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err ) {
                 return false;
@@ -999,19 +999,16 @@ namespace litecore::repl {
 
     optional<bool> Replicator::isDocumentPending(slice docID, C4CollectionSpec spec) {
         // CBL-2448
-        auto db = _db;
-        if ( !db ) { return nullopt; }
+        auto dbAccess = _db;
+        if ( !dbAccess ) { return nullopt; }
 
         try {
-            return db->useLocked<bool>([this, docID, spec](const Retained<C4Database>& db) {
-                for ( auto& _subRepl : _subRepls ) {
-                    if ( _subRepl.collection->getSpec() == spec ) {
-                        return _subRepl.checkpointer->isDocumentPending(db, docID);
-                    }
-                }
-                throw error(error::LiteCore, error::NotFound,
-                            stringprintf("collection '%*s' not found", SPLAT(Options::collectionSpecToPath(spec))));
-            });
+            auto db = dbAccess->useLocked();
+            for ( auto& _subRepl : _subRepls ) {
+                if ( _subRepl.collectionSpec == spec ) { return _subRepl.checkpointer->isDocumentPending(db, docID); }
+            }
+            throw error(error::LiteCore, error::NotFound,
+                        stringprintf("collection '%*s' not found", SPLAT(Options::collectionSpecToPath(spec))));
         } catch ( const error& err ) {
             if ( error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err ) {
                 return nullopt;
@@ -1052,7 +1049,8 @@ namespace litecore::repl {
         alloc_slice body, revID;
         int         status = 0;
         try {
-            if ( !Checkpointer::getPeerCheckpoint(_db->useLocked(), checkpointID, body, revID) ) status = 404;
+            BorrowedDatabase db = _db->useWriteable();
+            if ( !Checkpointer::getPeerCheckpoint(db, checkpointID, body, revID) ) status = 404;
         } catch ( ... ) {
             C4Error::warnCurrentException("Replicator::handleGetCheckpoint");
             status = 502;
@@ -1087,8 +1085,9 @@ namespace litecore::repl {
         bool        ok;
         alloc_slice newRevID;
         try {
-            ok = Checkpointer::savePeerCheckpoint(_db->useLocked(), checkpointID, request->body(),
-                                                  request->property("rev"_sl), newRevID);
+            BorrowedDatabase db = _db->useWriteable();
+            ok = Checkpointer::savePeerCheckpoint(db, checkpointID, request->body(), request->property("rev"_sl),
+                                                  newRevID);
         } catch ( ... ) {
             request->respondWithError(c4ToBLIPError(C4Error::fromCurrentException()));
             return;
@@ -1187,7 +1186,8 @@ namespace litecore::repl {
             alloc_slice body, revID;
             int         status = 0;
             try {
-                if ( !Checkpointer::getPeerCheckpoint(_db->useLocked(), checkpointID, body, revID) ) {
+                BorrowedDatabase db = _db->useWriteable();
+                if ( !Checkpointer::getPeerCheckpoint(db, checkpointID, body, revID) ) {
                     enc.writeValue(Dict::emptyDict());
                     continue;
                 }
@@ -1227,17 +1227,15 @@ namespace litecore::repl {
         // Retained C4Collection object may become invalid if the underlying collection
         // is deleted. By spec, all collections must exist when replication starts,
         // and it is an error if any collection is deleted while in progress.
-        // Note: retained C4Collection* may blow up if it is used after becoming invalid,
-        // and this is expected.
-        _db->useLocked([this](Retained<C4Database>& db) {
+        _db->useLocked([this](C4Database* db) {
             for ( CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i ) {
-                C4Collection* c = db->getCollection(_options->collectionSpec(i));
-                if ( c == nullptr ) {
+                C4CollectionSpec spec = _options->collectionSpec(i);
+                if ( db->getCollection(spec) == nullptr ) {
                     _subRepls.clear();
                     error::_throw(error::NotFound, "collection %s is not found in the database.",
                                   _options->collectionPath(i).asString().c_str());
                 }
-                _subRepls[i].collection = c;
+                _subRepls[i].collectionSpec = spec;
             }
         });
 
@@ -1250,7 +1248,7 @@ namespace litecore::repl {
         for ( CollectionIndex i = 0; i < _options->workingCollectionCount(); ++i ) {
             SubReplicator& sub = _subRepls[i];
             if ( _options->push(i) != kC4Disabled ) {
-                sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collection);
+                sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collectionSpec);
                 sub.pusher       = new Pusher(this, *sub.checkpointer, i);
                 sub.pushStatus   = Worker::Status(kC4Busy);
                 isPushBusy       = true;
@@ -1261,7 +1259,7 @@ namespace litecore::repl {
                 sub.puller     = new Puller(this, i);
                 sub.pullStatus = Worker::Status(kC4Busy);
                 if ( sub.checkpointer == nullptr ) {
-                    sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collection);
+                    sub.checkpointer = std::make_unique<Checkpointer>(_options, _remoteURL, sub.collectionSpec);
                 }
                 isPullBusy = true;
             } else {

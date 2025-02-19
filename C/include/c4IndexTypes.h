@@ -127,6 +127,9 @@ typedef struct C4IndexOptions {
     /** Options for vector indexes. */
     C4VectorIndexOptions vector;
 #endif
+
+    /** The where clause for partial indexes. Currently only Value and FullText indexes support partial index */
+    const char* C4NULLABLE where;
 } C4IndexOptions;
 
 /** @} */

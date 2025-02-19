@@ -25,3 +25,6 @@
 [submodule "tools"]
 	path = tools
 	url = https://github.com/couchbaselabs/litecore-download-script
+[submodule "vendor/linenoise-mob"]
+	path = vendor/linenoise-mob
+	url = https://github.com/couchbasedeps/linenoise-mob.git

@@ -12,6 +12,7 @@
 
 #include "DBAccess.hh"
 #include "DatabaseImpl.hh"
+#include "DatabasePool.hh"
 #include "ReplicatedRev.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
@@ -30,36 +31,36 @@ namespace litecore::repl {
     using namespace std;
     using namespace fleece;
 
-    DBAccess::DBAccess(C4Database* db, bool disableBlobSupport)
-        : access_lock(db)
-        , Logging(SyncLog)
-        , _blobStore(&db->getBlobStore())
+    DBAccess::DBAccess(DatabasePool* pool, bool disableBlobSupport)
+        : Logging(SyncLog)
+        , _pool(pool)
         , _disableBlobSupport(disableBlobSupport)
-        , _revsToMarkSynced(bind(&DBAccess::markRevsSyncedNow, this), bind(&DBAccess::markRevsSyncedLater, this),
+        , _revsToMarkSynced([this](int) { markRevsSyncedNow(); }, bind(&DBAccess::markRevsSyncedLater, this),
                             tuning::kInsertionDelay)
         , _timer([this] { markRevsSyncedNow(); })
-        , _usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0) {}
+        , _usingVersionVectors((pool->getConfiguration().flags & kC4DB_VersionVectors) != 0) {
+        // There are a couple of read-only operations on a C4Database that may require write access
+        // the first time. Take care of those now so a read-only instance doesn't trigger them and
+        // cause a write-access exception:
+        BorrowedDatabase bdb = _pool->borrowWriteable();
 
-    AccessLockedDB& DBAccess::insertionDB() {
-        if ( !_insertionDB ) {
-            useLocked([&](C4Database* db) {
-                if ( !_insertionDB ) {
-                    Retained<C4Database> idb;
-                    try {
-                        idb                = db->openAgain();
-                        DatabaseImpl* impl = asInternal(idb);
-                        logInfo("InsertionDB=%s", impl->dataFile()->loggingName().c_str());
-                        _c4db_setDatabaseTag(idb, DatabaseTag_DBAccess);
-                    } catch ( const exception& x ) {
-                        C4Error error = C4Error::fromException(x);
-                        logError("Couldn't open new db connection: %s", error.description().c_str());
-                        idb = db;
-                    }
-                    _insertionDB.emplace(std::move(idb));
-                }
+        // KeyStores' sequence indexes are created lazily. Force them to be created now:
+        bdb->forEachScope([&](slice scope) {
+            bdb->forEachCollection(scope, [&](C4CollectionSpec const& spec) {
+                (void)bdb->getCollection(spec)->getDocumentBySequence(9999999_seq);
             });
-        }
-        return *_insertionDB;
+        });
+
+        // The SourceID may need to be generated and stored into the db:
+        if ( _usingVersionVectors ) _mySourceID = string(bdb->getSourceID());
+
+        // The BlobStore is thread-safe, so it can be used later without needing to borrow a db.
+        _blobStore = &bdb->getBlobStore();
+    }
+
+    DBAccess::DBAccess(C4Database* db, bool disableBlobSupport) : DBAccess(new DatabasePool(db), disableBlobSupport) {
+        _ownsPool = true;
+        _pool->setCapacity(2);
     }
 
     DBAccess::~DBAccess() { close(); }
@@ -67,44 +68,26 @@ namespace litecore::repl {
     void DBAccess::close() {
         if ( _closed.test_and_set() ) { return; }
         _timer.stop();
-        useLocked([this](Retained<C4Database>& db) {
-            // Any use of the class after this will result in a crash that
-            // should be easily identifiable, so forgo asserting if the pointer
-            // is null in other areas.
-            db            = nullptr;
-            this->_sentry = &DBAccess::AssertDBOpen;
-            if ( this->_insertionDB ) {
-                this->_insertionDB->useLocked([](Retained<C4Database>& idb) { idb = nullptr; });
-                this->_insertionDB.reset();
-            }
-        });
+        if ( _ownsPool ) _pool->close();
     }
-
-    UseCollection DBAccess::useCollection(C4Collection* coll) { return {*this, coll}; }
-
-    UseCollection DBAccess::useCollection(C4Collection* coll) const { return {*const_cast<DBAccess*>(this), coll}; }
 
     string DBAccess::convertVersionToAbsolute(slice revID) {
         string version(revID);
-        if ( _usingVersionVectors ) {
-            if ( _mySourceID.empty() ) {
-                useLocked([&](C4Database* c4db) {
-                    if ( _mySourceID.empty() ) _mySourceID = string(c4db->getSourceID());
-                });
-            }
-            replace(version, "*", _mySourceID);
-        }
+        if ( _usingVersionVectors ) replace(version, "*", _mySourceID);
         return version;
     }
 
     C4RemoteID DBAccess::lookUpRemoteDBID(slice key) {
         Assert(_remoteDBID == 0);
-        _remoteDBID = useLocked()->getRemoteDBID(key, true);
+        // (Needs useWriteable because getRemoteDBID may write to the database)
+        auto db     = useWriteable();
+        _remoteDBID = db->getRemoteDBID(key, true);
         return _remoteDBID;
     }
 
-    Retained<C4Document> DBAccess::getDoc(C4Collection* collection, slice docID, C4DocContentLevel content) const {
-        return useCollection(collection)->getDocument(docID, true, content);
+    Retained<C4Document> DBAccess::getDoc(C4CollectionSpec const& spec, slice docID, C4DocContentLevel content) const {
+        auto coll = useCollection(spec);
+        return coll->getDocument(docID, true, content);
     }
 
     alloc_slice DBAccess::getDocRemoteAncestor(C4Document* doc) const {
@@ -113,20 +96,18 @@ namespace litecore::repl {
             return {};
     }
 
-    void DBAccess::setDocRemoteAncestor(C4Collection* coll, slice docID, slice revID) {
+    void DBAccess::setDocRemoteAncestor(C4CollectionSpec const& spec, slice docID, slice revID) {
         if ( !_remoteDBID ) return;
         logInfo("Updating remote #%u's rev of '%.*s' to %.*s of collection %.*s.%.*s", _remoteDBID, SPLAT(docID),
-                SPLAT(revID), SPLAT(coll->getSpec().scope), SPLAT(coll->getSpec().name));
+                SPLAT(revID), SPLAT(spec.scope), SPLAT(spec.name));
         try {
-            useLocked([&](C4Database* db) {
-                Assert(db == coll->getDatabase());
-                C4Database::Transaction t(db);
-                Retained<C4Document>    doc = coll->getDocument(docID, true, kDocGetAll);
-                if ( !doc ) error::_throw(error::NotFound);
-                doc->setRemoteAncestorRevID(_remoteDBID, revID);
-                doc->save();
-                t.commit();
-            });
+            BorrowedCollection      coll(useWriteable(), spec);
+            C4Database::Transaction t(coll->getDatabase());
+            Retained<C4Document>    doc = coll->getDocument(docID, true, kDocGetAll);
+            if ( !doc ) error::_throw(error::NotFound);
+            doc->setRemoteAncestorRevID(_remoteDBID, revID);
+            doc->save();
+            t.commit();
         } catch ( const exception& x ) {
             C4Error error = C4Error::fromException(x);
             warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d", _remoteDBID, SPLAT(docID), SPLAT(revID),
@@ -134,16 +115,13 @@ namespace litecore::repl {
         }
     }
 
-    unique_ptr<C4DocEnumerator> DBAccess::unresolvedDocsEnumerator(C4Collection* coll, bool orderByID) {
+    unique_ptr<C4DocEnumerator> DBAccess::unresolvedDocsEnumerator(C4Collection* collection, bool orderByID) {
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags &= ~kC4IncludeBodies;
         options.flags &= ~kC4IncludeNonConflicted;
         options.flags |= kC4IncludeDeleted;
         if ( !orderByID ) options.flags |= kC4Unsorted;
-        return useLocked<unique_ptr<C4DocEnumerator>>([&](const Retained<C4Database>& db) {
-            DebugAssert(db.get() == coll->getDatabase());
-            return make_unique<C4DocEnumerator>(coll, options);
-        });
+        return make_unique<C4DocEnumerator>(collection, options);
     }
 
     static bool containsAttachmentsProperty(slice json) {
@@ -273,40 +251,38 @@ namespace litecore::repl {
     }
 
     SharedKeys DBAccess::updateTempSharedKeys() {
-        auto&      db = _insertionDB ? *_insertionDB : *this;
-        SharedKeys result;
-        return db.useLocked<SharedKeys>([&](C4Database* idb) {
-            SharedKeys        dbsk = idb->getFleeceSharedKeys();
-            lock_guard<mutex> lock(_tempSharedKeysMutex);
-            if ( !_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count() ) {
-                // Copy database's sharedKeys:
-                _tempSharedKeys             = SharedKeys::create(dbsk.stateData());
-                _tempSharedKeysInitialCount = dbsk.count();
-                int retryCount              = 0;
-                while ( _usuallyFalse(_tempSharedKeys.count() != dbsk.count() && retryCount++ < 10) ) {
-                    // CBL-4288: Possible compiler optimization issue?  If these two counts
-                    // are not equal then the shared keys creation process has been corrupted
-                    // and we must not continue as-is because then we will have data corruption
+        SharedKeys        result;
+        auto              idb  = _pool->borrow();
+        SharedKeys        dbsk = idb->getFleeceSharedKeys();
+        lock_guard<mutex> lock(_tempSharedKeysMutex);
+        if ( !_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count() ) {
+            // Copy database's sharedKeys:
+            _tempSharedKeys             = SharedKeys::create(dbsk.stateData());
+            _tempSharedKeysInitialCount = dbsk.count();
+            int retryCount              = 0;
+            while ( _usuallyFalse(_tempSharedKeys.count() != dbsk.count() && retryCount++ < 10) ) {
+                // CBL-4288: Possible compiler optimization issue?  If these two counts
+                // are not equal then the shared keys creation process has been corrupted
+                // and we must not continue as-is because then we will have data corruption
 
-                    // This really should not be the solution, but yet it reliably seems to stop
-                    // this weirdness from happening
-                    Warn("CBL-4288: Shared keys creation process failed, retrying...");
-                    _tempSharedKeys = SharedKeys::create(dbsk.stateData());
-                }
-
-                if ( _usuallyFalse(_tempSharedKeys.count() != dbsk.count()) ) {
-                    // The above loop failed, so force an error condition to prevent a bad write
-                    // Note: I have never seen this happen, it is here just because the alternative
-                    // is data corruption, which is absolutely unacceptable
-                    WarnError("CBL-4288: Retrying 10 times did not solve the issue, aborting document encode...");
-                    _tempSharedKeys = SharedKeys();
-                }
-
-                assert(_tempSharedKeys);
+                // This really should not be the solution, but yet it reliably seems to stop
+                // this weirdness from happening
+                Warn("CBL-4288: Shared keys creation process failed, retrying...");
+                _tempSharedKeys = SharedKeys::create(dbsk.stateData());
             }
-            _tempSharedKeys.disableCaching();
-            return _tempSharedKeys;
-        });
+
+            if ( _usuallyFalse(_tempSharedKeys.count() != dbsk.count()) ) {
+                // The above loop failed, so force an error condition to prevent a bad write
+                // Note: I have never seen this happen, it is here just because the alternative
+                // is data corruption, which is absolutely unacceptable
+                WarnError("CBL-4288: Retrying 10 times did not solve the issue, aborting document encode...");
+                _tempSharedKeys = SharedKeys();
+            }
+
+            assert(_tempSharedKeys);
+        }
+        _tempSharedKeys.disableCaching();
+        return _tempSharedKeys;
     }
 
     Doc DBAccess::tempEncodeJSON(slice jsonBody, FLError* err) {
@@ -334,7 +310,7 @@ namespace litecore::repl {
         return doc;
     }
 
-    alloc_slice DBAccess::reEncodeForDatabase(Doc doc) {
+    alloc_slice DBAccess::reEncodeForDatabase(Doc doc, C4Database* idb) {
         bool reEncode;
         {
             lock_guard<mutex> lock(_tempSharedKeysMutex);
@@ -343,14 +319,11 @@ namespace litecore::repl {
         }
         if ( reEncode ) {
             // Re-encode with database's current sharedKeys:
-            // insertionDB() asserts DB open, no need to do it here
-            return insertionDB().useLocked<alloc_slice>([&](C4Database* idb) {
-                SharedEncoder enc(idb->sharedFleeceEncoder());
-                enc.writeValue(doc.root());
-                alloc_slice data = enc.finish();
-                enc.reset();
-                return data;
-            });
+            SharedEncoder enc(idb->sharedFleeceEncoder());
+            enc.writeValue(doc.root());
+            alloc_slice data = enc.finish();
+            enc.reset();
+            return data;
         } else {
             // _tempSharedKeys is still compatible with database's sharedKeys, so no re-encoding.
             // But we do need to copy the data, because the data in doc is tagged with the temp
@@ -359,14 +332,14 @@ namespace litecore::repl {
         }
     }
 
-    Doc DBAccess::applyDelta(C4Document* doc, slice deltaJSON, bool useDBSharedKeys) {
+    Doc DBAccess::applyDelta(C4Document* doc, slice deltaJSON, C4Database* db) {
         Dict srcRoot = doc->getProperties();
         if ( !srcRoot )
             error::_throw(error::CorruptRevisionData, "DBAccess applyDelta error getting document's properties");
 
         bool useLegacyAttachments = !_disableBlobSupport && containsAttachmentsProperty(deltaJSON);
         Doc  reEncodedDoc;
-        if ( useLegacyAttachments || !useDBSharedKeys ) {
+        if ( useLegacyAttachments || !db ) {
             Encoder enc;
             enc.setSharedKeys(tempSharedKeys());
             if ( useLegacyAttachments ) {
@@ -388,13 +361,10 @@ namespace litecore::repl {
             flErr = kFLInvalidData;
         } else {
 #endif
-            if ( useDBSharedKeys ) {
-                // insertionDB() asserts DB open, no need to do it here
-                insertionDB().useLocked([&](C4Database* idb) {
-                    SharedEncoder enc(idb->sharedFleeceEncoder());
-                    JSONDelta::apply(srcRoot, deltaJSON, enc);
-                    result = enc.finishDoc(&flErr);
-                });
+            if ( db ) {
+                SharedEncoder enc(db->sharedFleeceEncoder());
+                JSONDelta::apply(srcRoot, deltaJSON, enc);
+                result = enc.finishDoc(&flErr);
             } else {
                 Encoder enc;
                 enc.setSharedKeys(tempSharedKeys());
@@ -414,57 +384,59 @@ namespace litecore::repl {
         return result;
     }
 
-    Doc DBAccess::applyDelta(C4Collection* collection, slice docID, slice baseRevID, slice deltaJSON) {
-        Retained<C4Document> doc = getDoc(collection, docID, kDocGetAll);
+    Doc DBAccess::applyDelta(C4CollectionSpec const& spec, slice docID, slice baseRevID, slice deltaJSON) {
+        Retained<C4Document> doc = getDoc(spec, docID, kDocGetAll);
         if ( !doc ) error::_throw(error::NotFound);
         if ( !doc->selectRevision(baseRevID, true) || !doc->loadRevisionBody() ) return nullptr;
-        return applyDelta(doc, deltaJSON, false);
+        return applyDelta(doc, deltaJSON, nullptr);
     }
 
     void DBAccess::markRevSynced(ReplicatedRev* rev NONNULL) { _revsToMarkSynced.push(rev); }
 
-    // Mark all the queued revisions as synced to the server.
     void DBAccess::markRevsSyncedNow() {
+        BorrowedDatabase db = useWriteable();
+        markRevsSyncedNow(db);
+    }
+
+    // Mark all the queued revisions as synced to the server.
+    void DBAccess::markRevsSyncedNow(C4Database* db) {
         _timer.stop();
         auto revs = _revsToMarkSynced.pop();
         if ( !revs ) return;
 
         Stopwatch st;
-        // insertionDB() asserts DB open, no need to do it here
-        insertionDB().useLocked([&](C4Database* idb) {
-            try {
-                C4Database::Transaction transaction(idb);
-                for ( ReplicatedRev* rev : *revs ) {
-                    C4CollectionSpec coll       = rev->collectionSpec;
-                    C4Collection*    collection = idb->getCollection(coll);
-                    if ( collection == nullptr ) {
-                        C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen, "%s",
-                                       stringprintf("Failed to find collection '%*s.%*s'.", SPLAT(coll.scope),
-                                                    SPLAT(coll.name))
-                                               .c_str());
-                    }
-                    logDebug("Marking rev '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
-                             SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),
-                             static_cast<uint64_t>(rev->sequence), remoteDBID());
-                    try {
-                        collection->markDocumentSynced(rev->docID, rev->revID, rev->sequence,
-                                                       rev->rejectedByRemote ? 0 : remoteDBID());
-                    } catch ( const exception& x ) {
-                        C4Error error = C4Error::fromException(x);
-                        warn("Unable to mark '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
-                             SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),
-                             (uint64_t)rev->sequence, error.domain, error.code);
-                    }
+        try {
+            C4Database::Transaction transaction(db);
+            for ( ReplicatedRev* rev : *revs ) {
+                C4CollectionSpec coll       = rev->collectionSpec;
+                C4Collection*    collection = db->getCollection(coll);
+                if ( collection == nullptr ) {
+                    C4Error::raise(
+                            LiteCoreDomain, kC4ErrorNotOpen, "%s",
+                            stringprintf("Failed to find collection '%*s.%*s'.", SPLAT(coll.scope), SPLAT(coll.name))
+                                    .c_str());
                 }
-                transaction.commit();
-                double t = st.elapsed();
-                logVerbose("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)", revs->size(), t * 1000,
-                           (double)revs->size() / t);
-            } catch ( const exception& x ) {
-                C4Error error = C4Error::fromException(x);
-                warn("Error marking %zu revs as synced: %d/%d", revs->size(), error.domain, error.code);
+                logDebug("Marking rev '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
+                         SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),
+                         static_cast<uint64_t>(rev->sequence), remoteDBID());
+                try {
+                    collection->markDocumentSynced(rev->docID, rev->revID, rev->sequence,
+                                                   rev->rejectedByRemote ? 0 : remoteDBID());
+                } catch ( const exception& x ) {
+                    C4Error error = C4Error::fromException(x);
+                    warn("Unable to mark '%.*s'.%.*s '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
+                         SPLAT(coll.scope), SPLAT(coll.name), SPLAT(rev->docID), SPLAT(rev->revID),
+                         (uint64_t)rev->sequence, error.domain, error.code);
+                }
             }
-        });
+            transaction.commit();
+            double t = st.elapsed();
+            logVerbose("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)", revs->size(), t * 1000,
+                       (double)revs->size() / t);
+        } catch ( const exception& x ) {
+            C4Error error = C4Error::fromException(x);
+            warn("Error marking %zu revs as synced: %d/%d", revs->size(), error.domain, error.code);
+        }
     }
 
     void DBAccess::markRevsSyncedLater() { _timer.fireAfter(tuning::kInsertionDelay); }

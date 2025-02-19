@@ -11,7 +11,6 @@
 //
 
 #include "Server.hh"
-#include "Request.hh"
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
 #include "Poller.hh"
@@ -23,12 +22,14 @@
 #include <memory>
 #include <mutex>
 
+#ifdef COUCHBASE_ENTERPRISE
+
 // TODO: Remove these pragmas when doc-comments in sockpp are fixed
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation"
-#include "sockpp/tcp_acceptor.h"
-#include "sockpp/inet6_address.h"
-#pragma clang diagnostic pop
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wdocumentation"
+#    include "sockpp/tcp_acceptor.h"
+#    include "sockpp/inet6_address.h"
+#    pragma clang diagnostic pop
 
 namespace litecore::REST {
     using namespace std;
@@ -51,7 +52,7 @@ namespace litecore::REST {
         error::_throw(error::LiteCoreError::Unimplemented);
     }
 
-    Server::Server() {
+    Server::Server(Delegate& delegate) : _delegate(delegate) {
         if ( !ListenerLog ) ListenerLog = c4log_getDomain("Listener", true);
     }
 
@@ -123,7 +124,6 @@ namespace litecore::REST {
         Poller::instance().removeListeners(_acceptor->handle());
         _acceptor->close();
         _acceptor.reset();
-        _rules.clear();
     }
 
     void Server::awaitConnection() {
@@ -131,6 +131,7 @@ namespace litecore::REST {
         if ( !_acceptor ) return;
 
         Poller::instance().addListener(_acceptor->handle(), Poller::kReadable, [this] {
+            // Callback when a socket is accepted:
             Retained<Server> selfRetain = this;
             acceptConnection();
         });
@@ -161,93 +162,48 @@ namespace litecore::REST {
         } catch ( const std::exception& x ) {
             c4log(ListenerLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
         }
+
         // Start another async accept:
         awaitConnection();
     }
 
     void Server::handleConnection(sockpp::stream_socket&& sock) {
-        auto responder = make_unique<ResponderSocket>(_tlsContext);
-        if ( !responder->acceptSocket(std::move(sock)) || (_tlsContext && !responder->wrapTLS()) ) {
-            c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %s",
-                  responder->error().description().c_str());
+        auto   responder = make_unique<ResponderSocket>(_tlsContext);
+        bool   ok        = responder->acceptSocket(std::move(sock));
+        string peerAddr  = ok ? responder->peerAddress() : "???";
+        if ( ok && _tlsContext ) {
+            c4log(ListenerLog, kC4LogVerbose, "Incoming TLS connection from %s -- starting handshake",
+                  peerAddr.c_str());
+            ok = responder->wrapTLS();
+        }
+        if ( !ok ) {
+            C4Error error       = responder->error();
+            string  description = error.description();
+            if ( error.domain == NetworkDomain ) {
+                // The default messages call the peer "server" and me "client"; reverse that:
+                replace(description, "server", "CLIENT");
+                replace(description, "client", "server");
+                replace(description, "CLIENT", "client");
+            }
+            c4log(ListenerLog, kC4LogError, "Error accepting incoming connection from %s: %s", peerAddr.c_str(),
+                  description.c_str());
             return;
         }
+
+        bool loggedConnection = false;
         if ( c4log_willLog(ListenerLog, kC4LogVerbose) ) {
-            auto cert = responder->peerTLSCertificate();
-            if ( cert )
-                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
-                      responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
-            else
-                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s", responder->peerAddress().c_str());
-        }
-        RequestResponse rq(this, std::move(responder));
-        if ( rq.isValid() ) {
-            dispatchRequest(&rq);
-            rq.finish();
-        }
-    }
-
-    void Server::setExtraHeaders(const std::map<std::string, std::string>& headers) {
-        lock_guard<mutex> lock(_mutex);
-        _extraHeaders = headers;
-    }
-
-    void Server::addHandler(Methods methods, const string& patterns, const Handler& handler) {
-        lock_guard<mutex> lock(_mutex);
-        split(patterns, "|", [&](string_view pattern) {
-            _rules.push_back({methods, string(pattern), regex(pattern.data(), pattern.size()), handler});
-        });
-    }
-
-    Server::URIRule* Server::findRule(Method method, const string& path) {
-        //lock_guard<mutex> lock(_mutex);       // called from dispatchResponder which locks
-        for ( auto& rule : _rules ) {
-            if ( (rule.methods & method) && regex_match(path.c_str(), rule.regex) ) return &rule;
-        }
-        return nullptr;
-    }
-
-    void Server::dispatchRequest(RequestResponse* rq) {
-        Method method = rq->method();
-        if ( method == Method::GET && rq->header("Connection") == "Upgrade"_sl ) method = Method::UPGRADE;
-
-        c4log(ListenerLog, kC4LogInfo, "%s %s", MethodName(method), rq->path().c_str());
-
-        if ( _authenticator ) {
-            if ( !_authenticator(rq->header("Authorization")) ) {
-                c4log(ListenerLog, kC4LogInfo, "Authentication failed");
-                rq->setStatus(HTTPStatus::Unauthorized, "Unauthorized");
-                rq->setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
-                return;
+            if ( auto cert = responder->peerTLSCertificate() ) {
+                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s", peerAddr.c_str(),
+                      cert->subjectPublicKey()->digestString().c_str());
+                loggedConnection = true;
             }
         }
+        if ( !loggedConnection ) c4log(ListenerLog, kC4LogInfo, "Accepted connection from %s", peerAddr.c_str());
 
-        lock_guard<mutex> lock(_mutex);
-
-        ++_connectionCount;
-        Retained<Server> retainedSelf = this;
-        rq->onClose([=] { --retainedSelf->_connectionCount; });
-
-        try {
-            string pathStr(rq->path());
-            auto   rule = findRule(method, pathStr);
-            if ( rule ) {
-                c4log(ListenerLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
-                rule->handler(*rq);
-            } else if ( nullptr == (rule = findRule(Methods::ALL, pathStr)) ) {
-                c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
-                rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
-            } else {
-                c4log(ListenerLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(),
-                      pathStr.c_str());
-                if ( method == Method::UPGRADE ) rq->respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
-                else
-                    rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
-            }
-        } catch ( const std::exception& x ) {
-            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
-            rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
-        }
+        //TODO: Increment/decrement _connectionCount
+        _delegate.handleConnection(std::move(responder));
     }
 
 }  // namespace litecore::REST
+
+#endif

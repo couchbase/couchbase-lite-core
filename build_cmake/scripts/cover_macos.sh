@@ -28,9 +28,11 @@ pushd C/tests
 ./C4Tests -r quiet
 popd
 
+ARCH=$(lipo -info libLiteCore.dylib | awk '{print $NF}')
+
 mkdir -p coverage_reports
 xcrun llvm-profdata merge -sparse LiteCore/tests/default.profraw C/tests/default.profraw -o AllTests.profdata
-xcrun llvm-cov show -instr-profile=AllTests.profdata -show-line-counts-or-regions -arch x86_64 -output-dir=$PWD/coverage_reports -format="html" \
+xcrun llvm-cov show -instr-profile=AllTests.profdata -show-line-counts-or-regions -arch $ARCH -output-dir=$PWD/coverage_reports -format="html" \
   -ignore-filename-regex="/vendor/SQLiteCpp/*" -ignore-filename-regex="vendor/sockpp/*" -ignore-filename-regex="vendor/fleece/ObjC/*" \
   -ignore-filename-regex="vendor/fleece/vendor/*" -ignore-filename-regex="Networking/WebSockets/*" -ignore-filename-regex="C/c4DocEnumerator.cc" \
   -ignore-filename-regex="LiteCore/Query/N1QL_Parser/*" -ignore-filename-regex="*sqlite3*c" -ignore-filename-regex="*.leg" \
@@ -40,7 +42,7 @@ xcrun llvm-cov show -instr-profile=AllTests.profdata -show-line-counts-or-region
 if [ "$1" == "--show-results" ]; then
   open coverage_reports/index.html
 elif [ "$1" == "--export-results" ]; then
-  xcrun llvm-cov export -instr-profile=AllTests.profdata -arch x86_64 \
+  xcrun llvm-cov export -instr-profile=AllTests.profdata -arch $ARCH \
     -ignore-filename-regex="/vendor/SQLiteCpp/*" -ignore-filename-regex="vendor/sockpp/*" -ignore-filename-regex="vendor/fleece/ObjC/*" \
     -ignore-filename-regex="vendor/fleece/vendor/*" -ignore-filename-regex="Networking/WebSockets/*" -ignore-filename-regex="C/c4DocEnumerator.cc" \
     -ignore-filename-regex="LiteCore/Query/N1QL_Parser/*" -ignore-filename-regex="*sqlite3*c" -ignore-filename-regex="*.leg" \

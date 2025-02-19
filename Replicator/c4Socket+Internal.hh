@@ -13,11 +13,11 @@
 #pragma once
 #include "c4Socket.hh"
 #include "WebSocketImpl.hh"
-#include "DBAccess.hh"
 
 struct c4Database;
 
 namespace litecore::repl {
+    class DBAccess;
 
     // Main factory function to create a WebSocket.
     fleece::Retained<websocket::WebSocket> CreateWebSocket(const websocket::URL&, const fleece::alloc_slice& options,

@@ -90,6 +90,8 @@ namespace litecore {
 
         C4SequenceNumber getLastSequence() const override { return keyStore().lastSequence(); }
 
+        uint64_t getPurgeCount() const override { return keyStore().purgeCount(); }
+
         DatabaseImpl* dbImpl() { return asInternal(getDatabase()); }
 
         const DatabaseImpl* dbImpl() const { return asInternal(getDatabase()); }
@@ -376,7 +378,8 @@ namespace litecore {
 
         void startHousekeeping() {
             if ( !_housekeeper && isValid() ) {
-                if ( (getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0 ) {
+                auto flags = _database->getConfiguration().flags;
+                if ( (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) == 0 ) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->setParentObjectRef(getObjectRef());
                     _housekeeper->start();
@@ -393,7 +396,7 @@ namespace litecore {
 
 #pragma mark - INDEXES:
 
-        void createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
+        bool createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
                          const C4IndexOptions* indexOptions = nullptr) override {
             IndexSpec::Options options;
             switch ( indexType ) {
@@ -478,8 +481,16 @@ namespace litecore {
                     error::_throw(error::InvalidParameter, "Invalid index type");
                     break;
             }
-            keyStore().createIndex(indexName, indexSpec, (QueryLanguage)indexLanguage, (IndexSpec::Type)indexType,
-                                   options);
+            if ( indexOptions ) {
+                constexpr const char* indexTypeNames[] = {"Value", "FullText", "Array", "Predictive", "Vector"};
+                if ( indexOptions->where && !IndexSpec::canPartialIndex((IndexSpec::Type)indexType) )
+                    error::_throw(error::InvalidParameter, "%s index does support partial index.",
+                                  indexTypeNames[indexType]);
+            }
+
+            return keyStore().createIndex({indexName.asString(), (IndexSpec::Type)indexType, indexSpec,
+                                           slice{indexOptions ? indexOptions->where : nullptr},
+                                           (QueryLanguage)indexLanguage, options});
         }
 
         Retained<C4Index> getIndex(slice name) override { return C4Index::getIndex(this, name); }

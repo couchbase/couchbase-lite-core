@@ -31,6 +31,7 @@ namespace litecore::net {
 
         OK        = 200,
         Created   = 201,
+        Accepted  = 202,
         NoContent = 204,
 
         MovedPermanently  = 301,
@@ -40,18 +41,19 @@ namespace litecore::net {
         UseProxy          = 305,
         TemporaryRedirect = 307,
 
-        BadRequest          = 400,
-        Unauthorized        = 401,
-        Forbidden           = 403,
-        NotFound            = 404,
-        MethodNotAllowed    = 405,
-        NotAcceptable       = 406,
-        ProxyAuthRequired   = 407,
-        Conflict            = 409,
-        Gone                = 410,
-        PreconditionFailed  = 412,
-        UnprocessableEntity = 422,
-        Locked              = 423,
+        BadRequest           = 400,
+        Unauthorized         = 401,
+        Forbidden            = 403,
+        NotFound             = 404,
+        MethodNotAllowed     = 405,
+        NotAcceptable        = 406,
+        ProxyAuthRequired    = 407,
+        Conflict             = 409,
+        Gone                 = 410,
+        PreconditionFailed   = 412,
+        UnsupportedMediaType = 415,
+        UnprocessableEntity  = 422,
+        Locked               = 423,
 
         ServerError    = 500,
         NotImplemented = 501,
@@ -61,6 +63,8 @@ namespace litecore::net {
     inline bool IsSuccess(HTTPStatus s) { return int(s) < 300; }
 
     const char* StatusMessage(HTTPStatus);
+
+    HTTPStatus StatusFromError(C4Error);
 
     /// HTTP methods. These do NOT have consecutive values, rather they're powers of two
     /// so they can be used as bit-masks.

@@ -40,8 +40,9 @@ namespace litecore {
     IndexSpec::IndexSpec(IndexSpec&& spec)
         : IndexSpec(std::move(spec.name), spec.type, std::move(spec.expression), spec.queryLanguage,
                     std::move(spec.options)) {
-        _doc      = spec._doc;
-        spec._doc = nullptr;
+        whereClause = std::move(spec.whereClause);
+        _doc        = spec._doc;
+        spec._doc   = nullptr;
     }
 
     IndexSpec::~IndexSpec() {
@@ -61,29 +62,58 @@ namespace litecore {
         if ( !_doc ) {
             switch ( queryLanguage ) {
                 case QueryLanguage::kJSON:
-                    {
-                        if ( auto doc = Doc::fromJSON(expression); doc ) _doc = doc.detach();
-                        else
-                            error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
-                        break;
+                    try {
+                        if ( canPartialIndex() && !whereClause.empty() ) {
+                            std::stringstream ss;
+                            ss << R"({"WHAT": )" << expression.asString() << R"(, "WHERE": )" << whereClause.asString()
+                               << "}";
+                            _doc = Doc::fromJSON(ss.str()).detach();
+                        } else {
+                            _doc = Doc::fromJSON(expression).detach();
+                        }
+                    } catch ( const FleeceException& ) {
+                        error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
                     }
+                    if ( !_doc ) error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
+                    break;
                 case QueryLanguage::kN1QL:
                     try {
+                        int         errPos;
                         alloc_slice json;
                         if ( !expression.empty() ) {
-                            int           errPos;
-                            FLMutableDict result = n1ql::parse(string(expression), &errPos);
-                            if ( !result ) { throw Query::parseError("N1QL syntax error in index expression", errPos); }
-                            json = FLValue_ToJSON(FLValue(result));
-                            FLMutableDict_Release(result);
+                            MutableDict       result   = nullptr;
+                            bool              hasWhere = false;
+                            std::stringstream ss;
+                            if ( canPartialIndex() && !whereClause.empty() ) {
+                                hasWhere = true;
+                                ss << "SELECT ( " << expression.asString() << " ) FROM _ WHERE ( "
+                                   << whereClause.asString() << " )";
+                                result = n1ql::parse(ss.str(), &errPos);
+                            } else {
+                                result = n1ql::parse(expression.asString(), &errPos);
+                            }
+                            if ( !result ) {
+                                string errExpr = "Invalid N1QL in index expression \"";
+                                if ( ss.peek() != EOF ) errExpr += ss.str();
+                                else
+                                    errExpr += expression.asString();
+                                errExpr += "\"";
+                                throw Query::parseError(errExpr.c_str(), errPos);
+                            }
+                            if ( hasWhere ) result.remove("FROM"_sl);
+                            json = result.toJSON();
+                            FLMutableDict_Release((FLMutableDict)result);
                         } else {
                             // n1ql parser won't compile empty string to empty array. Do it manually.
-                            json = "[]";
+                            json = "[]";  // empty WHAT cannot be followed by WHERE clause.
                         }
                         _doc = Doc::fromJSON(json).detach();
-                    } catch ( const std::runtime_error& ) {
-                        error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
+                    } catch ( const std::runtime_error& exc ) {
+                        if ( dynamic_cast<const Query::parseError*>(&exc) ) throw;
+                        else
+                            error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
                     }
+                    if ( !_doc ) error::_throw(error::InvalidQuery, "Invalid SQL++ in index expression");
                     break;
             }
         }

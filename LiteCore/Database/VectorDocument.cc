@@ -117,7 +117,7 @@ namespace litecore {
         }
 
         // intentionally does not load other revisions ... throws if they're not in memory.
-        // Calling code should be fixed to load the doc with all revisions using c4db_getDoc2.
+        // Calling code should be fixed to load the doc with all revisions using c4coll_getDoc.
         bool _selectRemote(RemoteID remote) {
             if ( auto rev = _doc.remoteRevision(remote); rev && rev->revID ) {
                 return _selectRemote(remote, *rev);
