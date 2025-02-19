@@ -4,65 +4,49 @@
 
 #ifdef __APPLE__
 
-#include "BonjourBrowser.hh"
+#include "PeerDiscovery+Apple.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include "NetworkInterfaces.hh"
 #include "StringUtil.hh"
 #include <dns_sd.h>
+#include <netinet/in.h>
 
 namespace litecore::p2p {
     using namespace std;
 
+    struct BonjourProvider;
 
-#pragma mark - BONJOUR PEER:
+
+    static string sServiceType;
+
+    static LogDomain P2PLog("P2P");    //FIXME: Should be cross platform
+
+    static BonjourProvider* sProvider;
 
 
-    class BonjourPeer : public Peer {
+    #pragma mark - BONJOUR PEER:
+
+
+    class BonjourPeer : public C4Peer {
     public:
-        friend struct BonjourBrowser::Impl;
+        static string makeID(string const& name, string const& domain) {
+            return name + "." + sServiceType + "." + domain;
+        }
 
-        BonjourPeer(BonjourBrowser* browser, string name, int interface, string domain)
-        :Peer(browser, std::move(name))
+        BonjourPeer(string name, uint32_t interface, string domain)
+        :C4Peer(makeID(name, domain), name)
         ,_domain(std::move(domain))
         ,_interface(interface)
         { }
 
-        BonjourBrowser& browser() {return dynamic_cast<BonjourBrowser&>(*Peer::browser());}
-
-        void resolved(struct sockaddr const* ap, int ttl) {
-            IPAddress address(*ap);
-            address.setPort(_port);
-            setAddress(&address, c4_now() + 1000 * ttl);
-        }
-
-        void resolveFailed() {
-            setAddress(nullptr);
-        }
-
         bool setTxtRecord(slice txt) {
-            unique_lock lock(_mutex);
-            if (txt.size == 1 && txt[0] == 0)
+            if (txt.size == 1 && txt[0] == 0)   // empty record consists of a single 00 byte
                 txt = nullslice;
             if (txt == _txtRecord)
                 return false;
             _txtRecord = txt;
-            return true;
-        }
 
-        alloc_slice getMetadata(std::string_view key) const override {
-            unique_lock lock(_mutex);
-            if (_txtRecord) {
-                uint8_t len;
-                const void* val = TXTRecordGetValuePtr(uint16_t(_txtRecord.size), _txtRecord.buf,
-                                                        string(key).c_str(), &len);
-                if (val)
-                    return alloc_slice(val, len);
-            }
-            return nullslice;
-        }
-
-        unordered_map<string, alloc_slice> getAllMetadata() const override {
-            unique_lock lock(_mutex);
             unordered_map<string, alloc_slice> metadata;
             if (_txtRecord) {
                 auto txtLen = uint16_t(_txtRecord.size);
@@ -76,28 +60,46 @@ namespace litecore::p2p {
                     metadata.emplace(key, alloc_slice(value, valueLen));
                 }
             }
-            return metadata;
+            C4PeerDiscoveryProvider::setMetadata(this, std::move(metadata));
+            return true;
+        }
+
+        void resolved(struct sockaddr const& addr, int ttl) {
+            C4PeerAddress address;
+            memcpy(&address.data, &addr, sizeof(addr));
+            if (addr.sa_family == AF_INET6) {
+                address.type = C4PeerAddress::IPv6;
+                reinterpret_cast<sockaddr_in6*>(&address.data)->sin6_port = htons(ttl);
+            } else {
+                assert(addr.sa_family == AF_INET);
+                address.type = C4PeerAddress::IPv4;
+                reinterpret_cast<sockaddr_in*>(&address.data)->sin_port = htons(ttl);
+            }
+            address.expiration = c4_now() + 1000LL * ttl;
+            C4PeerDiscoveryProvider::setAddresses(this, {&address, 1});
+        }
+
+        void resolveFailed(DNSServiceErrorType err) {
+            auto c4error = C4Error::make(NetworkDomain, kC4NetErrHostDown);//TODO: better error
+            C4PeerDiscoveryProvider::setAddresses(this, {}, c4error);
         }
 
         void removed() {
-            unique_lock lock(_mutex);
             if (_monitorTxtRef)
                 DNSServiceRefDeallocate(_monitorTxtRef);
             if (_resolveRef)
                 DNSServiceRefDeallocate(_resolveRef);
             if (_getAddrRef)
                 DNSServiceRefDeallocate(_getAddrRef);
-            _port = 0;
-            _txtRecord = nullptr;
         }
 
         string          _domain;
+        uint32_t        _interface {};
+        uint16_t        _port {};
+        alloc_slice     _txtRecord;
         DNSServiceRef   _monitorTxtRef {};  // reference to DNSServiceQueryRecord task
         DNSServiceRef   _resolveRef {};     // reference to DNSServiceResolve task
         DNSServiceRef   _getAddrRef {};     // reference to DNSServiceGetAddrInfo task
-        alloc_slice     _txtRecord;
-        int             _interface {};
-        uint16_t        _port {};
     };
 
 
@@ -107,13 +109,13 @@ namespace litecore::p2p {
     /// Internal implementation class of BonjourBrowser.
     /// This class owns a dispatch queue, and all calls other than constructor/destructor
     /// must be made on that queue.
-    struct BonjourBrowser::Impl {
-        explicit Impl(BonjourBrowser *owner)
-        :_owner(owner)
+    struct BonjourProvider : public Logging {
+        BonjourProvider()
+        :Logging(P2PLog)
         ,_queue(dispatch_queue_create("P2P Browser", DISPATCH_QUEUE_SERIAL))
         { }
 
-        ~Impl() {
+        ~BonjourProvider() {
             if (_serviceRef) {
                 Warn("Browser was not stopped before deallocating!");
                 DNSServiceRefDeallocate(_serviceRef);
@@ -124,7 +126,7 @@ namespace litecore::p2p {
 
         void check(DNSServiceErrorType err) const {
             if (err) {
-                _owner->logError("got error %d", err);
+                logError("got error %d", err);
                 error(error::Network, 999, stringprintf("DNSServiceError %d", err))._throw(1);
             }
         }
@@ -136,8 +138,7 @@ namespace litecore::p2p {
             if (_serviceRef) return;
 
             try {
-                _owner->_logInfo("browsing '%s'...", _owner->_serviceType.c_str());
-                _selfRetain = _owner;
+                logInfo("browsing '%s'...", sServiceType.c_str());
 
                 check(DNSServiceCreateConnection(&_serviceRef));
                 check(DNSServiceSetDispatchQueue(_serviceRef, _queue));
@@ -151,26 +152,24 @@ namespace litecore::p2p {
                                          const char *regtype,
                                          const char *domain,
                                          void *ctx) -> void {
-                    reinterpret_cast<Impl*>(ctx)->browseResult(flags, err, interface, serviceName, domain);
+                    reinterpret_cast<BonjourProvider*>(ctx)->browseResult(flags, err, interface, serviceName, domain);
                 };
 
                 _browseRef = _serviceRef;
                 check(DNSServiceBrowse(&_browseRef,
                                        kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
                                        kDNSServiceInterfaceIndexAny,
-                                       _owner->_serviceType.c_str(),
+                                       sServiceType.c_str(),
                                        nullptr,
                                        browseCallback,
                                        this));
 
-                if (auto port = _owner->myPort())
-                    registerService(port, _owner->myTxtRecord());
+                if (auto port = _myPort)
+                    registerService(port, _myTxtRecord);
+                C4PeerDiscoveryProvider::browsing(true);
             } catch (...) {
                 if (_serviceRef) {
                     stop();
-                } else {
-                    _owner->notify(BrowserStopped, nullptr); // notify even if ref wasn't created
-                    _selfRetain = nullptr;
                 }
             }
         }
@@ -178,36 +177,36 @@ namespace litecore::p2p {
 
         void stop() {
             if (_serviceRef) {
-                _owner->_logInfo("stopping");
+                logInfo("stopping");
                 DNSServiceRefDeallocate(_serviceRef);
                 _serviceRef = _browseRef = _registerRef = nullptr;   // closing main ref closes shared refs too
-                _owner->notify(BrowserStopped, nullptr);
-                _selfRetain = nullptr;
+                C4PeerDiscoveryProvider::browsing(false);
             }
         }
 
 
         void browseResult(DNSServiceFlags flags,
                           DNSServiceErrorType errorCode,
-                          int interface,
+                          uint32_t interface,
                           const char *serviceName,
                           const char *domain)
         {
             if (errorCode) {
-                _owner->logError("browse error %d", errorCode);
+                logError("browse error %d", errorCode);
                 stop();
-            } else if (string_view(serviceName) == _owner->_myName) {
-                _owner->_logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
+            } else if (string_view(serviceName) == _myName) {
+                _logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
             } else if (flags & kDNSServiceFlagsAdd) {
-                _owner->_logInfo("flags=%04x; found '%s' in %s", flags, serviceName, domain);
-                auto peer = make_retained<BonjourPeer>(_owner, serviceName, interface, domain);
-                (void)_owner->addPeer(peer);
+                logInfo("flags=%04x; found '%s' in %s", flags, serviceName, domain);
+                auto peer = make_retained<BonjourPeer>(serviceName, interface, domain);
+                C4PeerDiscoveryProvider::addPeer(peer);
             } else {
-                _owner->_logInfo("flags=%04x; lost '%s'", flags, serviceName);
-                auto peer = _owner->peerNamed(serviceName);
-                if (auto bonjourPeer = dynamic_cast<BonjourPeer*>(peer.get()))
+                logInfo("flags=%04x; lost '%s'", flags, serviceName);
+                auto peer = C4PeerDiscovery::peerWithID(BonjourPeer::makeID(serviceName, domain));
+                if (auto bonjourPeer = dynamic_cast<BonjourPeer*>(peer.get())) // should be true
                     bonjourPeer->removed();
-                _owner->removePeer(serviceName);
+                if (peer)
+                    C4PeerDiscoveryProvider::removePeer(peer);
             }
         }
 
@@ -215,11 +214,11 @@ namespace litecore::p2p {
         //---- Monitoring TXT records:
 
 
-        void monitorTxtRecord(Retained<BonjourPeer> peer) {
+        void monitorTxtRecord(Retained<C4Peer> c4p) {
+            auto peer = dynamic_cast<BonjourPeer*>(c4p.get());
             if (peer->_monitorTxtRef)
                 return;
-            string fullName = stringprintf("%s.%s.%s", peer->name().c_str(), _owner->_serviceType.c_str(), "local");
-            _owner->_logInfo("monitoring TXT record of '%s'", fullName.c_str());
+            logInfo("monitoring TXT record of '%s'", peer->id.c_str());
 
             auto callback = [](DNSServiceRef,
                                DNSServiceFlags flags,
@@ -233,15 +232,14 @@ namespace litecore::p2p {
                                uint32_t ttl,
                                void* ctx) -> void {
                 auto peer = reinterpret_cast<BonjourPeer*>(ctx);
-                auto impl = peer->browser()._impl.get();
-                impl->monitorTxtResult(flags, err, slice(rdata, rdlen), ttl, peer);
+                sProvider->monitorTxtResult(flags, err, slice(rdata, rdlen), ttl, peer);
             };
 
             peer->_monitorTxtRef = _serviceRef;
             auto err = DNSServiceQueryRecord(&peer->_monitorTxtRef,
                                              kDNSServiceFlagsShareConnection,
                                              kDNSServiceInterfaceIndexAny,
-                                             fullName.c_str(),
+                                             peer->id.c_str(),
                                              kDNSServiceType_TXT,
                                              kDNSServiceClass_IN,
                                              callback,
@@ -250,9 +248,10 @@ namespace litecore::p2p {
         }
 
 
-        void stopMonitoringTxtRecord(Retained<BonjourPeer> peer) {
+        void stopMonitoringTxtRecord(Retained<C4Peer> c4p) {
+            auto peer = dynamic_cast<BonjourPeer*>(c4p.get());
             if (peer->_monitorTxtRef) {
-                _owner->_logInfo("stopped monitoring TXT record of '%s'", peer->name().c_str());
+                logInfo("stopped monitoring TXT record of '%s'", peer->displayName.c_str());
                 DNSServiceRefDeallocate(peer->_monitorTxtRef);
                 peer->_monitorTxtRef = nullptr;
             }
@@ -265,12 +264,11 @@ namespace litecore::p2p {
                                uint32_t ttl,
                                BonjourPeer* peer) {
             if (err == 0) {
-                _owner->_logInfo("flags=%04x; received TXT of %s (%zu bytes; ttl %d)",
-                    flags, peer->name().c_str(), txtRecord.size, ttl);
-                if (peer->setTxtRecord(txtRecord))
-                    _owner->notify(PeerTxtChanged, peer);
+                logInfo("flags=%04x; received TXT of %s (%zu bytes; ttl %d)",
+                    flags, peer->displayName.c_str(), txtRecord.size, ttl);
+                peer->setTxtRecord(txtRecord);
             } else {
-                _owner->logError("error %d monitoring TXT record of %s", err, peer->name().c_str());
+                logError("error %d monitoring TXT record of %s", err, peer->displayName.c_str());
             }
             // leave the monitoring task running.
         }
@@ -279,7 +277,8 @@ namespace litecore::p2p {
         //---- Resolving peer addresses:
 
 
-        void resolveAddress(Retained<BonjourPeer> peer) {
+        void resolveAddress(Retained<C4Peer> c4p) {
+            auto peer = dynamic_cast<BonjourPeer*>(c4p.get());
             if (peer->_resolveRef || peer->_getAddrRef)
                 return; // already resolving
 
@@ -295,17 +294,16 @@ namespace litecore::p2p {
                                void *ctx)
             {
                 auto peer = reinterpret_cast<BonjourPeer*>(ctx);
-                auto impl = peer->browser()._impl.get();
-                impl->resolveResult(flags, err, fullname, hostname,
-                                    ntohs(portBE), slice(txtRecord, txtLen), peer);
+                sProvider->resolveResult(flags, err, fullname, hostname,
+                                         ntohs(portBE), slice(txtRecord, txtLen), peer);
             };
 
             peer->_resolveRef = _serviceRef;
             auto err = DNSServiceResolve(&peer->_resolveRef,
                                          kDNSServiceFlagsShareConnection,
                                          peer->_interface,
-                                         peer->name().c_str(),
-                                         _owner->_serviceType.c_str(),
+                                         peer->displayName.c_str(),
+                                         sServiceType.c_str(),
                                          peer->_domain.c_str(),
                                          callback,
                                          peer);
@@ -325,13 +323,13 @@ namespace litecore::p2p {
             DNSServiceRefDeallocate(peer->_resolveRef);
             peer->_resolveRef = nullptr;
             if (err) {
-                peer->resolveFailed();
-                _owner->notify(PeerResolveFailed, peer);
+                auto c4error = C4Error::make(NetworkDomain, kC4NetErrHostDown);//TODO: better error
+                C4PeerDiscoveryProvider::setAddresses(peer, {}, c4error);
                 return;
             }
 
             peer->_port = port;
-            _owner->_logInfo("flags=%04x; resolved '%s' as hostname=%s, port=%d",
+            logInfo("flags=%04x; resolved '%s' as hostname=%s, port=%d",
                 flags, fullname, hostname, port);
 
             auto callback = [](DNSServiceRef,
@@ -344,12 +342,11 @@ namespace litecore::p2p {
                                void *ctx)
             {
                 auto peer = reinterpret_cast<BonjourPeer*>(ctx);
-                auto impl = peer->browser()._impl.get();
-                impl->getAddrResult(flags, interface, err, hostname, address, ttl, peer);
+                sProvider->getAddrResult(flags, interface, err, hostname, address, ttl, peer);
             };
+
             peer->_getAddrRef = _serviceRef;
-            if (peer->setTxtRecord(txtRecord))
-                _owner->notify(PeerTxtChanged, peer);
+            peer->setTxtRecord(txtRecord);
 
             check(DNSServiceGetAddrInfo(&peer->_getAddrRef,
                                         kDNSServiceFlagsShareConnection,
@@ -372,12 +369,10 @@ namespace litecore::p2p {
             DNSServiceRefDeallocate(peer->_getAddrRef);
             peer->_getAddrRef = nullptr;
             if (err) {
-                peer->resolveFailed();
-                _owner->notify(PeerResolveFailed, peer);
+                peer->resolveFailed(err);
             } else {
-                _owner->_logInfo("flags=%04x; got IP address of '%s' (ttl=%d)", flags, hostname, ttl);
-                peer->resolved(address, ttl);
-                _owner->notify(PeerAddressResolved, peer);
+                logInfo("flags=%04x; got IP address of '%s' (ttl=%d)", flags, hostname, ttl);
+                peer->resolved(*address, ttl);
             }
         }
 
@@ -389,7 +384,7 @@ namespace litecore::p2p {
             if (!_serviceRef) return;
             Assert(_registerRef == nullptr);
             Assert(port != 0);
-            _owner->_logInfo("registering my service '%s' on port %d", _owner->_myName.c_str(), port);
+            logInfo("registering my service '%s' on port %d", _myName.c_str(), port);
             auto regCallback = [](DNSServiceRef,
                                   DNSServiceFlags flags,
                                   DNSServiceErrorType errorCode,
@@ -397,7 +392,7 @@ namespace litecore::p2p {
                                   const char* regtype,
                                   const char* domain,
                                   void* ctx) {
-                reinterpret_cast<Impl*>(ctx)->regResult(flags, errorCode, name, domain);
+                reinterpret_cast<BonjourProvider*>(ctx)->regResult(flags, errorCode, name, domain);
             };
 
             _registerRef = _serviceRef;
@@ -405,8 +400,8 @@ namespace litecore::p2p {
                                           kDNSServiceFlagsShareConnection |
                                           kDNSServiceFlagsNoAutoRename,
                                           kDNSServiceInterfaceIndexAny,
-                                          _owner->_myName.c_str(),
-                                          _owner->_serviceType.c_str(),
+                                          _myName.c_str(),
+                                          sServiceType.c_str(),
                                           nullptr,
                                           nullptr,
                                           port,
@@ -420,7 +415,7 @@ namespace litecore::p2p {
 
         void unregisterService() {
             if (_registerRef) {
-                _owner->_logInfo("unregistering my service '%s'", _owner->_myName.c_str());
+                logInfo("unregistering my service '%s'", _myName.c_str());
                 DNSServiceRefDeallocate(_registerRef);
                 _registerRef = nullptr;
             }
@@ -440,69 +435,98 @@ namespace litecore::p2p {
                        const char* domain)
         {
             if (errorCode) {
-                _owner->logError("registration error %d", errorCode);
+                logError("registration error %d", errorCode);
                 //TODO: Detect name conflict and retry, appending number to name
                 stop();
             } else if (flags & kDNSServiceFlagsAdd) {
-                _owner->_logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
+                logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
             } else {
-                _owner->_logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
+                logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
             }
         }
 
 
-        BonjourBrowser*             _owner;
         dispatch_queue_t            _queue {};
+        string                      _myName;
+        uint16_t                    _myPort {};
+        alloc_slice                 _myTxtRecord;
         DNSServiceRef               _serviceRef {}, _browseRef {}, _registerRef {};
-        Retained<BonjourBrowser>    _selfRetain;
         bool                        _stopping {};
     };
 
 
-#pragma mark - BROWSER:
-
-
+/*
     BonjourBrowser::BonjourBrowser(string_view serviceType, string_view myName, Observer obs)
     :Browser(serviceType, myName, std::move(obs))
-    ,_impl(new Impl(this))
+    ,sProvider(new Impl(this))
     { }
 
-    void BonjourBrowser::start() {dispatch_async(_impl->_queue, ^{_impl->start();});}
+    void BonjourBrowser::start() {dispatch_async(sProvider->_queue, ^{sProvider->start();});}
 
-    void BonjourBrowser::stop() {dispatch_async(_impl->_queue, ^{_impl->stop();});}
+    void BonjourBrowser::stop() {dispatch_async(sProvider->_queue, ^{sProvider->stop();});}
 
     void BonjourBrowser::startMonitoring(Peer* peer) {
         Retained<BonjourPeer> rp(dynamic_cast<BonjourPeer*>(peer));
-        dispatch_async(_impl->_queue, ^{_impl->monitorTxtRecord(rp);});
+        dispatch_async(sProvider->_queue, ^{sProvider->monitorTxtRecord(rp);});
     }
 
     void BonjourBrowser::stopMonitoring(Peer* peer) {
         Retained<BonjourPeer> rp(dynamic_cast<BonjourPeer*>(peer));
-        dispatch_async(_impl->_queue, ^{_impl->stopMonitoringTxtRecord(rp);});
+        dispatch_async(sProvider->_queue, ^{sProvider->stopMonitoringTxtRecord(rp);});
     }
 
     void BonjourBrowser::resolveAddress(Peer* peer) {
         Retained<BonjourPeer> rp(dynamic_cast<BonjourPeer*>(peer));
-        dispatch_async(_impl->_queue, ^{_impl->resolveAddress(rp);});
+        dispatch_async(sProvider->_queue, ^{sProvider->resolveAddress(rp);});
     }
 
 
     void BonjourBrowser::setMyPort(uint16_t port) {
         Browser::setMyPort(port);
-        dispatch_async(_impl->_queue, ^{
-            _impl->unregisterService();
+        dispatch_async(sProvider->_queue, ^{
+            sProvider->unregisterService();
             if (port)
-                _impl->registerService(port, this->myTxtRecord());
+                sProvider->registerService(port, this->myTxtRecord());
         });
     }
 
 
     void BonjourBrowser::setMyTxtRecord(alloc_slice txt) {
         Browser::setMyTxtRecord(txt);
-        dispatch_async(_impl->_queue, ^{
-            _impl->updateTxtRecord(txt);
+        dispatch_async(sProvider->_queue, ^{
+            sProvider->updateTxtRecord(txt);
         });
     }
+*/
+
+    void InitializeBonjourProvider(string_view serviceType) {
+        if (!C4PeerDiscoveryProvider::startBrowsing) {
+            sServiceType = serviceType;
+            C4PeerDiscoveryProvider::startBrowsing = []() {
+                if (!sProvider)
+                    sProvider = new BonjourProvider();
+                dispatch_async(sProvider->_queue, ^{sProvider->start();});
+            };
+            C4PeerDiscoveryProvider::stopBrowsing = []() {
+                if (sProvider)
+                    dispatch_async(sProvider->_queue, ^{sProvider->stop();});
+            };
+            C4PeerDiscoveryProvider::monitorMetadata = [](C4Peer* peer, bool start) {
+                Retained<C4Peer> retainedPeer(peer);
+                dispatch_async(sProvider->_queue, ^{
+                    if (start)
+                        sProvider->monitorTxtRecord(retainedPeer);
+                    else
+                        sProvider->stopMonitoringTxtRecord(retainedPeer);
+                });
+            };
+            C4PeerDiscoveryProvider::resolveAddresses = [](C4Peer* peer) {
+                Retained<C4Peer> retainedPeer(peer);
+                dispatch_async(sProvider->_queue, ^{sProvider->resolveAddress(retainedPeer);});
+            };
+        }
+    }
+
 }
 
 #endif //___APPLE__

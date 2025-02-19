@@ -32,9 +32,6 @@ set(
     Response.cc
     Server.cc
     EE/RESTSyncListener_stub.cc
-
-    ../Networking/P2P/Browser.cc    #FIXME: Should be moved to some other cmake file
-    ../Networking/P2P/BonjourBrowser.cc    #FIXME: Should be moved to some other cmake file
 )
 
 ### STATIC LIBRARY:
