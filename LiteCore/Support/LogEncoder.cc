@@ -65,20 +65,35 @@ namespace litecore {
         return _out.tellp();
     }
 
+    bool LogEncoder::isNewObject(ObjectRef object) const {
+        lock_guard<mutex> lock(_mutex);
+        return _isNewObject(object);
+    }
+
+    bool LogEncoder::_isNewObject(ObjectRef object) const {
+        return object != ObjectRef::None && _seenObjects.find(object) == _seenObjects.end();
+    }
+
 #pragma mark - LOGGING:
 
-    void LogEncoder::log(const char* domain, const LogDomain::ObjectMap& objectMap, ObjectRef object,
-                         const char* format, ...) {
+    void LogEncoder::log(const char* domain, ObjectRef object, string_view objectPath, const char* format, ...) {
         va_list args;
         va_start(args, format);
-        vlog(domain, objectMap, object, "", format, args);
+        vlog(domain, object, objectPath, "", format, args);
+        va_end(args);
+    }
+
+    void LogEncoder::log(const char* domain, const char* format, ...) {
+        va_list args;
+        va_start(args, format);
+        vlog(domain, ObjectRef::None, "", "", format, args);
         va_end(args);
     }
 
     int64_t LogEncoder::_timeElapsed() const { return int64_t(_st.elapsed() * kTicksPerSec); }
 
-    void LogEncoder::vlog(const char* domain, const LogDomain::ObjectMap& objectMap, ObjectRef object,
-                          const std::string& prefix, const char* format, va_list args) {
+    void LogEncoder::vlog(const char* domain, ObjectRef object, string_view objectPath, const std::string& prefix,
+                          const char* format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
@@ -94,13 +109,12 @@ namespace litecore {
         // Write object path
         const auto objRef = (unsigned)object;
         _writeUVarInt(objRef);
-        if ( object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end() ) {
+        if ( _isNewObject(object) ) {
             _seenObjects.insert(objRef);
-            auto objPath = LogDomain::getObjectPath(objRef, objectMap);
-            if ( objPath.empty() ) {
+            if ( objectPath.empty() ) {
                 _writer.write({"?\0", 2});
             } else {
-                _writer.write(slice(objPath.c_str()));
+                _writer.write(objectPath);
                 _writer.write("\0", 1);
             }
         }

@@ -36,15 +36,28 @@ namespace litecore {
 
         enum ObjectRef : unsigned { None = 0 };
 
-        void vlog(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const std::string& prefix,
+        /// Lowest-level method to write a log message.
+        /// @param domain  The logging domain, e.g. "DB" or "Sync"
+        /// @param obj  The ID of the object logging this message, else `None`.
+        /// @param objectPath  Metadata about the object. Will be written only the first time this object logs;
+        ///                 otherwise it can safely be left empty. (Call `isNewObject` to check.)
+        /// @param prefix  A prefix for the message.
+        /// @param format  The printf-style format string. MUST be a string literal!
+        /// @param args  The args corresponding to the format string.
+        void vlog(const char* domain, ObjectRef obj, std::string_view objectPath, const std::string& prefix,
                   const char* format, va_list args) __printflike(6, 0);
 
-        void log(const char* domain, const LogDomain::ObjectMap&, ObjectRef, const char* format, ...)
+        void log(const char* domain, ObjectRef, std::string_view objectPath, const char* format, ...)
                 __printflike(5, 6);
+
+        void log(const char* domain, const char* format, ...) __printflike(3, 4);
 
         void flush();
 
         uint64_t tellp();
+
+        /// Returns true if this ObjectRef has not yet been logged.
+        bool isNewObject(ObjectRef) const;
 
         /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus microseconds. */
         struct Timestamp {
@@ -89,6 +102,7 @@ namespace litecore {
             std::unordered_map<std::string, std::unordered_map<size_t, unsigned>> _map;
         };
 
+        bool                  _isNewObject(ObjectRef) const;
         [[nodiscard]] int64_t _timeElapsed() const;
         void                  _writeUVarInt(uint64_t);
         void                  _writeStringToken(const char* token, const std::string& prefix = "");
@@ -96,7 +110,7 @@ namespace litecore {
         void                  _scheduleFlush();
         void                  performScheduledFlush();
 
-        std::mutex                    _mutex;
+        std::mutex mutable _mutex;
         fleece::Writer                _writer;
         std::ostream&                 _out;
         std::unique_ptr<actor::Timer> _flushTimer;

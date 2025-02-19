@@ -82,6 +82,7 @@ namespace litecore {
     static string                sInitialMessage;   // For rotation, goes at top of each log
     static unsigned              sWarningCount, sErrorCount;
     static mutex                 sLogMutex;
+    static mutex                 sLoggingObjectsMutex;
     std::vector<alloc_slice>     LogDomain::sInternedNames;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info", "warning", "error", nullptr};
@@ -198,9 +199,9 @@ namespace litecore {
         if ( encoder ) {
             auto newEncoder         = new LogEncoder(*sFileOut[(int)level], level);
             sLogEncoder[(int)level] = newEncoder;
-            newEncoder->log("", {}, LogEncoder::None, "---- %s ----", fileLogHeader(level).c_str());
+            newEncoder->log("", LogEncoder::None, "", "---- %s ----", fileLogHeader(level).c_str());
             if ( !sInitialMessage.empty() ) {
-                newEncoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+                newEncoder->log("", LogEncoder::None, "", "---- %s ----", sInitialMessage.c_str());
             }
             newEncoder->flush();  // Make sure at least the magic bytes are present
         } else {
@@ -264,10 +265,8 @@ namespace litecore {
             int8_t level = 0;
             if ( sLogEncoder[0] ) {
                 for ( auto& encoder : sLogEncoder ) {
-                    encoder->log("", {}, LogEncoder::None, "---- %s ----", fileLogHeader(LogLevel{level++}).c_str());
-                    if ( !sInitialMessage.empty() ) {
-                        encoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
-                    }
+                    encoder->log("", "---- %s ----", fileLogHeader(LogLevel{level++}).c_str());
+                    if ( !sInitialMessage.empty() ) { encoder->log("", "---- %s ----", sInitialMessage.c_str()); }
                     encoder->flush();  // Make sure at least the magic bytes are present
                 }
             } else {
@@ -290,9 +289,7 @@ namespace litecore {
                 atexit([] {
                     if ( sLogMutex.try_lock() ) {  // avoid deadlock on crash inside logging code
                         if ( sLogEncoder[0] ) {
-                            for ( auto& encoder : sLogEncoder ) {
-                                encoder->log("", {}, LogEncoder::None, "---- END ----");
-                            }
+                            for ( auto& encoder : sLogEncoder ) { encoder->log("", "---- END ----"); }
                         } else if ( sFileOut[0] ) {
                             int8_t level = 0;
                             for ( auto& fout : sFileOut ) {
@@ -506,7 +503,9 @@ namespace litecore {
         const auto encoder = sLogEncoder[(int)level];
         const auto file    = sFileOut[(int)level];
         if ( encoder ) {
-            encoder->vlog(domain, sObjectMap, (LogEncoder::ObjectRef)objRef, prefix, fmt, args);
+            string objPath;
+            if ( encoder->isNewObject(LogEncoder::ObjectRef(objRef)) ) { objPath = getObjectPath(objRef); }
+            encoder->vlog(domain, LogEncoder::ObjectRef(objRef), objPath, prefix, fmt, args);
             pos = encoder->tellp();
         } else if ( file ) {
             static char formatBuffer[2048];
@@ -572,14 +571,20 @@ namespace litecore {
 #endif
     }
 
-    // Must be called from a method holding sLogMutex
+#pragma mark - LOGGING OBJECT REGISTRY:
+
+    // sObjectMap and sLastObjectRef are protected by sLoggingObjectsMutex.
+    // DO NOT cause any other mutex to be locked while sLoggingObjectsMutex is locked.
+
     string LogDomain::getObject(unsigned ref) {
-        const auto found = sObjectMap.find(ref);
+        unique_lock lock(sLoggingObjectsMutex);
+        const auto  found = sObjectMap.find(ref);
         if ( found != sObjectMap.end() ) { return found->second.first; }
 
         return "?";
     }
 
+    // subroutine of getObjectPath(). sLoggingObjectsMutex is already locked when called.
     static void getObjectPathRecur(const LogDomain::ObjectMap& objMap, LogDomain::ObjectMap::const_iterator iter,
                                    std::stringstream& ss) {
         // pre-conditions: iter != objMap.end()
@@ -595,28 +600,33 @@ namespace litecore {
         ss << "/" << iter->second.first << "#" << iter->first;
     }
 
-    std::string LogDomain::getObjectPath(unsigned obj, const ObjectMap& objMap) {
-        auto iter = objMap.find(obj);
-        if ( iter == objMap.end() ) { return ""; }
+    std::string LogDomain::getObjectPath(unsigned obj) {
+        unique_lock lock(sLoggingObjectsMutex);
+        auto        iter = sObjectMap.find(obj);
+        if ( iter == sObjectMap.end() ) { return ""; }
         std::stringstream ss;
-        getObjectPathRecur(objMap, iter, ss);
+        getObjectPathRecur(sObjectMap, iter, ss);
         return ss.str() + "/";
     }
 
     unsigned LogDomain::registerObject(const void* object, const unsigned* val, const string& description,
                                        const string& nickname, LogLevel level) {
-        unique_lock<mutex> lock(sLogMutex);
         if ( *val != 0 ) { return *val; }
 
-        unsigned objRef = ++slastObjRef;
-        sObjectMap.emplace(std::piecewise_construct, std::forward_as_tuple(objRef), std::forward_as_tuple(nickname, 0));
+        unsigned objRef;
+        {
+            unique_lock lock(sLoggingObjectsMutex);
+            objRef = ++slastObjRef;
+            sObjectMap.emplace(std::piecewise_construct, std::forward_as_tuple(objRef),
+                               std::forward_as_tuple(nickname, 0));
+        }
         if ( sCallback && level >= _callbackLogLevel() )
             invokeCallback(*this, level, "{%s#%u}==> %s @%p", nickname.c_str(), objRef, description.c_str(), object);
         return objRef;
     }
 
     void LogDomain::unregisterObject(unsigned objectRef) {
-        unique_lock<mutex> lock(sLogMutex);
+        unique_lock lock(sLoggingObjectsMutex);
         sObjectMap.erase(objectRef);
     }
 
@@ -624,8 +634,8 @@ namespace litecore {
         enum { kNoWarning, kNotRegistered, kParentNotRegistered, kAlreadyRegistered } warningCode{kNoWarning};
 
         {
-            unique_lock<mutex> lock(sLogMutex);
-            auto               iter = sObjectMap.find(object);
+            unique_lock lock(sLoggingObjectsMutex);
+            auto        iter = sObjectMap.find(object);
             if ( iter == sObjectMap.end() ) {
                 warningCode = kNotRegistered;
             } else if ( sObjectMap.find(parentObject) == sObjectMap.end() ) {
