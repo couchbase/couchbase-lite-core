@@ -50,11 +50,11 @@ namespace litecore {
                 C4LogEntry c4entry{.timestamp = C4Timestamp(e.timestamp),
                                    .level     = C4LogLevel(e.level),
                                    .domain    = C4LogDomain(&e.domain),
-                                   .message   = slice(e.message)};
+                                   .message   = e.message};
                 _obsCallback(&c4entry, _context);
             } else if ( _preformatted ) {
                 va_list dummy_args{};
-                _legacyCallback(C4LogDomain(&e.domain), C4LogLevel(e.level), e.message.data(), dummy_args);
+                _legacyCallback(C4LogDomain(&e.domain), C4LogLevel(e.level), e.messageStr(), dummy_args);
             } else {
                 // The legacy callback wants a format string and va_list, but we're given a preformatted string.
                 // (The reason we don't ask for a 'raw' callback is that using it requires formatting
@@ -166,10 +166,8 @@ C4LogObserver* c4log_replaceObserver(C4LogObserver* oldObs, C4LogObserverConfig 
 }
 
 void c4log_consoleObserverCallback(const C4LogEntry* entry, void* context) noexcept {
-    LogFunction::logToConsole({.timestamp = uint64_t(entry->timestamp),
-                               .domain    = *toInternal(entry->domain),
-                               .level     = LogLevel(entry->level),
-                               .message   = (const char*)entry->message.buf});
+    LogFunction::logToConsole(
+            LogEntry(uint64_t(entry->timestamp), *toInternal(entry->domain), LogLevel(entry->level), entry->message));
 }
 
 void c4logobserver_flush(C4LogObserver* obs) C4API {
@@ -217,10 +215,7 @@ void c4log_setCallbackLevel(C4LogLevel level) noexcept {
 
 void c4log_initConsole(C4LogLevel level) noexcept {
     auto defaultCallback = [](C4LogDomain domain, C4LogLevel level, const char* message, va_list) {
-        LogFunction::logToConsole(LogEntry{.timestamp = uint64_t(c4_now()),
-                                           .domain    = *toInternal(domain),
-                                           .level     = LogLevel(level),
-                                           .message   = message});
+        LogFunction::logToConsole(LogEntry(uint64_t(c4_now()), *toInternal(domain), LogLevel(level), message));
     };
     c4log_writeToCallback(level, defaultCallback, true);
 }

@@ -217,7 +217,7 @@ namespace litecore {
         if ( !domainName.empty() ) tag += " [" + domainName + "]";
         static const int androidLevels[kNumLogLevels] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_INFO,
                                                          ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
-        __android_log_write(androidLevels[int(e.level)], tag.c_str(), e.message.data());
+        __android_log_write(androidLevels[int(e.level)], tag.c_str(), e.messageStr());
 #else
         static mutex          sConsoleMutex;
         unique_lock           lock(sConsoleMutex);

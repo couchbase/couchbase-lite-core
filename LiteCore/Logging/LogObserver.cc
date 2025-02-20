@@ -28,29 +28,48 @@ namespace litecore {
     using namespace std;
     using namespace litecore::loginternal;
 
-    // Creates a formatted message from a RawLogEntry with its format string and va_list.
-    __printflike(2, 0) static string formatEntry(RawLogEntry const& entry, const char* format, va_list args) {
-        static mutex sFormatMutex;
-        static char  sFormatBuffer[2048];
-        unique_lock  lock(sFormatMutex);
+    static constexpr size_t kMessageBufferSize = 252;
 
-        size_t len = 0;
+    // Creates a formatted message from a RawLogEntry with its format string and va_list.
+    __printflike(2, 0) static alloc_slice formatEntry(RawLogEntry const& entry, const char* format, va_list args) {
+        alloc_slice message(kMessageBufferSize);
+        auto        buf = (char*)message.buf;
+        size_t      len = 0;
         if ( entry.objRef != LogObjectRef::None ) {
             // Write the object (`Logging` instance) description:
-            len = sObjectMap.addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), entry.objRef);
+            len = sObjectMap.addObjectPath(buf, kMessageBufferSize, entry.objRef);
         }
         if ( !entry.prefix.empty() ) {
             // Add the prefix string (created from Logger::addLoggingKeyValuePairs):
-            Assert(len < sizeof(sFormatBuffer));
-            size_t prefixLen = std::min(sizeof(sFormatBuffer) - len, entry.prefix.size());
-            memcpy(&sFormatBuffer[len], entry.prefix.data(), prefixLen);
+            Assert(len < kMessageBufferSize);
+            size_t prefixLen = std::min(kMessageBufferSize - len, entry.prefix.size());
+            memcpy(&buf[len], entry.prefix.data(), prefixLen);
             len += prefixLen;
-            if ( len < sizeof(sFormatBuffer) ) sFormatBuffer[len++] = ' ';
+            if ( len < kMessageBufferSize ) buf[len++] = ' ';
         }
+
         // Then format the printf args:
-        len += vsnprintf(&sFormatBuffer[len], sizeof(sFormatBuffer) - len, format, args);
-        return string(sFormatBuffer, len);
+        va_list argsCopy;
+        va_copy(argsCopy, args);
+        auto written = vsnprintf(&buf[len], kMessageBufferSize - len, format, args);
+        if ( len + written >= kMessageBufferSize ) {
+            // Grow the alloc_slice if necessary. `written` is the number of bytes vsnprintf
+            // wants to write, without the trailing null.
+            message.resize(len + written + 1);
+            buf     = (char*)message.buf;
+            written = vsnprintf(&buf[len], message.size - len, format, argsCopy);
+            assert(len + written < message.size);
+        }
+        va_end(argsCopy);
+        message.shorten(len + written);  // just changes `size` to match the message length
+        return message;
     }
+
+    LogEntry::LogEntry(uint64_t t, LogDomain& d, LogLevel lv, fleece::slice msg)
+        : timestamp(t), domain(d), level(lv), message(alloc_slice::nullPaddedString(msg)) {}
+
+    LogEntry::LogEntry(RawLogEntry const& raw, const char* format, va_list args)
+        : timestamp(raw.timestamp), domain(raw.domain), level(raw.level), message(formatEntry(raw, format, args)) {}
 
 #pragma mark - LOG OBSERVERS:
 
@@ -94,7 +113,6 @@ namespace litecore {
             if ( curObservers.empty() ) return;
         }
 
-        string             formattedMessage;
         optional<LogEntry> formattedEntry;
         for ( auto& obs : curObservers ) {
             // A `va_list` is like a stream, so we have to copy it and let each callback read from a copy:
@@ -103,13 +121,10 @@ namespace litecore {
             if ( obs->raw() ) {
                 obs->observe(entry, format, argsCopy);
             } else {
-                if ( !formattedEntry ) {
-                    formattedMessage = formatEntry(entry, format, argsCopy);
-                    formattedEntry.emplace(
-                            LogEntry{.domain = entry.domain, .level = entry.level, .message = formattedMessage});
-                }
+                if ( !formattedEntry ) formattedEntry.emplace(entry, format, argsCopy);
                 obs->observe(*formattedEntry);
             }
+            va_end(argsCopy);
         }
     }
 

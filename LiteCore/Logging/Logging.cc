@@ -87,8 +87,8 @@ namespace litecore {
         auto envLevel = levelFromEnvironment();
         if ( envLevel != LogLevel::Uninitialized ) level = min(level, envLevel);
 
-        static mutex     sSetLevelMutex;
-        unique_lock lock(sSetLevelMutex);
+        static mutex sSetLevelMutex;
+        unique_lock  lock(sSetLevelMutex);
         _level = level;
         // The effective level is the level at which I will actually trigger because there is
         // a place for my output to go:
@@ -107,25 +107,21 @@ namespace litecore {
     void LogDomain::vlog(LogLevel level, const Logging* logger, bool doCallback, const char* fmt, va_list args) {
         if ( computeLevel() > level ) return;
 
-        string      prefix;
+        string prefix;
+        if ( logger ) prefix = logger->loggingKeyValuePairs();
         RawLogEntry entry{.timestamp = uint64_t(c4_now()),
                           .domain    = *this,
                           .level     = level,
-                          .objRef    = LogObjectRef::None,
+                          .objRef    = logger ? logger->getObjectRef() : LogObjectRef::None,
                           .prefix    = prefix,  // a reference to it
                           .fileOnly  = !doCallback};
-        if ( logger ) {
-            entry.objRef = logger->getObjectRef();
-            prefix       = logger->loggingKeyValuePairs();
-        }
 
         _observers->notify(entry, fmt, args);
     }
 
     void LogDomain::logToCallbacksOnly(LogLevel level, const char* message) {
         if ( computeLevel() > level ) return;
-        _observers->notifyCallbacksOnly(
-                LogEntry{.timestamp = uint64_t(c4_now()), .domain = *this, .level = level, .message = message});
+        _observers->notifyCallbacksOnly(LogEntry(uint64_t(c4_now()), *this, level, message));
     }
 
     void LogDomain::vlog(LogLevel level, const char* fmt, va_list args) { vlog(level, nullptr, true, fmt, args); }

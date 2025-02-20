@@ -49,19 +49,26 @@ TEST_CASE_METHOD(LogObserverTest, "LogObserver", "[Log]") {
     auto warning = newRecorder();
     LogObserver::add(warning, LogLevel::Warning);
 
+    const char* longish =
+            "This is a somewhat lengthy string that we are going to use to test how logging works with long messages. ";
+
     LogToAt(kC4Cpp_DefaultLog, Info, "this is default/info");
     LogToAt(DBLog, Verbose, "this is db/verbose");
     LogToAt(QueryLog, Warning, "this is query/warning");
-    LogToAt(SyncLog, Error, "this is sync/error");
+    LogToAt(SyncLog, Error, "this is sync/error. %s%s%s%s%s", longish, longish, longish, longish, longish);
 
     CHECK(verbose->entries.size() == 4);
+    CHECK(verbose->messages(0) == "this is default/info");
+    CHECK(verbose->messages(1) == "this is db/verbose");
+    CHECK(verbose->messages(2) == "this is query/warning");
+    CHECK(verbose->messages(3) == "this is sync/error. "s + longish + longish + longish + longish + longish);
 
     REQUIRE(warning->entries.size() == 2);
-    CHECK(warning->entries[0].message == "this is query/warning");
+    CHECK(warning->messages(0) == "this is query/warning");
     CHECK(warning->entries[0].level == LogLevel::Warning);
     CHECK(&warning->entries[0].domain == &QueryLog);
 
-    CHECK(warning->entries[1].message == "this is sync/error");
+    CHECK(warning->messages(1) == "this is sync/error. "s + longish + longish + longish + longish + longish);
     CHECK(warning->entries[1].level == LogLevel::Error);
     CHECK(&warning->entries[1].domain == &SyncLog);
 }
@@ -78,9 +85,9 @@ TEST_CASE_METHOD(LogObserverTest, "LogObserver Custom Domains", "[Log]") {
     LogToAt(SyncLog, Info, "this is sync/info");
 
     REQUIRE(recorder->entries.size() == 3);
-    CHECK(recorder->entries[0].message == "this is db/verbose");
-    CHECK(recorder->entries[1].message == "this is query/warning");
-    CHECK(recorder->entries[2].message == "this is sync/info");
+    CHECK(recorder->messages(0) == "this is db/verbose");
+    CHECK(recorder->messages(1) == "this is query/warning");
+    CHECK(recorder->messages(2) == "this is sync/info");
 }
 
 TEST_CASE_METHOD(LogObserverTest, "LogObserver Logging Objects", "[Log]") {
@@ -92,12 +99,12 @@ TEST_CASE_METHOD(LogObserverTest, "LogObserver Logging Objects", "[Log]") {
     obj.doLog("goodbye from log object");
 
     REQUIRE(recorder->entries.size() == 3);
-    UNSCOPED_INFO(recorder->messages[0]);
-    CHECK(regex_match(recorder->messages[0], regex(R"(^\{LogObject#\d+\}==> (class )?LogObject \w+ @\w+$)")));
-    UNSCOPED_INFO(recorder->messages[1]);
-    CHECK(regex_match(recorder->messages[1], regex(R"(^Obj=/LogObject#\d+/ hi from log object$)")));
-    UNSCOPED_INFO(recorder->messages[2]);
-    CHECK(regex_match(recorder->messages[2], regex(R"(^Obj=/LogObject#\d+/ goodbye from log object$)")));
+    UNSCOPED_INFO(recorder->messages(0));
+    CHECK(regex_match(recorder->messages(0), regex(R"(^\{LogObject#\d+\}==> (class )?LogObject \w+ @\w+$)")));
+    UNSCOPED_INFO(recorder->messages(1));
+    CHECK(regex_match(recorder->messages(1), regex(R"(^Obj=/LogObject#\d+/ hi from log object$)")));
+    UNSCOPED_INFO(recorder->messages(2));
+    CHECK(regex_match(recorder->messages(2), regex(R"(^Obj=/LogObject#\d+/ goodbye from log object$)")));
 }
 
 TEST_CASE_METHOD(LogObserverTest, "LogObserver KV Logging Objects", "[Log]") {
@@ -111,12 +118,12 @@ TEST_CASE_METHOD(LogObserverTest, "LogObserver KV Logging Objects", "[Log]") {
     kvObj.doLog("goodbye from kv object");
 
     REQUIRE(recorder->entries.size() == 3);
-    UNSCOPED_INFO(recorder->messages[0]);
-    CHECK(regex_match(recorder->messages[0], regex(R"(^\{LogObject#\d+\}==> (class )?LogObject \w+ @\w+$)")));
-    UNSCOPED_INFO(recorder->messages[1]);
-    CHECK(regex_match(recorder->messages[1], regex(R"(^Obj=/LogObject#\d+/ energy=low hi from kv object$)")));
-    UNSCOPED_INFO(recorder->messages[2]);
-    CHECK(regex_match(recorder->messages[2], regex(R"(^Obj=/LogObject#\d+/ energy=over9000 goodbye from kv object$)")));
+    UNSCOPED_INFO(recorder->messages(0));
+    CHECK(regex_match(recorder->messages(0), regex(R"(^\{LogObject#\d+\}==> (class )?LogObject \w+ @\w+$)")));
+    UNSCOPED_INFO(recorder->messages(1));
+    CHECK(regex_match(recorder->messages(1), regex(R"(^Obj=/LogObject#\d+/ energy=low hi from kv object$)")));
+    UNSCOPED_INFO(recorder->messages(2));
+    CHECK(regex_match(recorder->messages(2), regex(R"(^Obj=/LogObject#\d+/ energy=over9000 goodbye from kv object$)")));
 }
 
 struct ReentrantLogRecorder : public LogRecorder {
@@ -134,6 +141,6 @@ TEST_CASE_METHOD(LogObserverTest, "Reentrant log calls", "[Log]") {
     LogToAt(kC4Cpp_DefaultLog, Info, "this is %s", "default/info");
 
     REQUIRE(recorder->entries.size() == 2);
-    CHECK(recorder->entries[0].message == "this is default/info");
-    CHECK(recorder->entries[1].message == "logged from within the callback!");
+    CHECK(recorder->messages(0) == "this is default/info");
+    CHECK(recorder->messages(1) == "logged from within the callback!");
 }
