@@ -12,8 +12,10 @@
 
 #include "LogObserver.hh"
 #include "LogFiles.hh"
+#include "LogObjectMap.hh"
 #include "Logging_Internal.hh"
 #include "Error.hh"
+#include "SmallVector.hh"
 #include <compare>
 #include <cstring>
 #include <mutex>
@@ -26,11 +28,16 @@ namespace litecore {
     using namespace std;
     using namespace litecore::loginternal;
 
-    __printflike(2, 0) static LogEntry formatEntry(RawLogEntry const& entry, const char* format, va_list args) {
+    // Creates a formatted message from a RawLogEntry with its format string and va_list.
+    __printflike(2, 0) static string formatEntry(RawLogEntry const& entry, const char* format, va_list args) {
+        static mutex sFormatMutex;
+        static char  sFormatBuffer[2048];
+        unique_lock  lock(sFormatMutex);
+
         size_t len = 0;
         if ( entry.objRef != LogObjectRef::None ) {
             // Write the object (`Logging` instance) description:
-            len = addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), entry.objRef);
+            len = sObjectMap.addObjectPath(sFormatBuffer, sizeof(sFormatBuffer), entry.objRef);
         }
         if ( !entry.prefix.empty() ) {
             // Add the prefix string (created from Logger::addLoggingKeyValuePairs):
@@ -42,7 +49,7 @@ namespace litecore {
         }
         // Then format the printf args:
         len += vsnprintf(&sFormatBuffer[len], sizeof(sFormatBuffer) - len, format, args);
-        return LogEntry{.domain = entry.domain, .level = entry.level, .message = string_view(sFormatBuffer, len)};
+        return string(sFormatBuffer, len);
     }
 
 #pragma mark - LOG OBSERVERS:
@@ -56,6 +63,7 @@ namespace litecore {
 
     bool LogObservers::addObserver(LogObserver* obs, LogLevel level) {
         Assert(level >= LogLevel::Debug && level <= LogLevel::Error);
+        unique_lock lock(_mutex);
         for ( auto& [o, lv] : _observers )
             if ( o == obs ) return false;
         auto i = _observers.begin();
@@ -65,32 +73,48 @@ namespace litecore {
     }
 
     bool LogObservers::removeObserver(LogObserver* obs) noexcept {
+        unique_lock lock(_mutex);
         return std::erase_if(_observers, [obs](auto& o) { return o.first == obs; }) > 0;
     }
 
     LogLevel LogObservers::lowestLevel() const noexcept {
+        unique_lock lock(_mutex);
         return _observers.empty() ? LogLevel::None : _observers.front().second;
     }
 
     void LogObservers::notify(RawLogEntry const& entry, const char* format, va_list args) {
-        optional<LogEntry> formattedEntry;
-        for ( auto& [obs, obsLevel] : _observers ) {
-            if ( obsLevel > entry.level ) break;
-            if ( entry.fileOnly && !dynamic_cast<LogFiles*>(obs.get()) ) continue;
+        fleece::smallVector<fleece::Retained<LogObserver>, 4> curObservers;
+        {
+            // Temporarily lock, to copy the list of observers that will be notified:
+            unique_lock lock(_mutex);
+            for ( auto& [obs, obsLevel] : _observers ) {
+                if ( obsLevel > entry.level ) break;
+                if ( !(entry.fileOnly && !dynamic_cast<LogFiles*>(obs.get())) ) curObservers.push_back(obs);
+            }
+            if ( curObservers.empty() ) return;
+        }
 
+        string             formattedMessage;
+        optional<LogEntry> formattedEntry;
+        for ( auto& obs : curObservers ) {
             // A `va_list` is like a stream, so we have to copy it and let each callback read from a copy:
             va_list argsCopy;
             va_copy(argsCopy, args);
             if ( obs->raw() ) {
                 obs->observe(entry, format, argsCopy);
             } else {
-                if ( !formattedEntry ) formattedEntry.emplace(formatEntry(entry, format, argsCopy));
+                if ( !formattedEntry ) {
+                    formattedMessage = formatEntry(entry, format, argsCopy);
+                    formattedEntry.emplace(
+                            LogEntry{.domain = entry.domain, .level = entry.level, .message = formattedMessage});
+                }
                 obs->observe(*formattedEntry);
             }
         }
     }
 
     void LogObservers::notifyCallbacksOnly(LogEntry const& entry) {
+        unique_lock lock(_mutex);
         for ( auto& [obs, obsLevel] : _observers ) {
             if ( obsLevel > entry.level ) break;
             if ( !obs->raw() && !dynamic_cast<LogFiles*>(obs.get()) ) obs->observe(entry);
@@ -111,18 +135,13 @@ namespace litecore {
     }
 
     void LogObserver::add(LogObserver* observer, LogLevel defaultLevel, span<const pair<LogDomain&, LogLevel>> levels) {
-        lock_guard lock(sLogMutex);
-        _add(observer, defaultLevel, levels);
-    }
-
-    void LogObserver::_add(LogObserver* observer, LogLevel defaultLevel,
-                           span<const pair<LogDomain&, LogLevel>> levels) {
         for ( auto& dl : levels ) {
             if ( !observer->_addTo(dl.first, dl.second) )
                 error::_throw(error::InvalidParameter, "LogObserver is already registered");
         }
         if ( defaultLevel != LogLevel::None ) {
-            if ( !sDomainlessObservers ) sDomainlessObservers = new LogObservers;
+            static once_flag sOnce;
+            call_once(sOnce, [] { sDomainlessObservers = new LogObservers; });
             if ( !sDomainlessObservers->addObserver(observer, defaultLevel) )
                 error::_throw(error::InvalidParameter, "LogObserver is already registered");
             for ( auto domain = LogDomain::first(); domain; domain = domain->next() )
@@ -131,11 +150,6 @@ namespace litecore {
     }
 
     void LogObserver::remove(LogObserver* observer) {
-        lock_guard lock(sLogMutex);
-        _remove(observer);
-    }
-
-    void LogObserver::_remove(LogObserver* observer) {
         for ( auto domain = LogDomain::first(); domain; domain = domain->next() ) observer->_removeFrom(*domain);
         if ( sDomainlessObservers ) sDomainlessObservers->removeObserver(observer);
     }

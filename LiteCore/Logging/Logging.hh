@@ -103,7 +103,7 @@ namespace litecore {
         LogDomain*            _next;
         LogObservers*         _observers;
 
-        static LogDomain* sFirstDomain;
+        static std::atomic<LogDomain*> sFirstDomain;
     };
 
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;

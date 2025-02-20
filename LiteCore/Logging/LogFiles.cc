@@ -90,7 +90,7 @@ namespace litecore {
             if ( !_logEncoder ) return;
             string path;
             if ( e.objRef != LogObjectRef::None && _logEncoder->isNewObject(LogEncoder::ObjectRef(e.objRef)) )
-                path = getObjectPath(e.objRef);
+                path = sObjectMap.getObjectPath(e.objRef);
             _logEncoder->vlog(e.domain.name(), LogEncoder::ObjectRef(e.objRef), path, e.prefix, format, args);
             if ( _logEncoder->tellp() > _options.maxSize ) rotateLog();
         }
@@ -219,6 +219,8 @@ namespace litecore {
                                                          ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
         __android_log_write(androidLevels[int(e.level)], tag.c_str(), e.message.data());
 #else
+        static mutex          sConsoleMutex;
+        unique_lock           lock(sConsoleMutex);
         LogDecoder::Timestamp ts{.secs = time_t(e.timestamp / 1000), .microsecs = 1000 * unsigned(e.timestamp % 1000)};
         LogDecoder::writeTimestamp(ts, cerr);
         LogDecoder::writeHeader(kLevelNamesInLog[(int)e.level], e.domain.name(), cerr);

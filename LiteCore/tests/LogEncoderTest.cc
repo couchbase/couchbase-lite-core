@@ -150,31 +150,41 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
 }
 
 TEST_CASE("LogEncoder tokens", "[Log]") {
-    loginternal::ObjectMap objects;
-    objects.emplace(LogObjectRef{1}, make_pair("Tweedledum", LogObjectRef{0}));
-    objects.emplace(LogObjectRef{2}, make_pair("rattle", LogObjectRef{1}));
-    objects.emplace(LogObjectRef{3}, make_pair("Tweedledee", LogObjectRef{2}));
+    LogObjectMap objects;
+    LogObjectRef tweedledum{}, tweedledee{}, rattle{};
+    REQUIRE(objects.registerObject(&tweedledum, "Tweedledum"));
+    REQUIRE(objects.registerObject(&rattle, "rattle"));
+    REQUIRE(objects.registerObject(&tweedledee, "Tweedledee"));
+    objects.registerParentObject(rattle, tweedledum);
+    objects.registerParentObject(tweedledee, rattle);
+
+    CHECK(unsigned(tweedledum) == 1);
+    CHECK(unsigned(rattle) == 2);
+    CHECK(unsigned(tweedledee) == 3);
+
+    CHECK(objects.getObjectPath(tweedledum) == "/Tweedledum#1/");
+    CHECK(objects.getObjectPath(rattle) == "/Tweedledum#1/rattle#2/");
+    CHECK(objects.getObjectPath(tweedledee) == "/Tweedledum#1/rattle#2/Tweedledee#3/");
 
     stringstream out;
     stringstream out2;
     {
         LogEncoder logger(out, int8_t(LogLevel::Info));
         LogEncoder logger2(out2, int8_t(LogLevel::Verbose));
-        logger.log(nullptr, LogEncoder::ObjectRef{1}, loginternal::getObjectPath(LogObjectRef{1}, objects),
-                   "I'm Tweedledum");
-        logger.log(nullptr, LogEncoder::ObjectRef{3}, loginternal::getObjectPath(LogObjectRef{3}, objects),
-                   "I'm Tweedledee");
-        logger.log(nullptr, LogEncoder::ObjectRef{2}, loginternal::getObjectPath(LogObjectRef{2}, objects),
-                   "and I'm the rattle");
-        logger2.log(nullptr, LogEncoder::ObjectRef{2}, loginternal::getObjectPath(LogObjectRef{2}, objects),
-                    "Am I the rattle too?");
+        logger.log(nullptr, LogEncoder::ObjectRef{1}, objects.getObjectPath(tweedledum), "I'm Tweedledum");
+        logger.log(nullptr, LogEncoder::ObjectRef{3}, objects.getObjectPath(tweedledee), "I'm Tweedledee");
+        logger.log(nullptr, LogEncoder::ObjectRef{2}, objects.getObjectPath(rattle), "and I'm the rattle");
+        logger.log(nullptr, LogEncoder::ObjectRef{2}, "", "I'm the rattle again");
+        logger2.log(nullptr, LogEncoder::ObjectRef{2}, objects.getObjectPath(rattle), "Am I the rattle too?");
     }
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
     regex  expected(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
                               "   Obj=/Tweedledum#1/ I'm Tweedledum\\n" TIMESTAMP
                               "   Obj=/Tweedledum#1/rattle#2/Tweedledee#3/ I'm Tweedledee\\n" TIMESTAMP
-                              "   Obj=/Tweedledum#1/rattle#2/ and I'm the rattle\\n");
+                              "   Obj=/Tweedledum#1/rattle#2/ and I'm the rattle\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/ I'm the rattle again\\n");
+    UNSCOPED_INFO(result);
     CHECK(regex_match(result, expected));
 
     encoded = out2.str();
@@ -183,6 +193,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
     // Confirm other encoders have the same ref for "rattle"
     expected = regex(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
                                "   Obj=/Tweedledum#1/rattle#2/ Am I the rattle too\\?\\n");
+    UNSCOPED_INFO(result);
     CHECK(regex_match(result, expected));
 }
 

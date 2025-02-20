@@ -57,9 +57,11 @@ namespace litecore {
         bool raw() const { return _raw; }
 
         /// Informs a LogObserver of a new log message. Only called if `raw` is false.
+        /// @warning  This method may be called concurrently. Implementation is responsible for thread-safety.
         virtual void observe(LogEntry const&) noexcept;
 
         /// Informs a LogObserver of a new log message. Only called if `raw` is true.
+        /// @warning  This method may be called concurrently. Implementation is responsible for thread-safety.
         virtual void observe(RawLogEntry const&, const char* format, va_list args) noexcept;
 
       protected:
@@ -75,10 +77,8 @@ namespace litecore {
         LogObserver(LogObserver&&)                 = delete;
         LogObserver& operator=(LogObserver&&)      = delete;
 
-        static void _add(LogObserver*, LogLevel defaultLevel, std::span<const std::pair<LogDomain&, LogLevel>> = {});
-        static void _remove(LogObserver*);
-        bool        _addTo(LogDomain&, LogLevel);
-        void        _removeFrom(LogDomain&);
+        bool _addTo(LogDomain&, LogLevel);
+        void _removeFrom(LogDomain&);
 
         bool const _raw;
     };

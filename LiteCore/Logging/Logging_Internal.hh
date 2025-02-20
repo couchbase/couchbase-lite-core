@@ -12,6 +12,7 @@
 
 #pragma once
 #include "Logging.hh"
+#include "LogObjectMap.hh"
 #include "fleece/RefCounted.hh"
 #include <map>
 #include <mutex>
@@ -25,19 +26,7 @@ namespace litecore {
         constexpr const char* C4NULLABLE kLevelNames[kNumLogLevels + 1] = {"debug",   "verbose", "info",
                                                                            "warning", "error",   nullptr};
 
-        extern std::mutex sLogMutex;
-        extern char       sFormatBuffer[2048];
-
-        // objectRef -> (loggingName, parentObectRef)
-        using ObjectMap = std::map<LogObjectRef, std::pair<std::string, LogObjectRef>>;
-
-        std::string getObjectPath(LogObjectRef obj, const ObjectMap& objMap);
-        std::string getObjectPath(LogObjectRef obj);
-        size_t      addObjectPath(char* destBuf, size_t bufSize, LogObjectRef obj);
-
-        std::string  getObject(LogObjectRef);
-        bool         registerParentObject(LogObjectRef object, LogObjectRef parentObject);
-        void         unregisterObject(LogObjectRef obj);
+        extern LogObjectMap sObjectMap;
     }  // namespace loginternal
 
     class LogObserver;
@@ -45,8 +34,7 @@ namespace litecore {
     struct RawLogEntry;
 
     /** A set of LogObserver instances with associated LogLevels.
-        Used internally by LogDomain.
-        @note All methods require that `sLogMutex` is locked. */
+        Used internally by LogDomain. */
     class LogObservers {
       public:
         LogObservers();
@@ -69,6 +57,7 @@ namespace litecore {
         void notifyCallbacksOnly(LogEntry const&);
 
       private:
+        std::mutex mutable _mutex;
         // Sorted by increasing LogLevel: Debug, Verbose, Info, Warning, Error
         std::vector<std::pair<fleece::Retained<LogObserver>, LogLevel>> _observers;
     };

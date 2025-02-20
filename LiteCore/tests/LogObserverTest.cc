@@ -32,8 +32,9 @@ struct LogObserverTest {
         for ( auto& r : recorders ) LogObserver::remove(r);
     }
 
-    Retained<LogRecorder> newRecorder() {
-        auto r = make_retained<LogRecorder>();
+    template <class T = LogRecorder>
+    Retained<T> newRecorder() {
+        auto r = make_retained<T>();
         recorders.push_back(r);
         return r;
     }
@@ -116,4 +117,23 @@ TEST_CASE_METHOD(LogObserverTest, "LogObserver KV Logging Objects", "[Log]") {
     CHECK(regex_match(recorder->messages[1], regex(R"(^Obj=/LogObject#\d+/ energy=low hi from kv object$)")));
     UNSCOPED_INFO(recorder->messages[2]);
     CHECK(regex_match(recorder->messages[2], regex(R"(^Obj=/LogObject#\d+/ energy=over9000 goodbye from kv object$)")));
+}
+
+struct ReentrantLogRecorder : public LogRecorder {
+    void observe(LogEntry const& entry) noexcept override {
+        LogRecorder::observe(entry);
+        if ( entry.level < LogLevel::Warning )
+            LogToAt(kC4Cpp_DefaultLog, Warning, "logged from %s!", "within the callback");
+    }
+};
+
+TEST_CASE_METHOD(LogObserverTest, "Reentrant log calls", "[Log]") {
+    auto recorder = newRecorder<ReentrantLogRecorder>();
+    LogObserver::add(recorder, LogLevel::Info);
+
+    LogToAt(kC4Cpp_DefaultLog, Info, "this is %s", "default/info");
+
+    REQUIRE(recorder->entries.size() == 2);
+    CHECK(recorder->entries[0].message == "this is default/info");
+    CHECK(recorder->entries[1].message == "logged from within the callback!");
 }

@@ -12,6 +12,7 @@
 
 #include "Logging.hh"
 #include "Logging_Internal.hh"
+#include "LogObjectMap.hh"
 #include "StringUtil.hh"
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
@@ -42,11 +43,10 @@ using namespace litecore::loginternal;
 namespace litecore {
 
     namespace loginternal {
-        mutex sLogMutex;
-        char  sFormatBuffer[2048];
+        LogObjectMap sObjectMap;
     }  // namespace loginternal
 
-    LogDomain* LogDomain::sFirstDomain = nullptr;
+    atomic<LogDomain*> LogDomain::sFirstDomain = nullptr;
 
     static LogDomain ActorLog_("Actor");
     LogDomain&       ActorLog = ActorLog_;
@@ -55,9 +55,9 @@ namespace litecore {
 
     LogDomain::LogDomain(const char* name, LogLevel level, bool internName)
         : _level(level), _name(internName ? strdup(name) : name), _observers(new LogObservers) {
-        unique_lock<mutex> lock(sLogMutex);
-        _next        = sFirstDomain;
-        sFirstDomain = this;
+        // Atomically add myself to the head of the list:
+        LogDomain* first = sFirstDomain;
+        do { _next = first; } while ( !sFirstDomain.compare_exchange_strong(first, this) );
     }
 
     // Returns the LogLevel override set by an environment variable, or Uninitialized if none
@@ -83,12 +83,12 @@ namespace litecore {
     LogLevel LogDomain::level() const noexcept { return const_cast<LogDomain*>(this)->computeLevel(); }
 
     void LogDomain::setLevel(litecore::LogLevel level) noexcept {
-        unique_lock<mutex> lock(sLogMutex);
-
         // Setting "LiteCoreLog___" env var forces a minimum level:
         auto envLevel = levelFromEnvironment();
         if ( envLevel != LogLevel::Uninitialized ) level = min(level, envLevel);
 
+        static mutex     sSetLevelMutex;
+        unique_lock lock(sSetLevelMutex);
         _level = level;
         // The effective level is the level at which I will actually trigger because there is
         // a place for my output to go:
@@ -96,9 +96,8 @@ namespace litecore {
     }
 
     LogDomain* LogDomain::named(const char* name) {
-        unique_lock<mutex> lock(sLogMutex);
         if ( !name ) name = "";
-        for ( auto d = sFirstDomain; d; d = d->_next )
+        for ( auto d = sFirstDomain.load(); d; d = d->_next )
             if ( strcmp(d->name(), name) == 0 ) return d;
         return nullptr;
     }
@@ -120,13 +119,11 @@ namespace litecore {
             prefix       = logger->loggingKeyValuePairs();
         }
 
-        unique_lock<mutex> lock(sLogMutex);
         _observers->notify(entry, fmt, args);
     }
 
     void LogDomain::logToCallbacksOnly(LogLevel level, const char* message) {
         if ( computeLevel() > level ) return;
-        unique_lock<mutex> lock(sLogMutex);
         _observers->notifyCallbacksOnly(
                 LogEntry{.timestamp = uint64_t(c4_now()), .domain = *this, .level = level, .message = message});
     }
@@ -147,99 +144,10 @@ namespace litecore {
         va_end(args);
     }
 
-#pragma mark - OBJECT REFS:
-
-    namespace loginternal {
-        static mutex     sObjectMutex; // Lock while using sObjectMap. Do nothing else while locked.
-        static ObjectMap sObjectMap;
-
-        size_t addObjectPath(char* destBuf, size_t bufSize, LogObjectRef obj) {
-            auto objPath = getObjectPath(obj, sObjectMap);
-            return snprintf(destBuf, bufSize, "Obj=%s ", objPath.c_str());
-        }
-
-        static void getObjectPathRecur(const ObjectMap& objMap, ObjectMap::const_iterator iter, std::stringstream& ss) {
-            // pre-conditions: iter != objMap.end()
-            if ( iter->second.second != LogObjectRef::None ) {
-                auto parentIter = objMap.find(iter->second.second);
-                if ( parentIter == objMap.end() ) {
-                    // the parent object is deleted. We omit the loggingClassName
-                    ss << "/#" << unsigned(iter->second.second);
-                } else {
-                    getObjectPathRecur(objMap, parentIter, ss);
-                }
-            }
-            ss << "/" << iter->second.first << "#" << unsigned(iter->first);
-        }
-
-        std::string getObjectPath(LogObjectRef obj, const ObjectMap& objMap) {
-            auto iter = objMap.find(obj);
-            if ( iter == objMap.end() ) { return ""; }
-            std::stringstream ss;
-            getObjectPathRecur(objMap, iter, ss);
-            return ss.str() + "/";
-        }
-
-        std::string getObjectPath(LogObjectRef obj) {
-            unique_lock lock(sObjectMutex);
-            return getObjectPath(obj, sObjectMap);
-        }
-
-        static bool registerObject(LogObjectRef* ref, const string& nickname) {
-            static unsigned sLastObjRef = 0;
-
-            unique_lock  lock(sObjectMutex);
-            if ( *ref != LogObjectRef::None ) return false;
-            LogObjectRef objRef{++sLastObjRef};
-            sObjectMap.emplace(std::piecewise_construct, std::forward_as_tuple(objRef),
-                               std::forward_as_tuple(nickname, LogObjectRef::None));
-            *ref = objRef;
-            return true;
-        }
-
-        void unregisterObject(LogObjectRef objectRef) {
-            unique_lock lock(sObjectMutex);
-            sObjectMap.erase(objectRef);
-        }
-
-        bool registerParentObject(LogObjectRef object, LogObjectRef parentObject) {
-            enum { kNoWarning, kNotRegistered, kParentNotRegistered, kAlreadyRegistered } warningCode{kNoWarning};
-
-            {
-                unique_lock lock(sObjectMutex);
-                auto        iter = sObjectMap.find(object);
-                if ( iter == sObjectMap.end() ) {
-                    warningCode = kNotRegistered;
-                } else if ( !sObjectMap.contains(parentObject) ) {
-                    warningCode = kParentNotRegistered;
-                } else if ( iter->second.second != LogObjectRef::None ) {
-                    warningCode = kAlreadyRegistered;
-                } else
-                    iter->second.second = parentObject;
-            }
-
-            switch ( warningCode ) {
-                case kNotRegistered:
-                    WarnError("LogDomain::registerParentObject, object is not registered");
-                    break;
-                case kParentNotRegistered:
-                    WarnError("LogDomain::registerParentObject, parentObject is not registered");
-                    break;
-                case kAlreadyRegistered:
-                    WarnError("LogDomain::registerParentObject, object is already assigned parent");
-                    break;
-                default:
-                    break;
-            }
-
-            return warningCode == kNoWarning;
-        }
-    }  // namespace loginternal
-
 #pragma mark - LOGGING CLASS:
 
     Logging::~Logging() {
-        if ( _objectRef != LogObjectRef::None ) loginternal::unregisterObject(_objectRef);
+        if ( _objectRef != LogObjectRef::None ) sObjectMap.unregisterObject(_objectRef);
     }
 
     static std::string classNameOf(const Logging* obj) {
@@ -275,19 +183,19 @@ namespace litecore {
         if ( _objectRef == LogObjectRef::None ) {
             string nickname   = loggingClassName();
             string identifier = classNameOf(this) + " " + loggingIdentifier();
-            if (registerObject(&_objectRef, nickname)) {
+            if ( sObjectMap.registerObject(&_objectRef, nickname) ) {
                 // The binary logger will write a description of the object the first time it logs,
                 // but callback loggers won't, so give them a special message to log:
-                snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u}==> %s @%p", nickname.c_str(), _objectRef,
-                         identifier.c_str(), this);
-                _domain.logToCallbacksOnly(level, sFormatBuffer);
+                string message =
+                        stringprintf("{%s#%u}==> %s @%p", nickname.c_str(), _objectRef, identifier.c_str(), this);
+                _domain.logToCallbacksOnly(level, message.c_str());
             }
         }
         return _objectRef;
     }
 
     void Logging::setParentObjectRef(LogObjectRef parentObjRef) {
-        Assert(registerParentObject(getObjectRef(), parentObjRef));
+        Assert(sObjectMap.registerParentObject(getObjectRef(), parentObjRef));
     }
 
     void Logging::_logv(LogLevel level, const char* format, va_list args) const {
