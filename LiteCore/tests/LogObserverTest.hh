@@ -41,12 +41,9 @@ class LogObject : public Logging {
 
 /** Simple LogObserver that records every message it receives. */
 struct LogRecorder : public LogObserver {
-    void observe(LogEntry const& entry) noexcept {
-        messages.emplace_back(entry.message);
-        entries.push_back(entry);
-        entries.back().message = messages.back();
-    }
+    void observe(LogEntry const& entry) noexcept { entries.push_back(entry); }
 
     vector<LogEntry> entries;
-    deque<string>    messages;  // deque does not move its items the way vector does
+
+    string messages(size_t i) const { return entries.at(i).messageStr(); }
 };

@@ -13,32 +13,38 @@
 #pragma once
 #include "Logging.hh"
 #include "fleece/RefCounted.hh"
+#include "fleece/slice.hh"
 #include <cstdarg>
 #include <span>
 #include <string>
-#include <string_view>
 
 C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore {
+    struct RawLogEntry;
 
     /** Struct representing a log message and its metadata. */
     struct LogEntry {
-        uint64_t         timestamp;  ///< Time the event occurred, in ms since Unix epoch (same as C4Timestamp)
-        LogDomain&       domain;     ///< Domain being logged to
-        LogLevel         level;      ///< Severity level
-        std::string_view message;    ///< The text. Guaranteed to be followed by a 00 byte.
+        LogEntry(uint64_t t, LogDomain& d, LogLevel lv, fleece::slice msg);
+        LogEntry(RawLogEntry const&, const char* format, va_list) __printflike(3, 0);
+
+        uint64_t const            timestamp;  ///< Time the event occurred, in ms since Unix epoch (same as C4Timestamp)
+        LogDomain&                domain;     ///< Domain being logged to
+        LogLevel const            level;      ///< Severity level
+        fleece::alloc_slice const message;    ///< The text. Guaranteed to be followed by a 00 byte.
+
+        const char* messageStr() const { return static_cast<const char*>(message.buf); }
     };
 
     /** Struct representing the metadata of an unformatted log message.
         The message itself is not included; it's passed as separate `fmt` and `args` parameters. */
     struct RawLogEntry {
-        uint64_t           timestamp;  ///< Time the event occurred
+        uint64_t const     timestamp;  ///< Time the event occurred
         LogDomain&         domain;     ///< Domain being logged to
-        LogLevel           level;      ///< Severity level
-        LogObjectRef       objRef;     ///< Registered object that logged the mesage, else None (0)
+        LogLevel const     level;      ///< Severity level
+        LogObjectRef const objRef;     ///< Registered object that logged the mesage, else None (0)
         const std::string& prefix;     ///< Optional prefix string to add to the message
-        bool               fileOnly;   ///< If true, _only_ LogFiles should log this
+        bool const         fileOnly;   ///< If true, _only_ LogFiles should log this
     };
 
     /** Abstract class that receives log messages as they're written. */

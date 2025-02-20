@@ -64,7 +64,7 @@ typedef struct C4LogEntry {
     C4Timestamp timestamp;
     C4LogLevel  level;
     C4LogDomain domain;
-    FLString    message;
+    FLHeapSlice message;
 } C4LogEntry;
 
 /** A (domain, level) pair, used to customize a log observer's configuration. */
