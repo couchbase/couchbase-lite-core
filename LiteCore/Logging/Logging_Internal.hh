@@ -36,8 +36,6 @@ namespace litecore {
         size_t      addObjectPath(char* destBuf, size_t bufSize, LogObjectRef obj);
 
         std::string  getObject(LogObjectRef);
-        LogObjectRef registerObject(const void* object, const LogObjectRef* val, const std::string& description,
-                                    const std::string& nickname, LogDomain&, LogLevel);
         bool         registerParentObject(LogObjectRef object, LogObjectRef parentObject);
         void         unregisterObject(LogObjectRef obj);
     }  // namespace loginternal

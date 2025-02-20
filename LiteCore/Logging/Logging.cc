@@ -150,15 +150,8 @@ namespace litecore {
 #pragma mark - OBJECT REFS:
 
     namespace loginternal {
+        static mutex     sObjectMutex; // Lock while using sObjectMap. Do nothing else while locked.
         static ObjectMap sObjectMap;
-
-        // Must be called from a method holding sLogMutex
-        string getObject(LogObjectRef ref) {
-            const auto found = sObjectMap.find(ref);
-            if ( found != sObjectMap.end() ) { return found->second.first; }
-
-            return "?";
-        }
 
         size_t addObjectPath(char* destBuf, size_t bufSize, LogObjectRef obj) {
             auto objPath = getObjectPath(obj, sObjectMap);
@@ -187,23 +180,25 @@ namespace litecore {
             return ss.str() + "/";
         }
 
-        std::string getObjectPath(LogObjectRef obj) { return getObjectPath(obj, sObjectMap); }
+        std::string getObjectPath(LogObjectRef obj) {
+            unique_lock lock(sObjectMutex);
+            return getObjectPath(obj, sObjectMap);
+        }
 
-        LogObjectRef registerObject(const void* object, const LogObjectRef* val, const string& description,
-                                    const string& nickname, LogDomain& domain, LogLevel level) {
+        static bool registerObject(LogObjectRef* ref, const string& nickname) {
             static unsigned sLastObjRef = 0;
 
-            if ( *val != LogObjectRef::None ) { return *val; }
-
-            unique_lock<mutex> lock(sLogMutex);
-            LogObjectRef       objRef{++sLastObjRef};
+            unique_lock  lock(sObjectMutex);
+            if ( *ref != LogObjectRef::None ) return false;
+            LogObjectRef objRef{++sLastObjRef};
             sObjectMap.emplace(std::piecewise_construct, std::forward_as_tuple(objRef),
                                std::forward_as_tuple(nickname, LogObjectRef::None));
-            return objRef;
+            *ref = objRef;
+            return true;
         }
 
         void unregisterObject(LogObjectRef objectRef) {
-            unique_lock<mutex> lock(sLogMutex);
+            unique_lock lock(sObjectMutex);
             sObjectMap.erase(objectRef);
         }
 
@@ -211,8 +206,8 @@ namespace litecore {
             enum { kNoWarning, kNotRegistered, kParentNotRegistered, kAlreadyRegistered } warningCode{kNoWarning};
 
             {
-                unique_lock<mutex> lock(sLogMutex);
-                auto               iter = sObjectMap.find(object);
+                unique_lock lock(sObjectMutex);
+                auto        iter = sObjectMap.find(object);
                 if ( iter == sObjectMap.end() ) {
                     warningCode = kNotRegistered;
                 } else if ( !sObjectMap.contains(parentObject) ) {
@@ -280,13 +275,13 @@ namespace litecore {
         if ( _objectRef == LogObjectRef::None ) {
             string nickname   = loggingClassName();
             string identifier = classNameOf(this) + " " + loggingIdentifier();
-            _objectRef        = registerObject(this, &_objectRef, identifier, nickname, _domain, level);
-
-            // The binary logger will write a description of the object the first time it logs,
-            // but callback loggers won't, so give them a special message to log:
-            snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u}==> %s @%p", nickname.c_str(), _objectRef,
-                     identifier.c_str(), this);
-            _domain.logToCallbacksOnly(level, sFormatBuffer);
+            if (registerObject(&_objectRef, nickname)) {
+                // The binary logger will write a description of the object the first time it logs,
+                // but callback loggers won't, so give them a special message to log:
+                snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u}==> %s @%p", nickname.c_str(), _objectRef,
+                         identifier.c_str(), this);
+                _domain.logToCallbacksOnly(level, sFormatBuffer);
+            }
         }
         return _objectRef;
     }
