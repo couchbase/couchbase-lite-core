@@ -11,6 +11,7 @@
 //
 
 #include "LogFiles.hh"
+#include "c4ExceptionUtils.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "LogFunction.hh"
@@ -192,13 +193,17 @@ namespace litecore {
     }
 
     void LogFiles::observe(LogEntry const& e) noexcept {
-        unique_lock lock(_mutex);
-        _files[int(e.level)]->write(e);
+        try {
+            unique_lock lock(_mutex);
+            _files[int(e.level)]->write(e);
+        } catchAndWarn();
     }
 
     void LogFiles::observe(RawLogEntry const& e, const char* format, va_list args) noexcept {
-        unique_lock lock(_mutex);
-        _files[int(e.level)]->write(e, format, args);
+        try {
+            unique_lock lock(_mutex);
+            _files[int(e.level)]->write(e, format, args);
+        } catchAndWarn();
     }
 
     string LogFiles::newLogFilePath(string_view dir, LogLevel level) {
