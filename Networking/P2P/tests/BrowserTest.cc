@@ -3,7 +3,7 @@
 //
 
 #include "c4PeerDiscovery.hh"
-#include "PeerDiscovery+Apple.hh" //TEMP shouldn't need this
+#include "PeerDiscovery+Apple.hh"  //TEMP shouldn't need this
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
@@ -14,24 +14,19 @@ using namespace std;
 using namespace fleece;
 using namespace litecore::p2p;
 
-
 class P2PTest : public C4PeerDiscovery::Observer {
-public:
+  public:
     P2PTest() {
         InitializeBonjourProvider("_ssh._tcp");
         C4PeerDiscovery::addObserver(this);
     }
 
-    ~P2PTest() {
-        C4PeerDiscovery::removeObserver(this);
-    }
+    ~P2PTest() { C4PeerDiscovery::removeObserver(this); }
 
     void browsing(bool active, C4Error error) override {
-        if (active)
-            Log("*** Browsing started");
+        if ( active ) Log("*** Browsing started");
         else {
-            if (!error)
-                Log("*** Browsing stopped!");
+            if ( !error ) Log("*** Browsing stopped!");
             else
                 Warn("Browsing failed: %s", error.description().c_str());
             sem.release();
@@ -44,23 +39,20 @@ public:
         peer->resolveAddresses();
     }
 
-    void removedPeer(C4Peer* peer) override {
-        Log("*** Removed peer %s", peer->id.c_str());
-    }
+    void removedPeer(C4Peer* peer) override { Log("*** Removed peer %s", peer->id.c_str()); }
 
     void peerMetadataChanged(C4Peer* peer) override {
         stringstream out;
         out << '{';
-        for (auto& [k, v] : peer->getAllMetadata())
-            out << k << ": '" << string_view(v) << "', ";
+        for ( auto& [k, v] : peer->getAllMetadata() ) out << k << ": '" << string_view(v) << "', ";
         out << '}';
         Log("*** Peer %s metadata changed: %s", peer->id.c_str(), out.str().c_str());
     }
 
     void peerAddressesResolved(C4Peer* peer) override {
-        if (auto addrs = peer->addresses(); addrs.empty())
-            Warn("*** Peer %s address failed to resolve: %s",
-                peer->id.c_str(), peer->resolveError().description().c_str());
+        if ( auto addrs = peer->addresses(); addrs.empty() )
+            Warn("*** Peer %s address failed to resolve: %s", peer->id.c_str(),
+                 peer->resolveError().description().c_str());
         else
             Log("*** Peer %s address resolved to %s", peer->id.c_str(), addrs[0].address.c_str());
     }
@@ -68,10 +60,9 @@ public:
     binary_semaphore sem{0};
 };
 
-
 TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
     C4PeerDiscovery::startBrowsing();
-    sem.try_acquire_for(chrono::seconds(5));    // wait five seconds for test to run, then stop
+    sem.try_acquire_for(chrono::seconds(10));  // wait five seconds for test to run, then stop
     C4PeerDiscovery::stopBrowsing();
     sem.acquire();
 }
