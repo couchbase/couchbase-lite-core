@@ -20,29 +20,27 @@ C4_ASSUME_NONNULL_BEGIN
 // ************************************************************************
 
 
+class C4PeerDiscoveryProvider;
+
 /** A resolved address to connect to a C4Peer. */
 struct C4PeerAddress {
-    enum Type {
-        IPv4, IPv6, BT
-    };
-
-    std::string address {}; ///< address in string form
-    Type        type;       ///< type of address
-    C4Timestamp expiration; ///< time when this info becomes stale
+    std::string address{};   ///< address in string form
+    C4Timestamp expiration;  ///< time when this info becomes stale
 
     friend bool operator==(C4PeerAddress const&, C4PeerAddress const&) = default;
 };
-
 
 /** A discovered peer device.
  *  @note  This class is thread-safe.
  *  @note  This class is concrete, but may be subclassed by platform code if desired. */
 class C4Peer : public fleece::RefCounted {
-public:
-    C4Peer(std::string id_, std::string displayName_) :id(std::move(id_)), displayName(std::move(displayName_)) { }
+  public:
+    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_)
+        : provider(provider_), id(std::move(id_)), displayName(std::move(displayName_)) {}
 
-    std::string const id;             ///< Uniquely identifies this C4Peer (e.g. DNS-SD service name + domain)
-    std::string const displayName;    ///< Arbitrary human-readable name registered by the peer
+    C4PeerDiscoveryProvider* const provider;  ///< Provider that manages this peer
+    std::string const              id;        ///< Uniquely identifies this C4Peer (e.g. DNS-SD service name + domain)
+    std::string const              displayName;  ///< Arbitrary human-readable name registered by the peer
 
     /// Request to discover or refresh the address(es) of this peer.
     /// When complete, the `addresses` property will be set and C4PeerDiscovery observers'
@@ -67,86 +65,110 @@ public:
     /// Returns all the metadata at once.
     Metadata getAllMetadata();
 
-private:
-    friend class C4PeerDiscoveryProvider;
-    bool setMetadata(Metadata);
-    bool setAddresses(std::span<const C4PeerAddress>, C4Error);
+    //---- Provider API:
 
-    std::mutex mutable          _mutex;
-    std::vector<C4PeerAddress>  _addresses;
-    Metadata                    _metadata;
-    C4Error                     _error {};
+    /// Updates the instance's metadata.
+    /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
+    void setMetadata(Metadata);
+
+    /// Updates the instance's addresses.
+    /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
+    void setAddresses(std::span<const C4PeerAddress>, C4Error = {});
+
+  private:
+    mutable std::mutex         _mutex;
+    std::vector<C4PeerAddress> _addresses;
+    Metadata                   _metadata;
+    C4Error                    _error{};
 };
-
 
 /** Singleton that provides the set of currently discovered C4Peers.
  *  @note  This class is thread-safe. */
 class C4PeerDiscovery {
-public:
+  public:
+    /// Adds a provider implementation. Providers must be registered before calling startBrowsing.
+    static void registerProvider(C4PeerDiscoveryProvider*);
+
+    /// Tells registered providers to start looking for peers.
     static void startBrowsing();
+
+    /// Tells registered providers to stop looking for peers.
     static void stopBrowsing();
 
     /// Returns a copy of the current known set of peers.
     static std::unordered_map<std::string, fleece::Retained<C4Peer>> peers();
 
+    /// Returns the peer (if any) with the given ID.
     static fleece::Retained<C4Peer> peerWithID(std::string_view id);
 
     /** API for receiving notifications of changes. */
     class Observer {
-    public:
+      public:
         virtual ~Observer();
-        virtual void browsing(bool active, C4Error) { }
-        virtual void addedPeer(C4Peer*) { }
-        virtual void removedPeer(C4Peer*) { }
-        virtual void peerMetadataChanged(C4Peer*) { }
-        virtual void peerAddressesResolved(C4Peer*) { }
+
+        virtual void browsing(bool active, C4Error) {}
+
+        virtual void addedPeer(C4Peer*) {}
+
+        virtual void removedPeer(C4Peer*) {}
+
+        virtual void peerMetadataChanged(C4Peer*) {}
+
+        virtual void peerAddressesResolved(C4Peer*) {}
     };
 
+    /// Registers an observer.
     static void addObserver(Observer*);
+    /// Unregisters an observer.
     static void removeObserver(Observer*);
 
-    C4PeerDiscovery() = delete;
+    C4PeerDiscovery() = delete;  // this is not an instantiable class
 };
 
-
-/** Interface for service that provides the data for C4PeerDiscovery.
- *  Platform code should set the callbacks to point to its own functions,
- *  and respond (asynchronously) by calling the appropriate methods.
- *  @note  This class is thread-safe. */
+/** Interface for a service that provides data for C4PeerDiscovery.
+ *  Other code shouldn't call it; go through C4PeerDiscovery instead.
+ *  Platforms should subclass this to implement a specific protocol, and register an instance with
+ *  C4PeerDiscovery at startup. Instances must not be deleted.
+ *  @note  This interface is thread-safe. Subclasses should be prepared to be called on arbitrary
+ *         threads, and they can issue calls on arbitrary threads. */
 class C4PeerDiscoveryProvider {
-public:
-    /// Provider callback that begins browsing for peers. */
-    static inline void (*startBrowsing)();
+  public:
+    explicit C4PeerDiscoveryProvider(std::string_view name_) :name(name_) { }
 
-    /// Provider callback that stops browsing for peers. */
-    static inline void (*stopBrowsing)();
+    virtual ~C4PeerDiscoveryProvider() = default;
 
-    /// Provider callback that starts or stops monitoring the metadata of a peer.
-    static inline void (*monitorMetadata)(C4Peer*, bool start);
+    /// The provider's name, for logging/debugging purposes.
+    std::string const name;
+
+    /// Begin browsing for peers.
+    /// Implementation must call \ref browseStateChanged when ready or on error. */
+    virtual void startBrowsing() = 0;
+
+    /// Stop browsing for peers. */
+    /// Implementation must call \ref browseStateChanged when stopped. */
+    virtual void stopBrowsing() = 0;
+
+    /// Start/stop monitoring the metadata of a peer.
+    /// Implementation must call the peer's \ref setMetadata whenever it receives metadata. */
+    virtual void monitorMetadata(C4Peer*, bool start) = 0;
 
     /// Provider callback that requests addresses be resolved for a peer.
-    /// This is a one-shot operation. The provider should call `resolvedAddresses` when done.
-    static inline void (*resolveAddresses)(C4Peer*);
+    /// (This is a one-shot operation, not repeating like \ref monitorMetadata.)
+    /// Implementation must call the peer's \ref setAddresses when done or on error. */
+    virtual void resolveAddresses(C4Peer*) = 0;
 
-    /// Reports that browsing has stopped or failed.
-    static void browsing(bool state, C4Error = {});
+  protected:
+    /// Reports that browsing has started, stopped or failed.
+    void browseStateChanged(bool state, C4Error = {});
 
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
-    /// Or if there is already a peer with this id, returns the existing one instead.
-    static fleece::Retained<C4Peer> addPeer(C4Peer*);
+    /// If there is already a peer with this id, returns the existing one instead of registering the new one.
+    fleece::Retained<C4Peer> addPeer(C4Peer*);
 
     /// Removes a peer that is no longer online.
-    static bool removePeer(C4Peer* peer)        {return removePeer(peer->id);}
-    static bool removePeer(std::string_view id);
+    bool removePeer(C4Peer* peer) { return removePeer(peer->id); }
 
-    /// Updates a peer's metadata.
-    static void setMetadata(C4Peer*, C4Peer::Metadata);
-
-    /// Updates a peer's addresses.
-    static void setAddresses(C4Peer*, std::span<const C4PeerAddress>, C4Error = {});
-
-private:
-    C4PeerDiscoveryProvider() = delete;
+    bool removePeer(std::string_view id);
 };
 
 C4_ASSUME_NONNULL_END
