@@ -244,6 +244,7 @@ set(
     vendor/fleece/vendor/date/include
     LiteCore/BlobStore
     LiteCore/Database
+    LiteCore/Logging
     LiteCore/Query
     LiteCore/Query/N1QL_Parser
     LiteCore/Query/Translator
@@ -383,6 +384,7 @@ target_include_directories(
     C/Cpp_include
     Crypto
     LiteCore/Database
+    LiteCore/Logging
     LiteCore/Support
     Networking
     Networking/BLIP/

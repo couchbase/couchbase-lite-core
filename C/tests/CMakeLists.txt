@@ -61,9 +61,9 @@ add_executable(
     c4CertificateTest.cc
     
     ${TOP}Crypto/SecureRandomize.cc
+    ${TOP}LiteCore/Logging/LogDecoder.cc
+    ${TOP}LiteCore/Logging/Logging_Stub.cc
     ${TOP}LiteCore/Support/FilePath.cc
-    ${TOP}LiteCore/Support/LogDecoder.cc
-    ${TOP}LiteCore/Support/Logging_Stub.cc
     ${TOP}LiteCore/Support/StringUtil.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}LiteCore/Support/Error.cc
@@ -127,6 +127,7 @@ target_include_directories(
     ${TOP}Networking
     ${TOP}Networking/WebSockets
     ${TOP}Networking/HTTP
+    ${TOP}LiteCore/Logging
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/SQLiteCpp/include

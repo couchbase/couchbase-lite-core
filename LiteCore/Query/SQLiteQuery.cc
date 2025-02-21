@@ -194,8 +194,6 @@ namespace litecore {
             return _statement;
         }
 
-        unsigned objectRef() const { return getObjectRef(); }  // (for logging)
-
         set<string>    _parameters;             // Names of the bindable parameters
         vector<string> _ftsTables;              // Names of the FTS tables used
         unsigned       _1stCustomResultColumn;  // Column index of the 1st column declared in JSON
@@ -229,8 +227,8 @@ namespace litecore {
             , _iter(_recording->asArray())
             , _1stCustomResultColumn(query->_1stCustomResultColumn)
             , _hasFullText(!query->_ftsTables.empty()) {
-            logInfo("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms", query->objectRef(), rowCount,
-                    recording->data().size, elapsedTime * 1000);
+            logInfo("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms", unsigned(query->getObjectRef()),
+                    rowCount, recording->data().size, elapsedTime * 1000);
         }
 
         ~SQLiteQueryEnumerator() override { logInfo("Deleted"); }

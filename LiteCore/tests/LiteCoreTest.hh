@@ -33,6 +33,10 @@
 #    define REQUIRE_IF_DEBUG(x)
 #endif
 
+namespace litecore {
+    class LogObserver;
+}
+
 namespace fleece::impl {
     class Dict;
     class Encoder;
@@ -100,8 +104,9 @@ class TestFixture {
     static FilePath    sTempDir;
 
   private:
-    unsigned const _warningsAlreadyLogged;
-    int            _objectCount;
+    std::atomic<unsigned> _warningsLogged = 0;
+    int                   _objectCount;
+    Retained<LogObserver> _logObserver;
 };
 
 class DataFileTestFixture

@@ -57,6 +57,7 @@ add_executable(
     DocumentKeysTest.cc
     LiteCoreTest.cc
     LogEncoderTest.cc
+    LogObserverTest.cc
     N1QLParserTest.cc
     QueryTranslatorTest.cc
     QueryTest.cc
@@ -141,6 +142,7 @@ target_include_directories(
     ${TOP}Networking/WebSockets
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
+    ${TOP}LiteCore/Logging
     ${TOP}LiteCore/RevTrees
     ${TOP}LiteCore/Storage
     ${TOP}LiteCore/Support

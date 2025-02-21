@@ -160,9 +160,9 @@ namespace litecore {
             Cache(C4DatabaseFlags, unsigned capacity);
 
             struct Entry {
-                Retained<C4Database> db;               ///< Database (may be nullptr)
-                unsigned             borrowCount = 0;  ///< Number of borrows
-                std::thread::id      borrower;         ///< Thread that borrowed it, if any
+                fleece::Retained<C4Database> db;               ///< Database (may be nullptr)
+                unsigned                     borrowCount = 0;  ///< Number of borrows
+                std::thread::id              borrower;         ///< Thread that borrowed it, if any
             };
 
             C4DatabaseFlags const           flags;          ///< Flags for opening dbs
@@ -182,7 +182,7 @@ namespace litecore {
         [[noreturn]] void borrowFailed(Cache&);
 
         fleece::Retained<C4Database> newDB(Cache&);
-        void                         closeDB(Retained<C4Database>) noexcept;
+        void                         closeDB(fleece::Retained<C4Database>) noexcept;
         void                         returnDatabase(fleece::Retained<C4Database>);
         void                         _closeUnused(Cache&);
         void                         _closeAll(Cache&);
@@ -280,8 +280,8 @@ namespace litecore {
         operator C4Collection* C4NONNULL() const noexcept LIFETIMEBOUND { return get(); }
 
       private:
-        BorrowedDatabase       _bdb;
-        Retained<C4Collection> _collection{};
+        BorrowedDatabase               _bdb;
+        fleece::Retained<C4Collection> _collection{};
     };
 
     /** Subclass of C4Database::Transaction : a transaction on a borrowed (writeable) database.
