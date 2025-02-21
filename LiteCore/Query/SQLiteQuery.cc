@@ -230,7 +230,9 @@ namespace litecore {
                     recording->data().size, elapsedTime * 1000);
         }
 
-        ~SQLiteQueryEnumerator() override { logInfo("Deleted"); }
+        ~SQLiteQueryEnumerator() override {
+            //logInfo("Deleted");   // It is not currently safe to log in a Logging destructor
+        }
 
         int64_t getRowCount() const override {
             return _recording->asArray()->count() / 2;  // (every other row is a column bitmap)

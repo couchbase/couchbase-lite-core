@@ -222,7 +222,7 @@ namespace litecore {
         }
 
         ~C4ReplicatorImpl() override {
-            logInfo("Freeing C4BaseReplicator");
+            //logInfo("Freeing C4BaseReplicator");   // It is not currently safe to log in a Logging destructor
             // Tear down the Replicator instance -- this is important in the case where it was
             // never started, because otherwise there will be a bunch of ref cycles that cause many
             // objects (including C4Databases) to be leaked. [CBL-524]
