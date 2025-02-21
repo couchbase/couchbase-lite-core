@@ -49,7 +49,7 @@ namespace litecore {
 
     LiveQuerier::~LiveQuerier() {
         if ( _query ) _stop();
-        logVerbose("Deleted");
+        //logVerbose("Deleted");   // It is not currently safe to log in a Logging destructor
     }
 
     std::string LiveQuerier::loggingIdentifier() const { return string(_expression); }
