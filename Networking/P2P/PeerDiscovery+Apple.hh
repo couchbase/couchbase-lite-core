@@ -10,10 +10,8 @@
 
 namespace litecore::p2p {
 
-    static constexpr string_view kDefaultServiceType = "_cblitep2p._tcp";
-
-    void InitializeBonjourProvider(string_view serviceType = kDefaultServiceType);
+    void InitializeBonjourProvider(string_view serviceType);
 
 }
 
-#endif //__APPLE__
+#endif  //__APPLE__
