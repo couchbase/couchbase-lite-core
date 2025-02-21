@@ -338,6 +338,10 @@
 		27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */; };
 		27B953DD239872C700C8AA90 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		27B953DE239872D900C8AA90 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
+		27BA41622D680A5400FAA569 /* LogObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BA41612D680A5400FAA569 /* LogObserverTest.cc */; };
+		27BA41632D680A5400FAA569 /* LogObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BA41612D680A5400FAA569 /* LogObserverTest.cc */; };
+		27BA41642D680A5400FAA569 /* LogObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BA41612D680A5400FAA569 /* LogObserverTest.cc */; };
+		27BA41662D680A9100FAA569 /* c4Log.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BA41652D680A9100FAA569 /* c4Log.cc */; };
 		27BEEE712A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE702A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc */; };
 		27BEEE792A783A17005AD4BF /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
@@ -1343,6 +1347,8 @@
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4CppUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4CppUtils.hh; sourceTree = "<group>"; };
+		27BA41612D680A5400FAA569 /* LogObserverTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LogObserverTest.cc; sourceTree = "<group>"; };
+		27BA41652D680A9100FAA569 /* c4Log.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Log.cc; sourceTree = "<group>"; };
 		27BB9DFB236D05650039C896 /* aes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = aes.c; sourceTree = "<group>"; };
 		27BB9DFC236D05650039C896 /* psa_crypto_slot_management.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = psa_crypto_slot_management.c; sourceTree = "<group>"; };
 		27BB9DFD236D05650039C896 /* md4.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = md4.c; sourceTree = "<group>"; };
@@ -1950,6 +1956,7 @@
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
+				27BA41612D680A5400FAA569 /* LogObserverTest.cc */,
 				27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */,
 				278CE6F12BAA116300245552 /* SequenceSetTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
@@ -2504,6 +2511,7 @@
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				2712F5AE25D5A9AB0082D526 /* c4Error.cc */,
 				27D62A5B2B7BF4AA004C0787 /* c4Index.cc */,
+				27BA41652D680A9100FAA569 /* c4Log.cc */,
 				2769438B1DCD502A00DB2555 /* c4Observer.cc */,
 				27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */,
 				2705154C1D8CBE6C00D62D05 /* c4Query.cc */,
@@ -4194,6 +4202,7 @@
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
+				27BA41642D680A5400FAA569 /* LogObserverTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
 				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
@@ -4250,6 +4259,7 @@
 				271925182396FE2F0053DDA6 /* N1QLParserTest.cc in Sources */,
 				2719251A2396FE380053DDA6 /* QueryTest.cc in Sources */,
 				2719251D2396FE450053DDA6 /* SQLiteFunctionsTest.cc in Sources */,
+				27BA41622D680A5400FAA569 /* LogObserverTest.cc in Sources */,
 				271925152396FE260053DDA6 /* FTSTest.cc in Sources */,
 				2719252823970BC60053DDA6 /* c4QueryTest.cc in Sources */,
 				27F7A1451D61F8B700447BC6 /* c4AllDocsPerformanceTest.cc in Sources */,
@@ -4369,6 +4379,7 @@
 				27FE0CFE24BE817A00A36EC2 /* CookieStoreTest.cc in Sources */,
 				27FE0D0224BE817B00A36EC2 /* CertificateTest.cc in Sources */,
 				27FE0CF424BE7C2A00A36EC2 /* N1QLParserTest.cc in Sources */,
+				27BA41632D680A5400FAA569 /* LogObserverTest.cc in Sources */,
 				27FE0CF624BE7C2A00A36EC2 /* QueryTest.cc in Sources */,
 				27FE0CF924BE7C2A00A36EC2 /* SQLiteFunctionsTest.cc in Sources */,
 				27A924BE1D9B371700086206 /* c4Test.cc in Sources */,
@@ -4502,6 +4513,7 @@
 				27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */,
 				274B36D225B271F7001FC28D /* Version.cc in Sources */,
 				270D5B8A2C110ED800AA91E7 /* VectorIndexSpec.cc in Sources */,
+				27BA41662D680A9100FAA569 /* c4Log.cc in Sources */,
 				2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				2744B354241854F2005A194D /* Actor.cc in Sources */,
