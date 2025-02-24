@@ -70,7 +70,7 @@ namespace litecore::p2p {
         }
 
         void resolved(sockaddr const& addr, uint32_t ttl) {
-            char buf[INET6_ADDRSTRLEN];
+            char   buf[INET6_ADDRSTRLEN];
             string str;
             if ( addr.sa_family == AF_INET ) {
                 inet_ntop(AF_INET, &reinterpret_cast<sockaddr_in const&>(addr).sin_addr, buf, sizeof(buf));
@@ -108,8 +108,8 @@ namespace litecore::p2p {
     struct BonjourProvider
         : public C4PeerDiscoveryProvider
         , public Logging {
-        BonjourProvider(string_view serviceType)
-            :C4PeerDiscoveryProvider("Bonjour")
+        explicit BonjourProvider(string_view serviceType)
+            : C4PeerDiscoveryProvider("Bonjour")
             , Logging(P2PLog)
             , _queue(dispatch_queue_create("LiteCore P2P", DISPATCH_QUEUE_SERIAL))
             , _serviceType(serviceType) {}
@@ -125,82 +125,99 @@ namespace litecore::p2p {
         bool running() const { return _serviceRef != nullptr; }
 
         void startBrowsing() override {
-            dispatch_async(_queue, ^{ start(); });
+            dispatch_async(_queue, ^{ do_start(); });
         }
 
         /// Provider callback that stops browsing for peers. */
         void stopBrowsing() override {
-            dispatch_async(_queue, ^{ stop(); });
+            dispatch_async(_queue, ^{ do_stop(); });
         }
 
         /// Provider callback that starts or stops monitoring the metadata of a peer.
         void monitorMetadata(C4Peer* peer, bool start) override {
             Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
-            dispatch_async(_queue, ^{ monitor(bonjourPeer, start); });
+            dispatch_async(_queue, ^{ do_monitor(bonjourPeer, start); });
         }
 
         /// Provider callback that requests addresses be resolved for a peer.
         /// This is a one-shot operation. The provider should call `resolvedAddresses` when done.
         void resolveAddresses(C4Peer* peer) override {
             Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
-            dispatch_async(_queue, ^{ resolve(bonjourPeer); });
+            dispatch_async(_queue, ^{ do_resolve(bonjourPeer); });
+        }
+
+        void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& meta) override {
+            string           nameStr(displayName);
+            C4Peer::Metadata metaCopy = meta;
+            dispatch_async(_queue, ^{ do_publish(std::move(nameStr), port, std::move(metaCopy)); });
+        }
+
+        void unpublish() override {
+            dispatch_async(_queue, ^{ do_unpublish(); });
         }
 
       private:
         string makeID(string const& name, string const& domain) { return name + "." + _serviceType + "." + domain; }
 
+
+        DNSServiceErrorType openServiceRef() {
+            if (_serviceRef)
+                return 0;
+            auto err = DNSServiceCreateConnection(&_serviceRef);
+            if (err) return err;
+            err = DNSServiceSetDispatchQueue(_serviceRef, _queue);
+            if (err)
+                freeServiceRef(_serviceRef);
+            return err;
+        }
+
         /// API request to start browsing.
-        void start() {
-            if ( _serviceRef ) return;
+        void do_start() {
+            if ( _browseRef ) return;
 
             DNSServiceErrorType err = 0;
             do {
                 logInfo("browsing '%s'...", _serviceType.c_str());
 
-                err = DNSServiceCreateConnection(&_serviceRef);
-                if ( err ) break;
-                err = DNSServiceSetDispatchQueue(_serviceRef, _queue);
+                err = openServiceRef();
                 if ( err ) break;
 
                 // Start browser:
                 auto browseCallback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t interface,
-                                         DNSServiceErrorType err, const char* serviceName, const char* regtype,
+                                         DNSServiceErrorType err, const char* serviceName, const char* /*regtype*/,
                                          const char* domain, void* ctx) -> void {
                     static_cast<BonjourProvider*>(ctx)->browseResult(flags, err, interface, serviceName, domain);
                 };
 
-                _browseRef = _serviceRef;
-                err        = DNSServiceBrowse(&_browseRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
+                auto browseRef = _serviceRef;
+                err        = DNSServiceBrowse(&browseRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
                                               kDNSServiceInterfaceIndexAny, _serviceType.c_str(), nullptr, browseCallback,
                                               this);
                 if ( err ) break;
+                _browseRef = browseRef;
 
-                C4PeerDiscoveryProvider::browseStateChanged(true);
-
-                if ( auto port = _myPort ) registerService(port, _myTxtRecord);
+                browseStateChanged(true);
             } while ( false );
-            if ( err ) stop(err);
+            if ( err ) do_stop(err);
         }
 
         /// API request to stop browsing.
-        void stop(DNSServiceErrorType err = 0) {
-            bool opened = (_serviceRef != nullptr);
+        void do_stop(DNSServiceErrorType err = 0) {
+            bool opened = (_browseRef != nullptr);
             if ( opened ) {
-                logInfo("stopping");
-                freeServiceRef(_serviceRef);
-                // closing main ref closes shared refs too, so do not free them:
-                _browseRef = _registerRef = nullptr;
+                logInfo("stopping browsing");
+                freeServiceRef(_browseRef);
             }
-            if ( opened || err ) C4PeerDiscoveryProvider::browseStateChanged(false, convertErrorCode(err));
+            if ( opened || err ) browseStateChanged(false, convertErrorCode(err));
         }
 
         void browseResult(DNSServiceFlags flags, DNSServiceErrorType err, uint32_t interface, const char* serviceName,
                           const char* domain) {
             if ( err ) {
                 logError("browse error %d", err);
-                stop(err);
+                do_stop(err);
             } else if ( string_view(serviceName) == _myName ) {
-                _logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
+                logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
             } else if ( flags & kDNSServiceFlagsAdd ) {
                 logInfo("flags=%04x; found '%s' in %s", flags, serviceName, domain);
                 auto peer =
@@ -219,13 +236,13 @@ namespace litecore::p2p {
 
 
         /// API request to monitor a peer's metadata.
-        void monitor(Retained<BonjourPeer> peer, bool start) {
+        void do_monitor(Retained<BonjourPeer> peer, bool start) {
             if ( start ) {
                 if ( peer->_monitorTxtRef ) return;
                 logInfo("monitoring TXT record of '%s'", peer->id.c_str());
 
-                auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t interfaceIndex,
-                                   DNSServiceErrorType err, const char* fullname, uint16_t rrtype, uint16_t rrclass,
+                auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interfaceIndex*/,
+                                   DNSServiceErrorType err, const char* /*fullname*/, uint16_t /*rrtype*/, uint16_t /*rrclass*/,
                                    uint16_t rdlen, const void* rdata, uint32_t ttl, void* ctx) -> void {
                     auto peer = static_cast<BonjourPeer*>(ctx);
                     sProvider->monitorTxtResult(flags, err, slice(rdata, rdlen), ttl, peer);
@@ -263,14 +280,14 @@ namespace litecore::p2p {
         //---- Resolving peer addresses:
 
         /// API request to resolve a peer's address.
-        void resolve(Retained<BonjourPeer> peer) {
+        void do_resolve(Retained<BonjourPeer> peer) {
             // This has to be done in two asynchronous steps:
             // 1. call DNSServiceResolve to get the hostname and port.
             // 2. call DNSServiceGetAddrInfo with the hostname to get the address.
 
             if ( peer->_resolveRef || peer->_getAddrRef ) return;  // already resolving
 
-            auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType err,
+            auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interfaceIndex*/, DNSServiceErrorType err,
                                const char* fullname, const char* hostname,
                                uint16_t portBE,  // In network byte order
                                uint16_t txtLen, const unsigned char* txtRecord, void* ctx) {
@@ -303,10 +320,10 @@ namespace litecore::p2p {
 
             peer->setTxtRecord(txtRecord);
 
-            auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t interface, DNSServiceErrorType err,
-                               const char* hostname, const struct sockaddr* address, uint32_t ttl, void* ctx) {
+            auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interface*/, DNSServiceErrorType err,
+                               const char* hostname, const sockaddr* address, uint32_t ttl, void* ctx) {
                 auto peer = static_cast<BonjourPeer*>(ctx);
-                sProvider->getAddrResult(flags, interface, err, hostname, address, ttl, peer);
+                sProvider->getAddrResult(flags, err, hostname, address, ttl, peer);
             };
 
             auto getAddrRef = _serviceRef;
@@ -319,8 +336,8 @@ namespace litecore::p2p {
         }
 
         // completion routine of DNSServiceGetAddrInfo
-        void getAddrResult(DNSServiceFlags flags, uint32_t interface, DNSServiceErrorType err, const char* hostname,
-                           const struct sockaddr* address, uint32_t ttl, BonjourPeer* peer) {
+        void getAddrResult(DNSServiceFlags flags, DNSServiceErrorType err, const char* hostname,
+                           const sockaddr* address, uint32_t ttl, BonjourPeer* peer) {
             freeServiceRef(peer->_getAddrRef);
             if ( err == 0 ) {
                 logInfo("flags=%04x; got IP address of '%s' (ttl=%d)", flags, hostname, ttl);
@@ -330,54 +347,98 @@ namespace litecore::p2p {
             }
         }
 
-        //---- Service registration / advertising:
+        //---- Service publishing:
 
 
         /// API request to register/advertise a service.
-        void registerService(uint16_t port, slice txtRecord) {
-            if ( !_serviceRef ) return;
-            Assert(_registerRef == nullptr);
+        void do_publish(string displayName, uint16_t port, C4Peer::Metadata metadata) {
+            if (_registerRef)
+                return;
+            Assert(!displayName.empty());
             Assert(port != 0);
-            logInfo("registering my service '%s' on port %d", _myName.c_str(), port);
-            auto regCallback = [](DNSServiceRef, DNSServiceFlags flags, DNSServiceErrorType err, const char* name,
-                                  const char* regtype, const char* domain, void* ctx) {
-                static_cast<BonjourProvider*>(ctx)->regResult(flags, err, name, domain);
-            };
 
-            auto registerRef = _serviceRef;
-            auto err = DNSServiceRegister(&registerRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsNoAutoRename,
-                                          kDNSServiceInterfaceIndexAny, _myName.c_str(), _serviceType.c_str(), nullptr,
-                                          nullptr, port, uint16_t(txtRecord.size), txtRecord.buf, regCallback, this);
-            if ( err == 0 ) _registerRef = registerRef;
-            else
-                ;  //FIXME
+            DNSServiceErrorType err;
+            do {
+                err = openServiceRef();
+                if (err) break;
+
+                _myName      = std::move(displayName);
+                logInfo("publishing my service '%s' on port %d", _myName.c_str(), port);
+                err = encodeMyTxtRecord(metadata);
+                if (err) break;
+
+                auto regCallback = [](DNSServiceRef, DNSServiceFlags flags, DNSServiceErrorType err, const char* name,
+                                      const char* regtype, const char* domain, void* ctx) {
+                    static_cast<BonjourProvider*>(ctx)->regResult(flags, err, name, domain);
+                };
+
+                auto registerRef = _serviceRef;
+                err = DNSServiceRegister(&registerRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsNoAutoRename,
+                                           kDNSServiceInterfaceIndexAny, _myName.c_str(), _serviceType.c_str(), nullptr,
+                                           nullptr, port, uint16_t(_myTxtRecord.size), _myTxtRecord.buf, regCallback, this);
+                if (err) break;
+                _registerRef = registerRef;
+            } while (false);
+
+            publishStateChanged(err == 0, convertErrorCode(err));
         }
 
         /// API request to unregister my service.
-        void unregisterService() {
+        void do_unpublish() {
             if ( _registerRef ) {
-                logInfo("unregistering my service '%s'", _myName.c_str());
+                logInfo("unpublishing my service '%s'", _myName.c_str());
                 freeServiceRef(_registerRef);
+                publishStateChanged(false, {});
             }
         }
 
         /// API request to update my service's metadata.
-        void updateTxtRecord(slice txtRecord) {
+        void do_updateTxtRecord(C4Peer::Metadata metadata) {
             if ( _registerRef ) {
-                // TODO
+                auto err = encodeMyTxtRecord(metadata);
+                if (err == 0)
+                    err = DNSServiceUpdateRecord(_registerRef, nullptr, 0, uint16_t(_myTxtRecord.size),
+                                                      _myTxtRecord.buf, 0);
+                if ( err ) {
+                    logError("error %d updating TXT record", err);
+                    // FIXME: Report the error
+                }
             }
         }
 
         void regResult(DNSServiceFlags flags, DNSServiceErrorType err, const char* serviceName, const char* domain) {
             if ( err ) {
-                logError("registration error %d", err);
+                logError("publishing error %d", err);
                 //TODO: Detect name conflict and retry, appending number to name
-                stop();
+                do_unpublish();
             } else if ( flags & kDNSServiceFlagsAdd ) {
                 logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
             } else {
                 logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
             }
+        }
+
+        // Updates _myTxtRecord from a Metadata map
+        DNSServiceErrorType encodeMyTxtRecord(C4Peer::Metadata const& meta) {
+            TXTRecordRef txtRef;
+            TXTRecordCreate(&txtRef, 0, nullptr);
+            DNSServiceErrorType err = 0;
+            for ( auto& [key, value] : meta ) {
+                if ( value.size > 0xFF ) {
+                    logError("setMyTxtRecord: value of '%s' is too long, %zu bytes", key.c_str(), value.size);
+                    err = kDNSServiceErr_BadParam;
+                    break;
+                }
+                err = TXTRecordSetValue(&txtRef, key.c_str(), uint8_t(value.size), value.buf);
+                if ( err ) {
+                    logError("setMyTxtRecord: error %d adding key '%s'", err, key.c_str());
+                    break;
+                }
+            }
+            if (err == 0)
+                _myTxtRecord = alloc_slice(TXTRecordGetBytesPtr(&txtRef), TXTRecordGetLength(&txtRef));
+            TXTRecordDeallocate(&txtRef);
+            return err;
         }
 
       private:
@@ -387,7 +448,6 @@ namespace litecore::p2p {
         DNSServiceRef          _browseRef{};    // Secondary connection for browsing peers
         DNSServiceRef          _registerRef{};  // Secondary connection for registring my peer
         string                 _myName;         // Name of my service
-        uint16_t               _myPort{};       // IP port of my service
         alloc_slice            _myTxtRecord;    // My encoded TXT record
     };
 
