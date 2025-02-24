@@ -3,6 +3,7 @@
 //
 
 #include "c4PeerDiscovery.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include <algorithm>
 
@@ -21,7 +22,7 @@ vector<C4PeerAddress> C4Peer::addresses() {
     unique_lock lock(_mutex);
     C4Timestamp now = c4_now();
     for ( auto i = _addresses.begin(); i != _addresses.end(); ) {
-        if ( i->expiration < now ) _addresses.erase(i);
+        if ( i->expiration < now ) i = _addresses.erase(i);
         else
             ++i;
     }
@@ -86,21 +87,26 @@ void C4PeerDiscovery::registerProvider(C4PeerDiscoveryProvider* provider) {
     sProviders.push_back(provider);
 }
 
-static void browse(bool browse) {
+std::vector<C4PeerDiscoveryProvider*> C4PeerDiscovery::providers() {
     unique_lock lock(sDiscoveryMutex);
-    auto        providers = sProviders;
-    lock.unlock();
-
-    for ( auto provider : providers ) {
-        if ( browse ) provider->startBrowsing();
-        else
-            provider->stopBrowsing();
-    }
+    return sProviders;
 }
 
-void C4PeerDiscovery::startBrowsing() { browse(true); }
+void C4PeerDiscovery::startBrowsing() {
+    for ( auto provider : providers() ) provider->startBrowsing();
+}
 
-void C4PeerDiscovery::stopBrowsing() { browse(false); }
+void C4PeerDiscovery::stopBrowsing() {
+    for ( auto provider : providers() ) provider->stopBrowsing();
+}
+
+void C4PeerDiscovery::startPublishing(std::string_view displayName, uint16_t port, C4Peer::Metadata const& md) {
+    for ( auto provider : providers() ) provider->publish(displayName, port, md);
+}
+
+void C4PeerDiscovery::stopPublishing() {
+    for ( auto provider : providers() ) provider->unpublish();
+}
 
 unordered_map<string, Retained<C4Peer>> C4PeerDiscovery::peers() {
     unique_lock lock(sDiscoveryMutex);
@@ -137,12 +143,31 @@ C4PeerDiscovery::Observer::~Observer() = default;
 #pragma mark - PROVIDER:
 
 void C4PeerDiscoveryProvider::browseStateChanged(bool state, C4Error error) {
-    unique_lock lock(sDiscoveryMutex);
-    if ( state == false ) sPeers.clear();
+    unique_lock              lock(sDiscoveryMutex);
+    vector<Retained<C4Peer>> removedPeers;
+    if ( state == false ) {
+        for ( auto i = sPeers.begin(); i != sPeers.end(); ) {
+            if ( i->second->provider == this ) {
+                removedPeers.emplace_back(i->second);
+                i = sPeers.erase(i);
+            } else {
+                ++i;
+            }
+        }
+    }
     auto observers = sObservers;
     lock.unlock();
 
-    for ( auto obs : observers ) obs->browsing(state, error);
+    for ( auto obs : observers ) obs->browsing(this, state, error);
+    for ( auto& peer : removedPeers ) notify(peer, &C4PeerDiscovery::Observer::removedPeer);
+}
+
+void C4PeerDiscoveryProvider::publishStateChanged(bool state, C4Error error) {
+    unique_lock lock(sDiscoveryMutex);
+    auto        observers = sObservers;
+    lock.unlock();
+
+    for ( auto obs : observers ) obs->publishing(this, state, error);
 }
 
 Retained<C4Peer> C4PeerDiscoveryProvider::addPeer(C4Peer* peer) {
@@ -154,6 +179,8 @@ Retained<C4Peer> C4PeerDiscoveryProvider::addPeer(C4Peer* peer) {
         notify(peer, &C4PeerDiscovery::Observer::addedPeer);
         return peer;
     } else {
+        Assert(peer->provider == i->second->provider, "C4Peers of different providers have same ID '%s'",
+               peer->id.c_str());
         return i->second;
     }
 }
