@@ -25,9 +25,10 @@ class C4PeerDiscoveryProvider;
 /** A resolved address to connect to a C4Peer. */
 struct C4PeerAddress {
     std::string address{};   ///< address in string form
+    uint16_t    port{};      ///< Port number
     C4Timestamp expiration;  ///< time when this info becomes stale
 
-    friend bool operator==(C4PeerAddress const&, C4PeerAddress const&) = default;
+    friend bool operator==(C4PeerAddress const&, C4PeerAddress const&) noexcept = default;
 };
 
 /** A discovered peer device.
@@ -89,11 +90,17 @@ class C4PeerDiscovery {
     /// Adds a provider implementation. Providers must be registered before calling startBrowsing.
     static void registerProvider(C4PeerDiscoveryProvider*);
 
+    static std::vector<C4PeerDiscoveryProvider*> providers();
+
     /// Tells registered providers to start looking for peers.
     static void startBrowsing();
 
     /// Tells registered providers to stop looking for peers.
     static void stopBrowsing();
+
+    static void startPublishing(std::string_view displayName, uint16_t port, C4Peer::Metadata const&);
+
+    static void stopPublishing();
 
     /// Returns a copy of the current known set of peers.
     static std::unordered_map<std::string, fleece::Retained<C4Peer>> peers();
@@ -106,7 +113,7 @@ class C4PeerDiscovery {
       public:
         virtual ~Observer();
 
-        virtual void browsing(bool active, C4Error) {}
+        virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
 
         virtual void addedPeer(C4Peer*) {}
 
@@ -115,6 +122,8 @@ class C4PeerDiscovery {
         virtual void peerMetadataChanged(C4Peer*) {}
 
         virtual void peerAddressesResolved(C4Peer*) {}
+
+        virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
     };
 
     /// Registers an observer.
@@ -133,7 +142,7 @@ class C4PeerDiscovery {
  *         threads, and they can issue calls on arbitrary threads. */
 class C4PeerDiscoveryProvider {
   public:
-    explicit C4PeerDiscoveryProvider(std::string_view name_) :name(name_) { }
+    explicit C4PeerDiscoveryProvider(std::string_view name_) : name(name_) {}
 
     virtual ~C4PeerDiscoveryProvider() = default;
 
@@ -157,9 +166,15 @@ class C4PeerDiscoveryProvider {
     /// Implementation must call the peer's \ref setAddresses when done or on error. */
     virtual void resolveAddresses(C4Peer*) = 0;
 
+    virtual void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const&) = 0;
+    virtual void unpublish()                                                                   = 0;
+
   protected:
     /// Reports that browsing has started, stopped or failed.
     void browseStateChanged(bool state, C4Error = {});
+
+    /// Reports that publishing has started, stopped or failed.
+    void publishStateChanged(bool state, C4Error = {});
 
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
