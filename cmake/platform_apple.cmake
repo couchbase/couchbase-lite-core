@@ -27,7 +27,8 @@ function(set_litecore_source)
         LiteCore/Support/StringUtil_Apple.mm
         LiteCore/Support/Instrumentation.cc
         Crypto/PublicKey+Apple.mm
-        Networking/P2P/PeerDiscovery+Apple.cc
+        Networking/P2P/PeerDiscovery+AppleDNSSD.cc
+        Networking/P2P/PeerDiscovery+AppleBT.mm
         PARENT_SCOPE
     )
 endfunction()
@@ -44,6 +45,7 @@ function(setup_litecore_build)
             ${liteCoreVariant} INTERFACE
             "-framework Security"
             "-framework SystemConfiguration"
+            "-framework CoreBluetooth"
         )
     endforeach()
 

@@ -101,7 +101,7 @@ add_executable(
     ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
-    ${TOP}Networking/P2P/tests/BrowserTest.cc
+    ${TOP}Networking/P2P/tests/PeerDiscoveryTest.cc
 
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp

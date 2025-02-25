@@ -3,7 +3,8 @@
 //
 
 #include "c4PeerDiscovery.hh"
-#include "PeerDiscovery+Apple.hh"  //TEMP shouldn't need this
+#include "PeerDiscovery+AppleDNSSD.hh"  //TEMP shouldn't need this
+#include "PeerDiscovery+AppleBT.hh"  //TEMP shouldn't need this
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
@@ -17,11 +18,14 @@ using namespace litecore::p2p;
 class P2PTest : public C4PeerDiscovery::Observer {
   public:
     P2PTest() {
-        InitializeBonjourProvider("_ssh._tcp");
+        InitializeBonjourProvider("ssh");
+        InitializeBluetoothProvider("");
         C4PeerDiscovery::addObserver(this);
     }
 
-    ~P2PTest() { C4PeerDiscovery::removeObserver(this); }
+    ~P2PTest() {
+        C4PeerDiscovery::removeObserver(this);
+    }
 
     void browsing(C4PeerDiscoveryProvider* provider, bool active, C4Error error) override {
         if ( active ) Log("*** %s browsing started", provider->name.c_str());
@@ -34,7 +38,11 @@ class P2PTest : public C4PeerDiscovery::Observer {
     }
 
     void addedPeer(C4Peer* peer) override {
-        Log("*** Added %s peer %s", peer->provider->name.c_str(), peer->id.c_str());
+        Log("*** Added %s peer %s \"%s\": %s",
+            peer->provider->name.c_str(),
+            peer->id.c_str(),
+            peer->displayName.c_str(),
+            metadataOf(peer).c_str());
         peer->monitorMetadata(true);
         peer->resolveAddresses();
     }
@@ -43,18 +51,34 @@ class P2PTest : public C4PeerDiscovery::Observer {
         Log("*** Removed %s peer %s", peer->provider->name.c_str(), peer->id.c_str());
     }
 
-    void peerMetadataChanged(C4Peer* peer) override {
+    string metadataOf(C4Peer* peer) {
         stringstream out;
         out << '{';
-        for ( auto& [k, v] : peer->getAllMetadata() ) out << k << ": '" << string_view(v) << "', ";
+        for ( auto& [k, v] : peer->getAllMetadata() ) {
+            out << k << ": ";
+            bool printable = true;
+            for (uint8_t c : v) {
+                if ((c < ' ' && c != '\t' && c != '\n') || c == 0x7F)
+                    printable = false;
+            }
+            if (printable)
+                out << '"' << string_view(v) << '"';
+            else
+                out << '<' << v.hexString() << ">";
+            out << ", ";
+        }
         out << '}';
-        Log("*** %s peer %s metadata changed: %s", peer->provider->name.c_str(), peer->id.c_str(), out.str().c_str());
+        return out.str();
+    }
+
+    void peerMetadataChanged(C4Peer* peer) override {
+        Log("*** %s peer %s metadata changed: %s", peer->provider->name.c_str(), peer->id.c_str(), metadataOf(peer).c_str());
     }
 
     void peerAddressesResolved(C4Peer* peer) override {
         if ( auto addrs = peer->addresses(); addrs.empty() )
             Warn("*** %s peer %s address failed to resolve: %s", peer->provider->name.c_str(), peer->id.c_str(),
-                 peer->resolveError().description().c_str());
+                 peer->error().description().c_str());
         else
             Log("*** %s peer %s address resolved to %s", peer->provider->name.c_str(), peer->id.c_str(),
                 addrs[0].address.c_str());
@@ -85,4 +109,9 @@ TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
     sem.acquire();
     sem.acquire();
     Log("--- Done!");
+}
+
+//TEMP: Just here to expose crashes that occur after the real test completes
+TEST_CASE("P2P Browser 2", "[P2P]") {
+    this_thread::sleep_for(2s);
 }
