@@ -2,14 +2,14 @@
 // Created by Jens Alfke on 2/3/25.
 //
 
-#include <arpa/inet.h>
 #ifdef __APPLE__
 
-#    include "PeerDiscovery+Apple.hh"
+#    include "PeerDiscovery+AppleDNSSD.hh"
 #    include "Error.hh"
 #    include "Logging.hh"
 #    include "NetworkInterfaces.hh"
 #    include "StringUtil.hh"
+#    include <arpa/inet.h>
 #    include <dns_sd.h>
 #    include <netinet/in.h>
 
@@ -18,8 +18,8 @@ namespace litecore::p2p {
 
     struct BonjourProvider;
 
-
-    static LogDomain P2PLog("P2P");  //FIXME: Should be cross platform
+    extern LogDomain P2PLog;
+    LogDomain P2PLog("P2P");  //FIXME: Should be cross platform
 
     static BonjourProvider* sProvider;
 
@@ -85,12 +85,13 @@ namespace litecore::p2p {
 
         void resolveFailed(DNSServiceErrorType err) { this->setAddresses({}, convertErrorCode(err)); }
 
-        void removed() {
+        void removed() override {
             freeServiceRef(_monitorTxtRef);
             freeServiceRef(_resolveRef);
             freeServiceRef(_getAddrRef);
         }
 
+        // Instance data is not protected by a mutex; all calls are made on a single dispatch queue.
         string        _domain;
         uint32_t      _interface{};
         uint16_t      _port{};
@@ -112,7 +113,13 @@ namespace litecore::p2p {
             : C4PeerDiscoveryProvider("Bonjour")
             , Logging(P2PLog)
             , _queue(dispatch_queue_create("LiteCore P2P", DISPATCH_QUEUE_SERIAL))
-            , _serviceType(serviceType) {}
+            , _serviceType(stringprintf("_%s._tcp", string(serviceType).c_str())) {
+            bool ok = true;
+            for (char c : serviceType)
+                if (!isalnum(uint8_t(c)) && c != '-') ok = false;
+            if (!ok || serviceType.empty() || serviceType.size() > 15)
+                error::_throw(error::InvalidParameter, "invalid service type");
+        }
 
         ~BonjourProvider() override {
             if ( _serviceRef ) {
@@ -156,18 +163,20 @@ namespace litecore::p2p {
             dispatch_async(_queue, ^{ do_unpublish(); });
         }
 
+        void updateMetadata(C4Peer::Metadata const& meta) override {
+            C4Peer::Metadata metaCopy = meta;
+            dispatch_async(_queue, ^{ do_updateMetadata(std::move(metaCopy)); });
+        }
+
       private:
         string makeID(string const& name, string const& domain) { return name + "." + _serviceType + "." + domain; }
 
-
         DNSServiceErrorType openServiceRef() {
-            if (_serviceRef)
-                return 0;
+            if ( _serviceRef ) return 0;
             auto err = DNSServiceCreateConnection(&_serviceRef);
-            if (err) return err;
+            if ( err ) return err;
             err = DNSServiceSetDispatchQueue(_serviceRef, _queue);
-            if (err)
-                freeServiceRef(_serviceRef);
+            if ( err ) freeServiceRef(_serviceRef);
             return err;
         }
 
@@ -190,9 +199,9 @@ namespace litecore::p2p {
                 };
 
                 auto browseRef = _serviceRef;
-                err        = DNSServiceBrowse(&browseRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
-                                              kDNSServiceInterfaceIndexAny, _serviceType.c_str(), nullptr, browseCallback,
-                                              this);
+                err = DNSServiceBrowse(&browseRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
+                                       kDNSServiceInterfaceIndexAny, _serviceType.c_str(), nullptr, browseCallback,
+                                       this);
                 if ( err ) break;
                 _browseRef = browseRef;
 
@@ -225,10 +234,7 @@ namespace litecore::p2p {
                 C4PeerDiscoveryProvider::addPeer(peer);
             } else {
                 logInfo("flags=%04x; lost '%s'", flags, serviceName);
-                auto peer = C4PeerDiscovery::peerWithID(makeID(serviceName, domain));
-                if ( auto bonjourPeer = dynamic_cast<BonjourPeer*>(peer.get()) )  // should be true
-                    bonjourPeer->removed();
-                if ( peer ) C4PeerDiscoveryProvider::removePeer(peer);
+                C4PeerDiscoveryProvider::removePeer(makeID(serviceName, domain));
             }
         }
 
@@ -242,15 +248,16 @@ namespace litecore::p2p {
                 logInfo("monitoring TXT record of '%s'", peer->id.c_str());
 
                 auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interfaceIndex*/,
-                                   DNSServiceErrorType err, const char* /*fullname*/, uint16_t /*rrtype*/, uint16_t /*rrclass*/,
-                                   uint16_t rdlen, const void* rdata, uint32_t ttl, void* ctx) -> void {
+                                   DNSServiceErrorType err, const char* /*fullname*/, uint16_t /*rrtype*/,
+                                   uint16_t /*rrclass*/, uint16_t rdlen, const void* rdata, uint32_t ttl,
+                                   void* ctx) -> void {
                     auto peer = static_cast<BonjourPeer*>(ctx);
                     sProvider->monitorTxtResult(flags, err, slice(rdata, rdlen), ttl, peer);
                 };
 
                 auto monitorTxtRef = _serviceRef;
-                auto err           = DNSServiceQueryRecord(&monitorTxtRef, kDNSServiceFlagsShareConnection,
-                                                           kDNSServiceInterfaceIndexAny, peer->id.c_str(), kDNSServiceType_TXT,
+                auto err           = DNSServiceQueryRecord(&monitorTxtRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
+                                                           peer->_interface, peer->id.c_str(), kDNSServiceType_TXT,
                                                            kDNSServiceClass_IN, callback, peer);
                 if ( err == 0 ) {
                     peer->_monitorTxtRef = monitorTxtRef;
@@ -287,8 +294,8 @@ namespace litecore::p2p {
 
             if ( peer->_resolveRef || peer->_getAddrRef ) return;  // already resolving
 
-            auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interfaceIndex*/, DNSServiceErrorType err,
-                               const char* fullname, const char* hostname,
+            auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interfaceIndex*/,
+                               DNSServiceErrorType err, const char* fullname, const char* hostname,
                                uint16_t portBE,  // In network byte order
                                uint16_t txtLen, const unsigned char* txtRecord, void* ctx) {
                 auto peer = static_cast<BonjourPeer*>(ctx);
@@ -352,35 +359,65 @@ namespace litecore::p2p {
 
         /// API request to register/advertise a service.
         void do_publish(string displayName, uint16_t port, C4Peer::Metadata metadata) {
-            if (_registerRef)
-                return;
+            if ( _registerRef ) return;
             Assert(!displayName.empty());
             Assert(port != 0);
 
             DNSServiceErrorType err;
             do {
                 err = openServiceRef();
-                if (err) break;
+                if ( err ) break;
 
-                _myName      = std::move(displayName);
-                logInfo("publishing my service '%s' on port %d", _myName.c_str(), port);
+                _myPort = port;
+                if ( displayName != _myBaseName ) {
+                    _myBaseName = std::move(displayName);
+                    _myDupCount = 0;
+                }
                 err = encodeMyTxtRecord(metadata);
-                if (err) break;
+                if ( err ) break;
 
-                auto regCallback = [](DNSServiceRef, DNSServiceFlags flags, DNSServiceErrorType err, const char* name,
-                                      const char* regtype, const char* domain, void* ctx) {
-                    static_cast<BonjourProvider*>(ctx)->regResult(flags, err, name, domain);
-                };
-
-                auto registerRef = _serviceRef;
-                err = DNSServiceRegister(&registerRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsNoAutoRename,
-                                           kDNSServiceInterfaceIndexAny, _myName.c_str(), _serviceType.c_str(), nullptr,
-                                           nullptr, port, uint16_t(_myTxtRecord.size), _myTxtRecord.buf, regCallback, this);
-                if (err) break;
-                _registerRef = registerRef;
-            } while (false);
+                err = republish();
+            } while ( false );
 
             publishStateChanged(err == 0, convertErrorCode(err));
+        }
+
+        DNSServiceErrorType republish() {
+            Assert(!_registerRef);
+            if ( _myDupCount == 0 ) _myName = _myBaseName;
+            else
+                _myName = stringprintf("%s %u", _myBaseName.c_str(), _myDupCount + 1);
+            logInfo("publishing my service '%s' on port %d", _myName.c_str(), _myPort);
+            auto regCallback = [](DNSServiceRef, DNSServiceFlags flags, DNSServiceErrorType err, const char* name,
+                                  const char* /*regtype*/, const char* domain, void* ctx) {
+                static_cast<BonjourProvider*>(ctx)->regResult(flags, err, name, domain);
+            };
+
+            auto registerRef = _serviceRef;
+            auto err = DNSServiceRegister(&registerRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsNoAutoRename,
+                                          kDNSServiceInterfaceIndexAny, _myName.c_str(), _serviceType.c_str(), nullptr,
+                                          nullptr, htons(_myPort), uint16_t(_myTxtRecord.size), _myTxtRecord.buf, regCallback,
+                                          this);
+            if ( err == 0 ) _registerRef = registerRef;
+            return err;
+        }
+
+        void regResult(DNSServiceFlags flags, DNSServiceErrorType err, const char* serviceName, const char* domain) {
+            if ( err ) {
+                if ( err == kDNSServiceErr_NameConflict && _myDupCount < 100 ) {
+                    warn("publish name conflict with %s; retrying...", _myName.c_str());
+                    freeServiceRef(_registerRef);
+                    _myDupCount++;
+                    republish();
+                } else {
+                    logError("publishing error %d", err);
+                    do_unpublish();
+                }
+            } else if ( flags & kDNSServiceFlagsAdd ) {
+                logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
+            } else {
+                logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
+            }
         }
 
         /// API request to unregister my service.
@@ -389,32 +426,22 @@ namespace litecore::p2p {
                 logInfo("unpublishing my service '%s'", _myName.c_str());
                 freeServiceRef(_registerRef);
                 publishStateChanged(false, {});
+                _myName     = "";
+                _myDupCount = 0;
             }
         }
 
         /// API request to update my service's metadata.
-        void do_updateTxtRecord(C4Peer::Metadata metadata) {
+        void do_updateMetadata(C4Peer::Metadata metadata) {
             if ( _registerRef ) {
                 auto err = encodeMyTxtRecord(metadata);
-                if (err == 0)
+                if ( err == 0 )
                     err = DNSServiceUpdateRecord(_registerRef, nullptr, 0, uint16_t(_myTxtRecord.size),
-                                                      _myTxtRecord.buf, 0);
+                                                 _myTxtRecord.buf, 0);
                 if ( err ) {
                     logError("error %d updating TXT record", err);
                     // FIXME: Report the error
                 }
-            }
-        }
-
-        void regResult(DNSServiceFlags flags, DNSServiceErrorType err, const char* serviceName, const char* domain) {
-            if ( err ) {
-                logError("publishing error %d", err);
-                //TODO: Detect name conflict and retry, appending number to name
-                do_unpublish();
-            } else if ( flags & kDNSServiceFlagsAdd ) {
-                logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
-            } else {
-                logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
             }
         }
 
@@ -435,20 +462,22 @@ namespace litecore::p2p {
                     break;
                 }
             }
-            if (err == 0)
-                _myTxtRecord = alloc_slice(TXTRecordGetBytesPtr(&txtRef), TXTRecordGetLength(&txtRef));
+            if ( err == 0 ) _myTxtRecord = alloc_slice(TXTRecordGetBytesPtr(&txtRef), TXTRecordGetLength(&txtRef));
             TXTRecordDeallocate(&txtRef);
             return err;
         }
 
       private:
-        dispatch_queue_t const _queue;          // Dispatch queue I run on
-        string const           _serviceType;    // DNS-SD service name
-        DNSServiceRef          _serviceRef{};   // Main connection to dns_sd services
-        DNSServiceRef          _browseRef{};    // Secondary connection for browsing peers
-        DNSServiceRef          _registerRef{};  // Secondary connection for registring my peer
-        string                 _myName;         // Name of my service
-        alloc_slice            _myTxtRecord;    // My encoded TXT record
+        dispatch_queue_t const _queue;           // Dispatch queue I run on
+        string const           _serviceType;     // DNS-SD service name
+        DNSServiceRef          _serviceRef{};    // Main connection to dns_sd services
+        DNSServiceRef          _browseRef{};     // Secondary connection for browsing peers
+        DNSServiceRef          _registerRef{};   // Secondary connection for registring my peer
+        string                 _myBaseName;      // Name of my service, as given by client
+        string                 _myName;          // Actual published name of my service
+        unsigned               _myDupCount = 0;  // Counter to append to _myName when > 0
+        uint16_t               _myPort;          // Port number of my service
+        alloc_slice            _myTxtRecord;     // My encoded TXT record
     };
 
     void InitializeBonjourProvider(string_view serviceType) {
