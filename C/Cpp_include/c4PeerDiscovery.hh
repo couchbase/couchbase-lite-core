@@ -36,12 +36,20 @@ struct C4PeerAddress {
  *  @note  This class is concrete, but may be subclassed by platform code if desired. */
 class C4Peer : public fleece::RefCounted {
   public:
+    using Metadata = std::unordered_map<std::string, fleece::alloc_slice>;
+
     C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_)
-        : provider(provider_), id(std::move(id_)), displayName(std::move(displayName_)) {}
+    : provider(provider_), id(std::move(id_)), displayName(std::move(displayName_)) {}
+    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_, Metadata const& md)
+    : provider(provider_), id(std::move(id_)), displayName(std::move(displayName_)), _metadata(md) {}
 
     C4PeerDiscoveryProvider* const provider;  ///< Provider that manages this peer
     std::string const              id;        ///< Uniquely identifies this C4Peer (e.g. DNS-SD service name + domain)
     std::string const              displayName;  ///< Arbitrary human-readable name registered by the peer
+
+    /// True if the peer is online, false once it goes offline.
+    /// @note  Once offline, an instance never comes back online; instead a new instance is created.
+    bool online() const;
 
     /// Request to discover or refresh the address(es) of this peer.
     /// When complete, the `addresses` property will be set and C4PeerDiscovery observers'
@@ -52,9 +60,7 @@ class C4Peer : public fleece::RefCounted {
     std::vector<C4PeerAddress> addresses();
 
     /// If address resolution failed, this property will be set.
-    C4Error resolveError() const;
-
-    using Metadata = std::unordered_map<std::string, fleece::alloc_slice>;
+    C4Error error() const;
 
     /// Request to get the metadata of this peer and monitor it for changes, or to stop monitoring.
     /// When new metadata is available, C4PeerDiscovery observers' `peerMetadataChanged` methods will be called.
@@ -76,11 +82,17 @@ class C4Peer : public fleece::RefCounted {
     /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
     void setAddresses(std::span<const C4PeerAddress>, C4Error = {});
 
+    /// Called when an instance is about to be removed from the set of online peers.
+    virtual void removed();
+
+  protected:
+    mutable std::mutex _mutex;
+
   private:
-    mutable std::mutex         _mutex;
     std::vector<C4PeerAddress> _addresses;
     Metadata                   _metadata;
     C4Error                    _error{};
+    bool                       _online{true};
 };
 
 /** Singleton that provides the set of currently discovered C4Peers.
@@ -101,6 +113,8 @@ class C4PeerDiscovery {
     static void startPublishing(std::string_view displayName, uint16_t port, C4Peer::Metadata const&);
 
     static void stopPublishing();
+
+    static void updateMetadata(C4Peer::Metadata const&);
 
     /// Returns a copy of the current known set of peers.
     static std::unordered_map<std::string, fleece::Retained<C4Peer>> peers();
@@ -134,12 +148,14 @@ class C4PeerDiscovery {
     C4PeerDiscovery() = delete;  // this is not an instantiable class
 };
 
-/** Interface for a service that provides data for C4PeerDiscovery.
- *  Other code shouldn't call it; go through C4PeerDiscovery instead.
- *  Platforms should subclass this to implement a specific protocol, and register an instance with
- *  C4PeerDiscovery at startup. Instances must not be deleted.
- *  @note  This interface is thread-safe. Subclasses should be prepared to be called on arbitrary
- *         threads, and they can issue calls on arbitrary threads. */
+/** Abstract interface for a service that provides data for C4PeerDiscovery.
+ *  Other code shouldn't call into this API; go through C4PeerDiscovery instead.
+ *
+ *  To implement a new protocol (DNS-SD, Bluetooth, ...): subclass this, implement the abstract
+ *  methods, instantiate a singleton instance and register it with `C4PeerDiscovery`. Do not free it!
+ *
+ *  @note  This interface is thread-safe. Methods should be prepared to be called on arbitrary
+ *         threads, and they may issue their own calls on arbitrary threads. */
 class C4PeerDiscoveryProvider {
   public:
     explicit C4PeerDiscoveryProvider(std::string_view name_) : name(name_) {}
@@ -168,6 +184,7 @@ class C4PeerDiscoveryProvider {
 
     virtual void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const&) = 0;
     virtual void unpublish()                                                                   = 0;
+    virtual void updateMetadata(C4Peer::Metadata const&) = 0;
 
   protected:
     /// Reports that browsing has started, stopped or failed.
@@ -180,9 +197,10 @@ class C4PeerDiscoveryProvider {
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
     fleece::Retained<C4Peer> addPeer(C4Peer*);
 
-    /// Removes a peer that is no longer online.
+    /// Unregisters a peer that has gone offline.
     bool removePeer(C4Peer* peer) { return removePeer(peer->id); }
 
+    /// Unregisters a peer that has gone offline.
     bool removePeer(std::string_view id);
 };
 

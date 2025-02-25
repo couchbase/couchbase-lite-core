@@ -14,7 +14,43 @@ using namespace fleece;
 static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*));
 
 
+template <class T>
+class ObserverList {
+public:
+    void add(T obs) {
+        unique_lock lock(_mutex);
+        _observers.emplace_back(std::move(obs));
+    }
+
+    void remove(T const& obs) {
+        unique_lock lock(_mutex);
+        if (auto i = ranges::find(_observers, obs); i != _observers.end()) {
+            if (i - _observers.begin() < _curIndex)
+                --_curIndex;    // Fix iterator if items shift underneath it
+            _observers.erase(i);
+        }
+    }
+
+    template <typename Callback>
+    void iterate(Callback const& cb) const {
+        unique_lock lock(_mutex);
+        for (_curIndex = ssize_t(_observers.size()) - 1; _curIndex >= 0; --_curIndex)
+            cb(_observers[_curIndex]);
+    }
+
+private:
+    mutable recursive_mutex _mutex;     // Recursive mutex allows re-entrant calls to add/remove during iteration
+    vector<T> _observers;       // The observer list
+    mutable ssize_t _curIndex = -1;     // Current iteration index, else -1
+};
+
+
 #pragma mark - PEER:
+
+bool C4Peer::online() const {
+    unique_lock lock(_mutex);
+    return _online;
+}
 
 void C4Peer::resolveAddresses() { provider->resolveAddresses(this); }
 
@@ -29,7 +65,7 @@ vector<C4PeerAddress> C4Peer::addresses() {
     return _addresses;
 }
 
-C4Error C4Peer::resolveError() const {
+C4Error C4Peer::error() const {
     unique_lock lock(_mutex);
     return _error;
 }
@@ -74,12 +110,19 @@ void C4Peer::setAddresses(std::span<const C4PeerAddress> addrs, C4Error error) {
     notify(this, &C4PeerDiscovery::Observer::peerAddressesResolved);
 }
 
+void C4Peer::removed() {
+    unique_lock lock(_mutex);
+    _online = false;
+    _metadata.clear();
+    _addresses.clear();
+}
+
 #pragma mark - DISCOVERY:
 
 
 static mutex                                   sDiscoveryMutex;
 static vector<C4PeerDiscoveryProvider*>        sProviders;
-static vector<C4PeerDiscovery::Observer*>      sObservers;
+static ObserverList<C4PeerDiscovery::Observer*>      sObservers;
 static unordered_map<string, Retained<C4Peer>> sPeers;
 
 void C4PeerDiscovery::registerProvider(C4PeerDiscoveryProvider* provider) {
@@ -108,6 +151,12 @@ void C4PeerDiscovery::stopPublishing() {
     for ( auto provider : providers() ) provider->unpublish();
 }
 
+
+void C4PeerDiscovery::updateMetadata(C4Peer::Metadata const& metadata) {
+    for ( auto provider : providers() ) provider->updateMetadata(metadata);
+}
+
+
 unordered_map<string, Retained<C4Peer>> C4PeerDiscovery::peers() {
     unique_lock lock(sDiscoveryMutex);
     return sPeers;
@@ -120,21 +169,15 @@ fleece::Retained<C4Peer> C4PeerDiscovery::peerWithID(std::string_view id) {
 }
 
 void C4PeerDiscovery::addObserver(Observer* obs) {
-    unique_lock lock(sDiscoveryMutex);
-    sObservers.push_back(obs);
+    sObservers.add(obs);
 }
 
 void C4PeerDiscovery::removeObserver(Observer* obs) {
-    unique_lock lock(sDiscoveryMutex);
-    if ( auto i = ranges::find(sObservers, obs); i != sObservers.end() ) sObservers.erase(i);
+    sObservers.remove(obs);
 }
 
 static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*)) {
-    unique_lock                        lock(sDiscoveryMutex);
-    vector<C4PeerDiscovery::Observer*> observers = sObservers;
-    lock.unlock();
-
-    for ( auto obs : observers ) (obs->*method)(peer);
+    sObservers.iterate([&](auto obs) {(obs->*method)(peer);});
 }
 
 C4PeerDiscovery::Observer::~Observer() = default;
@@ -155,19 +198,18 @@ void C4PeerDiscoveryProvider::browseStateChanged(bool state, C4Error error) {
             }
         }
     }
-    auto observers = sObservers;
     lock.unlock();
 
-    for ( auto obs : observers ) obs->browsing(this, state, error);
-    for ( auto& peer : removedPeers ) notify(peer, &C4PeerDiscovery::Observer::removedPeer);
+    sObservers.iterate([&](auto obs) {obs->browsing(this, state, error);});
+
+    for ( auto& peer : removedPeers ) {
+        peer->removed();
+        notify(peer, &C4PeerDiscovery::Observer::removedPeer);
+    }
 }
 
 void C4PeerDiscoveryProvider::publishStateChanged(bool state, C4Error error) {
-    unique_lock lock(sDiscoveryMutex);
-    auto        observers = sObservers;
-    lock.unlock();
-
-    for ( auto obs : observers ) obs->publishing(this, state, error);
+    sObservers.iterate([&](auto obs) { obs->publishing(this, state, error);});
 }
 
 Retained<C4Peer> C4PeerDiscoveryProvider::addPeer(C4Peer* peer) {
@@ -187,14 +229,16 @@ Retained<C4Peer> C4PeerDiscoveryProvider::addPeer(C4Peer* peer) {
 
 bool C4PeerDiscoveryProvider::removePeer(string_view id) {
     unique_lock lock(sDiscoveryMutex);
-    C4Peer*     peer = nullptr;
+    Retained<C4Peer>     peer = nullptr;
     if ( auto i = sPeers.find(string(id)); i != sPeers.end() ) {
-        peer = i->second;
+        peer = std::move(i->second);
         sPeers.erase(i);
     }
     lock.unlock();
 
     if ( !peer ) return false;
+
+    peer->removed();
     notify(peer, &C4PeerDiscovery::Observer::removedPeer);
     return true;
 }
