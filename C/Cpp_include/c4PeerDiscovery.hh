@@ -3,9 +3,9 @@
 //
 
 #pragma once
-#include "c4Base.h"
 #include "c4Base.hh"
-#include <array>
+#include "c4Error.h"
+#include <functional>
 #include <mutex>
 #include <span>
 #include <unordered_map>
@@ -22,15 +22,6 @@ C4_ASSUME_NONNULL_BEGIN
 
 class C4PeerDiscoveryProvider;
 
-/** A resolved address to connect to a C4Peer. */
-struct C4PeerAddress {
-    std::string address{};   ///< address in string form
-    uint16_t    port{};      ///< Port number
-    C4Timestamp expiration;  ///< time when this info becomes stale
-
-    friend bool operator==(C4PeerAddress const&, C4PeerAddress const&) noexcept = default;
-};
-
 /** A discovered peer device.
  *  @note  This class is thread-safe.
  *  @note  This class is concrete, but may be subclassed by platform code if desired. */
@@ -39,28 +30,20 @@ class C4Peer : public fleece::RefCounted {
     using Metadata = std::unordered_map<std::string, fleece::alloc_slice>;
 
     C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_)
-    : provider(provider_), id(std::move(id_)), displayName(std::move(displayName_)) {}
+        : provider(provider_), id(std::move(id_)), _displayName(std::move(displayName_)) {}
+
     C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_, Metadata const& md)
-    : provider(provider_), id(std::move(id_)), displayName(std::move(displayName_)), _metadata(md) {}
+        : provider(provider_), id(std::move(id_)), _displayName(std::move(displayName_)), _metadata(md) {}
 
     C4PeerDiscoveryProvider* const provider;  ///< Provider that manages this peer
     std::string const              id;        ///< Uniquely identifies this C4Peer (e.g. DNS-SD service name + domain)
-    std::string const              displayName;  ///< Arbitrary human-readable name registered by the peer
+
+    /// Human-readable name, if any.
+    std::string displayName() const;
 
     /// True if the peer is online, false once it goes offline.
     /// @note  Once offline, an instance never comes back online; instead a new instance is created.
     bool online() const;
-
-    /// Request to discover or refresh the address(es) of this peer.
-    /// When complete, the `addresses` property will be set and C4PeerDiscovery observers'
-    /// `peerAddressesResolved` methods will be called.
-    void resolveAddresses();
-
-    /// All currently resolved and non-expired addresses.
-    std::vector<C4PeerAddress> addresses();
-
-    /// If address resolution failed, this property will be set.
-    C4Error error() const;
 
     /// Request to get the metadata of this peer and monitor it for changes, or to stop monitoring.
     /// When new metadata is available, C4PeerDiscovery observers' `peerMetadataChanged` methods will be called.
@@ -72,15 +55,27 @@ class C4Peer : public fleece::RefCounted {
     /// Returns all the metadata at once.
     Metadata getAllMetadata();
 
+    //---- Connections:
+
+    using ResolveURLCallback = std::function<void(std::string, C4Error)>;
+
+    /// Asynchronously finds the replication URL to connect to the peer.
+    /// On completion, the callback will be invoked with either a URL string or a C4Error.
+    /// To cancel resolution, call this again with a null callback.
+    void resolveURL(ResolveURLCallback);
+
     //---- Provider API:
+
+    /// Updates the instance's displayName
+    /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
+    void setDisplayName(std::string_view);
 
     /// Updates the instance's metadata.
     /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
     void setMetadata(Metadata);
 
-    /// Updates the instance's addresses.
-    /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
-    void setAddresses(std::span<const C4PeerAddress>, C4Error = {});
+    /// Called by C4PeerDiscoveryProvider when it resolves this instance's URL or fails.
+    void resolvedURL(std::string url, C4Error);
 
     /// Called when an instance is about to be removed from the set of online peers.
     virtual void removed();
@@ -89,10 +84,10 @@ class C4Peer : public fleece::RefCounted {
     mutable std::mutex _mutex;
 
   private:
-    std::vector<C4PeerAddress> _addresses;
-    Metadata                   _metadata;
-    C4Error                    _error{};
-    bool                       _online{true};
+    std::string        _displayName;  ///< Arbitrary human-readable name registered by the peer
+    Metadata           _metadata;
+    ResolveURLCallback _resolveURLCallback;
+    bool               _online{true};
 };
 
 /** Singleton that provides the set of currently discovered C4Peers.
@@ -135,8 +130,6 @@ class C4PeerDiscovery {
 
         virtual void peerMetadataChanged(C4Peer*) {}
 
-        virtual void peerAddressesResolved(C4Peer*) {}
-
         virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
     };
 
@@ -177,14 +170,16 @@ class C4PeerDiscoveryProvider {
     /// Implementation must call the peer's \ref setMetadata whenever it receives metadata. */
     virtual void monitorMetadata(C4Peer*, bool start) = 0;
 
-    /// Provider callback that requests addresses be resolved for a peer.
-    /// (This is a one-shot operation, not repeating like \ref monitorMetadata.)
-    /// Implementation must call the peer's \ref setAddresses when done or on error. */
-    virtual void resolveAddresses(C4Peer*) = 0;
+    /// Find the replication URL of the peer.
+    /// Implementation must call \ref C4Peer::resolvedURL when done or on failure.
+    virtual void resolveURL(C4Peer*) = 0;
+
+    /// Cancel any in-progress resolveURL calls.
+    virtual void cancelResolveURL(C4Peer*) = 0;
 
     virtual void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const&) = 0;
     virtual void unpublish()                                                                   = 0;
-    virtual void updateMetadata(C4Peer::Metadata const&) = 0;
+    virtual void updateMetadata(C4Peer::Metadata const&)                                       = 0;
 
   protected:
     /// Reports that browsing has started, stopped or failed.
