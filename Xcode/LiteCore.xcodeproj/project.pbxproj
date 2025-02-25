@@ -313,6 +313,11 @@
 		27AFF3B023036B5800B4D6C4 /* TCPSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */; };
 		27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
+		27B0751B2D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B075172D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.mm */; };
+		27B0751D2D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075192D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.cc */; };
+		27B0751E2D6D0E9B00AA6BFF /* PeerDiscoveryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075142D6D0E8C00AA6BFF /* PeerDiscoveryTest.cc */; };
+		27B075212D6D0EE200AA6BFF /* c4PeerDiscovery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */; };
+		27B075232D6D22AB00AA6BFF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1337,6 +1342,14 @@
 		27AFF3A423036B2500B4D6C4 /* connector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = connector.cpp; sourceTree = "<group>"; };
 		27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stream_socket.cpp; sourceTree = "<group>"; };
 		27AFF3A623036B2500B4D6C4 /* datagram_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = datagram_socket.cpp; sourceTree = "<group>"; };
+		27B075142D6D0E8C00AA6BFF /* PeerDiscoveryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PeerDiscoveryTest.cc; sourceTree = "<group>"; };
+		27B075162D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "PeerDiscovery+AppleBT.hh"; sourceTree = "<group>"; };
+		27B075172D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "PeerDiscovery+AppleBT.mm"; sourceTree = "<group>"; };
+		27B075182D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "PeerDiscovery+AppleDNSSD.hh"; sourceTree = "<group>"; };
+		27B075192D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "PeerDiscovery+AppleDNSSD.cc"; sourceTree = "<group>"; };
+		27B0751F2D6D0ED100AA6BFF /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
+		27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerDiscovery.cc; sourceTree = "<group>"; };
+		27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
@@ -1770,14 +1783,15 @@
 			files = (
 				2718B38B2CAF154C006C09CB /* libCatch2.a in Frameworks */,
 				275067E2230B6C5400FA23B2 /* libLiteCoreREST-static.a in Frameworks */,
-				271A98AA243D2204008C032D /* SystemConfiguration.framework in Frameworks */,
 				2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */,
 				2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */,
 				27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */,
 				272850EE1E9D4D23009CA22F /* libz.tbd in Frameworks */,
-				27DF7D351F3ACEBF0022F3DF /* Foundation.framework in Frameworks */,
+				27B075232D6D22AB00AA6BFF /* CoreBluetooth.framework in Frameworks */,
 				2753AFC91EC0F4E900C12E98 /* CoreFoundation.framework in Frameworks */,
+				27DF7D351F3ACEBF0022F3DF /* Foundation.framework in Frameworks */,
 				2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */,
+				271A98AA243D2204008C032D /* SystemConfiguration.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1983,6 +1997,7 @@
 		271BA53122960DF900D49D13 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				27B0751A2D6D0E8C00AA6BFF /* P2P */,
 				2744B303241854F2005A194D /* BLIP */,
 				2744B36324186210005A194D /* HTTP */,
 				2744B32E241854F2005A194D /* WebSockets */,
@@ -2158,6 +2173,7 @@
 				27D62A572B7BF403004C0787 /* c4Index.hh */,
 				274D184C261683F40018D39C /* c4Listener.hh */,
 				2743E20825F6BC88006F696D /* c4Observer.hh */,
+				27B0751F2D6D0ED100AA6BFF /* c4PeerDiscovery.hh */,
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
 				2758E0A725F30A37007C7487 /* c4Replicator.hh */,
 				274D18862617B4300018D39C /* c4Socket.hh */,
@@ -2374,6 +2390,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */,
 				278F478924C914CC00E1CA7A /* SystemConfiguration.framework */,
 				278F478724C914C600E1CA7A /* Security.framework */,
 				278F478524C914BF00E1CA7A /* libz.tbd */,
@@ -2513,6 +2530,7 @@
 				27D62A5B2B7BF4AA004C0787 /* c4Index.cc */,
 				27BA41652D680A9100FAA569 /* c4Log.cc */,
 				2769438B1DCD502A00DB2555 /* c4Observer.cc */,
+				27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */,
 				27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */,
 				2705154C1D8CBE6C00D62D05 /* c4Query.cc */,
 				272BA50423F61389000EB6E8 /* c4QueryImpl.hh */,
@@ -2888,6 +2906,26 @@
 				27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */,
 			);
 			path = src;
+			sourceTree = "<group>";
+		};
+		27B075152D6D0E8C00AA6BFF /* tests */ = {
+			isa = PBXGroup;
+			children = (
+				27B075142D6D0E8C00AA6BFF /* PeerDiscoveryTest.cc */,
+			);
+			path = tests;
+			sourceTree = "<group>";
+		};
+		27B0751A2D6D0E8C00AA6BFF /* P2P */ = {
+			isa = PBXGroup;
+			children = (
+				27B075152D6D0E8C00AA6BFF /* tests */,
+				27B075162D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.hh */,
+				27B075172D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.mm */,
+				27B075182D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.hh */,
+				27B075192D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.cc */,
+			);
+			path = P2P;
 			sourceTree = "<group>";
 		};
 		27B516E72B97BAA80049DD1D /* ext */ = {
@@ -4219,6 +4257,7 @@
 				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
+				27B0751E2D6D0E9B00AA6BFF /* PeerDiscoveryTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
 				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
@@ -4534,6 +4573,8 @@
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
 				27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
+				27B0751B2D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.mm in Sources */,
+				27B0751D2D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.cc in Sources */,
 				2747A1D0279B37E100F286AF /* SQLUtil.cc in Sources */,
 				27F2BEA0221DF1A0006C13EE /* DBAccess.cc in Sources */,
 				273407231DEE116600EA5532 /* PlatformIO.cc in Sources */,
@@ -4574,6 +4615,7 @@
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
+				27B075212D6D0EE200AA6BFF /* c4PeerDiscovery.cc in Sources */,
 				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,
