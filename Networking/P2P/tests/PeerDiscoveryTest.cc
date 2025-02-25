@@ -4,7 +4,7 @@
 
 #include "c4PeerDiscovery.hh"
 #include "PeerDiscovery+AppleDNSSD.hh"  //TEMP shouldn't need this
-#include "PeerDiscovery+AppleBT.hh"  //TEMP shouldn't need this
+#include "PeerDiscovery+AppleBT.hh"     //TEMP shouldn't need this
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
@@ -23,9 +23,7 @@ class P2PTest : public C4PeerDiscovery::Observer {
         C4PeerDiscovery::addObserver(this);
     }
 
-    ~P2PTest() {
-        C4PeerDiscovery::removeObserver(this);
-    }
+    ~P2PTest() { C4PeerDiscovery::removeObserver(this); }
 
     void browsing(C4PeerDiscoveryProvider* provider, bool active, C4Error error) override {
         if ( active ) Log("*** %s browsing started", provider->name.c_str());
@@ -38,13 +36,19 @@ class P2PTest : public C4PeerDiscovery::Observer {
     }
 
     void addedPeer(C4Peer* peer) override {
-        Log("*** Added %s peer %s \"%s\": %s",
-            peer->provider->name.c_str(),
-            peer->id.c_str(),
-            peer->displayName.c_str(),
-            metadataOf(peer).c_str());
-        peer->monitorMetadata(true);
-        peer->resolveAddresses();
+        Log("*** Added %s peer %s \"%s\": %s", peer->provider->name.c_str(), peer->id.c_str(),
+            peer->displayName().c_str(), metadataOf(peer).c_str());
+        //peer->monitorMetadata(true);
+        Retained retainedPeer(peer);
+        peer->resolveURL([this, retainedPeer](string url, C4Error error) {
+            if ( error ) {
+                Warn("*** Failed to 'connect' to %s peer %s -- %s", retainedPeer->provider->name.c_str(),
+                     retainedPeer->id.c_str(), error.description().c_str());
+            } else {
+                Log("*** 'Connecting' to %s peer %s -- URL <%s>", retainedPeer->provider->name.c_str(),
+                    retainedPeer->id.c_str(), url.c_str());
+            }
+        });
     }
 
     void removedPeer(C4Peer* peer) override {
@@ -57,12 +61,10 @@ class P2PTest : public C4PeerDiscovery::Observer {
         for ( auto& [k, v] : peer->getAllMetadata() ) {
             out << k << ": ";
             bool printable = true;
-            for (uint8_t c : v) {
-                if ((c < ' ' && c != '\t' && c != '\n') || c == 0x7F)
-                    printable = false;
+            for ( uint8_t c : v ) {
+                if ( (c < ' ' && c != '\t' && c != '\n') || c == 0x7F ) printable = false;
             }
-            if (printable)
-                out << '"' << string_view(v) << '"';
+            if ( printable ) out << '"' << string_view(v) << '"';
             else
                 out << '<' << v.hexString() << ">";
             out << ", ";
@@ -72,16 +74,8 @@ class P2PTest : public C4PeerDiscovery::Observer {
     }
 
     void peerMetadataChanged(C4Peer* peer) override {
-        Log("*** %s peer %s metadata changed: %s", peer->provider->name.c_str(), peer->id.c_str(), metadataOf(peer).c_str());
-    }
-
-    void peerAddressesResolved(C4Peer* peer) override {
-        if ( auto addrs = peer->addresses(); addrs.empty() )
-            Warn("*** %s peer %s address failed to resolve: %s", peer->provider->name.c_str(), peer->id.c_str(),
-                 peer->error().description().c_str());
-        else
-            Log("*** %s peer %s address resolved to %s", peer->provider->name.c_str(), peer->id.c_str(),
-                addrs[0].address.c_str());
+        Log("*** %s peer %s metadata changed: %s", peer->provider->name.c_str(), peer->id.c_str(),
+            metadataOf(peer).c_str());
     }
 
     void publishing(C4PeerDiscoveryProvider* provider, bool active, C4Error error) override {
@@ -112,6 +106,4 @@ TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
 }
 
 //TEMP: Just here to expose crashes that occur after the real test completes
-TEST_CASE("P2P Browser 2", "[P2P]") {
-    this_thread::sleep_for(2s);
-}
+TEST_CASE("P2P Browser 2", "[P2P]") { this_thread::sleep_for(2s); }

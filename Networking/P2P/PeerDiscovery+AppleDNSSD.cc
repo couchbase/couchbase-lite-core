@@ -5,6 +5,7 @@
 #ifdef __APPLE__
 
 #    include "PeerDiscovery+AppleDNSSD.hh"
+#    include "Address.hh"
 #    include "Error.hh"
 #    include "Logging.hh"
 #    include "NetworkInterfaces.hh"
@@ -19,7 +20,7 @@ namespace litecore::p2p {
     struct BonjourProvider;
 
     extern LogDomain P2PLog;
-    LogDomain P2PLog("P2P");  //FIXME: Should be cross platform
+    LogDomain        P2PLog("P2P");  //FIXME: Should be cross platform
 
     static BonjourProvider* sProvider;
 
@@ -69,23 +70,34 @@ namespace litecore::p2p {
             return true;
         }
 
-        void resolved(sockaddr const& addr, uint32_t ttl) {
-            char   buf[INET6_ADDRSTRLEN];
-            string str;
-            if ( addr.sa_family == AF_INET ) {
-                inet_ntop(AF_INET, &reinterpret_cast<sockaddr_in const&>(addr).sin_addr, buf, sizeof(buf));
-                str = stringprintf("%s:%d", buf, _port);
-            } else {
-                inet_ntop(AF_INET6, &reinterpret_cast<sockaddr_in6 const&>(addr).sin6_addr, buf, sizeof(buf));
-                str = stringprintf("[%s]:%d", buf, _port);
-            }
-            C4PeerAddress address{.address = std::move(str), .expiration = c4_now() + 1000LL * ttl};
-            this->setAddresses({&address, 1});
+        void gotAddress(sockaddr const& addr, uint32_t ttl) {
+            _address           = addr;
+            _addressExpiration = c4_now() + 1000LL * ttl;
         }
 
-        void resolveFailed(DNSServiceErrorType err) { this->setAddresses({}, convertErrorCode(err)); }
+        void getAddressFailed(DNSServiceErrorType err) {
+            _addressExpiration = C4Timestamp(0);
+            resolvedURL(nullptr, convertErrorCode(err));
+        }
+
+        bool addressValid() { return _addressExpiration > c4_now(); }
+
+        string addressString() {
+            if ( !addressValid() ) return "";
+            char buf[INET6_ADDRSTRLEN];
+            if ( _address.sa_family == AF_INET ) {
+                inet_ntop(AF_INET, &reinterpret_cast<sockaddr_in const&>(_address).sin_addr, buf, sizeof(buf));
+            } else {
+                buf[0] = '[';
+                inet_ntop(AF_INET6, &reinterpret_cast<sockaddr_in6 const&>(_address).sin6_addr, &buf[1],
+                          sizeof(buf) - 2);
+                strlcat(buf, "]", sizeof(buf));
+            }
+            return buf;
+        }
 
         void removed() override {
+            _addressExpiration = C4Timestamp(0);
             freeServiceRef(_monitorTxtRef);
             freeServiceRef(_resolveRef);
             freeServiceRef(_getAddrRef);
@@ -93,8 +105,11 @@ namespace litecore::p2p {
 
         // Instance data is not protected by a mutex; all calls are made on a single dispatch queue.
         string        _domain;
+        string        _hostname;
         uint32_t      _interface{};
         uint16_t      _port{};
+        sockaddr      _address{};
+        C4Timestamp   _addressExpiration{};
         alloc_slice   _txtRecord;
         DNSServiceRef _monitorTxtRef{};  // reference to DNSServiceQueryRecord task
         DNSServiceRef _resolveRef{};     // reference to DNSServiceResolve task
@@ -110,20 +125,20 @@ namespace litecore::p2p {
         : public C4PeerDiscoveryProvider
         , public Logging {
         explicit BonjourProvider(string_view serviceType)
-            : C4PeerDiscoveryProvider("Bonjour")
+            : C4PeerDiscoveryProvider("DNS-SD")
             , Logging(P2PLog)
-            , _queue(dispatch_queue_create("LiteCore P2P", DISPATCH_QUEUE_SERIAL))
+            , _queue(dispatch_queue_create("LiteCore DNS-SD", DISPATCH_QUEUE_SERIAL))
             , _serviceType(stringprintf("_%s._tcp", string(serviceType).c_str())) {
             bool ok = true;
-            for (char c : serviceType)
-                if (!isalnum(uint8_t(c)) && c != '-') ok = false;
-            if (!ok || serviceType.empty() || serviceType.size() > 15)
+            for ( char c : serviceType )
+                if ( !isalnum(uint8_t(c)) && c != '-' ) ok = false;
+            if ( !ok || serviceType.empty() || serviceType.size() > 15 )
                 error::_throw(error::InvalidParameter, "invalid service type");
         }
 
         ~BonjourProvider() override {
             if ( _serviceRef ) {
-                Warn("Browser was not stopped before deallocating!");
+                Warn("Provider was not stopped before deallocating!");
                 freeServiceRef(_serviceRef);
             }
             dispatch_release(_queue);
@@ -135,22 +150,23 @@ namespace litecore::p2p {
             dispatch_async(_queue, ^{ do_start(); });
         }
 
-        /// Provider callback that stops browsing for peers. */
         void stopBrowsing() override {
             dispatch_async(_queue, ^{ do_stop(); });
         }
 
-        /// Provider callback that starts or stops monitoring the metadata of a peer.
         void monitorMetadata(C4Peer* peer, bool start) override {
             Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
             dispatch_async(_queue, ^{ do_monitor(bonjourPeer, start); });
         }
 
-        /// Provider callback that requests addresses be resolved for a peer.
-        /// This is a one-shot operation. The provider should call `resolvedAddresses` when done.
-        void resolveAddresses(C4Peer* peer) override {
+        void resolveURL(C4Peer* peer) override {
             Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
-            dispatch_async(_queue, ^{ do_resolve(bonjourPeer); });
+            dispatch_async(_queue, ^{ do_connect(bonjourPeer); });
+        }
+
+        void cancelResolveURL(C4Peer* peer) override {
+            Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
+            dispatch_async(_queue, ^{ do_cancelConnect(bonjourPeer); });
         }
 
         void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& meta) override {
@@ -256,9 +272,9 @@ namespace litecore::p2p {
                 };
 
                 auto monitorTxtRef = _serviceRef;
-                auto err           = DNSServiceQueryRecord(&monitorTxtRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P,
-                                                           peer->_interface, peer->id.c_str(), kDNSServiceType_TXT,
-                                                           kDNSServiceClass_IN, callback, peer);
+                auto err           = DNSServiceQueryRecord(
+                        &monitorTxtRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsIncludeP2P, peer->_interface,
+                        peer->id.c_str(), kDNSServiceType_TXT, kDNSServiceClass_IN, callback, peer);
                 if ( err == 0 ) {
                     peer->_monitorTxtRef = monitorTxtRef;
                 } else {
@@ -266,7 +282,7 @@ namespace litecore::p2p {
                 }
             } else {
                 if ( peer->_monitorTxtRef ) {
-                    logInfo("stopped monitoring TXT record of '%s'", peer->displayName.c_str());
+                    logInfo("stopped monitoring TXT record of '%s'", peer->displayName().c_str());
                     freeServiceRef(peer->_monitorTxtRef);
                 }
             }
@@ -275,25 +291,38 @@ namespace litecore::p2p {
         void monitorTxtResult(DNSServiceFlags flags, DNSServiceErrorType err, slice txtRecord, uint32_t ttl,
                               BonjourPeer* peer) {
             if ( err == 0 ) {
-                logInfo("flags=%04x; received TXT of %s (%zu bytes; ttl %d)", flags, peer->displayName.c_str(),
+                logInfo("flags=%04x; received TXT of %s (%zu bytes; ttl %d)", flags, peer->displayName().c_str(),
                         txtRecord.size, ttl);
                 peer->setTxtRecord(txtRecord);
             } else {
-                logError("error %d monitoring TXT record of %s", err, peer->displayName.c_str());
+                logError("error %d monitoring TXT record of %s", err, peer->displayName().c_str());
             }
             // leave the monitoring task running.
         }
 
-        //---- Resolving peer addresses:
+        //---- Resolving peer addresses and connecting:
 
-        /// API request to resolve a peer's address.
-        void do_resolve(Retained<BonjourPeer> peer) {
-            // This has to be done in two asynchronous steps:
+        /// API request to connect to a peer.
+        void do_connect(Retained<BonjourPeer> peer) {
+            // This has to be done in three steps:
             // 1. call DNSServiceResolve to get the hostname and port.
             // 2. call DNSServiceGetAddrInfo with the hostname to get the address.
+            // 3. open a C4Socket to the address+port.
+
+            // If we have a valid cached address, skip resolution:
+            if ( peer->addressValid() ) {
+                openConnection(peer);
+                return;
+            }
 
             if ( peer->_resolveRef || peer->_getAddrRef ) return;  // already resolving
 
+            if ( !peer->_hostname.empty() ) {
+                getAddress(peer);
+                return;
+            }
+
+            logInfo("Resolving hostname/port of peer %s ...", peer->id.c_str());
             auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interfaceIndex*/,
                                DNSServiceErrorType err, const char* fullname, const char* hostname,
                                uint16_t portBE,  // In network byte order
@@ -304,13 +333,19 @@ namespace litecore::p2p {
 
             auto resolveRef = _serviceRef;
             auto err        = DNSServiceResolve(&resolveRef, kDNSServiceFlagsShareConnection, peer->_interface,
-                                                peer->displayName.c_str(), _serviceType.c_str(), peer->_domain.c_str(),
+                                                peer->displayName().c_str(), _serviceType.c_str(), peer->_domain.c_str(),
                                                 callback, peer);
             if ( err == 0 ) {
                 peer->_resolveRef = resolveRef;
             } else {
-                peer->resolveFailed(err);
+                peer->getAddressFailed(err);
             }
+        }
+
+        /// API request to cancel a connection attempt.
+        void do_cancelConnect(Retained<BonjourPeer> peer) {
+            freeServiceRef(peer->_resolveRef);
+            freeServiceRef(peer->_getAddrRef);
         }
 
         // completion routine of DNSServiceResolve
@@ -318,14 +353,21 @@ namespace litecore::p2p {
                            uint16_t port, slice txtRecord, BonjourPeer* peer) {
             freeServiceRef(peer->_resolveRef);
             if ( err ) {
-                peer->resolveFailed(err);
+                peer->getAddressFailed(err);
                 return;
             }
 
-            peer->_port = port;
             logInfo("flags=%04x; resolved '%s' as hostname=%s, port=%d", flags, fullname, hostname, port);
-
+            peer->_hostname = hostname;
+            peer->_port     = port;
             peer->setTxtRecord(txtRecord);
+
+            getAddress(peer);
+        }
+
+        void getAddress(BonjourPeer* peer) {
+            logInfo("Getting IP address of peer %s ...", peer->id.c_str());
+            Assert(!peer->_hostname.empty());
 
             auto callback = [](DNSServiceRef, DNSServiceFlags flags, uint32_t /*interface*/, DNSServiceErrorType err,
                                const char* hostname, const sockaddr* address, uint32_t ttl, void* ctx) {
@@ -334,12 +376,12 @@ namespace litecore::p2p {
             };
 
             auto getAddrRef = _serviceRef;
-            err             = DNSServiceGetAddrInfo(&getAddrRef, kDNSServiceFlagsShareConnection, peer->_interface,
+            auto err        = DNSServiceGetAddrInfo(&getAddrRef, kDNSServiceFlagsShareConnection, peer->_interface,
                                                     kDNSServiceProtocol_IPv4,  // could use 0 to get ipv4 & ipv6
-                                                    hostname, callback, peer);
+                                                    peer->_hostname.c_str(), callback, peer);
             if ( err == 0 ) peer->_getAddrRef = getAddrRef;
             else
-                peer->resolveFailed(err);
+                peer->getAddressFailed(err);
         }
 
         // completion routine of DNSServiceGetAddrInfo
@@ -348,10 +390,16 @@ namespace litecore::p2p {
             freeServiceRef(peer->_getAddrRef);
             if ( err == 0 ) {
                 logInfo("flags=%04x; got IP address of '%s' (ttl=%d)", flags, hostname, ttl);
-                peer->resolved(*address, ttl);
+                peer->gotAddress(*address, ttl);
+                openConnection(peer);
             } else {
-                peer->resolveFailed(err);
+                peer->getAddressFailed(err);
             }
+        }
+
+        void openConnection(BonjourPeer* peer) {
+            net::Address addr("wss", peer->addressString(), peer->_port, "/db");  //TODO: Real port, db name
+            peer->resolvedURL(string(addr.url()), {});
         }
 
         //---- Service publishing:
@@ -396,8 +444,8 @@ namespace litecore::p2p {
             auto registerRef = _serviceRef;
             auto err = DNSServiceRegister(&registerRef, kDNSServiceFlagsShareConnection | kDNSServiceFlagsNoAutoRename,
                                           kDNSServiceInterfaceIndexAny, _myName.c_str(), _serviceType.c_str(), nullptr,
-                                          nullptr, htons(_myPort), uint16_t(_myTxtRecord.size), _myTxtRecord.buf, regCallback,
-                                          this);
+                                          nullptr, htons(_myPort), uint16_t(_myTxtRecord.size), _myTxtRecord.buf,
+                                          regCallback, this);
             if ( err == 0 ) _registerRef = registerRef;
             return err;
         }
