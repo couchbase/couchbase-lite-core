@@ -20,12 +20,26 @@ using namespace litecore;
 using namespace litecore::p2p;
 
 namespace litecore::p2p {
+
+    // My service UUID
+    static constexpr const char* kP2PServiceID              = "15BB6CAE-6B6A-4CB3-B83F-A9826AE44155";
+    // Service characteristic whose value is the L2CAP port (PSM) the peeri s listening on
+    static constexpr const char* kPortCharacteristicID      = "ABDD3056-28FA-441D-A470-55A75A52553A";
+    // Service characteristic whose value is the peer's Fleece-encoded metadata
+    static constexpr const char* kMetadataCharacteristicID  = "936D7669-E532-42BF-8B8D-97E3C1073F74";
+
+    // Note: kPortCharacteristicID's value comes from <CoreBluetooth/CBUUID.h>:
+    //    * The PSM (a little endian uint16_t) of an L2CAP Channel associated with the GATT service
+    //    * containing this characteristic.  Servers can publish this characteristic with the UUID
+    //    * ABDD3056-28FA-441D-A470-55A75A52553A
+
+    static constexpr int kMinimumRSSI = -80;    // Discovery ignores peripherals with signal lower than this
+
+
     extern LogDomain P2PLog;
 
     struct BluetoothProvider;
     static BluetoothProvider* sProvider;
-
-    static constexpr int kMinimumRSSI = -80;
 
 
     /** C4Peer subclass created by BluetoothProvider. */
@@ -42,21 +56,31 @@ namespace litecore::p2p {
             _peripheral = nil;
         }
 
-        CBPeripheral* _peripheral {};
+        CBPeripheral*   _peripheral {};
+        CBL2CAPPSM      _port {};
     };
 
 }
 
 
-@interface LiteCoreBluetoothProvider : NSObject <CBCentralManagerDelegate, CBPeripheralDelegate>
+@interface LiteCoreBTCentral : NSObject <CBCentralManagerDelegate, CBPeripheralDelegate>
 - (instancetype) initWithCounterpart: (BluetoothProvider*)counterpart
                                queue: (dispatch_queue_t)queue
-                         serviceUUID: (NSString*)serviceUUID;
+                         allServices: (bool)allServices;
 - (void) startBrowsing;
 - (void) stopBrowsing;
 - (void) monitorPeer: (Retained<BluetoothPeer>)peer state: (bool)state;
 - (void) connect: (Retained<BluetoothPeer>)peer;
 - (void) cancelConnect: (Retained<BluetoothPeer>)peer;
+@end
+
+
+@interface LiteCoreBTPeripheral : NSObject <CBPeripheralManagerDelegate>
+- (instancetype) initWithCounterpart: (BluetoothProvider*)counterpart
+                               queue: (dispatch_queue_t)queue;
+- (void) publish: (string)name port: (uint16_t)port metadata: (C4Peer::Metadata)md;
+- (void) unpublish;
+- (void) updateMetadata: (C4Peer::Metadata)md;
 @end
 
 
@@ -72,46 +96,48 @@ namespace litecore::p2p {
         ,Logging(P2PLog)
         ,_queue(dispatch_queue_create("LiteCore Bluetooth", DISPATCH_QUEUE_SERIAL))
         {
-            NSString* uuid = serviceType.empty() ? nil : @(serviceType.c_str());
-            _counterpart = [[LiteCoreBluetoothProvider alloc] initWithCounterpart: this queue: _queue serviceUUID: uuid];
+            _central    = [[LiteCoreBTCentral alloc] initWithCounterpart: this
+                                                                   queue: _queue
+                                                             allServices: serviceType.empty()];
+            _peripheral = [[LiteCoreBTPeripheral alloc] initWithCounterpart: this queue: _queue];
         }
 
         void startBrowsing() override {
-            dispatch_async(_queue, ^{ [_counterpart startBrowsing]; });
+            dispatch_async(_queue, ^{ [_central startBrowsing]; });
         }
 
         void stopBrowsing() override {
-            dispatch_async(_queue, ^{ [_counterpart stopBrowsing]; });
+            dispatch_async(_queue, ^{ [_central stopBrowsing]; });
         }
 
         void monitorMetadata(C4Peer* peer, bool start) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_counterpart monitorPeer: btPeer state: start]; });
+            dispatch_async(_queue, ^{ [_central monitorPeer: btPeer state: start]; });
         }
 
         void resolveURL(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_counterpart connect: btPeer]; });
+            dispatch_async(_queue, ^{ [_central connect: btPeer]; });
         }
 
         void cancelResolveURL(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_counterpart cancelConnect: btPeer]; });
+            dispatch_async(_queue, ^{ [_central cancelConnect: btPeer]; });
         }
 
         void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& meta) override {
-//            string           nameStr(displayName);
-//            C4Peer::Metadata metaCopy = meta;
-//            dispatch_async(_queue, ^{ do_publish(std::move(nameStr), port, std::move(metaCopy)); });
+            string           nameStr(displayName);
+            C4Peer::Metadata metaCopy = meta;
+            dispatch_async(_queue, ^{ [_peripheral publish: std::move(nameStr) port: port metadata: std::move(metaCopy)]; });
         }
 
         void unpublish() override {
-//            dispatch_async(_queue, ^{ do_unpublish(); });
+            dispatch_async(_queue, ^{ [_peripheral unpublish]; });
         }
 
         void updateMetadata(C4Peer::Metadata const& meta) override {
-//            C4Peer::Metadata metaCopy = meta;
-//            dispatch_async(_queue, ^{ do_updateMetadata(std::move(metaCopy)); });
+            C4Peer::Metadata metaCopy = meta;
+            dispatch_async(_queue, ^{ [_peripheral updateMetadata: std::move(metaCopy)]; });
         }
 
         //---- Inherited methods redeclared as public so the Obj-C class can call them:
@@ -123,8 +149,9 @@ namespace litecore::p2p {
         bool removePeer(C4Peer* peer)                       {return C4PeerDiscoveryProvider::removePeer(peer);}
 
       private:
-        dispatch_queue_t const      _queue;             // Dispatch queue I run on
-        LiteCoreBluetoothProvider*  _counterpart {};    // My Obj-C instance that does the real work
+        dispatch_queue_t const  _queue;             // Dispatch queue I run on
+        LiteCoreBTCentral*      _central {};        // Obj-C instance that does the real discovery
+        LiteCoreBTPeripheral*   _peripheral {};     // Obj-C instance that does the real publishing
     };
 
     void InitializeBluetoothProvider(string_view serviceType) {
@@ -135,13 +162,35 @@ namespace litecore::p2p {
         });
     }
 
+
+    static C4Error c4errorFrom(const char* error) {
+        if (!error) return kC4NoError;
+        return C4Error::make(LiteCoreDomain, kC4ErrorIOError, error);  //TODO: Real error
+    }
+
+    static C4Error c4errorFrom(NSError* error) {
+        if (!error) return kC4NoError;
+        return C4Error::make(LiteCoreDomain, kC4ErrorIOError, error.description.UTF8String);  //TODO: Real error
+    }
+
+    static CBUUID* mkUUID(const char* str)      {return [CBUUID UUIDWithString: @(str)];}
+    static const char* idStr(CBUUID* p)         {return p.description.UTF8String;}
+    static const char* idStr(NSUUID* p)         {return p.description.UTF8String;}
+    static const char* idStr(CBAttribute* attr) {return idStr(attr.UUID);}
+    static const char* idStr(CBPeripheral* p)   {return idStr(p.identifier);}
+
+    static Retained<BluetoothPeer> peerForPeripheral(CBPeripheral* p) {
+        Retained<C4Peer> peer = C4PeerDiscovery::peerWithID(idStr(p));
+        return Retained(dynamic_cast<BluetoothPeer*>(peer.get()));
+    }
+
 }  // namespace litecore::p2p
 
 
-#pragma mark - OBJECTIVE-C IMPLEMENTATION:
+#pragma mark - OBJECTIVE-C CENTRAL MANAGER:
 
 
-@implementation LiteCoreBluetoothProvider
+@implementation LiteCoreBTCentral
 {
     BluetoothProvider*  _counterpart;
     dispatch_queue_t    _queue;
@@ -151,21 +200,21 @@ namespace litecore::p2p {
 
 - (instancetype) initWithCounterpart: (BluetoothProvider*) counterpart
                                queue: (dispatch_queue_t)queue
-                         serviceUUID: (NSString*)serviceUUID
+                         allServices: (bool)allServices
 {
     self = [super init];
     if (self) {
         _counterpart = counterpart;
         _queue = queue;
-        if (serviceUUID)
-            _serviceUUIDs = @[ [CBUUID UUIDWithString: serviceUUID] ];
+        if (!allServices)
+            _serviceUUIDs = @[ mkUUID(kP2PServiceID) ];
     }
     return self;
 }
 
 - (void) startBrowsing {
     if (!_manager) {
-        _counterpart->_log(LogLevel::Info, "Starting browsing...");
+        _counterpart->_log(LogLevel::Verbose, "Starting browsing");
         _manager = [[CBCentralManager alloc] initWithDelegate: self
                                                         queue: _queue
                                                       options: @{CBCentralManagerOptionShowPowerAlertKey: @YES}];
@@ -175,13 +224,13 @@ namespace litecore::p2p {
 
 - (void) _startDiscovery {
     if (!_manager.isScanning && _manager.state == CBManagerStatePoweredOn) {
-        _counterpart->_log(LogLevel::Info, "Scanning for BLE peripherals");
+        _counterpart->_log(LogLevel::Verbose, "Scanning for BLE peripherals");
         [_manager scanForPeripheralsWithServices: _serviceUUIDs options: nil];
     }
 }
 
 - (void) stopBrowsing {
-    _counterpart->_log(LogLevel::Info, "Stopping browsing");
+    _counterpart->_log(LogLevel::Verbose, "Stopping browsing");
     [self _stopDiscoveryWithError: nil];
 }
 
@@ -189,10 +238,7 @@ namespace litecore::p2p {
     if (_manager.isScanning)
         [_manager stopScan];
     _manager = nil;
-    C4Error c4err {};
-    if (error)
-        c4err = C4Error::make(LiteCoreDomain, kC4ErrorIOError, error);  //TODO: Real error
-    _counterpart->browseStateChanged(false, c4err);
+    _counterpart->browseStateChanged(false, c4errorFrom(error));
 }
 
 - (void) monitorPeer: (Retained<BluetoothPeer>)peer state: (bool)state {
@@ -213,7 +259,14 @@ namespace litecore::p2p {
 - (void) cancelConnect: (Retained<BluetoothPeer>)peer { }
 
 
+- (void) connectToPeer: (Retained<BluetoothPeer>)peer {
+    if (auto peripheral = peer->_peripheral; peripheral && peer->_port)
+        [peripheral openL2CAPChannel: peer->_port];
+}
+
+
 #pragma mark - CBCentralManagerDelegate
+
 
 - (void) centralManagerDidUpdateState: (CBCentralManager*)central {
     switch (central.state) {
@@ -230,7 +283,7 @@ namespace litecore::p2p {
             return [self _stopDiscoveryWithError: "Bluetooth is resetting"];
         case CBManagerStateUnknown:
         default:
-            LogToAt(P2PLog, Warning, "Unknown Bluetooth state: %ld", long(central.state));
+            _counterpart->_log(LogLevel::Warning, "Unknown Bluetooth state: %ld", long(central.state));
             return;
     }
 }
@@ -275,9 +328,9 @@ static alloc_slice convert(id value) {
   didDiscoverPeripheral: (CBPeripheral*)peripheral
       advertisementData: (NSDictionary<NSString*,id>*)advert
                    RSSI: (NSNumber*)RSSI {
-    string peerID = peripheral.identifier.UUIDString.UTF8String;
+    string peerID = idStr(peripheral);
     if (RSSI.intValue < kMinimumRSSI || ![advert[CBAdvertisementDataIsConnectable] boolValue]) {
-        LogToAt(P2PLog, Verbose, "Bluetooth peripheral %s RSSI too low: %d", peerID.c_str(), RSSI.intValue);
+        _counterpart->_log(LogLevel::Debug, "Bluetooth peripheral %s RSSI too low: %d", peerID.c_str(), RSSI.intValue);
         [_manager cancelPeripheralConnection: peripheral];
         _counterpart->removePeer(peerID);
     } else {
@@ -308,19 +361,12 @@ static alloc_slice convert(id value) {
         if (auto peer = C4PeerDiscovery::peerWithID(peerID)) {
             peer->setMetadata(metadata);
         } else {
-            LogToAt(P2PLog, Verbose, "Bluetooth peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
+            _counterpart->_log(LogLevel::Verbose, "Bluetooth peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
             peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, metadata, peripheral);
             _counterpart->addPeer(peer);
         }
     }
 }
-
-static Retained<C4Peer> peerForPeripheral(CBPeripheral* peripheral) {
-    return C4PeerDiscovery::peerWithID(peripheral.identifier.UUIDString.UTF8String);
-}
-
-static const char* idStr(CBPeripheral* p) {return p.identifier.UUIDString.UTF8String;}
-static const char* idStr(CBUUID* p) {return p.description.UTF8String;}
 
 - (void)centralManager:(CBCentralManager*)central didConnectPeripheral:(CBPeripheral*)peripheral {
     _counterpart->_log(LogLevel::Info, "Did connect to peripheral %s", idStr(peripheral));
@@ -342,38 +388,38 @@ static const char* idStr(CBUUID* p) {return p.description.UTF8String;}
     peripheral.delegate = nil;
 }
 
+
 #pragma mark - CBPeripheralDelegate
 
+
 - (void) peripheralDidUpdateName: (CBPeripheral*)peripheral {
-    _counterpart->_log(LogLevel::Info, "Peripheral %s is now named \"%s\"", idStr(peripheral), peripheral.name.UTF8String);
+    _counterpart->_log(LogLevel::Verbose, "Peripheral %s is now named \"%s\"", idStr(peripheral), peripheral.name.UTF8String);
     if (auto peer = peerForPeripheral(peripheral))
         peer->setDisplayName(peripheral.name.UTF8String);
 }
 
 - (void) peripheral: (CBPeripheral*)peripheral didDiscoverServices: (NSError*)error {
     if (error) {
-        LogToAt(P2PLog,
-                Info,
-                "Error discovering services for peripheral %s: %s",
-                idStr(peripheral),
-                error.description.UTF8String);
+        _counterpart->_log(LogLevel::Info, "Error discovering services for peripheral %s: %s",
+                idStr(peripheral), error.description.UTF8String);
         [_manager cancelPeripheralConnection: peripheral];
         return;
     }
 
-    if (peripheral.services.count == 0) {
-        _counterpart->_log(LogLevel::Info, "No services found for %s", idStr(peripheral));
-        [_manager cancelPeripheralConnection: peripheral];
-        return;
-    }
-
+    bool found = false;
     for (CBService* service in peripheral.services) {
-        _counterpart->_log(LogLevel::Info, "%s (%s) has service %s",
-                           idStr(peripheral),
-                           peripheral.name.UTF8String,
-                           idStr(service.UUID));
-        [peripheral discoverCharacteristics: nil forService: service];
+        _counterpart->_log(LogLevel::Verbose, "%s (%s) has service %s",
+                           idStr(peripheral), peripheral.name.UTF8String, idStr(service.UUID));
+        if ([service.UUID isEqual: mkUUID(kP2PServiceID)]) {
+            _counterpart->_log(LogLevel::Verbose, "%s (%s) has P2P service!",
+                               idStr(peripheral), peripheral.name.UTF8String);
+            [peripheral discoverCharacteristics: @[mkUUID(kPortCharacteristicID), mkUUID(kMetadataCharacteristicID)]
+                                     forService: service];
+            found = true;
+        }
     }
+    if (!found)
+        [_manager cancelPeripheralConnection: peripheral];
 }
 
 - (void) peripheral:(CBPeripheral*)peripheral didModifyServices:(NSArray<CBService*>*)invalidatedServices {
@@ -396,14 +442,210 @@ static const char* idStr(CBUUID* p) {return p.description.UTF8String;}
         return;
     }
 
+    Retained<BluetoothPeer> peer = peerForPeripheral(peripheral);
+    if (!peer)
+        return;
+
     for (CBCharacteristic* ch in service.characteristics) {
-        _counterpart->_log(LogLevel::Info, "%s (%s) service %s has characteristic %s",
-                           idStr(peripheral),
-                           peripheral.name.UTF8String,
-                           idStr(service.UUID),
-                           idStr(ch.UUID));
+        _counterpart->_log(LogLevel::Verbose, "%s (%s) service %s has characteristic %s",
+                           idStr(peripheral), peripheral.name.UTF8String, idStr(service.UUID), idStr(ch.UUID));
+        if ([ch.UUID isEqual: mkUUID(kPortCharacteristicID)]) {
+            if (ch.value.length == sizeof(CBL2CAPPSM)) {
+                memcpy(&peer->_port, ch.value.bytes, sizeof(CBL2CAPPSM));
+                _counterpart->_log(LogLevel::Info, "%s (%s) listens on port/PSM %u",
+                                   idStr(peripheral), peripheral.name.UTF8String, peer->_port);
+            }
+        } else if ([ch.UUID isEqual: mkUUID(kMetadataCharacteristicID)]) {
+            _counterpart->_log(LogLevel::Info, "%s (%s) has metadata (%zu bytes)",
+                               idStr(peripheral), peripheral.name.UTF8String, ch.value.length);
+        }
     }
 }
+
+@end
+
+
+#pragma mark - OBJECTIVE-C PERIPHERAL MANAGER:
+
+
+@implementation LiteCoreBTPeripheral
+{
+    BluetoothProvider*  _counterpart;
+    dispatch_queue_t    _queue;
+    NSString* _name;
+    uint16_t _port;
+    C4Peer::Metadata _metadata;
+    CBUUID*   _serviceUUID;
+    CBPeripheralManager*   _manager;
+    CBManagerState _managerState;
+    CBMutableCharacteristic* _portCharacteristic;
+    CBMutableCharacteristic* _metadataCharacteristic;
+}
+
+- (instancetype) initWithCounterpart: (nonnull BluetoothProvider*) counterpart
+                               queue: (dispatch_queue_t)queue
+{
+    self = [super init];
+    if (self) {
+        _counterpart = counterpart;
+        _queue = queue;
+        _serviceUUID = mkUUID(kP2PServiceID);
+    }
+    return self;
+}
+
+- (void) publish: (string)name port: (uint16_t)port metadata: (C4Peer::Metadata)md {
+    _counterpart->_log(LogLevel::Verbose, "Starting publishing...");
+    _name = @(name.c_str());
+    _port = port;
+    _metadata = md;
+    if (!_manager) {
+        _manager = [[CBPeripheralManager alloc] initWithDelegate: self
+                                                           queue: _queue
+                                                         options: @{CBPeripheralManagerOptionShowPowerAlertKey: @YES}];
+    }
+    [self _startAdvertise];
+}
+
+- (void) unpublish {
+    [self _stopAdvertise: nullptr];
+    _manager = nil;
+}
+
+- (void) updateMetadata: (C4Peer::Metadata)md {
+    _metadata = std::move(md);
+}
+
+- (void) _startAdvertise {
+    if (_manager.isAdvertising || _managerState == CBManagerStateUnknown)
+        return;
+
+    _portCharacteristic = [[CBMutableCharacteristic alloc] initWithType: mkUUID(kPortCharacteristicID)
+                                                             properties: CBCharacteristicPropertyRead
+                                                                  value: [NSData data]
+                                                            permissions: CBAttributePermissionsReadable];
+    _metadataCharacteristic = [[CBMutableCharacteristic alloc] initWithType: mkUUID(kMetadataCharacteristicID)
+                                                                 properties: CBCharacteristicPropertyRead | CBCharacteristicPropertyNotify
+                                                                      value: nil
+                                                                permissions: CBAttributePermissionsReadable];
+
+    CBMutableService *service = [[CBMutableService alloc] initWithType: _serviceUUID primary: YES];
+    service.characteristics = @[ _portCharacteristic, _metadataCharacteristic];
+    [_manager removeAllServices];
+    [_manager addService: service];
+
+    [_manager startAdvertising: @{
+        CBAdvertisementDataLocalNameKey: _name,
+        CBAdvertisementDataServiceUUIDsKey: @[_serviceUUID]
+    }];
+
+    _port = 0;
+    [_manager publishL2CAPChannelWithEncryption: YES];
+}
+
+- (void) _stopAdvertise: (const char*)errorMessage {
+    if (_manager.isAdvertising) {
+        [_manager stopAdvertising];
+        if (_port != 0) {
+            [_manager unpublishL2CAPChannel: _port];
+            _port = 0;
+        }
+        _counterpart->publishStateChanged(false, c4errorFrom(errorMessage));
+    }
+}
+
+#pragma mark - CBPeripheralManagerDelegate
+
+- (void) peripheralManagerDidUpdateState: (nonnull CBPeripheralManager*)peripheral {
+    _managerState = peripheral.state;
+    switch (peripheral.state) {
+        case CBManagerStatePoweredOn:
+            _counterpart->_log(LogLevel::Verbose, "Bluetooth is on!");
+            [self _startAdvertise];
+            break;
+        case CBManagerStatePoweredOff:
+            return [self _stopAdvertise: "Bluetooth is off"];
+        case CBManagerStateUnauthorized:
+            return [self _stopAdvertise: "Bluetooth access is not authorized. Check settings"];
+        case CBManagerStateUnsupported:
+            return [self _stopAdvertise: "This device does not support Bluetooth LE"];
+        case CBManagerStateResetting:
+            return [self _stopAdvertise: "Bluetooth is resetting"];
+        case CBManagerStateUnknown:
+        default:
+            _counterpart->_log(LogLevel::Info, "Unknown Bluetooth state.");
+    }
+}
+
+- (void) peripheralManagerDidStartAdvertising: (CBPeripheralManager*)peripheral
+                                        error: (nullable NSError*)error
+{
+    if (error) {
+        _counterpart->_log(LogLevel::Info, "Error advertising: %s", error.description.UTF8String);
+        _counterpart->publishStateChanged(false, c4errorFrom(error));
+    } else {
+        _counterpart->_log(LogLevel::Verbose, "Advertising");
+    }
+}
+
+- (void) peripheralManager: (CBPeripheralManager*)peripheral
+             didAddService: (CBService*)service
+                     error: (nullable NSError*)error
+{
+    if (error) {
+        _counterpart->_log(LogLevel::Info, "Error when adding service: %s", error.description.UTF8String);
+        [self _stopAdvertise: error.description.UTF8String];
+    } else {
+        _counterpart->_log(LogLevel::Verbose, "Advertising service");
+    }
+}
+
+- (void) peripheralManager:(CBPeripheralManager *)peripheral
+     didReceiveReadRequest:(CBATTRequest *)request
+{
+    _counterpart->_log(LogLevel::Info, "Read request for characteristic %s offset %zu",
+                       idStr(request.characteristic), size_t(request.offset));
+    CBATTError result = CBATTErrorAttributeNotFound;
+    if (request.offset != 0) {
+        result = CBATTErrorInvalidOffset;
+    } else if (request.characteristic == _portCharacteristic) {
+        request.value = [NSData dataWithBytes: &_port length: sizeof(_port)];
+        result = CBATTErrorSuccess;
+    } else if (request.characteristic == _metadataCharacteristic) {
+        request.value = [NSData dataWithBytes: "TODO" length: 4];//TODO: Encode the dict
+        result = CBATTErrorSuccess;
+    }
+    [peripheral respondToRequest: request withResult: result];
+}
+
+- (void) peripheralManager:(CBPeripheralManager *)peripheral
+    didPublishL2CAPChannel:(CBL2CAPPSM)PSM
+                     error:(nullable NSError *)error
+{
+    if (error) {
+        _counterpart->_log(LogLevel::Info, "Error publishing L2CAP channel: %s", error.description.UTF8String);
+        [self _stopAdvertise: error.description.UTF8String];
+    } else {
+        _counterpart->_log(LogLevel::Info, "Published L2CAP channel on port/PSM %u", PSM);
+        _port = PSM;
+
+        [_manager updateValue: [NSData dataWithBytes: &_port length: sizeof(_port)]
+            forCharacteristic: _portCharacteristic
+         onSubscribedCentrals: nil];
+
+        _counterpart->publishStateChanged(true);
+    }
+}
+
+- (void) peripheralManager:(CBPeripheralManager *)peripheral
+       didOpenL2CAPChannel:(nullable CBL2CAPChannel *)channel
+                     error:(nullable NSError *)error
+{
+    _counterpart->_log(LogLevel::Info, "Incoming L2CAP connection!");
+    // TODO: Handle it!
+}
+
+
 
 
 @end
