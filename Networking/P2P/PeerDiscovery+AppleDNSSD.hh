@@ -13,7 +13,7 @@ namespace litecore::p2p {
     void InitializeBonjourProvider(string_view serviceType);
 
     fleece::alloc_slice EncodeMetadataAsTXT(C4Peer::Metadata const&, int* outError = nullptr);
-    C4Peer::Metadata DecodeTXTToMetadata(slice txtRecord);
-}
+    C4Peer::Metadata    DecodeTXTToMetadata(slice txtRecord);
+}  // namespace litecore::p2p
 
 #endif  //__APPLE__
