@@ -169,7 +169,7 @@ _(optional)_ +
 `versioning`: `rev-trees` (default) or `version-vectors` -- see the <<revIDs>> section. +
 _other properties_: Named parameters for the filter function
 _(optional)_ +
-`sendReplacementRevs`: Boolean indicating whether the passive peer (pusher) should send replacement revs rather than NoRev when the body of a requested rev is unavailable and a newer revision is available. _(optional)_+
+`sendReplacementRevs`: Boolean indicating whether the passive peer (pusher) should send replacement revs rather than NoRev when the body of a requested rev is unavailable and a newer revision is available. _(optional)_ +
 
 Body: JSON dictionary _(optional)_
 
@@ -374,9 +374,9 @@ The recipient MUST send a response unless the request was sent
 added the revision to its database, or has failed to add it. On success
 the response can be empty; on failure it MUST be an error.
 
-Note: The recipient may need to send one or more `getattach` messages
+Note: The recipient may need to send one or more `getAttachment` messages
 while processing the `rev` message, in which case it MUST NOT send the
-`rev`'s response until it's received responses to the `getattach`
+``rev``'s response until it's received responses to the `getAttachment`
 message(s) and durably added the attachments, as well as the document,
 to its database.
 
@@ -588,17 +588,17 @@ Push interaction diagram
        │                                                                                        │        
        ├──────────────────────────────rev RQ [{docId, rev1, body}]──────────────────────────────▶        
        │                                                                                        │        
-       │                                     getAttach RQ                                       │        
+       │                                     getAttachment RQ                                   │
        ◀───────────────────────────────────────[digest]─────────────────────────────────────────┤        
        │                                                                                        │        
        │                                                                                        │        
-       ├──────────────────────────────────getAttach RSP [body]──────────────────────────────────▶        
+       ├──────────────────────────────────getAttachment RSP [body]──────────────────────────────▶
        │                                                                                        │        
        │                                                                                        │        
-       ◀──────────────────────────────────getAttach RQ [digest]─────────────────────────────────┤        
+       ◀──────────────────────────────────getAttachment RQ [digest]─────────────────────────────┤
        │                                                                                        │        
        │                                                                                        │        
-       ├───────────────────────────────────getAttach RSP [body]─────────────────────────────────▶        
+       ├───────────────────────────────────getAttachment RSP [body]─────────────────────────────▶
        │                                                                                        │        
        │                                                                                        │        
        ◀───────────────────────────────────────rev RSP []───────────────────────────────────────┤        
@@ -690,17 +690,17 @@ Pull interaction digram
       │                                                                                        │        
       ◀──────────────────────────────rev RQ [{docId, rev1, body}]──────────────────────────────┤        
       │                                                                                        │        
-      │                                     getAttach RQ                                       │        
+      │                                     getAttachment RQ                                   │        
       ├───────────────────────────────────────[digest]─────────────────────────────────────────▶        
       │                                                                                        │        
       │                                                                                        │        
-      ◀──────────────────────────────────getAttach RSP [body]──────────────────────────────────┤        
+      ◀──────────────────────────────────getAttachment RSP [body]──────────────────────────────┤        
       │                                                                                        │        
       │                                                                                        │        
-      ├──────────────────────────────────getAttach RQ [digest]─────────────────────────────────▶        
+      ├──────────────────────────────────getAttachment RQ [digest]─────────────────────────────▶        
       │                                                                                        │        
       │                                                                                        │        
-      ◀───────────────────────────────────getAttach RSP [body]─────────────────────────────────┤        
+      ◀───────────────────────────────────getAttachment RSP [body]─────────────────────────────┤        
       │                                                                                        │        
       │                                                                                        │        
       ├───────────────────────────────────────rev RSP []───────────────────────────────────────▶        
