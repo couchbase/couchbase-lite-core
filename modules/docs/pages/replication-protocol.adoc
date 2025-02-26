@@ -374,6 +374,8 @@ The recipient MUST send a response unless the request was sent
 added the revision to its database, or has failed to add it. On success
 the response can be empty; on failure it MUST be an error.
 
+The sender may send this as `noreply` if there are no attachments or `deltaSrc` is not present.
+
 Note: The recipient may need to send one or more `getAttachment` messages
 while processing the `rev` message, in which case it MUST NOT send the
 ``rev``'s response until it's received responses to the `getAttachment`
@@ -398,7 +400,7 @@ but that revision is not available, and the peer's message did not include the `
 as a placeholder to inform the `peer` that there will be no corresponding 
 `rev` message sent for the requested revision.  This prevents the peer 
 from waiting for a `rev` message that will never come, which could cause 
-the replication to get stuck.
+the replication to get stuck. This message is always sent with `noreply`.
 
 
 [[getattachment]]
