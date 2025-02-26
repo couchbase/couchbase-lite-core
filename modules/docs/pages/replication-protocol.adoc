@@ -115,6 +115,7 @@ aware (i.e. each collection can have its own checkpoint).  If this message is se
 Response:
 
 `rev`: The MVCC revision ID of the checkpoint (_not_ the same as a document revID!) +
+
 Body: JSON data of the checkpoint
 
 [[getCollections]]
@@ -137,6 +138,7 @@ setCheckpoint
 `client`: Unique ID of client checkpoint to store +
 `rev`: Last known MVCC revision ID of the checkpoint _(omitted if this
 is a new checkpoint)_ +
+
 Body: JSON data of checkpoint
 
 Stores a checkpoint on the receiver. The JSON object in the request body
@@ -167,8 +169,9 @@ _(optional)_ +
 `versioning`: `rev-trees` (default) or `version-vectors` -- see the <<revIDs>> section. +
 _other properties_: Named parameters for the filter function
 _(optional)_ +
-Body: JSON dictionary _(optional)_ +
-`sendReplacementRevs`: Boolean indicating whether the passive peer (pusher) should send replacement revs rather than NoRev when the body of a requested rev is unavailable and a newer revision is available. _(optional)_
+`sendReplacementRevs`: Boolean indicating whether the passive peer (pusher) should send replacement revs rather than NoRev when the body of a requested rev is unavailable and a newer revision is available. _(optional)_+
+
+Body: JSON dictionary _(optional)_
 
 Asks the recipient to begin sending change messages starting from the
 sequence just after the one given by the `since` property, or from the
@@ -255,6 +258,7 @@ would resolve it and push the merge.
 Response:
 
 `maxHistory`: Max length of revision history to send _(optional; not used with version vectors)_ +
+
 Body: JSON array (see below)
 
 The response message indicates which revisions the recipient wants to
@@ -335,8 +339,9 @@ replacementRev, this is the originally requested Revision ID. _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
 q.v.)_. If this is a replacementRev, this will be the sequence of the original requested rev. +
 `history`: Revision history (list of revision IDs) -- see the <<revIDs>> section. +
+`noconflicts`: true if the revision may not create a conflict _(optional; default is false)_ +
+
 Body: Document JSON
-`noconflicts`: true if the revision may not create a conflict _(optional; default is false)_
 
 Sends one document revision, either meant for the specified collection or the default collection if one is not specified. The `id`, `rev`, `deleted` properties are
 optional if corresponding `_id`, `_rev`, `_deleted` properties exist in
@@ -384,6 +389,7 @@ norev
 `sequence`: Sequence ID, JSON-encoded _(optional)_ +
 `error`: The error number, which should correspond to HTTP Response status codes +
 `reason`: A more detailed description of the cause of the error _(optional)_
+
 Body: None
 
 In the case a rev is requested from a peer via a `changes` or `subChanges` response,
@@ -433,6 +439,7 @@ proveAttachment
 `collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `digest`: Attachment digest (as found in document `_attachments`
 metadata.) +
+
 Body: A _nonce_: 16 to 255 bytes of random binary data
 
 Asks the recipient to prove that it has the body of the attachment with
@@ -532,14 +539,15 @@ it wants and which ancestors it already has
 with a BLIP/409 or HTTP/409 error, and instead accept `proposeChanges`
 messages.
 5.  For each requested revision:
-1.  Client sends document body in a `rev` message
-2.  Server looks at each newly-added attachment digest in each revision
+[arabic,start=1]
+.. Client sends document body in a `rev` message
+.. Server looks at each newly-added attachment digest in each revision
 and
-* sends a `getAttachment` for each attachment it doesn't have; client
+** sends a `getAttachment` for each attachment it doesn't have; client
 sends data
-* sends a `proveAttachment` for each attachment it already has; client
+** sends a `proveAttachment` for each attachment it already has; client
 sends proof
-3.  Server adds revision & attachments to database, and sends success
+.. Server adds revision & attachments to database, and sends success
 response to the client's `rev` message.
 6.  Client periodically sends `setCheckpoint` as progress updates
 7.  When all revisions and attachments have been sent, client either
@@ -626,11 +634,12 @@ next message until a response is received.
 5.  Client replies to each `changes` message indicating which revisions
 it wants and which ancestors it already has
 6.  For each requested revision:
-1.  Server sends document body in a `rev` message
-2.  Client looks at each newly-added attachment digest in each revision
+[arabic,start=1]
+..  Server sends document body in a `rev` message
+..  Client looks at each newly-added attachment digest in each revision
 and sends a `getAttachment` for each attachment it doesn't have; server
 sends data
-3.  Client adds revision & attachments to database, and sends success
+..  Client adds revision & attachments to database, and sends success
 response to the server's `rev` message.
 7.  Client periodically sends `setCheckpoint` as progress updates
 8.  When there are no more changes, server sends a `changes` message
