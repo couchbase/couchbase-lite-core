@@ -37,6 +37,58 @@ namespace litecore::p2p {
         }
     }
 
+    
+    alloc_slice EncodeMetadataAsTXT(C4Peer::Metadata const& meta, int* outError) {
+        TXTRecordRef txtRef;
+        TXTRecordCreate(&txtRef, 0, nullptr);
+        DNSServiceErrorType err = 0;
+        for ( auto& [key, value] : meta ) {
+            if ( value.size > 0xFF ) {
+                LogToAt(P2PLog, Error, "EncodeMetadataAsTXT: value of '%s' is too long, %zu bytes", key.c_str(), value.size);
+                err = kDNSServiceErr_BadParam;
+                break;
+            }
+            err = TXTRecordSetValue(&txtRef, key.c_str(), uint8_t(value.size), value.buf);
+            if ( err ) {
+                LogToAt(P2PLog, Error, "EncodeMetadataAsTXT: error %d setting key '%s'", err, key.c_str());
+                break;
+            }
+        }
+        alloc_slice result;
+        if ( err == 0 )
+            result = alloc_slice(TXTRecordGetBytesPtr(&txtRef), TXTRecordGetLength(&txtRef));
+        else if (outError)
+            *outError = err;
+        TXTRecordDeallocate(&txtRef);
+        return result;
+    }
+
+    C4Peer::Metadata DecodeTXTToMetadata(slice txtRecord) {
+        C4Peer::Metadata metadata;
+        if ( txtRecord ) {
+            if (txtRecord.size > 0xFFFF) {
+                LogToAt(P2PLog, Error, "DecodeTXTToMetadata: invalid size %zu", txtRecord.size);
+                return metadata;
+            }
+            auto     txtLen = uint16_t(txtRecord.size);
+            unsigned count  = TXTRecordGetCount(txtLen, txtRecord.buf);
+            char     key[256];
+            for ( unsigned i = 0; i < count; i++ ) {
+                uint8_t     valueLen;
+                const void* value;
+                auto err = TXTRecordGetItemAtIndex(txtLen, txtRecord.buf, uint16_t(i), sizeof(key), key, &valueLen,
+                                                   &value);
+                if ( err ) {
+                    LogToAt(P2PLog, Error, "DecodeTXTToMetadata: error %d", err);
+                    break;
+                }
+                metadata.emplace(key, alloc_slice(value, valueLen));
+            }
+        }
+        return metadata;
+    }
+
+
 #    pragma mark - BONJOUR PEER:
 
     /** C4Peer subclass created by BonjourProvider. */
@@ -51,22 +103,7 @@ namespace litecore::p2p {
                 txt = nullslice;
             if ( txt == _txtRecord ) return false;
             _txtRecord = txt;
-
-            unordered_map<string, alloc_slice> metadata;
-            if ( _txtRecord ) {
-                auto     txtLen = uint16_t(_txtRecord.size);
-                unsigned count  = TXTRecordGetCount(txtLen, _txtRecord.buf);
-                char     key[256];
-                for ( unsigned i = 0; i < count; i++ ) {
-                    uint8_t     valueLen;
-                    const void* value;
-                    auto err = TXTRecordGetItemAtIndex(txtLen, _txtRecord.buf, uint16_t(i), sizeof(key), key, &valueLen,
-                                                       &value);
-                    if ( err ) break;
-                    metadata.emplace(key, alloc_slice(value, valueLen));
-                }
-            }
-            this->setMetadata(std::move(metadata));
+            this->setMetadata(DecodeTXTToMetadata(_txtRecord));
             return true;
         }
 
@@ -495,23 +532,10 @@ namespace litecore::p2p {
 
         // Updates _myTxtRecord from a Metadata map
         DNSServiceErrorType encodeMyTxtRecord(C4Peer::Metadata const& meta) {
-            TXTRecordRef txtRef;
-            TXTRecordCreate(&txtRef, 0, nullptr);
             DNSServiceErrorType err = 0;
-            for ( auto& [key, value] : meta ) {
-                if ( value.size > 0xFF ) {
-                    logError("setMyTxtRecord: value of '%s' is too long, %zu bytes", key.c_str(), value.size);
-                    err = kDNSServiceErr_BadParam;
-                    break;
-                }
-                err = TXTRecordSetValue(&txtRef, key.c_str(), uint8_t(value.size), value.buf);
-                if ( err ) {
-                    logError("setMyTxtRecord: error %d adding key '%s'", err, key.c_str());
-                    break;
-                }
-            }
-            if ( err == 0 ) _myTxtRecord = alloc_slice(TXTRecordGetBytesPtr(&txtRef), TXTRecordGetLength(&txtRef));
-            TXTRecordDeallocate(&txtRef);
+            auto txt = EncodeMetadataAsTXT(meta, &err);
+            if (txt)
+                _myTxtRecord = std::move(txt);
             return err;
         }
 
