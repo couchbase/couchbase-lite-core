@@ -88,12 +88,11 @@ void C4Peer::removed() {
 
 void C4Peer::resolveURL(ResolveURLCallback cb) {
     unique_lock lock(_mutex);
-    bool givenCallback = !!cb;
+    bool        givenCallback = !!cb;
     Assert(!_resolveURLCallback || !givenCallback, "Multiple resolveURL requests to a C4Peer");
     _resolveURLCallback = std::move(cb);
     lock.unlock();
-    if (givenCallback)
-        provider->resolveURL(this);
+    if ( givenCallback ) provider->resolveURL(this);
     else
         provider->cancelResolveURL(this);
 }

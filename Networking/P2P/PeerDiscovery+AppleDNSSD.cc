@@ -37,14 +37,14 @@ namespace litecore::p2p {
         }
     }
 
-    
     alloc_slice EncodeMetadataAsTXT(C4Peer::Metadata const& meta, int* outError) {
         TXTRecordRef txtRef;
         TXTRecordCreate(&txtRef, 0, nullptr);
         DNSServiceErrorType err = 0;
         for ( auto& [key, value] : meta ) {
             if ( value.size > 0xFF ) {
-                LogToAt(P2PLog, Error, "EncodeMetadataAsTXT: value of '%s' is too long, %zu bytes", key.c_str(), value.size);
+                LogToAt(P2PLog, Error, "EncodeMetadataAsTXT: value of '%s' is too long, %zu bytes", key.c_str(),
+                        value.size);
                 err = kDNSServiceErr_BadParam;
                 break;
             }
@@ -55,9 +55,8 @@ namespace litecore::p2p {
             }
         }
         alloc_slice result;
-        if ( err == 0 )
-            result = alloc_slice(TXTRecordGetBytesPtr(&txtRef), TXTRecordGetLength(&txtRef));
-        else if (outError)
+        if ( err == 0 ) result = alloc_slice(TXTRecordGetBytesPtr(&txtRef), TXTRecordGetLength(&txtRef));
+        else if ( outError )
             *outError = err;
         TXTRecordDeallocate(&txtRef);
         return result;
@@ -66,7 +65,7 @@ namespace litecore::p2p {
     C4Peer::Metadata DecodeTXTToMetadata(slice txtRecord) {
         C4Peer::Metadata metadata;
         if ( txtRecord ) {
-            if (txtRecord.size > 0xFFFF) {
+            if ( txtRecord.size > 0xFFFF ) {
                 LogToAt(P2PLog, Error, "DecodeTXTToMetadata: invalid size %zu", txtRecord.size);
                 return metadata;
             }
@@ -87,7 +86,6 @@ namespace litecore::p2p {
         }
         return metadata;
     }
-
 
 #    pragma mark - BONJOUR PEER:
 
@@ -282,7 +280,8 @@ namespace litecore::p2p {
                 logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
             } else if ( flags & kDNSServiceFlagsAdd ) {
                 logInfo("flags=%04x; found '%s' in %s", flags, serviceName, domain);
-                auto peer = make_retained<BonjourPeer>(this, makeID(serviceName, domain), serviceName, interface, domain);
+                auto peer =
+                        make_retained<BonjourPeer>(this, makeID(serviceName, domain), serviceName, interface, domain);
                 C4PeerDiscoveryProvider::addPeer(peer);
             } else {
                 logInfo("flags=%04x; lost '%s'", flags, serviceName);
@@ -462,8 +461,7 @@ namespace litecore::p2p {
 
                 err = republish();
             } while ( false );
-            if (err)
-                publishStateChanged(false, convertErrorCode(err));
+            if ( err ) publishStateChanged(false, convertErrorCode(err));
         }
 
         DNSServiceErrorType republish() {
@@ -536,24 +534,23 @@ namespace litecore::p2p {
         // Updates _myTxtRecord from a Metadata map
         DNSServiceErrorType encodeMyTxtRecord(C4Peer::Metadata const& meta) {
             DNSServiceErrorType err = 0;
-            auto txt = EncodeMetadataAsTXT(meta, &err);
-            if (txt)
-                _myTxtRecord = std::move(txt);
+            auto                txt = EncodeMetadataAsTXT(meta, &err);
+            if ( txt ) _myTxtRecord = std::move(txt);
             return err;
         }
 
       private:
-        dispatch_queue_t const _queue;           // Dispatch queue I run on
-        string const           _serviceType;     // DNS-SD service name
-        DNSServiceRef          _serviceRef{};    // Main connection to dns_sd services
-        DNSServiceRef          _browseRef{};     // Secondary connection for browsing peers
-        DNSServiceRef          _registerRef{};   // Secondary connection for registring my peer
-        string                 _myBaseName;      // Name of my service, as given by client
-        string                 _myName;          // Actual published name of my service
-        unsigned               _myDupCount = 0;  // Counter to append to _myName when > 0
-        uint16_t               _myPort;          // Port number of my service
-        alloc_slice            _myTxtRecord;     // My encoded TXT record
-        bool                   _published = false; // True when my service is published
+        dispatch_queue_t const _queue;              // Dispatch queue I run on
+        string const           _serviceType;        // DNS-SD service name
+        DNSServiceRef          _serviceRef{};       // Main connection to dns_sd services
+        DNSServiceRef          _browseRef{};        // Secondary connection for browsing peers
+        DNSServiceRef          _registerRef{};      // Secondary connection for registring my peer
+        string                 _myBaseName;         // Name of my service, as given by client
+        string                 _myName;             // Actual published name of my service
+        unsigned               _myDupCount = 0;     // Counter to append to _myName when > 0
+        uint16_t               _myPort;             // Port number of my service
+        alloc_slice            _myTxtRecord;        // My encoded TXT record
+        bool                   _published = false;  // True when my service is published
     };
 
     void InitializeBonjourProvider(string_view serviceType) {
