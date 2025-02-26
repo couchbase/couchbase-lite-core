@@ -340,13 +340,14 @@ replacementRev, this is the originally requested Revision ID. _(optional)_ +
 q.v.)_. If this is a replacementRev, this will be the sequence of the original requested rev. +
 `history`: Revision history (list of revision IDs) -- see the <<revIDs>> section. +
 `noconflicts`: true if the revision may not create a conflict _(optional; default is false)_ +
+`deltaSrc`: The revision that the body is a delta from. If not included, the body is a full revision. _(optional)_ +
 
 Body: Document JSON
 
 Sends one document revision, either meant for the specified collection or the default collection if one is not specified. The `id`, `rev`, `deleted` properties are
 optional if corresponding `_id`, `_rev`, `_deleted` properties exist in
 the JSON body (and vice versa.) The `sequence` property is optional
-unless this message was unsolicited.
+unless this message was unsolicited. If the `deltaSrc` is specified, the body is a delta from the revision specified in the `deltaSrc` property.
 
 If the `noconflicts` flag is set, or if the recipient is in conflict-free mode,
 it MUST check whether the `history` array contains the current local revision ID,
