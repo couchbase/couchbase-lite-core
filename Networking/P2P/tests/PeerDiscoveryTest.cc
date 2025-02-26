@@ -18,8 +18,8 @@ using namespace litecore::p2p;
 class P2PTest : public C4PeerDiscovery::Observer {
   public:
     P2PTest() {
-        InitializeBonjourProvider("ssh");
-        InitializeBluetoothProvider("");
+        InitializeBonjourProvider("couchbase-p2p");
+        InitializeBluetoothProvider("couchbase-p2p");
         C4PeerDiscovery::addObserver(this);
     }
 
@@ -38,17 +38,20 @@ class P2PTest : public C4PeerDiscovery::Observer {
     void addedPeer(C4Peer* peer) override {
         Log("*** Added %s peer %s \"%s\": %s", peer->provider->name.c_str(), peer->id.c_str(),
             peer->displayName().c_str(), metadataOf(peer).c_str());
-        //peer->monitorMetadata(true);
+#if 0
+        peer->monitorMetadata(true);
+#else
         Retained retainedPeer(peer);
         peer->resolveURL([this, retainedPeer](string url, C4Error error) {
             if ( error ) {
-                Warn("*** Failed to 'connect' to %s peer %s -- %s", retainedPeer->provider->name.c_str(),
+                Warn("*** Failed to resolve URL of %s peer %s -- %s", retainedPeer->provider->name.c_str(),
                      retainedPeer->id.c_str(), error.description().c_str());
             } else {
-                Log("*** 'Connecting' to %s peer %s -- URL <%s>", retainedPeer->provider->name.c_str(),
+                Log("*** Resolved URL of %s peer %s as <%s>", retainedPeer->provider->name.c_str(),
                     retainedPeer->id.c_str(), url.c_str());
             }
         });
+#endif
     }
 
     void removedPeer(C4Peer* peer) override {
@@ -92,10 +95,14 @@ class P2PTest : public C4PeerDiscovery::Observer {
 };
 
 TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
+    C4Peer::Metadata md;
+    md["foo"] = alloc_slice("Foobar Baz");
+    md["time"] = alloc_slice("right now");
+
     Log("--- Main thread calling startBrowsing");
     C4PeerDiscovery::startBrowsing();
-    C4PeerDiscovery::startPublishing("P2PTest", 1234, {});
-    sem.try_acquire_for(chrono::seconds(5));  // wait five seconds for test to run, then stop
+    C4PeerDiscovery::startPublishing("P2PTest", 1234, md);
+    sem.try_acquire_for(chrono::seconds(90));  // wait five seconds for test to run, then stop
     Log("--- Main thread calling stopBrowsing");
     C4PeerDiscovery::stopBrowsing();
     Log("--- Main thread calling stopPublishing");
