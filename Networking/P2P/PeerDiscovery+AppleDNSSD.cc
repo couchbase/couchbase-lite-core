@@ -278,12 +278,11 @@ namespace litecore::p2p {
             if ( err ) {
                 logError("browse error %d", err);
                 do_stop(err);
-            } else if ( string_view(serviceName) == _myName ) {
+            } else if ( _published && string_view(serviceName) == _myName ) {
                 logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
             } else if ( flags & kDNSServiceFlagsAdd ) {
                 logInfo("flags=%04x; found '%s' in %s", flags, serviceName, domain);
-                auto peer =
-                        make_retained<BonjourPeer>(this, makeID(serviceName, domain), serviceName, interface, domain);
+                auto peer = make_retained<BonjourPeer>(this, makeID(serviceName, domain), serviceName, interface, domain);
                 C4PeerDiscoveryProvider::addPeer(peer);
             } else {
                 logInfo("flags=%04x; lost '%s'", flags, serviceName);
@@ -463,8 +462,8 @@ namespace litecore::p2p {
 
                 err = republish();
             } while ( false );
-
-            publishStateChanged(err == 0, convertErrorCode(err));
+            if (err)
+                publishStateChanged(false, convertErrorCode(err));
         }
 
         DNSServiceErrorType republish() {
@@ -500,8 +499,12 @@ namespace litecore::p2p {
                 }
             } else if ( flags & kDNSServiceFlagsAdd ) {
                 logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
+                _published = true;
+                publishStateChanged(true);
             } else {
                 logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
+                _published = false;
+                publishStateChanged(false);
             }
         }
 
@@ -550,6 +553,7 @@ namespace litecore::p2p {
         unsigned               _myDupCount = 0;  // Counter to append to _myName when > 0
         uint16_t               _myPort;          // Port number of my service
         alloc_slice            _myTxtRecord;     // My encoded TXT record
+        bool                   _published = false; // True when my service is published
     };
 
     void InitializeBonjourProvider(string_view serviceType) {
