@@ -96,7 +96,7 @@ class P2PTest : public C4PeerDiscovery::Observer {
 
 TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
     C4Peer::Metadata md;
-    md["foo"] = alloc_slice("Foobar Baz");
+    md["foo"]  = alloc_slice("Foobar Baz");
     md["time"] = alloc_slice("right now");
 
     Log("--- Main thread calling startBrowsing");
