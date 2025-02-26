@@ -5,6 +5,7 @@
 #ifdef __APPLE__
 
 #include "PeerDiscovery+AppleBT.hh"
+#include "PeerDiscovery+AppleDNSSD.hh"
 #include "Address.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -45,11 +46,18 @@ namespace litecore::p2p {
     /** C4Peer subclass created by BluetoothProvider. */
     class BluetoothPeer : public C4Peer {
     public:
-        BluetoothPeer(C4PeerDiscoveryProvider* provider, string const& id, string const& name, Metadata const& md,
-                      CBPeripheral* p)
-        :C4Peer(provider, id, name, md)
+        BluetoothPeer(C4PeerDiscoveryProvider* provider, string const& id, string const& name,CBPeripheral* p)
+        :C4Peer(provider, id, name)
         ,_peripheral(p)
         { }
+
+        bool respondWithURL() {
+            if (!_peripheral || !_port) return false;
+            net::Address addr("l2cap", id, _port, "/db");
+            resolvedURL(string(addr.url()), {});
+            _resolvingURL = false;
+            return true;
+        }
 
         void removed() override {
             C4Peer::removed();
@@ -58,6 +66,7 @@ namespace litecore::p2p {
 
         CBPeripheral*   _peripheral {};
         CBL2CAPPSM      _port {};
+        bool            _resolvingURL = false;
     };
 
 }
@@ -70,8 +79,8 @@ namespace litecore::p2p {
 - (void) startBrowsing;
 - (void) stopBrowsing;
 - (void) monitorPeer: (Retained<BluetoothPeer>)peer state: (bool)state;
-- (void) connect: (Retained<BluetoothPeer>)peer;
-- (void) cancelConnect: (Retained<BluetoothPeer>)peer;
+- (void) resolveURL: (Retained<BluetoothPeer>)peer;
+- (void) cancelResolveURL: (Retained<BluetoothPeer>)peer;
 @end
 
 
@@ -117,12 +126,12 @@ namespace litecore::p2p {
 
         void resolveURL(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_central connect: btPeer]; });
+            dispatch_async(_queue, ^{ [_central resolveURL: btPeer]; });
         }
 
         void cancelResolveURL(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_central cancelConnect: btPeer]; });
+            dispatch_async(_queue, ^{ [_central cancelResolveURL: btPeer]; });
         }
 
         void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& meta) override {
@@ -226,6 +235,7 @@ namespace litecore::p2p {
     if (!_manager.isScanning && _manager.state == CBManagerStatePoweredOn) {
         _counterpart->_log(LogLevel::Verbose, "Scanning for BLE peripherals");
         [_manager scanForPeripheralsWithServices: _serviceUUIDs options: nil];
+        _counterpart->browseStateChanged(true);
     }
 }
 
@@ -251,12 +261,16 @@ namespace litecore::p2p {
     }
 }
 
-- (void) connect: (Retained<BluetoothPeer>)peer {
-    net::Address addr("l2cap", peer->id, 42, "/db");
-    peer->resolvedURL(string(addr.url()), {});
+- (void) resolveURL: (Retained<BluetoothPeer>)peer {
+    if (!peer->respondWithURL()) {
+        peer->_resolvingURL = true;
+        [_manager connectPeripheral: peer->_peripheral options: nil];
+    }
 }
 
-- (void) cancelConnect: (Retained<BluetoothPeer>)peer { }
+- (void) cancelResolveURL: (Retained<BluetoothPeer>)peer {
+    peer->_resolvingURL = false;
+}
 
 
 - (void) connectToPeer: (Retained<BluetoothPeer>)peer {
@@ -288,42 +302,6 @@ namespace litecore::p2p {
     }
 }
 
-static alloc_slice convert(id value) {
-    if ([value isKindOfClass: [NSData class]]) {
-        return alloc_slice((NSData*)value);
-    } else if ([value isKindOfClass: [CBUUID class]]) {
-        return alloc_slice(((CBUUID*)value).data);
-    } else if ([value isKindOfClass: [NSArray class]]) {
-        stringstream out;
-        out << '[';
-        for (id item in value) {
-            if (out.gcount() > 1) out << ", ";
-            if ([item isKindOfClass: [CBUUID class]])
-                out << '<' << slice(((CBUUID*)item).data).hexString() << '>';
-            else
-                out << [item description].UTF8String;
-        }
-        out << ']';
-        return alloc_slice(out.str());
-    } else if ([value isKindOfClass: [NSDictionary class]]) {
-        stringstream out;
-        out << '[';
-        for (id key in value) {
-            if (out.gcount() > 1) out << ", ";
-            out << key << ":";
-            id item = value[key];
-            if ([item isKindOfClass: [CBUUID class]])
-                out << '<' << slice(((CBUUID*)item).data).hexString() << '>';
-            else
-                out << [item description].UTF8String;
-        }
-        out << '}';
-        return alloc_slice(out.str());
-    } else {
-        return alloc_slice( [value description].UTF8String );
-    }
-}
-
 - (void) centralManager: (CBCentralManager*)central
   didDiscoverPeripheral: (CBPeripheral*)peripheral
       advertisementData: (NSDictionary<NSString*,id>*)advert
@@ -333,43 +311,21 @@ static alloc_slice convert(id value) {
         _counterpart->_log(LogLevel::Debug, "Bluetooth peripheral %s RSSI too low: %d", peerID.c_str(), RSSI.intValue);
         [_manager cancelPeripheralConnection: peripheral];
         _counterpart->removePeer(peerID);
-    } else {
+    } else if (!C4PeerDiscovery::peerWithID(peerID)) {
         string displayName;
-        C4Peer::Metadata metadata;
-        if (id name = advert[CBAdvertisementDataLocalNameKey]) {
-            displayName = [name UTF8String];
-            metadata["localName"] = alloc_slice(displayName);
-        }
-        if (id man = advert[CBAdvertisementDataManufacturerDataKey])
-            metadata["manufacturerData"] = convert(man);
-        if (id man = advert[CBAdvertisementDataServiceDataKey])
-            metadata["serviceData"] = convert(man);
-        if (id uuids = advert[CBAdvertisementDataServiceUUIDsKey])
-            metadata["serviceUUIDs"] = convert(uuids);
-        if (id uuids = advert[CBAdvertisementDataOverflowServiceUUIDsKey])
-            metadata["overflowServiceUUIDs"] = convert(uuids);
-        if (id uuids = advert[CBAdvertisementDataSolicitedServiceUUIDsKey])
-            metadata["solicitedServiceUUIDs"] = convert(uuids);
-        if (id level = advert[CBAdvertisementDataTxPowerLevelKey])
-            metadata["power"] = convert(level);
-        //    if (RSSI != nil)
-        //        metadata["RSSI"] = convert(RSSI); // this changes too often!
-
         if (peripheral.name)
             displayName = peripheral.name.UTF8String;
+        else if (id name = advert[CBAdvertisementDataLocalNameKey])
+            displayName = [name UTF8String];
 
-        if (auto peer = C4PeerDiscovery::peerWithID(peerID)) {
-            peer->setMetadata(metadata);
-        } else {
-            _counterpart->_log(LogLevel::Verbose, "Bluetooth peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
-            peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, metadata, peripheral);
-            _counterpart->addPeer(peer);
-        }
+        _counterpart->_log(LogLevel::Verbose, "peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
+        auto peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, peripheral);
+        _counterpart->addPeer(peer);
     }
 }
 
 - (void)centralManager:(CBCentralManager*)central didConnectPeripheral:(CBPeripheral*)peripheral {
-    _counterpart->_log(LogLevel::Info, "Did connect to peripheral %s", idStr(peripheral));
+    _counterpart->_log(LogLevel::Info, "Connected to peripheral %s", idStr(peripheral));
     peripheral.delegate = self;
     [peripheral discoverServices: _serviceUUIDs];
 }
@@ -442,23 +398,40 @@ static alloc_slice convert(id value) {
         return;
     }
 
-    Retained<BluetoothPeer> peer = peerForPeripheral(peripheral);
-    if (!peer)
-        return;
 
     for (CBCharacteristic* ch in service.characteristics) {
         _counterpart->_log(LogLevel::Verbose, "%s (%s) service %s has characteristic %s",
                            idStr(peripheral), peripheral.name.UTF8String, idStr(service.UUID), idStr(ch.UUID));
-        if ([ch.UUID isEqual: mkUUID(kPortCharacteristicID)]) {
-            if (ch.value.length == sizeof(CBL2CAPPSM)) {
-                memcpy(&peer->_port, ch.value.bytes, sizeof(CBL2CAPPSM));
-                _counterpart->_log(LogLevel::Info, "%s (%s) listens on port/PSM %u",
-                                   idStr(peripheral), peripheral.name.UTF8String, peer->_port);
-            }
-        } else if ([ch.UUID isEqual: mkUUID(kMetadataCharacteristicID)]) {
-            _counterpart->_log(LogLevel::Info, "%s (%s) has metadata (%zu bytes)",
+        bool isMD = [ch.UUID isEqual: mkUUID(kMetadataCharacteristicID)];
+        if (isMD || [ch.UUID isEqual: mkUUID(kPortCharacteristicID)]) {
+            [peripheral readValueForCharacteristic: ch];
+            if (isMD)
+                [peripheral setNotifyValue: YES forCharacteristic: ch];
+        }
+    }
+}
+
+- (void) peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)ch
+              error:(nullable NSError *)error
+{
+    Retained<BluetoothPeer> peer = peerForPeripheral(peripheral);
+    if (!peer)
+        return;
+    if ([ch.UUID isEqual: mkUUID(kPortCharacteristicID)]) {
+        if (ch.value.length == sizeof(CBL2CAPPSM)) {
+            memcpy(&peer->_port, ch.value.bytes, sizeof(CBL2CAPPSM));
+            _counterpart->_log(LogLevel::Info, "%s (%s) listens on port/PSM %u",
+                               idStr(peripheral), peripheral.name.UTF8String, peer->_port);
+            if (peer->_resolvingURL)
+                peer->respondWithURL();
+        } else {
+            _counterpart->_log(LogLevel::Warning, "%s (%s) has invalid port/PSM data (%zu bytes)",
                                idStr(peripheral), peripheral.name.UTF8String, ch.value.length);
         }
+    } else if ([ch.UUID isEqual: mkUUID(kMetadataCharacteristicID)]) {
+        _counterpart->_log(LogLevel::Info, "%s (%s) has metadata (%zu bytes)",
+                           idStr(peripheral), peripheral.name.UTF8String, ch.value.length);
+        peer->setMetadata(DecodeTXTToMetadata(slice(ch.value)));
     }
 }
 
@@ -522,10 +495,11 @@ static alloc_slice convert(id value) {
 
     _portCharacteristic = [[CBMutableCharacteristic alloc] initWithType: mkUUID(kPortCharacteristicID)
                                                              properties: CBCharacteristicPropertyRead
-                                                                  value: [NSData data]
+                                                                  value: nil
                                                             permissions: CBAttributePermissionsReadable];
     _metadataCharacteristic = [[CBMutableCharacteristic alloc] initWithType: mkUUID(kMetadataCharacteristicID)
-                                                                 properties: CBCharacteristicPropertyRead | CBCharacteristicPropertyNotify
+                                                                 properties: CBCharacteristicPropertyRead |
+                                                                                CBCharacteristicPropertyNotify
                                                                       value: nil
                                                                 permissions: CBAttributePermissionsReadable];
 
@@ -612,7 +586,8 @@ static alloc_slice convert(id value) {
         request.value = [NSData dataWithBytes: &_port length: sizeof(_port)];
         result = CBATTErrorSuccess;
     } else if (request.characteristic == _metadataCharacteristic) {
-        request.value = [NSData dataWithBytes: "TODO" length: 4];//TODO: Encode the dict
+        alloc_slice txt = EncodeMetadataAsTXT(_metadata);
+        request.value = txt.copiedNSData();
         result = CBATTErrorSuccess;
     }
     [peripheral respondToRequest: request withResult: result];
