@@ -17,10 +17,9 @@
 namespace litecore::p2p {
     using namespace std;
 
-    struct BonjourProvider;
-
     extern LogDomain P2PLog;
-    LogDomain        P2PLog("P2P");  //FIXME: Should be cross platform
+
+    struct BonjourProvider;
 
     static BonjourProvider* sProvider;
 
@@ -196,10 +195,20 @@ namespace litecore::p2p {
 
         void resolveURL(C4Peer* peer) override {
             Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
-            dispatch_async(_queue, ^{ do_connect(bonjourPeer); });
+            dispatch_async(_queue, ^{ do_resolveURL(bonjourPeer); });
         }
 
         void cancelResolveURL(C4Peer* peer) override {
+            Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
+            dispatch_async(_queue, ^{ do_cancelResolveURL(bonjourPeer); });
+        }
+
+        void connect(C4Peer* peer) override {
+            Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
+            dispatch_async(_queue, ^{ do_connect(bonjourPeer); });
+        }
+
+        void cancelConnect(C4Peer* peer) override {
             Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
             dispatch_async(_queue, ^{ do_cancelConnect(bonjourPeer); });
         }
@@ -338,15 +347,14 @@ namespace litecore::p2p {
         //---- Resolving peer addresses and connecting:
 
         /// API request to connect to a peer.
-        void do_connect(Retained<BonjourPeer> peer) {
-            // This has to be done in three steps:
+        void do_resolveURL(Retained<BonjourPeer> peer) {
+            // This has to be done in steps:
             // 1. call DNSServiceResolve to get the hostname and port.
             // 2. call DNSServiceGetAddrInfo with the hostname to get the address.
-            // 3. open a C4Socket to the address+port.
 
             // If we have a valid cached address, skip resolution:
             if ( peer->addressValid() ) {
-                openConnection(peer);
+                resolvedURL(peer);
                 return;
             }
 
@@ -378,7 +386,7 @@ namespace litecore::p2p {
         }
 
         /// API request to cancel a connection attempt.
-        void do_cancelConnect(Retained<BonjourPeer> peer) {
+        void do_cancelResolveURL(Retained<BonjourPeer> peer) {
             freeServiceRef(peer->_resolveRef);
             freeServiceRef(peer->_getAddrRef);
         }
@@ -426,16 +434,22 @@ namespace litecore::p2p {
             if ( err == 0 ) {
                 logInfo("flags=%04x; got IP address of '%s' (ttl=%d)", flags, hostname, ttl);
                 peer->gotAddress(*address, ttl);
-                openConnection(peer);
+                resolvedURL(peer);
             } else {
                 peer->getAddressFailed(err);
             }
         }
 
-        void openConnection(BonjourPeer* peer) {
+        void resolvedURL(BonjourPeer* peer) {
             net::Address addr("wss", peer->addressString(), peer->_port, "/db");  //TODO: Real port, db name
             peer->resolvedURL(string(addr.url()), {});
         }
+
+        void do_connect(Retained<BonjourPeer> peer) {
+            peer->connected(nullptr, C4Error{LiteCoreDomain, kC4ErrorUnimplemented});
+        }
+
+        void do_cancelConnect(Retained<BonjourPeer> peer) { }
 
         //---- Service publishing:
 

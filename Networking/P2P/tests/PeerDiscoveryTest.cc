@@ -3,6 +3,7 @@
 //
 
 #include "c4PeerDiscovery.hh"
+#include "c4Socket+Internal.hh"
 #include "PeerDiscovery+AppleDNSSD.hh"  //TEMP shouldn't need this
 #include "PeerDiscovery+AppleBT.hh"     //TEMP shouldn't need this
 #include "Logging.hh"
@@ -13,6 +14,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore;
 using namespace litecore::p2p;
 
 class P2PTest : public C4PeerDiscovery::Observer {
@@ -38,20 +40,6 @@ class P2PTest : public C4PeerDiscovery::Observer {
     void addedPeer(C4Peer* peer) override {
         Log("*** Added %s peer %s \"%s\": %s", peer->provider->name.c_str(), peer->id.c_str(),
             peer->displayName().c_str(), metadataOf(peer).c_str());
-#if 0
-        peer->monitorMetadata(true);
-#else
-        Retained retainedPeer(peer);
-        peer->resolveURL([this, retainedPeer](string url, C4Error error) {
-            if ( error ) {
-                Warn("*** Failed to resolve URL of %s peer %s -- %s", retainedPeer->provider->name.c_str(),
-                     retainedPeer->id.c_str(), error.description().c_str());
-            } else {
-                Log("*** Resolved URL of %s peer %s as <%s>", retainedPeer->provider->name.c_str(),
-                    retainedPeer->id.c_str(), url.c_str());
-            }
-        });
-#endif
     }
 
     void removedPeer(C4Peer* peer) override {
@@ -94,7 +82,102 @@ class P2PTest : public C4PeerDiscovery::Observer {
     binary_semaphore sem{0};
 };
 
-TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
+
+class P2PResolveTest : public P2PTest {
+public:
+    void addedPeer(C4Peer* peer) override {
+        P2PTest::addedPeer(peer);
+        Retained retainedPeer(peer);
+        peer->resolveURL([this, retainedPeer](string url, C4Error error) {
+            if ( error ) {
+                Warn("*** Failed to resolve URL of %s peer %s -- %s", retainedPeer->provider->name.c_str(),
+                     retainedPeer->id.c_str(), error.description().c_str());
+            } else {
+                Log("*** Resolved URL of %s peer %s as <%s>", retainedPeer->provider->name.c_str(),
+                    retainedPeer->id.c_str(), url.c_str());
+            }
+        });
+    }
+
+};
+
+TEST_CASE_METHOD(P2PResolveTest, "P2P Resolve", "[P2P]") {
+    C4Peer::Metadata md;
+    md["foo"]  = alloc_slice("Foobar Baz");
+    md["time"] = alloc_slice("right now");
+
+    Log("--- Main thread calling startBrowsing");
+    C4PeerDiscovery::startBrowsing();
+    C4PeerDiscovery::startPublishing("P2PTest", 1234, md);
+    sem.try_acquire_for(chrono::seconds(90));  // wait five seconds for test to run, then stop
+    Log("--- Main thread calling stopBrowsing");
+    C4PeerDiscovery::stopBrowsing();
+    Log("--- Main thread calling stopPublishing");
+    C4PeerDiscovery::stopPublishing();
+    sem.acquire();
+    sem.acquire();
+    Log("--- Done!");
+}
+
+
+struct WebSocketLogger : public websocket::Delegate {
+    Retained<websocket::WebSocket> _webSocket;
+    string _name;
+
+    WebSocketLogger(C4Socket* socket, const char* name)
+    :_webSocket(repl::WebSocketFrom(socket))
+    ,_name(name)
+    {
+        _webSocket->connect(new WeakHolder<websocket::Delegate>(this));
+        Log("$$$ CREATE %s", _name.c_str());
+    }
+
+    void onWebSocketGotTLSCertificate(slice certData) override { }
+    void onWebSocketConnect()                         override {Log("$$$ CONNECT %s", _name.c_str());}
+    void onWebSocketClose(litecore::websocket::CloseStatus) override {Log("$$$ CLOSE %s", _name.c_str());}
+
+    /** A message has arrived. */
+    void onWebSocketMessage(litecore::websocket::Message*) override {Log("$$$ MESSAGE %s", _name.c_str());}
+
+    /** The socket has room to send more messages. */
+    void onWebSocketWriteable() override {Log("$$$ WRITEABLE %s", _name.c_str());}
+};
+
+
+class P2PConnectTest : public P2PTest {
+public:
+    bool _shouldConnect = true;
+
+    void addedPeer(C4Peer* peer) override {
+        P2PTest::addedPeer(peer);
+        if (!_out) {
+            Retained retainedPeer(peer);
+            peer->connect([this,retainedPeer](C4Socket* socket, C4Error error) {
+                if (socket) {
+                    Log("*** Opened connection to %s peer %s: %p", retainedPeer->provider->name.c_str(),
+                        retainedPeer->id.c_str(), socket);
+                    _out = make_unique<WebSocketLogger>(socket, "out");
+                } else {
+                    Warn("*** Failed to connect to %s peer %s -- %s", retainedPeer->provider->name.c_str(),
+                         retainedPeer->id.c_str(), error.description().c_str());
+                    FAIL_CHECK("Failed to connect to peer");
+                }
+            });
+        }
+    }
+
+    bool incomingConnection(C4Peer* peer, C4Socket* socket) override {
+        Log("*** Incoming connection from %s peer %s", peer->provider->name.c_str(), peer->id.c_str());
+        if (_in)
+            return false;
+        _in = make_unique<WebSocketLogger>(socket, "in");
+        return true;
+    }
+
+    unique_ptr<WebSocketLogger> _out, _in;
+};
+
+TEST_CASE_METHOD(P2PConnectTest, "P2P Connect", "[P2P]") {
     C4Peer::Metadata md;
     md["foo"]  = alloc_slice("Foobar Baz");
     md["time"] = alloc_slice("right now");
@@ -113,4 +196,4 @@ TEST_CASE_METHOD(P2PTest, "P2P Browser", "[P2P]") {
 }
 
 //TEMP: Just here to expose crashes that occur after the real test completes
-TEST_CASE("P2P Browser 2", "[P2P]") { this_thread::sleep_for(2s); }
+TEST_CASE("P2P Delay", "[P2P]") { this_thread::sleep_for(2s); }
