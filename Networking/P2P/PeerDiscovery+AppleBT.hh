@@ -12,6 +12,8 @@ namespace litecore::p2p {
 
     void InitializeBluetoothProvider(string_view serviceType);
 
+    // NOTE: You can call `peer->getPlatformPeer("CBPeripheral")` to get an Obj-C `CBPeripheral*`.
+
 }
 
 #endif  //__APPLE__

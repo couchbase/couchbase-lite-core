@@ -3,12 +3,21 @@
 //
 
 #include "c4PeerDiscovery.hh"
+#include "c4Log.h"
+#include "c4Socket.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include <algorithm>
 
 using namespace std;
 using namespace fleece;
+
+namespace litecore::p2p {
+    extern LogDomain P2PLog;
+    LogDomain        P2PLog("P2P");
+}
+
+C4LogDomain const kC4P2PLog = (C4LogDomain)&litecore::p2p::P2PLog;
 
 
 static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*));
@@ -103,6 +112,27 @@ void C4Peer::resolvedURL(string url, C4Error error) {
     lock.unlock();
 
     if ( callback ) callback(std::move(url), error);
+}
+
+void C4Peer::connect(ConnectCallback cb) {
+    unique_lock lock(_mutex);
+    bool        givenCallback = !!cb;
+    Assert(!_connectCallback || !givenCallback, "Multiple connect requests to a C4Peer");
+    _connectCallback = std::move(cb);
+    lock.unlock();
+    if ( givenCallback ) provider->connect(this);
+    else
+        provider->cancelConnect(this);
+}
+
+bool C4Peer::connected(C4Socket* connection, C4Error error) {
+    unique_lock        lock(_mutex);
+    ConnectCallback callback = std::move(_connectCallback);
+    lock.unlock();
+
+    if (!callback) return false;
+    callback(connection, error);
+    return true;
 }
 
 #pragma mark - DISCOVERY:
@@ -223,4 +253,17 @@ bool C4PeerDiscoveryProvider::removePeer(string_view id) {
     peer->removed();
     notify(peer, &C4PeerDiscovery::Observer::removedPeer);
     return true;
+}
+
+bool C4PeerDiscoveryProvider::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
+    bool handled = false;
+    sObservers.iterate([&](auto obs) {
+        if (!handled)
+            handled = obs->incomingConnection(peer, socket);
+    });
+    if (!handled) {
+        LogToAt(litecore::p2p::P2PLog, Warning, "No observer handled incoming connection from %s",
+                (peer ? peer->id.c_str() : "??"));
+    }
+    return handled;
 }

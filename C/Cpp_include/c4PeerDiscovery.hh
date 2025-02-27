@@ -19,8 +19,10 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
-
+struct C4Socket;
 class C4PeerDiscoveryProvider;
+
+extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
 
 /** A discovered peer device.
  *  @note  This class is thread-safe.
@@ -55,6 +57,10 @@ class C4Peer : public fleece::RefCounted {
     /// Returns all the metadata at once.
     Metadata getAllMetadata();
 
+    /// Given an implementation-specific type name, returns a platform-specific object representing this peer.
+    /// Default implementation simply returns nullptr. Subclasses should define what types and objects they support.
+    virtual void* C4NULLABLE getPlatformPeer(fleece::slice typeName) const {return nullptr;}
+
     //---- Connections:
 
     using ResolveURLCallback = std::function<void(std::string, C4Error)>;
@@ -63,6 +69,10 @@ class C4Peer : public fleece::RefCounted {
     /// On completion, the callback will be invoked with either a URL string or a C4Error.
     /// To cancel resolution, call this again with a null callback.
     void resolveURL(ResolveURLCallback);
+
+    using ConnectCallback = std::function<void(C4Socket* C4NULLABLE,C4Error)>;
+
+    void connect(ConnectCallback);
 
     //---- Provider API:
 
@@ -76,6 +86,7 @@ class C4Peer : public fleece::RefCounted {
 
     /// Called by C4PeerDiscoveryProvider when it resolves this instance's URL or fails.
     void resolvedURL(std::string url, C4Error);
+    bool connected(C4Socket* C4NULLABLE connection, C4Error);
 
     /// Called when an instance is about to be removed from the set of online peers.
     virtual void removed();
@@ -87,6 +98,7 @@ class C4Peer : public fleece::RefCounted {
     std::string        _displayName;  ///< Arbitrary human-readable name registered by the peer
     Metadata           _metadata;
     ResolveURLCallback _resolveURLCallback;
+    ConnectCallback     _connectCallback;
     bool               _online{true};
 };
 
@@ -131,6 +143,8 @@ class C4PeerDiscovery {
         virtual void peerMetadataChanged(C4Peer*) {}
 
         virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
+
+        virtual bool incomingConnection(C4Peer*, C4Socket*) {return false;}
     };
 
     /// Registers an observer.
@@ -177,6 +191,9 @@ class C4PeerDiscoveryProvider {
     /// Cancel any in-progress resolveURL calls.
     virtual void cancelResolveURL(C4Peer*) = 0;
 
+    virtual void connect(C4Peer*) = 0;
+    virtual void cancelConnect(C4Peer*) = 0;
+
     virtual void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const&) = 0;
     virtual void unpublish()                                                                   = 0;
     virtual void updateMetadata(C4Peer::Metadata const&)                                       = 0;
@@ -197,6 +214,9 @@ class C4PeerDiscoveryProvider {
 
     /// Unregisters a peer that has gone offline.
     bool removePeer(std::string_view id);
+
+    /// Notifies observers of an incoming connection from a peer.
+    bool notifyIncomingConnection(C4Peer*, C4Socket*);
 };
 
 C4_ASSUME_NONNULL_END
