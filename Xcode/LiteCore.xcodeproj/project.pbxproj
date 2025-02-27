@@ -318,6 +318,7 @@
 		27B0751E2D6D0E9B00AA6BFF /* PeerDiscoveryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075142D6D0E8C00AA6BFF /* PeerDiscoveryTest.cc */; };
 		27B075212D6D0EE200AA6BFF /* c4PeerDiscovery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */; };
 		27B075232D6D22AB00AA6BFF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
+		27B075332D6FEDA900AA6BFF /* AppleBTSocketFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1350,6 +1351,8 @@
 		27B0751F2D6D0ED100AA6BFF /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
 		27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerDiscovery.cc; sourceTree = "<group>"; };
 		27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
+		27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBTSocketFactory.mm; sourceTree = "<group>"; };
+		27B075342D6FEE2100AA6BFF /* AppleBTSocketFactory.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AppleBTSocketFactory.hh; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
@@ -2924,6 +2927,8 @@
 				27B075172D6D0E8C00AA6BFF /* PeerDiscovery+AppleBT.mm */,
 				27B075182D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.hh */,
 				27B075192D6D0E8C00AA6BFF /* PeerDiscovery+AppleDNSSD.cc */,
+				27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */,
+				27B075342D6FEE2100AA6BFF /* AppleBTSocketFactory.hh */,
 			);
 			path = P2P;
 			sourceTree = "<group>";
@@ -4608,6 +4613,7 @@
 				27D9655A23355DC900F4A51C /* SecureDigest.cc in Sources */,
 				27ADA7891F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
+				27B075332D6FEDA900AA6BFF /* AppleBTSocketFactory.mm in Sources */,
 				27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,

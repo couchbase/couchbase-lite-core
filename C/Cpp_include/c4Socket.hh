@@ -48,10 +48,11 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
         @param factory  The C4SocketFactory that will manage the socket.
         @param nativeHandle  A value known to the factory that represents the underlying socket,
             such as a file descriptor or a native object pointer.
-        @param address  The address of the remote peer making the connection.
+        @param address  The address of the remote peer.
+        @param incoming  True if this is an incoming (server) connection, false for outgoing (client).
         @return  A new C4Socket initialized with the `nativeHandle`. */
     static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle,
-                                const C4Address& address);
+                                const C4Address& address, bool incoming = true);
 
 
     /** Notification that a socket has received an HTTP response, with the given headers (encoded
