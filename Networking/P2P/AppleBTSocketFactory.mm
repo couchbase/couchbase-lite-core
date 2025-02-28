@@ -194,7 +194,7 @@ using namespace litecore::p2p;
     self = [self initWithPeerID: peerID];
     if (self) {
         net::Address address("l2cap", peerID, channel.PSM, "/db");
-        _c4socket = c4socket_retain(c4socket_fromNative(BTSocketFactory, (__bridge void*)self, (C4Address*)address));
+        _c4socket = c4socket_fromNative2(BTSocketFactory, (__bridge void*)self, (C4Address*)address, incoming);
         _keepMeAlive = self;          // Prevents dealloc until doDispose is called
         _ownsSocket = true;
         [self setChannel: channel];
