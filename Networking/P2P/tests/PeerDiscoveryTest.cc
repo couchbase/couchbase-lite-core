@@ -82,9 +82,8 @@ class P2PTest : public C4PeerDiscovery::Observer {
     binary_semaphore sem{0};
 };
 
-
 class P2PResolveTest : public P2PTest {
-public:
+  public:
     void addedPeer(C4Peer* peer) override {
         P2PTest::addedPeer(peer);
         Retained retainedPeer(peer);
@@ -98,7 +97,6 @@ public:
             }
         });
     }
-
 };
 
 TEST_CASE_METHOD(P2PResolveTest, "P2P Resolve", "[P2P]") {
@@ -119,41 +117,45 @@ TEST_CASE_METHOD(P2PResolveTest, "P2P Resolve", "[P2P]") {
     Log("--- Done!");
 }
 
-
-struct WebSocketLogger : public RefCounted, public websocket::Delegate {
+struct WebSocketLogger
+    : public RefCounted
+    , public websocket::Delegate {
     Retained<websocket::WebSocket> _webSocket;
-    string _name;
+    string                         _name;
 
-    WebSocketLogger(C4Socket* socket, const char* name)
-    :_webSocket(repl::WebSocketFrom(socket))
-    ,_name(name)
-    {
+    WebSocketLogger(C4Socket* socket, const char* name) : _webSocket(repl::WebSocketFrom(socket)), _name(name) {
         _webSocket->connect(new WeakHolder<websocket::Delegate>(this));
         Log("$$$ CREATE %s", _name.c_str());
     }
 
-    void onWebSocketGotTLSCertificate(slice certData) override { }
-    void onWebSocketConnect()                         override {Log("$$$ CONNECT %s", _name.c_str());}
-    void onWebSocketClose(litecore::websocket::CloseStatus) override {Log("$$$ CLOSE %s", _name.c_str());}
+    void onWebSocketGotTLSCertificate(slice certData) override {}
+
+    void onWebSocketConnect() override {
+        Log("$$$ CONNECT %s", _name.c_str());
+        _webSocket->send("HELLO THERE");
+    }
+
+    void onWebSocketClose(litecore::websocket::CloseStatus) override { Log("$$$ CLOSE %s", _name.c_str()); }
 
     /** A message has arrived. */
-    void onWebSocketMessage(litecore::websocket::Message*) override {Log("$$$ MESSAGE %s", _name.c_str());}
+    void onWebSocketMessage(litecore::websocket::Message* msg) override {
+        Log("$$$ MESSAGE %s : %.*s", _name.c_str(), FMTSLICE(msg->data));
+    }
 
     /** The socket has room to send more messages. */
-    void onWebSocketWriteable() override {Log("$$$ WRITEABLE %s", _name.c_str());}
+    void onWebSocketWriteable() override { Log("$$$ WRITEABLE %s", _name.c_str()); }
 };
 
-
 class P2PConnectTest : public P2PTest {
-public:
+  public:
     bool _shouldConnect = true;
 
     void addedPeer(C4Peer* peer) override {
         P2PTest::addedPeer(peer);
-        if (_shouldConnect && !_out && peer->provider->name == "Bluetooth") {
+        if ( _shouldConnect && !_out && peer->provider->name == "Bluetooth" ) {
             Retained retainedPeer(peer);
-            peer->connect([this,retainedPeer](C4Socket* socket, C4Error error) {
-                if (socket) {
+            peer->connect([this, retainedPeer](C4Socket* socket, C4Error error) {
+                if ( socket ) {
                     Log("*** Opened connection to %s peer %s: %p", retainedPeer->provider->name.c_str(),
                         retainedPeer->id.c_str(), socket);
                     _out = make_retained<WebSocketLogger>(socket, "out");
@@ -168,8 +170,7 @@ public:
 
     bool incomingConnection(C4Peer* peer, C4Socket* socket) override {
         Log("*** Incoming connection from %s peer %s", peer->provider->name.c_str(), peer->id.c_str());
-        if (_in)
-            return false;
+        if ( _in ) return false;
         _in = make_retained<WebSocketLogger>(socket, "in");
         return true;
     }

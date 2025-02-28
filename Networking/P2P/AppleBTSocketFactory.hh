@@ -23,7 +23,6 @@ namespace litecore::p2p {
     /// Creates a C4Socket from an open incoming Bluetooth L2CAP connection.
     C4Socket* BTSocketFromL2CAPChannel(CBL2CAPChannel* channel, bool incoming);
 #endif
-}
+}  // namespace litecore::p2p
 
 NS_ASSUME_NONNULL_END
-
