@@ -157,7 +157,6 @@ static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Pee
     sObservers.iterate([&](auto obs) { (obs->*method)(peer); });
 }
 
-
 #pragma mark - PROVIDER:
 
 void C4PeerDiscoveryProvider::registerProvider() {
