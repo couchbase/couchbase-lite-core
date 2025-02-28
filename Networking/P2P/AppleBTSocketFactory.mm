@@ -47,6 +47,7 @@ using namespace fleece;
 - (instancetype) initWithPeerID: (slice)peerID C4Socket: (C4Socket*)c4socket options: (slice)options context: (void*)context;
 - (instancetype) initWithPeerID: (slice) peerID channel: (CBL2CAPChannel*)channel incoming: (bool)incoming;
 - (void) connectTo: (const C4Address*)address;
+- (void) redundantOpen;
 - (void) closeSocket;
 - (void) writeAndFree: (C4SliceResult) allocatedData;
 - (void) completedReceive: (size_t)byteCount;
@@ -75,22 +76,24 @@ namespace litecore::p2p {
         void (^completionHandler)();
     };
 
-    static void doOpen(C4Socket* c4sock, const C4Address* addr, C4Slice optionsFleece, void *context) {
-        @autoreleasepool {
-            if (addr->scheme != "l2cap"_sl) {
-                c4socket_closed(c4sock, {LiteCoreDomain, kC4NetErrInvalidURL});
-                return;
-            }
-            auto socket = [[LiteCoreBTSocket alloc] initWithPeerID: addr->hostname
-                                                          C4Socket: c4sock
-                                                           options: optionsFleece
-                                                           context: context];
-            [socket connectTo: addr];
-        }
-    }
-
     static LiteCoreBTSocket* getWebSocket(C4Socket *s) {
         return (__bridge LiteCoreBTSocket*)c4Socket_getNativeHandle(s);
+    }
+
+    static void doOpen(C4Socket* c4sock, const C4Address* addr, C4Slice optionsFleece, void *context) {
+        @autoreleasepool {
+            if (auto btSocket = getWebSocket(c4sock)) {
+                [btSocket redundantOpen];
+            } else if (addr->scheme != "l2cap"_sl) {
+                c4socket_closed(c4sock, {LiteCoreDomain, kC4NetErrInvalidURL});
+            } else {
+                auto socket = [[LiteCoreBTSocket alloc] initWithPeerID: addr->hostname
+                                                              C4Socket: c4sock
+                                                               options: optionsFleece
+                                                               context: context];
+                [socket connectTo: addr];
+            }
+        }
     }
 
     static void doClose(C4Socket* s) {
@@ -156,6 +159,7 @@ using namespace litecore::p2p;
     bool _ownsSocket;
 }
 
+// designated initializer
 - (instancetype) initWithPeerID: (slice)peerID {
     self = [super init];
     if (self) {
@@ -166,6 +170,7 @@ using namespace litecore::p2p;
     return self;
 }
 
+// initializer for outgoing connection that doesn't have a CBL2CAPChannel yet
 - (instancetype) initWithPeerID: (slice)peerID
                        C4Socket: (C4Socket*)c4socket
                         options: (slice)options
@@ -181,6 +186,7 @@ using namespace litecore::p2p;
     return self;
 }
 
+// initializer for connection that already has a CBL2CAPChannel
 - (instancetype) initWithPeerID: (slice)peerID
                         channel: (CBL2CAPChannel*)channel
                        incoming: (bool)incoming
@@ -191,7 +197,7 @@ using namespace litecore::p2p;
         _c4socket = c4socket_retain(c4socket_fromNative(BTSocketFactory, (__bridge void*)self, (C4Address*)address));
         _keepMeAlive = self;          // Prevents dealloc until doDispose is called
         _ownsSocket = true;
-        [self connectedToChannel: channel];
+        [self setChannel: channel];
     }
     return self;
 }
@@ -254,14 +260,17 @@ using namespace litecore::p2p;
 #pragma mark - HANDSHAKE:
 
 - (void) connectTo: (const C4Address*)addr {
+    Assert(!_channel);
     if (Retained<C4Peer> peer = C4PeerDiscovery::peerWithID(slice(addr->hostname))) {
         peer->connect([self](void* conn, C4Error err) {
             auto channel = (__bridge CBL2CAPChannel*)conn;
             dispatch_async(_queue, ^{
-                if (channel)
-                    [self connectedToChannel: channel];
-                else
+                if (channel) {
+                    [self setChannel: channel];
+                    [self connected];
+                } else {
                     [self c4SocketClosed: err];
+                }
             });
         });
     } else {
@@ -269,7 +278,8 @@ using namespace litecore::p2p;
     }
 }
 
-- (void) connectedToChannel: (CBL2CAPChannel*)channel {
+- (void) setChannel: (CBL2CAPChannel*)channel {
+    Assert(!_channel);
     _channel = channel;
     _in = channel.inputStream;
     _out = channel.outputStream;
@@ -280,10 +290,13 @@ using namespace litecore::p2p;
     
     [_in open];
     [_out open];
-    
-    [self connected];
 }
 
+- (void) redundantOpen {
+    dispatch_async(_queue, ^{
+        [self connected];
+    });
+}
 
 // Notifies LiteCore that the WebSocket is connected.
 - (void) connected {
