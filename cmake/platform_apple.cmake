@@ -29,6 +29,7 @@ function(set_litecore_source)
         Crypto/PublicKey+Apple.mm
         Networking/P2P/PeerDiscovery+AppleDNSSD.cc
         Networking/P2P/PeerDiscovery+AppleBT.mm
+        Networking/P2P/AppleBTSocketFactory.mm
         PARENT_SCOPE
     )
 endfunction()
