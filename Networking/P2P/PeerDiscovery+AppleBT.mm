@@ -73,29 +73,25 @@ namespace litecore::p2p {
     /** C4Peer subclass created by BluetoothProvider. */
     class BluetoothPeer : public C4Peer {
     public:
-        BluetoothPeer(C4PeerDiscoveryProvider* provider, string const& id, string const& name,CBPeripheral* p)
+        BluetoothPeer(C4PeerDiscoveryProvider* provider, string const& id, string const& name, CBPeripheral* p)
         :C4Peer(provider, id, name)
         ,_peripheral(p)
         { }
 
-        bool respondWithURL() {
-            if (!_peripheral || !_psm) return false;
-            _resolvingURL = false;
-            net::Address addr("l2cap", id, _psm, "/db");
-            resolvedURL(string(addr.url()), {});
-            return true;
+        void respondWithURL() {
+            net::Address addr(kBTURLScheme, id, 0, "/db");
+            resolvedURL(string(addr.url()), kC4NoError);
         }
 
         void removed() override {
             C4Peer::removed();
             _peripheral = nil;
             _psm = 0;
-            _resolvingURL = _connecting = false;
+            _connecting = false;
         }
 
         CBPeripheral*   _peripheral {};         // CoreBluetooth object representing this peer
         CBL2CAPPSM      _psm {};                // BTLE "port number" peer is listening on; 0 if unknown
-        bool            _resolvingURL = false;  // True if I'm in the midst of resolving a URL (waiting to get PSM)
         bool            _connecting = false;    // True if I'm opening a connection
     };
 
@@ -134,6 +130,10 @@ namespace litecore::p2p {
         void cancelResolveURL(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
             dispatch_async(_queue, ^{ [_central cancelResolveURL: btPeer]; });
+        }
+
+        C4SocketFactory const* getSocketFactory() const override {
+            return &BTSocketFactory;
         }
 
         void connect(C4Peer* peer) override {
@@ -235,6 +235,7 @@ namespace litecore::p2p {
     return self;
 }
 
+
 - (void) startBrowsing {
     if (!_manager) {
         _counterpart->_log(LogLevel::Verbose, "Starting browsing");
@@ -265,6 +266,7 @@ namespace litecore::p2p {
     _counterpart->browseStateChanged(false, c4errorFrom(error));
 }
 
+
 - (void) monitorPeer: (Retained<BluetoothPeer>)peer
                state: (bool)state
 {
@@ -277,15 +279,12 @@ namespace litecore::p2p {
     }
 }
 
+
 - (void) resolveURL: (Retained<BluetoothPeer>)peer {
-    if (!peer->respondWithURL()) {
-        peer->_resolvingURL = true;
-        [_manager connectPeripheral: peer->_peripheral options: nil];
-    }
+    peer->respondWithURL();
 }
 
 - (void) cancelResolveURL: (Retained<BluetoothPeer>)peer {
-    peer->_resolvingURL = false;
 }
 
 
@@ -295,7 +294,7 @@ namespace litecore::p2p {
             peer->_connecting = true;
             if (peer->_psm)
                 [peripheral openL2CAPChannel: peer->_psm];
-            else if (!peer->_resolvingURL)
+            else
                 [_manager connectPeripheral: peer->_peripheral options: nil];
         }
     } else {
@@ -473,8 +472,6 @@ didUpdateValueForCharacteristic:(CBCharacteristic*)ch
             memcpy(&peer->_psm, ch.value.bytes, sizeof(CBL2CAPPSM));
             _counterpart->_log(LogLevel::Info, "%s (%s) listens on port/PSM %u",
                                idStr(peripheral), peripheral.name.UTF8String, peer->_psm);
-            if (peer->_resolvingURL)
-                peer->respondWithURL();
             if (peer->_connecting)
                 [peripheral openL2CAPChannel: peer->_psm];
         } else {
@@ -501,10 +498,11 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
             auto c4err = C4Error::make(LiteCoreDomain, kC4ErrorIOError, error.description.UTF8String);  //TODO: Real error
             peer->connected(nullptr, c4err);
         } else {
-            _counterpart->_log(LogLevel::Info, "Opened L2CAP connection to %s!", idStr(peripheral));
-            Retained<C4Socket> socket = BTSocketFromL2CAPChannel(channel, false);
-            if (!peer->connected(socket, kC4NoError))
-                BTSocketFactory.close(socket);
+            _counterpart->_log(LogLevel::Info, "Opened L2CAP connection %p to %s!", channel, idStr(peripheral));
+            if (!peer->connected((__bridge void*)channel, kC4NoError)) {
+                [channel.inputStream close];
+                [channel.outputStream close];
+            }
         }
     } else if (channel) {
         _counterpart->_log(LogLevel::Info, "Opened L2CAP connection to %s but peer canceled; closing it", idStr(peripheral));

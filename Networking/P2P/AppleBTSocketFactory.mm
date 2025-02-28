@@ -84,8 +84,9 @@ namespace litecore::p2p {
         @autoreleasepool {
             if (auto btSocket = getWebSocket(c4sock)) {
                 [btSocket redundantOpen];
-            } else if (addr->scheme != "l2cap"_sl) {
-                c4socket_closed(c4sock, {LiteCoreDomain, kC4NetErrInvalidURL});
+            } else if (addr->scheme != kBTURLScheme) {
+                c4socket_closed(c4sock, C4Error::make(LiteCoreDomain, kC4NetErrInvalidURL,
+                                                      "Invalid URL scheme for Bluetooth"));
             } else {
                 auto socket = [[LiteCoreBTSocket alloc] initWithPeerID: addr->hostname
                                                               C4Socket: c4sock
@@ -139,7 +140,6 @@ using namespace litecore::p2p;
 {
     AllocedDict _options;
     dispatch_queue_t _queue;
-    NSString* _expectedAcceptHeader;
     C4Socket* _c4socket;
     id _keepMeAlive;
 
@@ -151,23 +151,8 @@ using namespace litecore::p2p;
     bool _hasBytes, _hasSpace;
     size_t _receivedBytesPending;
 
-    NSURL* _remoteURL;
-
-    NSArray* _clientIdentity;
-
     bool _closing;
     bool _ownsSocket;
-}
-
-// designated initializer
-- (instancetype) initWithPeerID: (slice)peerID {
-    self = [super init];
-    if (self) {
-        std::string queueName = stringprintf("LiteCore-BTSocket-%.*s", FMTSLICE(peerID));
-        _queue = dispatch_queue_create(queueName.c_str(), DISPATCH_QUEUE_SERIAL);
-        _readBuffer = (uint8_t*)malloc(kReadBufferSize);
-    }
-    return self;
 }
 
 // initializer for outgoing connection that doesn't have a CBL2CAPChannel yet
@@ -193,11 +178,22 @@ using namespace litecore::p2p;
 {
     self = [self initWithPeerID: peerID];
     if (self) {
-        net::Address address("l2cap", peerID, channel.PSM, "/db");
+        net::Address address(kBTURLScheme, peerID, channel.PSM, "/db");
         _c4socket = c4socket_fromNative2(BTSocketFactory, (__bridge void*)self, (C4Address*)address, incoming);
-        _keepMeAlive = self;          // Prevents dealloc until doDispose is called
         _ownsSocket = true;
+        _keepMeAlive = self;          // Prevents dealloc until doDispose is called
         [self setChannel: channel];
+    }
+    return self;
+}
+
+// common initializer
+- (instancetype) initWithPeerID: (slice)peerID {
+    self = [super init];
+    if (self) {
+        std::string queueName = stringprintf("LiteCore-BTSocket-%.*s", FMTSLICE(peerID));
+        _queue = dispatch_queue_create(queueName.c_str(), DISPATCH_QUEUE_SERIAL);
+        _readBuffer = (uint8_t*)malloc(kReadBufferSize);
     }
     return self;
 }
@@ -262,10 +258,14 @@ using namespace litecore::p2p;
 - (void) connectTo: (const C4Address*)addr {
     Assert(!_channel);
     if (Retained<C4Peer> peer = C4PeerDiscovery::peerWithID(slice(addr->hostname))) {
+        NSLog(/*Verbose*/ @"%@: LiteCoreBTSocket connecting to %.*s", self, FMTSLICE(addr->hostname));
+        Assert(peer->provider->name == "Bluetooth");
         peer->connect([self](void* conn, C4Error err) {
             auto channel = (__bridge CBL2CAPChannel*)conn;
+            Assert(!channel || [channel isKindOfClass: [CBL2CAPChannel class]]);
             dispatch_async(_queue, ^{
                 if (channel) {
+                    NSLog(/*Verbose*/ @"%@: LiteCoreBTSocket connected", self);
                     [self setChannel: channel];
                     [self connected];
                 } else {
