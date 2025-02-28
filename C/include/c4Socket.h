@@ -99,21 +99,21 @@ CBL_CORE_API void c4socket_completedWrite(C4Socket* socket, size_t byteCount) C4
 CBL_CORE_API void c4socket_received(C4Socket* socket, C4Slice data) C4API;
 
 
-/** Constructs a C4Socket from a "native handle", whose interpretation is up to the
-        C4SocketFactory.  This is used by listeners to handle an incoming replication connection.
-        \note This function is thread-safe.
-        @warning  You MUST immediately call `c4socket_retain` on this pointer (and the usual
-                  `c4socket_release` when done.) This is inconsistent with the general ref-counting
-                  convention, but fixing this function to return a retained value would cause all
-                  existing platforms to leak C4Sockets, so we're leaving it alone.
-        @param factory  The C4SocketFactory that will manage the socket.
-        @param nativeHandle  A value known to the factory that represents the underlying socket,
-            such as a file descriptor or a native object pointer.
-        @param address  The address of the remote peer making the connection.
-        @return  A new C4Socket initialized with the `nativeHandle`. */
 NODISCARD CBL_CORE_API C4Socket* c4socket_fromNative(C4SocketFactory factory, void* nativeHandle,
                                                      const C4Address* address) C4API;
 
+/** Constructs a C4Socket from a "native handle", whose interpretation is up to the C4SocketFactory.
+        \note This function is thread-safe.
+        @note Unlike `c4socket_fromNative`, this returns a retained C4Socket you are responsible for releasing.
+
+        @param factory  The C4SocketFactory that will manage the socket.
+        @param nativeHandle  A value known to the factory that represents the underlying socket,
+            such as a file descriptor or a native object pointer.
+        @param address  The address of the remote peer.
+        @param incoming  True if this is an incoming (server) connection, false if outgoing (client).
+        @return  A new C4Socket initialized with the `nativeHandle`. */
+NODISCARD CBL_CORE_API C4Socket* c4socket_fromNative2(C4SocketFactory factory, void* nativeHandle,
+                                                     const C4Address* address, bool incoming) C4API;
 
 /** @} */
 
