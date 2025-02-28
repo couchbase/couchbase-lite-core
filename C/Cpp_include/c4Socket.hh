@@ -51,8 +51,8 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
         @param address  The address of the remote peer.
         @param incoming  True if this is an incoming (server) connection, false for outgoing (client).
         @return  A new C4Socket initialized with the `nativeHandle`. */
-    static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle,
-                                const C4Address& address, bool incoming = true);
+    static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle, const C4Address& address,
+                                bool incoming = true);
 
 
     /** Notification that a socket has received an HTTP response, with the given headers (encoded
