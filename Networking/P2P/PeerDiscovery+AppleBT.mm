@@ -76,10 +76,13 @@ namespace litecore::p2p {
         BluetoothPeer(C4PeerDiscoveryProvider* provider, string const& id, string const& name, CBPeripheral* p)
         :C4Peer(provider, id, name)
         ,_peripheral(p)
-        { }
+        {
+            if (!_peripheral)
+                setConnectable(false);
+        }
 
         void respondWithURL() {
-            net::Address addr(kBTURLScheme, id, 0, "/db");
+            net::Address addr(kBTURLScheme, id, 0, "");
             resolvedURL(string(addr.url()), kC4NoError);
         }
 
@@ -90,7 +93,7 @@ namespace litecore::p2p {
             _connecting = false;
         }
 
-        CBPeripheral*   _peripheral {};         // CoreBluetooth object representing this peer
+        CBPeripheral*   _peripheral {};         // CoreBluetooth object representing this peer (could be nil)
         CBL2CAPPSM      _psm {};                // BTLE "port number" peer is listening on; 0 if unknown
         bool            _connecting = false;    // True if I'm opening a connection
     };
@@ -105,31 +108,31 @@ namespace litecore::p2p {
         :C4PeerDiscoveryProvider("Bluetooth")
         ,Logging(P2PLog)
         ,_queue(dispatch_queue_create("LiteCore Bluetooth", DISPATCH_QUEUE_SERIAL))
-        ,_central([[LiteCoreBTCentral alloc] initWithCounterpart: this queue: _queue])
-        ,_peripheral([[LiteCoreBTPeripheral alloc] initWithCounterpart: this queue: _queue])
+        ,_myCentral([[LiteCoreBTCentral alloc] initWithCounterpart: this queue: _queue])
+        ,_myPeripheral([[LiteCoreBTPeripheral alloc] initWithCounterpart: this queue: _queue])
         { }
 
         void startBrowsing() override {
-            dispatch_async(_queue, ^{ [_central startBrowsing]; });
+            dispatch_async(_queue, ^{ [_myCentral startBrowsing]; });
         }
 
         void stopBrowsing() override {
-            dispatch_async(_queue, ^{ [_central stopBrowsing]; });
+            dispatch_async(_queue, ^{ [_myCentral stopBrowsing]; });
         }
 
         void monitorMetadata(C4Peer* peer, bool start) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_central monitorPeer: btPeer state: start]; });
+            dispatch_async(_queue, ^{ [_myCentral monitorPeer: btPeer state: start]; });
         }
 
         void resolveURL(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_central resolveURL: btPeer]; });
+            dispatch_async(_queue, ^{ [_myCentral resolveURL: btPeer]; });
         }
 
         void cancelResolveURL(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_central cancelResolveURL: btPeer]; });
+            dispatch_async(_queue, ^{ [_myCentral cancelResolveURL: btPeer]; });
         }
 
         C4SocketFactory const* getSocketFactory() const override {
@@ -138,27 +141,27 @@ namespace litecore::p2p {
 
         void connect(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_central connect: btPeer]; });
+            dispatch_async(_queue, ^{ [_myCentral connect: btPeer]; });
         }
 
         void cancelConnect(C4Peer* peer) override {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_central cancelConnect: btPeer]; });
+            dispatch_async(_queue, ^{ [_myCentral cancelConnect: btPeer]; });
         }
 
         void publish(std::string_view displayName, uint16_t /*port*/, C4Peer::Metadata const& meta) override {
             string nameCopy(displayName);
             C4Peer::Metadata metaCopy = meta;
-            dispatch_async(_queue, ^{ [_peripheral publish: nameCopy.c_str() metadata: std::move(metaCopy)]; });
+            dispatch_async(_queue, ^{ [_myPeripheral publish: nameCopy.c_str() metadata: std::move(metaCopy)]; });
         }
 
         void unpublish() override {
-            dispatch_async(_queue, ^{ [_peripheral unpublish]; });
+            dispatch_async(_queue, ^{ [_myPeripheral unpublish]; });
         }
 
         void updateMetadata(C4Peer::Metadata const& meta) override {
             C4Peer::Metadata metaCopy = meta;
-            dispatch_async(_queue, ^{ [_peripheral updateMetadata: std::move(metaCopy)]; });
+            dispatch_async(_queue, ^{ [_myPeripheral updateMetadata: std::move(metaCopy)]; });
         }
 
         //---- Inherited methods redeclared as public so the Obj-C classes below can call them:
@@ -173,8 +176,8 @@ namespace litecore::p2p {
 
       private:
         dispatch_queue_t const      _queue;             // Dispatch queue I run on
-        LiteCoreBTCentral* const    _central {};        // Obj-C instance that does the real discovery
-        LiteCoreBTPeripheral* const _peripheral {};     // Obj-C instance that does the real publishing
+        LiteCoreBTCentral* const    _myCentral {};        // Obj-C instance that does the real discovery
+        LiteCoreBTPeripheral* const _myPeripheral {};     // Obj-C instance that does the real publishing
     };
 
     
@@ -188,6 +191,8 @@ namespace litecore::p2p {
     }
 
 
+    static const char* errorStr(NSError* err)   {return err ? err.description.UTF8String : "(no error)";}
+
     static C4Error c4errorFrom(const char* error) {
         if (!error) return kC4NoError;
         return C4Error::make(LiteCoreDomain, kC4ErrorIOError, error);  //TODO: Real error
@@ -195,7 +200,7 @@ namespace litecore::p2p {
 
     static C4Error c4errorFrom(NSError* error) {
         if (!error) return kC4NoError;
-        return C4Error::make(LiteCoreDomain, kC4ErrorIOError, error.description.UTF8String);  //TODO: Real error
+        return C4Error::make(LiteCoreDomain, kC4ErrorIOError, errorStr(error));  //TODO: Real error
     }
 
     static CBUUID* mkUUID(const char* str)      {return [CBUUID UUIDWithString: @(str)];}
@@ -271,11 +276,13 @@ namespace litecore::p2p {
                state: (bool)state
 {
     Assert(_manager);
-    if (auto peripheral = peer->_peripheral) {
+    if (auto peripheral = peer->_peripheral; peripheral && peer->connectable()) {
         if (state)
             [_manager connectPeripheral: peripheral options: nil];
         else
             [_manager cancelPeripheralConnection: peripheral];
+    } else {
+        _counterpart->_log(LogLevel::Warning, "Can't monitor Bluetooth peer %s, it's not connectable", peer->id.c_str());
     }
 }
 
@@ -284,12 +291,11 @@ namespace litecore::p2p {
     peer->respondWithURL();
 }
 
-- (void) cancelResolveURL: (Retained<BluetoothPeer>)peer {
-}
+- (void) cancelResolveURL: (Retained<BluetoothPeer>)peer { }
 
 
 - (void) connect: (Retained<BluetoothPeer>)peer {
-    if (auto peripheral = peer->_peripheral) {
+    if (auto peripheral = peer->_peripheral; peripheral && peer->connectable()) {
         if (!peer->_connecting) {
             peer->_connecting = true;
             if (peer->_psm)
@@ -347,8 +353,6 @@ namespace litecore::p2p {
                 _counterpart->removePeer(peer);
             }
         }
-    } else if (peer) {
-        peer->setConnectable(true);
     } else {
         string displayName;
         if (peripheral.name)
@@ -356,10 +360,17 @@ namespace litecore::p2p {
         else if (id name = advert[CBAdvertisementDataLocalNameKey])
             displayName = [name UTF8String];
 
-        string peerID = idStr(peripheral);
-        _counterpart->_log(LogLevel::Verbose, "peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
-        peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, peripheral);
-        _counterpart->addPeer(peer);
+        if (peer) {
+            if (peer->_peripheral == nil)
+                peer->_peripheral = peripheral;
+            peer->setConnectable(true);
+            peer->setDisplayName(displayName);
+        } else {
+            string peerID = idStr(peripheral);
+            _counterpart->_log(LogLevel::Verbose, "peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
+            peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, peripheral);
+            _counterpart->addPeer(peer);
+        }
     }
 }
 
@@ -375,7 +386,7 @@ namespace litecore::p2p {
 didFailToConnectPeripheral: (CBPeripheral*)peripheral
                   error: (NSError*)error
 {
-    _counterpart->_log(LogLevel::Warning, "Failed to connect to peripheral %s: %s", idStr(peripheral), error.description.UTF8String);
+    _counterpart->_log(LogLevel::Warning, "Failed to connect to peripheral %s: %s", idStr(peripheral), errorStr(error));
     peripheral.delegate = nil;
 }
 
@@ -383,7 +394,7 @@ didFailToConnectPeripheral: (CBPeripheral*)peripheral
 didDisconnectPeripheral: (CBPeripheral*)peripheral
                   error: (NSError*)error
 {
-    _counterpart->_log(LogLevel::Info, "Disconnected from peripheral %s (%s)", idStr(peripheral), error.description.UTF8String);
+    _counterpart->_log(LogLevel::Info, "Disconnected from peripheral %s (%s)", idStr(peripheral), errorStr(error));
     peripheral.delegate = nil;
 }
 
@@ -403,7 +414,7 @@ didDiscoverServices: (NSError*)error
 {
     if (error) {
         _counterpart->_log(LogLevel::Info, "Error discovering services for peripheral %s: %s",
-                           idStr(peripheral), error.description.UTF8String);
+                           idStr(peripheral), errorStr(error));
         [_manager cancelPeripheralConnection: peripheral];
         return;
     }
@@ -442,7 +453,7 @@ didDiscoverCharacteristicsForService:(CBService*) service
     if (error) {
         _counterpart->_log(LogLevel::Info, "Error discovering characteristics for peripheral %s: %s",
                            peripheral.name.UTF8String,
-                           error.description.UTF8String);
+                           errorStr(error));
         [_manager cancelPeripheralConnection: peripheral];
         return;
     }
@@ -494,8 +505,8 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
     if (auto peer = peerForPeripheral(peripheral); peer && peer->_connecting) {
         if (error) {
             _counterpart->_log(LogLevel::Error, "L2CAP connection to %s failed: %s",
-                               idStr(peripheral), error.description.UTF8String);
-            auto c4err = C4Error::make(LiteCoreDomain, kC4ErrorIOError, error.description.UTF8String);  //TODO: Real error
+                               idStr(peripheral), errorStr(error));
+            auto c4err = C4Error::make(LiteCoreDomain, kC4ErrorIOError, errorStr(error));  //TODO: Real error
             peer->connected(nullptr, c4err);
         } else {
             _counterpart->_log(LogLevel::Info, "Opened L2CAP connection %p to %s!", channel, idStr(peripheral));
@@ -629,7 +640,7 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
                                         error: (nullable NSError*)error
 {
     if (error) {
-        _counterpart->_log(LogLevel::Info, "Error advertising: %s", error.description.UTF8String);
+        _counterpart->_log(LogLevel::Info, "Error advertising: %s", errorStr(error));
         _counterpart->publishStateChanged(false, c4errorFrom(error));
     } else {
         _counterpart->_log(LogLevel::Verbose, "Advertising");
@@ -641,8 +652,8 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
                      error: (nullable NSError*)error
 {
     if (error) {
-        _counterpart->_log(LogLevel::Info, "Error when adding service: %s", error.description.UTF8String);
-        [self _stopAdvertise: error.description.UTF8String];
+        _counterpart->_log(LogLevel::Info, "Error when adding service: %s", errorStr(error));
+        [self _stopAdvertise: errorStr(error)];
     } else {
         _counterpart->_log(LogLevel::Verbose, "Advertising service");
     }
@@ -672,8 +683,8 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
                      error:(nullable NSError*)error
 {
     if (error) {
-        _counterpart->_log(LogLevel::Info, "Error publishing L2CAP channel: %s", error.description.UTF8String);
-        [self _stopAdvertise: error.description.UTF8String];
+        _counterpart->_log(LogLevel::Info, "Error publishing L2CAP channel: %s", errorStr(error));
+        [self _stopAdvertise: errorStr(error)];
     } else {
         _counterpart->_log(LogLevel::Info, "Published L2CAP channel on port/PSM %u", psm);
         _psm = psm;
@@ -692,11 +703,20 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
 {
     // Reports an incoming connection:
     if (error) {
-        _counterpart->_log(LogLevel::Error, "Incoming L2CAP connection failed: %s", error.description.UTF8String);
+        _counterpart->_log(LogLevel::Error, "Incoming L2CAP connection failed: %s", errorStr(error));
         return;
     }
     _counterpart->_log(LogLevel::Info, "Incoming L2CAP connection from %s", idStr(channel.peer));
-    auto c4peer = peerForPeripheral(channel.peer);
+
+    auto central = channel.peer;
+    auto c4peer = peerForPeripheral(central);
+    if (!c4peer) {
+        // Apparently I have not discovered this peer yet. Create & register a C4Peer, but I can't set its _peripheral
+        // because `channel.peer` is a CBCentral. Once this peer ID shows up through discovery, I'll set _peripheral.
+        string peerID = idStr(central);
+        c4peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, "", nil);
+        _counterpart->addPeer(c4peer);
+    }
     Retained<C4Socket> socket = BTSocketFromL2CAPChannel(channel, true);
     if (!_counterpart->notifyIncomingConnection(c4peer, socket))
         BTSocketFactory.close(socket);

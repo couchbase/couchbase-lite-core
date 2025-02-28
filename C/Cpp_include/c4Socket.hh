@@ -116,9 +116,9 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
 };
 
 // Glue to make Retained<C4Socket> work:
-inline C4Socket* retain(C4Socket* socket) {return c4socket_retain(socket);}
-inline void release(C4Socket* socket) {c4socket_release(socket);}
+inline C4Socket* retain(C4Socket* socket) { return c4socket_retain(socket); }
 
+inline void release(C4Socket* socket) { c4socket_release(socket); }
 
 /** @} */
 

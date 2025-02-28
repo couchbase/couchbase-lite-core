@@ -51,7 +51,7 @@ namespace litecore {
         }
 
       private:
-        WebSocket* _openSocket;
+        Retained<WebSocket> _openSocket;
     };
 
 }  // namespace litecore
