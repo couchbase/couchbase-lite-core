@@ -160,8 +160,12 @@ void c4socket_registerFactory(C4SocketFactory factory) noexcept {
 }
 
 C4Socket* c4socket_fromNative(C4SocketFactory factory, void* nativeHandle, const C4Address* address) noexcept {
+    return c4socket_fromNative2(factory, nativeHandle, address, true);
+}
+
+C4Socket* c4socket_fromNative2(C4SocketFactory factory, void* nativeHandle, const C4Address* address, bool incoming) noexcept {
     return tryCatch<C4Socket*>(nullptr, [&] {
-        auto ret = C4Socket::fromNative(factory, nativeHandle, *address);
+        auto ret = C4Socket::fromNative(factory, nativeHandle, *address, incoming);
         return ret;
     });
 }
