@@ -95,7 +95,7 @@ void C4Peer::connect(ConnectCallback cb) {
         provider->cancelConnect(this);
 }
 
-bool C4Peer::connected(C4Socket* connection, C4Error error) {
+bool C4Peer::connected(void* connection, C4Error error) {
     unique_lock     lock(_mutex);
     ConnectCallback callback = std::move(_connectCallback);
     lock.unlock();
