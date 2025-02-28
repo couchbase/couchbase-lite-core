@@ -113,7 +113,7 @@ NODISCARD CBL_CORE_API C4Socket* c4socket_fromNative(C4SocketFactory factory, vo
         @param incoming  True if this is an incoming (server) connection, false if outgoing (client).
         @return  A new C4Socket initialized with the `nativeHandle`. */
 NODISCARD CBL_CORE_API C4Socket* c4socket_fromNative2(C4SocketFactory factory, void* nativeHandle,
-                                                     const C4Address* address, bool incoming) C4API;
+                                                      const C4Address* address, bool incoming) C4API;
 
 /** @} */
 
