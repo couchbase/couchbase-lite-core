@@ -571,7 +571,7 @@ namespace litecore::p2p {
         static once_flag sOnce;
         call_once(sOnce, [&] {
             sProvider = new BonjourProvider(serviceType);
-            C4PeerDiscovery::registerProvider(sProvider);
+            sProvider->registerProvider();
         });
     }
 

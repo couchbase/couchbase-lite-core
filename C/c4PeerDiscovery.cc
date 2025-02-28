@@ -7,10 +7,12 @@
 #include "c4Socket.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "ObserverList.hh"
 #include <algorithm>
 
 using namespace std;
 using namespace fleece;
+using namespace litecore;
 
 namespace litecore::p2p {
     extern LogDomain P2PLog;
@@ -22,33 +24,6 @@ C4LogDomain const kC4P2PLog = (C4LogDomain)&litecore::p2p::P2PLog;
 
 static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*));
 
-template <class T>
-class ObserverList {
-  public:
-    void add(T obs) {
-        unique_lock lock(_mutex);
-        _observers.emplace_back(std::move(obs));
-    }
-
-    void remove(T const& obs) {
-        unique_lock lock(_mutex);
-        if ( auto i = ranges::find(_observers, obs); i != _observers.end() ) {
-            if ( i - _observers.begin() < _curIndex ) --_curIndex;  // Fix iterator if items shift underneath it
-            _observers.erase(i);
-        }
-    }
-
-    template <typename Callback>
-    void iterate(Callback const& cb) const {
-        unique_lock lock(_mutex);
-        for ( _curIndex = ssize_t(_observers.size()) - 1; _curIndex >= 0; --_curIndex ) cb(_observers[_curIndex]);
-    }
-
-  private:
-    mutable recursive_mutex _mutex;          // Recursive mutex allows re-entrant calls to add/remove during iteration
-    vector<T>               _observers;      // The observer list
-    mutable ssize_t         _curIndex = -1;  // Current iteration index, else -1
-};
 
 #pragma mark - PEER:
 
@@ -138,11 +113,6 @@ static vector<C4PeerDiscoveryProvider*>         sProviders;
 static ObserverList<C4PeerDiscovery::Observer*> sObservers;
 static unordered_map<string, Retained<C4Peer>>  sPeers;
 
-void C4PeerDiscovery::registerProvider(C4PeerDiscoveryProvider* provider) {
-    unique_lock lock(sDiscoveryMutex);
-    sProviders.push_back(provider);
-}
-
 std::vector<C4PeerDiscoveryProvider*> C4PeerDiscovery::providers() {
     unique_lock lock(sDiscoveryMutex);
     return sProviders;
@@ -187,10 +157,13 @@ static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Pee
     sObservers.iterate([&](auto obs) { (obs->*method)(peer); });
 }
 
-C4PeerDiscovery::Observer::~Observer() = default;
-
 
 #pragma mark - PROVIDER:
+
+void C4PeerDiscoveryProvider::registerProvider() {
+    unique_lock lock(sDiscoveryMutex);
+    sProviders.push_back(this);
+}
 
 void C4PeerDiscoveryProvider::browseStateChanged(bool state, C4Error error) {
     unique_lock              lock(sDiscoveryMutex);
@@ -256,7 +229,7 @@ bool C4PeerDiscoveryProvider::notifyIncomingConnection(C4Peer* peer, C4Socket* s
         if ( !handled ) handled = obs->incomingConnection(peer, socket);
     });
     if ( !handled ) {
-        LogToAt(litecore::p2p::P2PLog, Warning, "No observer handled incoming connection from %s",
+        LogToAt(p2p::P2PLog, Warning, "No observer handled incoming connection from %s",
                 (peer ? peer->id.c_str() : "??"));
     }
     return handled;
