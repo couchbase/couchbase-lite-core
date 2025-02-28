@@ -35,7 +35,8 @@ namespace litecore::p2p {
     //    * containing this characteristic.  Servers can publish this characteristic with the UUID
     //    * ABDD3056-28FA-441D-A470-55A75A52553A
 
-    static constexpr int kMinimumRSSI = -80;    // Discovery ignores peripherals with signal lower than this
+    static constexpr int kConnectableRSSI =  -80;       // Below this, peer's connectable is set to false
+    static constexpr int kMinimumRSSI     = -100;       // Below this, peer is ignored or removed
 
 
     extern LogDomain P2PLog;
@@ -342,23 +343,30 @@ namespace litecore::p2p {
   didDiscoverPeripheral: (CBPeripheral*)peripheral
       advertisementData: (NSDictionary<NSString*,id>*)advert
                    RSSI: (NSNumber*)RSSI {
-    string peerID = idStr(peripheral);
-    if (RSSI.intValue < kMinimumRSSI || ![advert[CBAdvertisementDataIsConnectable] boolValue]) {
-        if (auto peer = peerForPeripheral(peripheral)) {
-            [peer->_peripheral setDelegate: nil];
-            peer->_peripheral = nil;
+    auto peer = peerForPeripheral(peripheral);
+    if (RSSI.intValue < kConnectableRSSI || ![advert[CBAdvertisementDataIsConnectable] boolValue]) {
+        if (peer) {
+            if (RSSI.intValue >= kMinimumRSSI) {
+                peer->setConnectable(false);
+            } else {
+                [peer->_peripheral setDelegate: nil];
+                peer->_peripheral = nil;
+                [_manager cancelPeripheralConnection: peripheral];
+                _counterpart->removePeer(peer);
+            }
         }
-        [_manager cancelPeripheralConnection: peripheral];
-        _counterpart->removePeer(peerID);
-    } else if (!C4PeerDiscovery::peerWithID(peerID)) {
+    } else if (peer) {
+        peer->setConnectable(true);
+    } else {
         string displayName;
         if (peripheral.name)
             displayName = peripheral.name.UTF8String;
         else if (id name = advert[CBAdvertisementDataLocalNameKey])
             displayName = [name UTF8String];
 
+        string peerID = idStr(peripheral);
         _counterpart->_log(LogLevel::Verbose, "peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
-        auto peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, peripheral);
+        peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, peripheral);
         _counterpart->addPeer(peer);
     }
 }

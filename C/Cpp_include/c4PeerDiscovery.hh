@@ -43,9 +43,12 @@ class C4Peer : public fleece::RefCounted {
     /// Human-readable name, if any.
     std::string displayName() const;
 
+    /// True if the peer is currently connectable. Bluetooth peers return false if their signal strength is too low.
+    bool connectable() const { return _connectable; }
+
     /// True if the peer is online, false once it goes offline.
     /// @note  Once offline, an instance never comes back online; instead a new instance is created.
-    bool online() const;
+    bool online() const { return _online; }
 
     /// Request to get the metadata of this peer and monitor it for changes, or to stop monitoring.
     /// When new metadata is available, C4PeerDiscovery observers' `peerMetadataChanged` methods will be called.
@@ -59,7 +62,7 @@ class C4Peer : public fleece::RefCounted {
 
     /// Given an implementation-specific type name, returns a platform-specific object representing this peer.
     /// Default implementation simply returns nullptr. Subclasses should define what types and objects they support.
-    virtual void* C4NULLABLE getPlatformPeer(fleece::slice typeName) const {return nullptr;}
+    virtual void* C4NULLABLE getPlatformPeer(fleece::slice typeName) const { return nullptr; }
 
     //---- Connections:
 
@@ -70,7 +73,7 @@ class C4Peer : public fleece::RefCounted {
     /// To cancel resolution, call this again with a null callback.
     void resolveURL(ResolveURLCallback);
 
-    using ConnectCallback = std::function<void(C4Socket* C4NULLABLE,C4Error)>;
+    using ConnectCallback = std::function<void(C4Socket* C4NULLABLE, C4Error)>;
 
     void connect(ConnectCallback);
 
@@ -79,6 +82,8 @@ class C4Peer : public fleece::RefCounted {
     /// Updates the instance's displayName
     /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
     void setDisplayName(std::string_view);
+
+    void setConnectable(bool c) { _connectable = c; }
 
     /// Updates the instance's metadata.
     /// Should be called only by a subclass or a C4PeerDiscoveryProvider.
@@ -98,8 +103,9 @@ class C4Peer : public fleece::RefCounted {
     std::string        _displayName;  ///< Arbitrary human-readable name registered by the peer
     Metadata           _metadata;
     ResolveURLCallback _resolveURLCallback;
-    ConnectCallback     _connectCallback;
-    bool               _online{true};
+    ConnectCallback    _connectCallback;
+    std::atomic<bool>  _online      = true;
+    std::atomic<bool>  _connectable = true;
 };
 
 /** Singleton that provides the set of currently discovered C4Peers.
@@ -144,7 +150,7 @@ class C4PeerDiscovery {
 
         virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
 
-        virtual bool incomingConnection(C4Peer*, C4Socket*) {return false;}
+        virtual bool incomingConnection(C4Peer*, C4Socket*) { return false; }
     };
 
     /// Registers an observer.
@@ -191,7 +197,7 @@ class C4PeerDiscoveryProvider {
     /// Cancel any in-progress resolveURL calls.
     virtual void cancelResolveURL(C4Peer*) = 0;
 
-    virtual void connect(C4Peer*) = 0;
+    virtual void connect(C4Peer*)       = 0;
     virtual void cancelConnect(C4Peer*) = 0;
 
     virtual void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const&) = 0;
