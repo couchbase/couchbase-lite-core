@@ -86,13 +86,6 @@ namespace litecore::p2p {
             return true;
         }
 
-        void* getPlatformPeer(slice typeName) const override {
-            if (typeName == "CBPeripheral")
-                return (__bridge void*)_peripheral;
-            else
-                return C4Peer::getPlatformPeer(typeName);
-        }
-
         void removed() override {
             C4Peer::removed();
             _peripheral = nil;
@@ -190,7 +183,7 @@ namespace litecore::p2p {
         static once_flag sOnce;
         call_once(sOnce, [&] {
             sProvider = new BluetoothProvider(string(serviceType));
-            C4PeerDiscovery::registerProvider(sProvider);
+            sProvider->registerProvider();
         });
     }
 

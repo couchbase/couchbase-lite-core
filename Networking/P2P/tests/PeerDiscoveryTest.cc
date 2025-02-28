@@ -20,7 +20,7 @@ using namespace litecore::p2p;
 class P2PTest : public C4PeerDiscovery::Observer {
   public:
     P2PTest() {
-        InitializeBonjourProvider("couchbase-p2p");
+        //        InitializeBonjourProvider("couchbase-p2p");
         InitializeBluetoothProvider("couchbase-p2p");
         C4PeerDiscovery::addObserver(this);
     }
