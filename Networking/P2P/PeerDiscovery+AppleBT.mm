@@ -483,7 +483,8 @@ didUpdateValueForCharacteristic:(CBCharacteristic*)ch
     } else if ([ch.UUID isEqual: mkUUID(kMetadataCharacteristicID)]) {
         _counterpart->_log(LogLevel::Info, "%s (%s) has metadata (%zu bytes)",
                            idStr(peripheral), peripheral.name.UTF8String, ch.value.length);
-        peer->setMetadata(DecodeTXTToMetadata(slice(ch.value)));
+        if (ch.value)
+            peer->setMetadata(DecodeTXTToMetadata(slice(ch.value)));
     }
 }
 
