@@ -120,7 +120,7 @@ TEST_CASE_METHOD(P2PResolveTest, "P2P Resolve", "[P2P]") {
 }
 
 
-struct WebSocketLogger : public websocket::Delegate {
+struct WebSocketLogger : public RefCounted, public websocket::Delegate {
     Retained<websocket::WebSocket> _webSocket;
     string _name;
 
@@ -150,13 +150,13 @@ public:
 
     void addedPeer(C4Peer* peer) override {
         P2PTest::addedPeer(peer);
-        if (!_out) {
+        if (_shouldConnect && !_out && peer->provider->name == "Bluetooth") {
             Retained retainedPeer(peer);
             peer->connect([this,retainedPeer](C4Socket* socket, C4Error error) {
                 if (socket) {
                     Log("*** Opened connection to %s peer %s: %p", retainedPeer->provider->name.c_str(),
                         retainedPeer->id.c_str(), socket);
-                    _out = make_unique<WebSocketLogger>(socket, "out");
+                    _out = make_retained<WebSocketLogger>(socket, "out");
                 } else {
                     Warn("*** Failed to connect to %s peer %s -- %s", retainedPeer->provider->name.c_str(),
                          retainedPeer->id.c_str(), error.description().c_str());
@@ -170,11 +170,11 @@ public:
         Log("*** Incoming connection from %s peer %s", peer->provider->name.c_str(), peer->id.c_str());
         if (_in)
             return false;
-        _in = make_unique<WebSocketLogger>(socket, "in");
+        _in = make_retained<WebSocketLogger>(socket, "in");
         return true;
     }
 
-    unique_ptr<WebSocketLogger> _out, _in;
+    Retained<WebSocketLogger> _out, _in;
 };
 
 TEST_CASE_METHOD(P2PConnectTest, "P2P Connect", "[P2P]") {
