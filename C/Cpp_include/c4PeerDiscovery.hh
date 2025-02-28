@@ -20,6 +20,7 @@ C4_ASSUME_NONNULL_BEGIN
 // ************************************************************************
 
 struct C4Socket;
+struct C4SocketFactory;
 class C4PeerDiscoveryProvider;
 
 extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
@@ -63,19 +64,20 @@ class C4Peer : public fleece::RefCounted {
 
     //---- Connections:
 
-    using ConnectCallback = std::function<void(C4Socket* C4NULLABLE, C4Error)>;
-
-    /// Opens a C4Socket connection to the peer.
-    /// On completion, the callback will be invoked with either a non-null `C4Socket*` or a `C4Error`.
-    /// To cancel, call this again with a null callback.
-    void connect(ConnectCallback);
-
     using ResolveURLCallback = std::function<void(std::string, C4Error)>;
 
     /// Asynchronously finds the replication URL to connect to the peer.
     /// On completion, the callback will be invoked with either a non-empty URL string or a C4Error.
     /// To cancel resolution, call this again with a null callback.
     void resolveURL(ResolveURLCallback);
+
+    using ConnectCallback = std::function<void(void* C4NULLABLE, C4Error)>;
+
+    /// Opens a connection to the peer.
+    /// On completion, the callback will be invoked with either a non-null connection pointer` or a `C4Error`.
+    /// The pointer type is implementation-defined.
+    /// To cancel, call this again with a null callback.
+    void connect(ConnectCallback);
 
     //---- Methods below are for subclasses and C4PeerDiscoveryProviders only:
 
@@ -93,7 +95,7 @@ class C4Peer : public fleece::RefCounted {
 
     /// Invokes the current `ConnectCallback`, on connection or failure.
     /// @returns True if the callback was called, false if it was canceled (so caller can close the socket.)
-    bool connected(C4Socket* C4NULLABLE connection, C4Error);
+    bool connected(void* C4NULLABLE connection, C4Error);
 
     /// Called when an instance is about to be removed from the set of online peers. Clears `online` & `metadata`.
     virtual void removed();
@@ -219,6 +221,9 @@ class C4PeerDiscoveryProvider {
 
     /// Cancels any in-progress resolveURL calls.
     virtual void cancelResolveURL(C4Peer*) = 0;
+
+    /// Returns the custom socket factory to use to connect to a peer URL, or NULL if no special factory is needed.
+    virtual C4SocketFactory const* C4NULLABLE getSocketFactory() const = 0;
 
     /// Initiates a connection to a peer.
     /// Implementation must call \ref C4Peer::connected when done or on failure.

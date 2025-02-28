@@ -18,6 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 #endif
 
 namespace litecore::p2p {
+    static constexpr fleece::slice kBTURLScheme = "l2cap";
+
     extern C4SocketFactory BTSocketFactory;
 
 #ifdef __OBJC__

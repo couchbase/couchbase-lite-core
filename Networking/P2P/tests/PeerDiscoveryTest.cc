@@ -82,6 +82,8 @@ class P2PTest : public C4PeerDiscovery::Observer {
     binary_semaphore sem{0};
 };
 
+#pragma mark - RESOLVE TEST:
+
 class P2PResolveTest : public P2PTest {
   public:
     void addedPeer(C4Peer* peer) override {
@@ -117,11 +119,21 @@ TEST_CASE_METHOD(P2PResolveTest, "P2P Resolve", "[P2P]") {
     Log("--- Done!");
 }
 
+#pragma mark - CONNECT TEST
+
 struct WebSocketLogger
     : public RefCounted
     , public websocket::Delegate {
     Retained<websocket::WebSocket> _webSocket;
     string                         _name;
+
+    WebSocketLogger(string_view url, C4SocketFactory const* factory, const char* name)
+        :_name(name)
+    {
+        _webSocket = repl::CreateWebSocket(alloc_slice(url), nullslice, nullptr, factory);
+        _webSocket->connect(new WeakHolder<websocket::Delegate>(this));
+        Log("$$$ CREATE %s", _name.c_str());
+    }
 
     WebSocketLogger(C4Socket* socket, const char* name) : _webSocket(repl::WebSocketFrom(socket)), _name(name) {
         _webSocket->connect(new WeakHolder<websocket::Delegate>(this));
@@ -154,13 +166,13 @@ class P2PConnectTest : public P2PTest {
         P2PTest::addedPeer(peer);
         if ( _shouldConnect && !_out && peer->provider->name == "Bluetooth" ) {
             Retained retainedPeer(peer);
-            peer->connect([this, retainedPeer](C4Socket* socket, C4Error error) {
-                if ( socket ) {
-                    Log("*** Opened connection to %s peer %s: %p", retainedPeer->provider->name.c_str(),
-                        retainedPeer->id.c_str(), socket);
-                    _out = make_retained<WebSocketLogger>(socket, "out");
+            peer->resolveURL([this, retainedPeer](string_view url, C4Error error) {
+                if ( !url.empty() ) {
+                    Log("*** Opening connection to %s peer %s", retainedPeer->provider->name.c_str(),
+                        retainedPeer->id.c_str());
+                    _out = make_retained<WebSocketLogger>(url, retainedPeer->provider->getSocketFactory(), "out");
                 } else {
-                    Warn("*** Failed to connect to %s peer %s -- %s", retainedPeer->provider->name.c_str(),
+                    Warn("*** Failed to resolve URL of %s peer %s -- %s", retainedPeer->provider->name.c_str(),
                          retainedPeer->id.c_str(), error.description().c_str());
                     FAIL_CHECK("Failed to connect to peer");
                 }
@@ -195,6 +207,7 @@ TEST_CASE_METHOD(P2PConnectTest, "P2P Connect", "[P2P]") {
     sem.acquire();
     Log("--- Done!");
 }
+
 
 //TEMP: Just here to expose crashes that occur after the real test completes
 TEST_CASE("P2P Delay", "[P2P]") { this_thread::sleep_for(2s); }
