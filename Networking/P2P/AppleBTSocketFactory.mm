@@ -121,7 +121,7 @@ namespace litecore::p2p {
         .dispose = &doDispose,
     };
 
-    C4Socket* BTSocketFromL2CAPChannel(CBL2CAPChannel* channel, bool incoming) {
+    Retained<C4Socket> BTSocketFromL2CAPChannel(CBL2CAPChannel* channel, bool incoming) {
         @autoreleasepool {
             auto btSocket = [[LiteCoreBTSocket alloc] initWithPeerID: channel.peer.identifier.UUIDString.UTF8String
                                                              channel: channel

@@ -7,7 +7,8 @@
 //
 
 #pragma once
-#include "c4SocketTypes.h"
+#include "c4Socket.hh"
+#include "fleece/RefCounted.hh"
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -21,7 +22,7 @@ namespace litecore::p2p {
 
 #ifdef __OBJC__
     /// Creates a C4Socket from an open incoming Bluetooth L2CAP connection.
-    C4Socket* BTSocketFromL2CAPChannel(CBL2CAPChannel* channel, bool incoming);
+    fleece::Retained<C4Socket> BTSocketFromL2CAPChannel(CBL2CAPChannel* channel, bool incoming);
 #endif
 }  // namespace litecore::p2p
 
