@@ -203,9 +203,7 @@ namespace litecore::p2p {
             dispatch_async(_queue, ^{ do_cancelResolveURL(bonjourPeer); });
         }
 
-        C4SocketFactory const* C4NULLABLE getSocketFactory() const override {
-            return nullptr;
-        }
+        C4SocketFactory const* C4NULLABLE getSocketFactory() const override { return nullptr; }
 
         void connect(C4Peer* peer) override {
             Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));

@@ -149,7 +149,7 @@ class C4PeerDiscovery {
               It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
     class Observer {
       public:
-        virtual ~Observer() = default;;
+        virtual ~Observer() = default;
 
         /// Notification that a provider has started/stopped browsing.
         virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}

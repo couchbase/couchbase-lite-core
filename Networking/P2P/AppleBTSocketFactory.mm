@@ -153,6 +153,7 @@ using namespace litecore::p2p;
 
     bool _closing;
     bool _ownsSocket;
+    bool _incoming;
 }
 
 // initializer for outgoing connection that doesn't have a CBL2CAPChannel yet
@@ -182,6 +183,7 @@ using namespace litecore::p2p;
         _c4socket = c4socket_fromNative2(BTSocketFactory, (__bridge void*)self, (C4Address*)address, incoming);
         _ownsSocket = true;
         _keepMeAlive = self;          // Prevents dealloc until doDispose is called
+        _incoming = incoming;
         [self setChannel: channel];
     }
     return self;
@@ -302,6 +304,12 @@ using namespace litecore::p2p;
 - (void) connected {
     NSLog(/*Info*/ @"%@: LiteCoreBTSocket CONNECTED!", self);
     [self callC4Socket:^(C4Socket *socket) {
+        if (!self->_incoming) {
+            // Socket expects to receive HTTP response headers too:
+            Encoder enc;
+            enc.writeFormatted("{Connection: 'Upgrade', Upgrade: 'websocket', 'Sec-WebSocket-Protocol': 'BLIP_3+CBMobile_4'}");//FIXME: Don't hardcode this
+            c4socket_gotHTTPResponse(socket, 101, enc.finish());
+        }
         c4socket_opened(socket);
     }];
 }

@@ -127,9 +127,7 @@ struct WebSocketLogger
     Retained<websocket::WebSocket> _webSocket;
     string                         _name;
 
-    WebSocketLogger(string_view url, C4SocketFactory const* factory, const char* name)
-        :_name(name)
-    {
+    WebSocketLogger(string_view url, C4SocketFactory const* factory, const char* name) : _name(name) {
         _webSocket = repl::CreateWebSocket(alloc_slice(url), nullslice, nullptr, factory);
         _webSocket->connect(new WeakHolder<websocket::Delegate>(this));
         Log("$$$ CREATE %s", _name.c_str());
@@ -207,7 +205,3 @@ TEST_CASE_METHOD(P2PConnectTest, "P2P Connect", "[P2P]") {
     sem.acquire();
     Log("--- Done!");
 }
-
-
-//TEMP: Just here to expose crashes that occur after the real test completes
-TEST_CASE("P2P Delay", "[P2P]") { this_thread::sleep_for(2s); }
