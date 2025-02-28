@@ -502,11 +502,9 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
             peer->connected(nullptr, c4err);
         } else {
             _counterpart->_log(LogLevel::Info, "Opened L2CAP connection to %s!", idStr(peripheral));
-            C4Socket* socket = BTSocketFromL2CAPChannel(channel, false);
-            if (!peer->connected(socket, kC4NoError)) {
+            Retained<C4Socket> socket = BTSocketFromL2CAPChannel(channel, false);
+            if (!peer->connected(socket, kC4NoError))
                 BTSocketFactory.close(socket);
-                c4socket_release(socket);
-            }
         }
     } else if (channel) {
         _counterpart->_log(LogLevel::Info, "Opened L2CAP connection to %s but peer canceled; closing it", idStr(peripheral));
@@ -701,10 +699,9 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
     }
     _counterpart->_log(LogLevel::Info, "Incoming L2CAP connection from %s", idStr(channel.peer));
     auto c4peer = peerForPeripheral(channel.peer);
-    C4Socket* socket = BTSocketFromL2CAPChannel(channel, true);
+    Retained<C4Socket> socket = BTSocketFromL2CAPChannel(channel, true);
     if (!_counterpart->notifyIncomingConnection(c4peer, socket))
         BTSocketFactory.close(socket);
-    c4socket_release(socket);
 }
 
 @end
