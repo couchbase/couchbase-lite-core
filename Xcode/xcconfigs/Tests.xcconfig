@@ -16,3 +16,11 @@ CLANG_WARN__EXIT_TIME_DESTRUCTORS           = NO
 GCC_WARN_UNKNOWN_PRAGMAS                    = NO
 OTHER_LDFLAGS                               = -all_load // Prevents dead-stripping of reporters from libCatch2.a
 CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND    = NO
+
+// Code signing isn't required for tests, but it eliminates the "Allow this app to access Bluetooth?" security alert
+// on every. single. run.
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_IDENTITY[sdk=macosx*] = -
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = N2Q372V7W2                           // Couchbase
+PROVISIONING_PROFILE_SPECIFIER =

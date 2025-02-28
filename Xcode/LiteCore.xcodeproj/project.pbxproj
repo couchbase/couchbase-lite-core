@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -319,6 +319,7 @@
 		27B075212D6D0EE200AA6BFF /* c4PeerDiscovery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */; };
 		27B075232D6D22AB00AA6BFF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
 		27B075332D6FEDA900AA6BFF /* AppleBTSocketFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */; };
+		27B075422D722B6E00AA6BFF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1779,6 +1780,10 @@
 		FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionTest.cc; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		27B075402D72283A00AA6BFF /* cmake */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); name = cmake; path = ../cmake; sourceTree = SOURCE_ROOT; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		2708FE4B1CF4CC880022F721 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -1923,6 +1928,7 @@
 				279DE3DE24788D1B0059AE4E /* libLiteCoreREST-static.a in Frameworks */,
 				2700BB772179070900797537 /* libc++.tbd in Frameworks */,
 				72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */,
+				27B075422D722B6E00AA6BFF /* CoreBluetooth.framework in Frameworks */,
 				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
 				2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */,
 				2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */,
@@ -2362,6 +2368,7 @@
 				27A924951D9B316D00086206 /* LiteCore iOS */,
 				27D74A721D4D3EC000D806E0 /* vendor */,
 				2763011E1F338B77004A1592 /* wiki */,
+				27B075402D72283A00AA6BFF /* cmake */,
 				273E9FA41C519A1B003115A6 /* xcconfigs */,
 				275BF36A1F5F671C0051374A /* Scripts */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
