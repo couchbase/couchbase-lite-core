@@ -449,7 +449,7 @@ namespace litecore::p2p {
             peer->connected(nullptr, C4Error{LiteCoreDomain, kC4ErrorUnimplemented});
         }
 
-        void do_cancelConnect(Retained<BonjourPeer> peer) { }
+        void do_cancelConnect(Retained<BonjourPeer> peer) {}
 
         //---- Service publishing:
 

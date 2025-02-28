@@ -14,6 +14,6 @@ namespace litecore::p2p {
 
     // NOTE: You can call `peer->getPlatformPeer("CBPeripheral")` to get an Obj-C `CBPeripheral*`.
 
-}
+}  // namespace litecore::p2p
 
 #endif  //__APPLE__
