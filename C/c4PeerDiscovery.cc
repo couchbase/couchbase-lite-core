@@ -15,7 +15,7 @@ using namespace fleece;
 namespace litecore::p2p {
     extern LogDomain P2PLog;
     LogDomain        P2PLog("P2P");
-}
+}  // namespace litecore::p2p
 
 C4LogDomain const kC4P2PLog = (C4LogDomain)&litecore::p2p::P2PLog;
 
@@ -60,11 +60,6 @@ string C4Peer::displayName() const {
 void C4Peer::setDisplayName(std::string_view name) {
     unique_lock lock(_mutex);
     _displayName = string(name);
-}
-
-bool C4Peer::online() const {
-    unique_lock lock(_mutex);
-    return _online;
 }
 
 void C4Peer::monitorMetadata(bool monitor) { provider->monitorMetadata(this, monitor); }
@@ -126,11 +121,11 @@ void C4Peer::connect(ConnectCallback cb) {
 }
 
 bool C4Peer::connected(C4Socket* connection, C4Error error) {
-    unique_lock        lock(_mutex);
+    unique_lock     lock(_mutex);
     ConnectCallback callback = std::move(_connectCallback);
     lock.unlock();
 
-    if (!callback) return false;
+    if ( !callback ) return false;
     callback(connection, error);
     return true;
 }
@@ -258,10 +253,9 @@ bool C4PeerDiscoveryProvider::removePeer(string_view id) {
 bool C4PeerDiscoveryProvider::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
     bool handled = false;
     sObservers.iterate([&](auto obs) {
-        if (!handled)
-            handled = obs->incomingConnection(peer, socket);
+        if ( !handled ) handled = obs->incomingConnection(peer, socket);
     });
-    if (!handled) {
+    if ( !handled ) {
         LogToAt(litecore::p2p::P2PLog, Warning, "No observer handled incoming connection from %s",
                 (peer ? peer->id.c_str() : "??"));
     }
