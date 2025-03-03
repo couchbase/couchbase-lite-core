@@ -12,8 +12,8 @@
 
 #include "c4PeerDiscovery.hh"
 #include "c4Socket+Internal.hh"
-#include "PeerDiscovery+AppleDNSSD.hh"  //TEMP shouldn't need this
-#include "PeerDiscovery+AppleBT.hh"     //TEMP shouldn't need this
+#include "PeerDiscovery+AppleDNSSD.hh"
+#include "PeerDiscovery+AppleBT.hh"
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
@@ -28,12 +28,15 @@ using namespace litecore::p2p;
 class P2PTest : public C4PeerDiscovery::Observer {
   public:
     P2PTest() {
-        //        InitializeBonjourProvider("couchbase-p2p");
+        InitializeBonjourProvider("couchbase-p2p");
         InitializeBluetoothProvider("couchbase-p2p");
         C4PeerDiscovery::addObserver(this);
     }
 
-    ~P2PTest() { C4PeerDiscovery::removeObserver(this); }
+    ~P2PTest() {
+        C4PeerDiscovery::removeObserver(this);
+        C4PeerDiscovery::shutdown();
+    }
 
     void browsing(C4PeerDiscoveryProvider* provider, bool active, C4Error error) override {
         if ( active ) Log("*** %s browsing started", provider->name.c_str());
@@ -117,7 +120,7 @@ TEST_CASE_METHOD(P2PResolveTest, "P2P Resolve", "[P2P]") {
     Log("--- Main thread calling startBrowsing");
     C4PeerDiscovery::startBrowsing();
     C4PeerDiscovery::startPublishing("P2PTest", 1234, md);
-    sem.try_acquire_for(chrono::seconds(90));  // wait five seconds for test to run, then stop
+    sem.try_acquire_for(chrono::seconds(5));  // wait five seconds for test to run, then stop
     Log("--- Main thread calling stopBrowsing");
     C4PeerDiscovery::stopBrowsing();
     Log("--- Main thread calling stopPublishing");

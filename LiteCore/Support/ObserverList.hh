@@ -53,6 +53,11 @@ namespace litecore {
             }
         }
 
+        size_t size() const {
+            std::unique_lock lock(_mutex);
+            return _observers.size();
+        }
+
         /// Invokes the callback once for each item, passing it a reference.
         /// - Ordering is undefined.
         /// - Exceptions thrown during a callback are caught and logged; they do not stop the iteration.

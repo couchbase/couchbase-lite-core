@@ -184,6 +184,13 @@ class C4PeerDiscovery {
     /// Unregisters an observer. After this method returns, it will no longer be called.
     static void removeObserver(Observer*);
 
+
+    //-------- For testing only:
+
+    /// Resets the state of peer discovery, including stopping and unregistering all providers.
+    /// Does not return until this is completed.
+    static void shutdown();
+
     C4PeerDiscovery() = delete;  // this is not an instantiable class
 };
 
@@ -199,12 +206,10 @@ class C4PeerDiscoveryProvider {
   public:
     explicit C4PeerDiscoveryProvider(std::string_view name_) : name(name_) {}
 
-    /// Registers a provider implementation with \ref C4PeerDiscovery.
+    /// Registers this provider implementation with \ref C4PeerDiscovery.
     /// Providers must be registered before calling `C4PeerDiscovery::startBrowsing`.
     /// There is no facility to unregister a provider.
     void registerProvider();
-
-    virtual ~C4PeerDiscoveryProvider() = default;
 
     /// The provider's name, for identification/logging/debugging purposes.
     std::string const name;
@@ -254,7 +259,17 @@ class C4PeerDiscoveryProvider {
     /// Changes the published metadata.
     virtual void updateMetadata(C4Peer::Metadata const&) = 0;
 
+    //-------- For testing only:
+
+    /// In normal use, providers are static singletons and are never deleted, so this won't be called.
+    /// However, tests will call \ref C4PeerDiscovery::shutdown when they finish, to reset the entire state of peer
+    /// discovery, including unregistering and deleting providers.
+    /// But a provider will not be deleted until it has reported that browsing and publishing have stopped.
+    virtual void shutdown(std::function<void()> onComplete) = 0;
+    virtual ~C4PeerDiscoveryProvider() = default;
+
   protected:
+
     /// Reports that browsing has started, stopped or failed.
     /// If `state` is false, this method will call `removePeer` on all online peers.
     void browseStateChanged(bool state, C4Error = {});
