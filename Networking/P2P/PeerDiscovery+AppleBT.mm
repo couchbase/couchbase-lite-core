@@ -109,6 +109,8 @@ namespace litecore::p2p {
 
 #pragma mark - PROVIDER:
 
+    static BluetoothProvider* sProvider;
+
     /** Implements Bluetooth LE peer discovery using CoreBluetooth. */
     struct BluetoothProvider : public C4PeerDiscoveryProvider, public Logging {
 
@@ -172,6 +174,19 @@ namespace litecore::p2p {
             dispatch_async(_queue, ^{ [_myPeripheral updateMetadata: std::move(metaCopy)]; });
         }
 
+        void shutdown(std::function<void()> onComplete) override {
+            dispatch_async(_queue, ^{
+                [_myCentral stopBrowsing];
+                [_myPeripheral unpublish];
+                onComplete();
+            });
+        }
+
+        ~BluetoothProvider() {
+            if (this == sProvider)
+                sProvider = nullptr;
+        }
+
         //---- Inherited methods redeclared as public so the Obj-C classes below can call them:
         using super = C4PeerDiscoveryProvider;
         void _log(LogLevel level, const char* format, ...) const __printflike(3, 4) { LOGBODY_(level) }
@@ -190,12 +205,9 @@ namespace litecore::p2p {
 
     
     void InitializeBluetoothProvider(string_view serviceType) {
-        static BluetoothProvider* sProvider;
-        static once_flag sOnce;
-        call_once(sOnce, [&] {
-            sProvider = new BluetoothProvider(string(serviceType));
-            sProvider->registerProvider();
-        });
+        Assert(!sProvider);
+        sProvider = new BluetoothProvider(string(serviceType));
+        sProvider->registerProvider();
     }
 
 
@@ -651,7 +663,7 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
         _counterpart->_log(LogLevel::Info, "Error advertising: %s", errorStr(error));
         _counterpart->publishStateChanged(false, c4errorFrom(error));
     } else {
-        _counterpart->_log(LogLevel::Verbose, "Advertising");
+        _counterpart->_log(LogLevel::Debug, "Advertising started");
     }
 }
 
