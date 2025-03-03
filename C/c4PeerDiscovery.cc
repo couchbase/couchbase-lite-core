@@ -17,6 +17,7 @@
 #include "Logging.hh"
 #include "ObserverList.hh"
 #include <algorithm>
+#include <semaphore>
 
 using namespace std;
 using namespace fleece;
@@ -164,6 +165,27 @@ void C4PeerDiscovery::removeObserver(Observer* obs) { sObservers.remove(obs); }
 static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*)) {
     sObservers.iterate([&](auto obs) { (obs->*method)(peer); });
 }
+
+void C4PeerDiscovery::shutdown() {
+    auto provs = providers();
+    LogToAt(litecore::p2p::P2PLog, Info, "Shutting down peer discovery...");
+    counting_semaphore sem(0);
+    for (C4PeerDiscoveryProvider* provider : provs) {
+        provider->shutdown([&]() { sem.release(); });
+    }
+    // Now wait for each to finish:
+    for (size_t i = 0; i < provs.size(); ++i)
+        sem.acquire();
+
+    unique_lock lock(sDiscoveryMutex);
+    Assert(sPeers.empty());
+    Assert(sObservers.size() == 0);
+    for (C4PeerDiscoveryProvider* provider : provs)
+        delete provider;
+    sProviders.clear();
+    LogToAt(litecore::p2p::P2PLog, Info, "...peer discovery is shut down.");
+}
+
 
 #pragma mark - PROVIDER:
 

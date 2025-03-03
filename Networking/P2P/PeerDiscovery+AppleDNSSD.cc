@@ -139,6 +139,7 @@ namespace litecore::p2p {
         }
 
         void removed() override {
+            C4Peer::removed();
             _addressExpiration = C4Timestamp(0);
             freeServiceRef(_monitorTxtRef);
             freeServiceRef(_resolveRef);
@@ -176,14 +177,6 @@ namespace litecore::p2p {
                 if ( !isalnum(uint8_t(c)) && c != '-' ) ok = false;
             if ( !ok || serviceType.empty() || serviceType.size() > 15 )
                 error::_throw(error::InvalidParameter, "invalid service type");
-        }
-
-        ~BonjourProvider() override {
-            if ( _serviceRef ) {
-                Warn("Provider was not stopped before deallocating!");
-                freeServiceRef(_serviceRef);
-            }
-            dispatch_release(_queue);
         }
 
         bool running() const { return _serviceRef != nullptr; }
@@ -236,6 +229,23 @@ namespace litecore::p2p {
         void updateMetadata(C4Peer::Metadata const& meta) override {
             C4Peer::Metadata metaCopy = meta;
             dispatch_async(_queue, ^{ do_updateMetadata(std::move(metaCopy)); });
+        }
+
+        void shutdown(std::function<void()> onComplete) override {
+            dispatch_async(_queue, ^{
+                do_stop();
+                do_unpublish();
+                onComplete();
+            });
+        }
+
+        ~BonjourProvider() override {
+            if (this == sProvider)
+                sProvider = nullptr;
+            if ( _browseRef || _registerRef )
+                warn("Provider was not stopped before deallocating!");
+            freeServiceRef(_serviceRef);
+            dispatch_release(_queue);
         }
 
       private:
@@ -578,11 +588,9 @@ namespace litecore::p2p {
     };
 
     void InitializeBonjourProvider(string_view serviceType) {
-        static once_flag sOnce;
-        call_once(sOnce, [&] {
-            sProvider = new BonjourProvider(serviceType);
-            sProvider->registerProvider();
-        });
+        Assert(!sProvider);
+        sProvider = new BonjourProvider(serviceType);
+        sProvider->registerProvider();
     }
 
 }  // namespace litecore::p2p
