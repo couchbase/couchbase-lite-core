@@ -12,10 +12,11 @@
 
 #import "AppleBTSocketFactory.hh"
 #import "Address.hh"
-#import "PeerDiscovery+AppleBT.hh"
-#import "c4Socket.h"
 #import "c4ReplicatorTypes.h"
+#import "c4Socket.h"
 #import "Error.hh"
+#import "Logging.hh"
+#import "PeerDiscovery+AppleBT.hh"
 #import "StringUtil.hh"
 #import "fleece/Fleece.hh"
 #import "fleece/Expert.hh"
@@ -31,7 +32,7 @@ using namespace fleece;
 @interface LiteCoreBTSocket : NSObject <NSStreamDelegate>
 - (instancetype) initWithPeerID: (slice)peerID C4Socket: (C4Socket*)c4socket options: (slice)options context: (void*)context;
 - (instancetype) initWithPeerID: (slice) peerID channel: (CBL2CAPChannel*)channel incoming: (bool)incoming;
-- (void) connectTo: (const C4Address*)address;
+- (void) connect;
 - (void) redundantOpen;
 - (void) closeSocket;
 - (void) writeAndFree: (C4SliceResult) allocatedData;
@@ -42,6 +43,8 @@ using namespace fleece;
 
 
 namespace litecore::p2p {
+
+#define WSLog (*(LogDomain*)kC4WebSocketLog)
 
     // Number of bytes to read from the socket at a time
     static constexpr size_t kReadBufferSize = 32 * 1024;
@@ -77,7 +80,7 @@ namespace litecore::p2p {
                                                               C4Socket: c4sock
                                                                options: optionsFleece
                                                                context: context];
-                [socket connectTo: addr];
+                [socket connect];
             }
         }
     }
@@ -128,6 +131,7 @@ using namespace litecore::p2p;
     C4Socket* _c4socket;
     id _keepMeAlive;
 
+    string _peerID;
     CBL2CAPChannel* _channel;
     NSInputStream* _in;
     NSOutputStream* _out;
@@ -178,6 +182,7 @@ using namespace litecore::p2p;
 - (instancetype) initWithPeerID: (slice)peerID {
     self = [super init];
     if (self) {
+        _peerID = peerID;
         std::string queueName = stringprintf("LiteCore-BTSocket-%.*s", FMTSLICE(peerID));
         _queue = dispatch_queue_create(queueName.c_str(), DISPATCH_QUEUE_SERIAL);
         _readBuffer = (uint8_t*)malloc(kReadBufferSize);
@@ -186,7 +191,7 @@ using namespace litecore::p2p;
 }
 
 - (void) dealloc {
-    NSLog(/*Verbose*/ @"%@: DEALLOC...", self);
+    LogToAt(WSLog, Verbose, "BTSocket %p: DEALLOC...", self);
     Assert(!_in, "Network stream was not closed");
     free(_readBuffer);
     if (_ownsSocket)
@@ -194,8 +199,8 @@ using namespace litecore::p2p;
 }
 
 - (void) dispose {
-    NSLog(/*Verbose*/ @"%@: LiteCoreBTSocket is being disposed", self);
-    
+    LogToAt(WSLog, Verbose, "BTSocket %p: being disposed", self);
+
     // This has to be done synchronously, because _c4socket will be freed when this method returns
     [self callC4Socket: ^(C4Socket *socket) {
         // A lock is necessary as the socket could be accessed from another thread under the dispatch
@@ -240,19 +245,19 @@ using namespace litecore::p2p;
     }
 }
 
-#pragma mark - HANDSHAKE:
+#pragma mark - CONNECTING:
 
-- (void) connectTo: (const C4Address*)addr {
+- (void) connect {
     Assert(!_channel);
-    if (Retained<C4Peer> peer = C4PeerDiscovery::peerWithID(slice(addr->hostname))) {
-        NSLog(/*Verbose*/ @"%@: LiteCoreBTSocket connecting to %.*s", self, FMTSLICE(addr->hostname));
+    if (Retained<C4Peer> peer = C4PeerDiscovery::peerWithID(_peerID)) {
+        LogToAt(WSLog, Verbose, "BTSocket %p: connecting to %s", self, _peerID.c_str());
         Assert(peer->provider->name == "Bluetooth");
         peer->connect([self](void* conn, C4Error err) {
             auto channel = (__bridge CBL2CAPChannel*)conn;
             Assert(!channel || [channel isKindOfClass: [CBL2CAPChannel class]]);
             dispatch_async(_queue, ^{
                 if (channel) {
-                    NSLog(/*Verbose*/ @"%@: LiteCoreBTSocket connected", self);
+                    LogToAt(WSLog, Verbose, "BTSocket %p: connected", self);
                     [self setChannel: channel];
                     [self connected];
                 } else {
@@ -261,6 +266,7 @@ using namespace litecore::p2p;
             });
         });
     } else {
+        LogToAt(WSLog, Warning, "BTSocket %p: no known peer with ID %s", self, _peerID.c_str());
         [self c4SocketClosed: C4Error{NetworkDomain, kC4NetErrHostDown}];
     }
 }
@@ -285,9 +291,10 @@ using namespace litecore::p2p;
     });
 }
 
-// Notifies LiteCore that the WebSocket is connected.
+// Notifies LiteCore that the outgoing socket is connected.
 - (void) connected {
-    NSLog(/*Info*/ @"%@: LiteCoreBTSocket CONNECTED!", self);
+    DebugAssert(!_incoming);
+    LogToAt(WSLog, Info, "BTSocket %p: CONNECTED!", self);
     [self callC4Socket:^(C4Socket *socket) {
         if (!self->_incoming) {
             // Socket expects to receive HTTP response headers too:
@@ -312,12 +319,12 @@ using namespace litecore::p2p;
     NSData* data = [NSData dataWithBytesNoCopy: (void*)allocatedData.buf
                                         length: allocatedData.size
                                   freeWhenDone: NO];
-    NSLog(/*Verbose*/ @"%@: >>> sending %zu bytes...", self, allocatedData.size);
+    LogToAt(WSLog, Verbose, "BTSocket %p: >>> sending %zu bytes...", self, allocatedData.size);
     dispatch_async(_queue, ^{
         [self writeData: data completionHandler: ^() {
             size_t size = allocatedData.size;
             c4slice_free(allocatedData);
-            NSLog(/*Verbose*/ @"%@:    (...sent %zu bytes)", self, size);
+            LogToAt(WSLog, Verbose, "BTSocket %p:    (...sent %zu bytes)", self, size);
             [self callC4Socket:^(C4Socket *socket) {
                 c4socket_completedWrite(socket, size);
             }];
@@ -328,7 +335,7 @@ using namespace litecore::p2p;
 // Called when WebSocket data is received (NOT necessarily an entire message.)
 - (void) receivedBytes: (const void*)bytes length: (size_t)length {
     self->_receivedBytesPending += length;
-    NSLog(/*Verbose*/ @"%@: <<< received %zu bytes [now %zu pending]",
+    LogToAt(WSLog, Verbose, "BTSocket %p: <<< received %zu bytes [now %zu pending]",
                   self, (size_t)length, self->_receivedBytesPending);
     [self callC4Socket:^(C4Socket *socket) {
         c4socket_received(socket, {bytes, length});
@@ -344,63 +351,6 @@ using namespace litecore::p2p;
             [self doRead];
     });
 }
-
-// callback from C4Socket
-- (void) closeSocket {
-    NSLog(/*Info*/ @"%@: LiteCoreBTSocket closeSocket requested", self);
-    dispatch_async(_queue, ^{
-        if ([self isConnected]) {
-            [self closeWithError: nil];
-        }
-    });
-}
-
-#pragma mark - CLOSING / ERROR HANDLING:
-
-// Closes the connection and passes a WebSocket/HTTP status code to LiteCore.
-- (void) closeWithCode: (C4WebSocketCloseCode)code reason: (NSString*)reason {
-    if (code == kWebSocketCloseNormal) {
-        [self closeWithError: nil];
-        return;
-    }
-    if (!_in)
-        return;
-    
-    NSLog(/*Info*/ @"%@: LiteCoreBTSocket CLOSING WITH STATUS %d \"%@\"", self, (int)code, reason);
-    [self disconnect];
-    nsstring_slice reasonSlice(reason);
-    [self c4SocketClosed: c4error_make(WebSocketDomain, code, reasonSlice)];
-}
-
-// Closes the connection and passes the NSError (if any) to LiteCore.
-- (void) closeWithError: (NSError*)error {
-    // This function is always called from queue.
-    if (_closing) {
-        NSLog(/*Verbose*/  @"%@: Websocket is already closing. Ignoring the close.", self);
-        return;
-    }
-    _closing = YES;
-    
-    [self disconnect];
-    
-    C4Error c4err;
-    if (error) {
-        NSLog(/*Info*/ @"%@: LiteCoreBTSocket CLOSED WITH ERROR: %@", self, error.description);
-        //convertError(error, &c4err);
-        c4err = C4Error::make(NetworkDomain, kC4NetErrUnknown); //TEMP
-    } else {
-        NSLog(/*Info*/ @"%@: LiteCoreBTSocket CLOSED", self);
-        c4err = {};
-    }
-    [self c4SocketClosed: c4err];
-}
-
-- (void) c4SocketClosed: (C4Error)c4err {
-    [self callC4Socket:^(C4Socket *socket) {
-        c4socket_closed(socket, c4err);
-    }];
-}
-
 
 // Asynchronously sends data over the socket, and calls the completion handler block afterwards.
 - (void) writeData: (NSData*)data completionHandler: (void (^)())completionHandler {
@@ -431,7 +381,7 @@ using namespace litecore::p2p;
 }
 
 - (void) doRead {
-    NSLog(/*Verbose*/ @"%@: DoRead...", self);
+    LogToAt(WSLog, Verbose, "BTSocket %p: DoRead...", self);
     Assert(_hasBytes);
     _hasBytes = false;
     while (_in.hasBytesAvailable) {
@@ -440,7 +390,7 @@ using namespace litecore::p2p;
             break;
         }
         NSInteger nBytes = [_in read: _readBuffer maxLength: kReadBufferSize];
-        NSLog(/*Verbose*/ @"%@: DoRead read %zu bytes", self, nBytes);
+        LogToAt(WSLog, Verbose, "BTSocket %p: DoRead read %zu bytes", self, nBytes);
         if (nBytes <= 0)
             break;
         [self receivedBytes: _readBuffer length: nBytes];
@@ -450,27 +400,27 @@ using namespace litecore::p2p;
 - (void)stream: (NSStream*)stream handleEvent: (NSStreamEvent)eventCode {
     switch (eventCode) {
         case NSStreamEventOpenCompleted:
-            NSLog(/*Verbose*/ @"%@: Open Completed on %@", self, stream);
+            LogToAt(WSLog, Verbose, "BTSocket %p: Open Completed on %s", self, stream.description.UTF8String);
             break;
         case NSStreamEventHasBytesAvailable:
             Assert(stream == _in);
-            NSLog(/*Verbose*/ @"%@: HasBytesAvailable", self);
+            LogToAt(WSLog, Verbose, "BTSocket %p: HasBytesAvailable", self);
             _hasBytes = true;
             if (!self.readThrottled)
                 [self doRead];
             break;
         case NSStreamEventHasSpaceAvailable:
-            NSLog(/*Verbose*/ @"%@: HasSpaceAvailable", self);
+            LogToAt(WSLog, Verbose, "BTSocket %p: HasSpaceAvailable", self);
             _hasSpace = true;
             [self doWrite];
             break;
         case NSStreamEventEndEncountered:
-            NSLog(/*Verbose*/ @"%@: End Encountered on %s stream",
+            LogToAt(WSLog, Verbose, "BTSocket %p: End Encountered on %s stream",
                           self, ((stream == _out) ? "write" : "read"));
             [self closeWithError: nil];
             break;
         case NSStreamEventErrorOccurred:
-            NSLog(/*Verbose*/ @"%@: Error Encountered on %@", self, stream);
+            LogToAt(WSLog, Verbose, "BTSocket %p: Error Encountered on %s", self, stream.description.UTF8String);
             [self closeWithError: stream.streamError];
             break;
         default:
@@ -478,8 +428,64 @@ using namespace litecore::p2p;
     }
 }
 
+#pragma mark - CLOSING / ERROR HANDLING:
+
+// callback from C4Socket
+- (void) closeSocket {
+    LogToAt(WSLog, Info, "BTSocket %p: closeSocket requested", self);
+    dispatch_async(_queue, ^{
+        if ([self isConnected]) {
+            [self closeWithError: nil];
+        }
+    });
+}
+
+// Closes the connection and passes a WebSocket/HTTP status code to LiteCore.
+- (void) closeWithCode: (C4WebSocketCloseCode)code reason: (NSString*)reason {
+    if (code == kWebSocketCloseNormal) {
+        [self closeWithError: nil];
+        return;
+    }
+    if (!_in)
+        return;
+    
+    LogToAt(WSLog, Info, "BTSocket %p: CLOSING WITH STATUS %d \"%s\"", self, (int)code, reason.UTF8String);
+    [self disconnect];
+    nsstring_slice reasonSlice(reason);
+    [self c4SocketClosed: c4error_make(WebSocketDomain, code, reasonSlice)];
+}
+
+// Closes the connection and passes the NSError (if any) to LiteCore.
+- (void) closeWithError: (NSError*)error {
+    // This function is always called from queue.
+    if (_closing) {
+        LogToAt(WSLog, Verbose, "BTSocket %p: Websocket is already closing. Ignoring the close.", self);
+        return;
+    }
+    _closing = YES;
+    
+    [self disconnect];
+    
+    C4Error c4err;
+    if (error) {
+        LogToAt(WSLog, Error, "BTSocket %p: CLOSED WITH ERROR: %s", self, error.description.UTF8String);
+        //convertError(error, &c4err);
+        c4err = C4Error::make(NetworkDomain, kC4NetErrUnknown); //TEMP
+    } else {
+        LogToAt(WSLog, Info, "BTSocket %p: CLOSED", self);
+        c4err = {};
+    }
+    [self c4SocketClosed: c4err];
+}
+
+- (void) c4SocketClosed: (C4Error)c4err {
+    [self callC4Socket:^(C4Socket *socket) {
+        c4socket_closed(socket, c4err);
+    }];
+}
+
 - (void) disconnect {
-    NSLog(/*Verbose*/ @"%@: Disconnect", self);
+    LogToAt(WSLog, Verbose, "BTSocket %p: Disconnect", self);
     if (_in || _out) {
         _in.delegate = _out.delegate = nil;
         [_in close];
