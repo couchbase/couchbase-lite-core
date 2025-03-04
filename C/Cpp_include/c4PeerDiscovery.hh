@@ -70,7 +70,7 @@ class C4PeerDiscovery {
     /// Returns the peer (if any) with the given ID.
     static fleece::Retained<C4Peer> peerWithID(std::string_view id);
 
-    class Observer; // defined below
+    class Observer;  // defined below
 
     /// Registers an observer.
     static void addObserver(Observer*);
@@ -91,13 +91,12 @@ class C4PeerDiscovery {
     C4PeerDiscovery() = delete;  // this is not an instantiable class
 };
 
-
 /** API for receiving notifications from C4PeerDiscovery.
-    @note Methods are called on arbitrary threads and may be called concurrently.
-          They should return as soon as possible.
-          It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
+ *  @note Methods are called on arbitrary threads and may be called concurrently.
+ *        They should return as soon as possible.
+ *        It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
 class C4PeerDiscovery::Observer {
-public:
+  public:
     virtual ~Observer() = default;
 
     /// Notification that a provider has started/stopped browsing for peers.
@@ -115,11 +114,10 @@ public:
     /// Notification that a provider has made this app discoverable by peers, or stopped.
     virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
 
-    /// Notification of an incoming socket connection from a peer.
+    /// Notification of an incoming socket connection from a peer. (Only occurs while publishing is enabled.)
     /// @returns  True to accept the connection, false to reject it.
     virtual bool incomingConnection(C4Peer*, C4Socket*) { return false; }
 };
-
 
 /** A discovered peer device.
  *  @note  This class is thread-safe.
@@ -168,25 +166,15 @@ class C4Peer
     /// Returns all the metadata at once.
     Metadata getAllMetadata();
 
-    //---- URLs and Connections:
+    //---- URLs:
 
-    using ResolveURLCallback = std::function<void(std::string, C4Error)>;
+    using ResolveURLCallback = std::function<void(std::string, const C4SocketFactory* C4NULLABLE, C4Error)>;
 
     /// Asynchronously finds the replication URL to connect to the peer.
-    /// On completion, the callback will be invoked with either a non-empty URL string or a C4Error.
     /// To cancel resolution, call this again with a null callback.
+    /// On success, the callback will be invoked with a URL string and a socket factory to use for connections.
+    /// On failure, the callback is invoked with an empty string and an error.
     void resolveURL(ResolveURLCallback);
-
-    using ConnectCallback = std::function<void(void* C4NULLABLE, C4Error)>;
-
-    /// Opens a connection to the peer.
-    /// On completion, the callback will be invoked with either a non-null connection pointer or a `C4Error`.
-    /// The pointer type is implementation-defined.
-    /// To cancel, call this again with a null callback.
-    void connect(ConnectCallback);
-
-    /// Cancels a connection attempt.
-    void cancelConnect() { connect({}); }
 
     //---- Methods below are for subclasses and C4PeerDiscoveryProviders only:
 
@@ -202,10 +190,6 @@ class C4Peer
     /// Invokes the current `ResolveURLCallback`, when a URL is resolved or on failure.
     void resolvedURL(std::string url, C4Error);
 
-    /// Invokes the current `ConnectCallback`, on connection or failure.
-    /// @returns True if the callback was called, false if it was canceled (so caller can close the socket.)
-    bool connected(void* C4NULLABLE connection, C4Error);
-
     /// Called when an instance is about to be removed from the set of online peers. Clears `online` & `metadata`.
     virtual void removed();
 
@@ -214,11 +198,9 @@ class C4Peer
     std::string        _displayName;         // Arbitrary human-readable name registered by the peer
     Metadata           _metadata;            // Current known metadata
     ResolveURLCallback _resolveURLCallback;  // Holds callback during a resolveURL operation
-    ConnectCallback    _connectCallback;     // Holds callback during a connect operation
     std::atomic<bool>  _online      = true;  // Set to false when peer is removed
     std::atomic<bool>  _connectable = true;  // Set by providers by calling setConnectable
 };
-
 
 /** Abstract interface for a service that provides data for C4PeerDiscovery.
  *  **Other code shouldn't call into this API**; go through C4PeerDiscovery instead.
@@ -256,7 +238,7 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     virtual void stopBrowsing() = 0;
 
     /// Starts/stops monitoring the metadata of a peer.
-    /// Implementation must call the peer's \ref setMetadata whenever it receives metadata.
+    /// Implementation must call \ref C4Peer::setMetadata whenever it receives metadata.
     virtual void monitorMetadata(C4Peer*, bool start) = 0;
 
     /// Finds the replication URL of the peer.
@@ -269,15 +251,9 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// Returns the custom socket factory to use to connect to a peer URL, or NULL if no special factory is needed.
     virtual C4SocketFactory const* C4NULLABLE getSocketFactory() const = 0;
 
-    /// Called by \ref C4Peer::connect -- initiates a connection to a peer.
-    /// Implementation must call \ref C4Peer::connected when done or on failure.
-    virtual void connect(C4Peer*) = 0;
-
-    /// Cancels a prior `connect` request.
-    virtual void cancelConnect(C4Peer*) = 0;
-
-    /// Publishes/advertises a service so other devices can discover this one as a peer.
+    /// Publishes/advertises a service so other devices can discover this one as a peer and connect to it.
     /// Implementation must call \ref publishStateChanged on success/failure.
+    /// Implementation must call \ref notifyIncomingConnection when a peer connects.
     /// @param displayName  A user-visible name (optional)
     /// @param port  A port number, for protocols that need it (i.e. DNS-SD.)
     /// @param metadata  The peer metadata to advertise.
@@ -318,7 +294,9 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// Unregisters any peer with this ID that has gone offline.
     bool removePeer(std::string_view id);
 
-    /// Notifies observers of an incoming connection from a peer.
+    /// Notifies observers about an incoming connection from a peer.
+    /// @note  If the connection is not accepted, caller must close the C4Socket.
+    /// @returns  true if the connection was accepted, false if not.
     bool notifyIncomingConnection(C4Peer*, C4Socket*);
 };
 

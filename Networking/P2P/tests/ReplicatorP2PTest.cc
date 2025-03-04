@@ -35,6 +35,7 @@ class ReplicatorP2PTest
         //        InitializeBonjourProvider("couchbase-p2p");
         InitializeBluetoothProvider("couchbase-p2p");
         C4PeerDiscovery::addObserver(this);
+        _mayGoOffline = true;  // Bluetooth is prone to this
     }
 
     ~ReplicatorP2PTest() {
@@ -80,11 +81,12 @@ class ReplicatorP2PTest
     void resolveURL(C4Peer* peer) {
         if ( !_resolvingPeer ) {
             _resolvingPeer = peer;
-            peer->resolveURL([this](string_view url, C4Error error) {
+            peer->resolveURL([this](string_view url, C4SocketFactory const* factory, C4Error error) {
                 if ( _peerURL.empty() && !_peerURLError ) {
                     unique_lock lock(_mutex);
-                    _peerURL      = url;
-                    _peerURLError = error;
+                    _peerURL           = url;
+                    _peerSocketFactory = factory;
+                    _peerURLError      = error;
                     _cond.notify_all();
                 }
             });
@@ -97,7 +99,7 @@ class ReplicatorP2PTest
         _sg.remoteDBName             = "db"_sl;
         C4ReplicationCollection coll = {kC4DefaultCollectionSpec, kC4OneShot, kC4Disabled};
         replicate([&](C4ReplicatorParameters& params) {
-            params.socketFactory                  = _resolvingPeer->provider->getSocketFactory();
+            params.socketFactory                  = _peerSocketFactory;
             params.collections                    = &coll;
             params.collectionCount                = 1;
             params.collections[0].pushFilter      = _pushFilter;
@@ -174,18 +176,21 @@ class ReplicatorP2PTest
         return true;
     }
 
-    mutex                 _mutex;
-    condition_variable    _cond;
-    bool                  _browsing     = false;
-    bool                  _publishing   = false;
-    C4Error               _browseError  = {};
-    C4Error               _publishError = {};
-    Retained<C4Peer>      _resolvingPeer;
-    string                _peerURL;
-    C4Error               _peerURLError  = {};
-    bool                  _allowIncoming = false;
-    c4::ref<C4Replicator> _incomingRepl;
+    mutex                  _mutex;
+    condition_variable     _cond;
+    bool                   _browsing     = false;
+    bool                   _publishing   = false;
+    C4Error                _browseError  = {};
+    C4Error                _publishError = {};
+    Retained<C4Peer>       _resolvingPeer;
+    string                 _peerURL;
+    C4SocketFactory const* _peerSocketFactory = nullptr;
+    C4Error                _peerURLError      = {};
+    bool                   _allowIncoming     = false;
+    c4::ref<C4Replicator>  _incomingRepl;
 };
+
+#pragma mark - THE TESTS:
 
 TEST_CASE_METHOD(ReplicatorP2PTest, "P2P Push DB") {
     importJSONLines(sFixturesDir + "names_100.json");

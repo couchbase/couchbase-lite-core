@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#import "AppleBTSocketFactory.hh"
+#import "AppleBluetoothPeer+Internal.hh"
 #import "Address.hh"
 #import "c4ReplicatorTypes.h"
 #import "c4Socket.h"
@@ -252,10 +252,8 @@ using namespace litecore::p2p;
     if (Retained<C4Peer> peer = C4PeerDiscovery::peerWithID(_peerID)) {
         LogToAt(WSLog, Verbose, "BTSocket %p: connecting to %s", self, _peerID.c_str());
         Assert(peer->provider->name == "Bluetooth");
-        peer->connect([self](void* conn, C4Error err) {
-            auto channel = (__bridge CBL2CAPChannel*)conn;
-            Assert(!channel || [channel isKindOfClass: [CBL2CAPChannel class]]);
-            dispatch_async(_queue, ^{
+        OpenBTChannel(peer, ^(CBL2CAPChannel* channel, C4Error err) {
+            dispatch_async(self->_queue, ^{
                 if (channel) {
                     LogToAt(WSLog, Verbose, "BTSocket %p: connected", self);
                     [self setChannel: channel];

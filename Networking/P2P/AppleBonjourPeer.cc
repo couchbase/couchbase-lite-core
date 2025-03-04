@@ -213,16 +213,6 @@ namespace litecore::p2p {
 
         C4SocketFactory const* C4NULLABLE getSocketFactory() const override { return nullptr; }
 
-        void connect(C4Peer* peer) override {
-            Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
-            dispatch_async(_queue, ^{ do_connect(bonjourPeer); });
-        }
-
-        void cancelConnect(C4Peer* peer) override {
-            Retained<BonjourPeer> bonjourPeer(dynamic_cast<BonjourPeer*>(peer));
-            dispatch_async(_queue, ^{ do_cancelConnect(bonjourPeer); });
-        }
-
         void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& meta) override {
             string           nameStr(displayName);
             C4Peer::Metadata metaCopy = meta;
@@ -485,10 +475,6 @@ namespace litecore::p2p {
             net::Address addr("wss", peer->addressString(), peer->_port, "/db");  //TODO: Real port, db name
             peer->resolvedURL(string(addr.url()), {});
         }
-
-        void do_connect(BonjourPeer* peer) { peer->connected(nullptr, C4Error{LiteCoreDomain, kC4ErrorUnimplemented}); }
-
-        void do_cancelConnect(BonjourPeer* peer) {}
 
         //---- Service publishing:
 
