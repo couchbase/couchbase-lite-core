@@ -16,7 +16,7 @@
 #import "c4Socket.h"
 #import "Error.hh"
 #import "Logging.hh"
-#import "PeerDiscovery+AppleBT.hh"
+#import "AppleBluetoothPeer.hh"
 #import "StringUtil.hh"
 #import "fleece/Fleece.hh"
 #import "fleece/Expert.hh"

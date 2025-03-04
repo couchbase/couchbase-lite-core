@@ -12,8 +12,8 @@
 
 #include "c4PeerDiscovery.hh"
 #include "c4Socket+Internal.hh"
-#include "PeerDiscovery+AppleDNSSD.hh"
-#include "PeerDiscovery+AppleBT.hh"
+#include "AppleBonjourPeer.hh"
+#include "AppleBluetoothPeer.hh"
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"

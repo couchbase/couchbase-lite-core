@@ -1,5 +1,5 @@
 //
-// PeerDiscovery+AppleBT.mm
+// AppleBluetoothPeer.mm
 //
 // Copyright 2025-Present Couchbase, Inc.
 //
@@ -12,8 +12,8 @@
 
 #ifdef __APPLE__
 
-#include "PeerDiscovery+AppleBT.hh"
-#include "PeerDiscovery+AppleDNSSD.hh"
+#include "AppleBluetoothPeer.hh"
+#include "AppleBonjourPeer.hh"
 #include "Address.hh"
 #include "AppleBTSocketFactory.hh"
 #include "c4Socket.hh"
