@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4Error.h"
+#include "fleece/InstanceCounted.hh"
 #include <functional>
 #include <mutex>
 #include <span>
@@ -29,48 +30,145 @@ C4_ASSUME_NONNULL_BEGIN
 
 struct C4Socket;
 struct C4SocketFactory;
+
+class C4Peer;
 class C4PeerDiscoveryProvider;
 
 extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
 
+/** API for accessing peer discovery. To be used primarily by LiteCore's higher-level P2P functionality.
+ *  (This is more of a namespace than a class: all methods are static.)
+ *  @note  This API is thread-safe. */
+class C4PeerDiscovery {
+  public:
+    using Metadata = std::unordered_map<std::string, fleece::alloc_slice>;
+
+    /// Returns all the registered provider instances.
+    static std::vector<C4PeerDiscoveryProvider*> providers();
+
+    /// Tells registered providers to start looking for peers.
+    static void startBrowsing();
+
+    /// Tells registered providers to stop looking for peers.
+    static void stopBrowsing();
+
+    /// Tells providers to advertise themselves so other devices can discover them.
+    /// @param displayName  A user-visible name (optional)
+    /// @param port  A port number, for protocols that need it (i.e. DNS-SD.)
+    /// @param metadata  The peer metadata to advertise.
+    static void startPublishing(std::string_view displayName, uint16_t port, Metadata const& metadata);
+
+    /// Stops publishing.
+    static void stopPublishing();
+
+    /// Updates the published metadata.
+    static void updateMetadata(Metadata const&);
+
+    /// Returns a copy of the current known set of peers.
+    static std::unordered_map<std::string, fleece::Retained<C4Peer>> peers();
+
+    /// Returns the peer (if any) with the given ID.
+    static fleece::Retained<C4Peer> peerWithID(std::string_view id);
+
+    class Observer; // defined below
+
+    /// Registers an observer.
+    static void addObserver(Observer*);
+
+    /// Unregisters an observer.
+    /// After this method returns, no more calls will be made to it and it can safely be destructed.
+    static void removeObserver(Observer*);
+
+
+    //-------- For testing only:
+
+    /// Resets the state of peer discovery, including stopping and unregistering all providers,
+    /// and removing all observers.
+    /// Does not return until this is completed.
+    /// @note  This is not intended to be called in normal use. It's for use in tests.
+    static void shutdown();
+
+    C4PeerDiscovery() = delete;  // this is not an instantiable class
+};
+
+
+/** API for receiving notifications from C4PeerDiscovery.
+    @note Methods are called on arbitrary threads and may be called concurrently.
+          They should return as soon as possible.
+          It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
+class C4PeerDiscovery::Observer {
+public:
+    virtual ~Observer() = default;
+
+    /// Notification that a provider has started/stopped browsing for peers.
+    virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
+
+    /// Notification that an online peer has been discovered.
+    virtual void addedPeer(C4Peer*) {}
+
+    /// Notification that a peer has gone offline.
+    virtual void removedPeer(C4Peer*) {}
+
+    /// Notification that a peer's metadata has changed.
+    virtual void peerMetadataChanged(C4Peer*) {}
+
+    /// Notification that a provider has made this app discoverable by peers, or stopped.
+    virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
+
+    /// Notification of an incoming socket connection from a peer.
+    /// @returns  True to accept the connection, false to reject it.
+    virtual bool incomingConnection(C4Peer*, C4Socket*) { return false; }
+};
+
+
 /** A discovered peer device.
  *  @note  This class is thread-safe.
  *  @note  This class is concrete, but may be subclassed by platform code if desired. */
-class C4Peer : public fleece::RefCounted {
+class C4Peer
+    : public fleece::RefCounted
+    , public fleece::InstanceCountedIn<C4Peer> {
   public:
-    using Metadata = std::unordered_map<std::string, fleece::alloc_slice>;
+    using Metadata = C4PeerDiscovery::Metadata;
 
     C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_)
         : provider(provider_), id(std::move(id_)), _displayName(std::move(displayName_)) {}
 
-    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_, Metadata const& md)
-        : provider(provider_), id(std::move(id_)), _displayName(std::move(displayName_)), _metadata(md) {}
+    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_, Metadata md)
+        : provider(provider_), id(std::move(id_)), _displayName(std::move(displayName_)), _metadata(std::move(md)) {}
 
-    C4PeerDiscoveryProvider* const provider;  ///< Provider that manages this peer
-    std::string const              id;        ///< Uniquely identifies this C4Peer (e.g. DNS-SD service name + domain)
+    /// The provider that manages this peer
+    C4PeerDiscoveryProvider* const provider;
+
+    /// Uniquely identifies this C4Peer across all providers.
+    /// Examples are a DNS-SD service name + domain, or a Bluetooth LE peripheral UUID.
+    std::string const id;
 
     /// Human-readable name, if any.
     std::string displayName() const;
-
-    /// True if the peer is currently connectable. Bluetooth peers return false if their signal strength is too low.
-    bool connectable() const { return _connectable; }
 
     /// True if the peer is in the set of active peers (C4PeerDiscovery::peers);
     /// false once it goes offline and is removed from the set.
     /// @note  Once offline, an instance never comes back online; instead a new instance is created.
     bool online() const { return _online; }
 
+    /// True if it's OK to connect to the peer.
+    /// Bluetooth peers return false if their signal strength is below a threshold.
+    /// @note This property can sometimes change rapidly, so it does not post notifications.
+    bool connectable() const { return _connectable; }
+
+    //---- Metadata:
+
     /// Requests to start or stop monitoring (subscribing to) the metadata of this peer.
-    /// When metadata changes, C4PeerDiscovery observers' `peerMetadataChanged` methods will be called.
+    /// When metadata changes, C4PeerDiscovery observers' \ref peerMetadataChanged methods will be called.
     void monitorMetadata(bool enable);
 
-    /// Returns the metadata (such as a TXT record entry) associated with a key, if any.
+    /// Returns the metadata item (such as a TXT record entry) associated with a key, if any.
     fleece::alloc_slice getMetadata(std::string const& key) const;
 
     /// Returns all the metadata at once.
     Metadata getAllMetadata();
 
-    //---- Connections:
+    //---- URLs and Connections:
 
     using ResolveURLCallback = std::function<void(std::string, C4Error)>;
 
@@ -82,10 +180,13 @@ class C4Peer : public fleece::RefCounted {
     using ConnectCallback = std::function<void(void* C4NULLABLE, C4Error)>;
 
     /// Opens a connection to the peer.
-    /// On completion, the callback will be invoked with either a non-null connection pointer` or a `C4Error`.
+    /// On completion, the callback will be invoked with either a non-null connection pointer or a `C4Error`.
     /// The pointer type is implementation-defined.
     /// To cancel, call this again with a null callback.
     void connect(ConnectCallback);
+
+    /// Cancels a connection attempt.
+    void cancelConnect() { connect({}); }
 
     //---- Methods below are for subclasses and C4PeerDiscoveryProviders only:
 
@@ -108,91 +209,16 @@ class C4Peer : public fleece::RefCounted {
     /// Called when an instance is about to be removed from the set of online peers. Clears `online` & `metadata`.
     virtual void removed();
 
-  protected:
-    mutable std::mutex _mutex;
-
   private:
-    std::string        _displayName;  ///< Arbitrary human-readable name registered by the peer
-    Metadata           _metadata;
-    ResolveURLCallback _resolveURLCallback;
-    ConnectCallback    _connectCallback;
-    std::atomic<bool>  _online      = true;
-    std::atomic<bool>  _connectable = true;
+    mutable std::mutex _mutex;               // Must be locked while accessing state below (except atomics)
+    std::string        _displayName;         // Arbitrary human-readable name registered by the peer
+    Metadata           _metadata;            // Current known metadata
+    ResolveURLCallback _resolveURLCallback;  // Holds callback during a resolveURL operation
+    ConnectCallback    _connectCallback;     // Holds callback during a connect operation
+    std::atomic<bool>  _online      = true;  // Set to false when peer is removed
+    std::atomic<bool>  _connectable = true;  // Set by providers by calling setConnectable
 };
 
-/** API for accessing peer discovery.
- *  @note  This API is thread-safe. */
-class C4PeerDiscovery {
-  public:
-    /// Returns all the registered provider instances.
-    static std::vector<C4PeerDiscoveryProvider*> providers();
-
-    /// Tells registered providers to start looking for peers.
-    static void startBrowsing();
-
-    /// Tells registered providers to stop looking for peers.
-    static void stopBrowsing();
-
-    /// Tells providers to advertise themselves so other devices can discover them.
-    /// @param displayName  A user-visible name (optional)
-    /// @param port  A port number, for protocols that need it (i.e. DNS-SD.)
-    /// @param metadata  The peer metadata to advertise.
-    static void startPublishing(std::string_view displayName, uint16_t port, C4Peer::Metadata const& metadata);
-
-    /// Stops publishing.
-    static void stopPublishing();
-
-    /// Updates the published metadata.
-    static void updateMetadata(C4Peer::Metadata const&);
-
-    /// Returns a copy of the current known set of peers.
-    static std::unordered_map<std::string, fleece::Retained<C4Peer>> peers();
-
-    /// Returns the peer (if any) with the given ID.
-    static fleece::Retained<C4Peer> peerWithID(std::string_view id);
-
-    /** API for receiving notifications of changes.
-        @note Methods are called on arbitrary threads and may be called concurrently.
-              They should return as soon as possible.
-              It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
-    class Observer {
-      public:
-        virtual ~Observer() = default;
-
-        /// Notification that a provider has started/stopped browsing.
-        virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
-
-        /// Notification that an online peer has been discovered.
-        virtual void addedPeer(C4Peer*) {}
-
-        /// Notification that a peer has gone offline.
-        virtual void removedPeer(C4Peer*) {}
-
-        /// Notification that a peer's metadata has changed.
-        virtual void peerMetadataChanged(C4Peer*) {}
-
-        /// Notification that a provider has started/stopped publishing itself.
-        virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
-
-        /// Notification of an incoming socket connection from a peer.
-        /// @returns  True to accept the connection, false to reject it.
-        virtual bool incomingConnection(C4Peer*, C4Socket*) { return false; }
-    };
-
-    /// Registers an observer.
-    static void addObserver(Observer*);
-    /// Unregisters an observer. After this method returns, it will no longer be called.
-    static void removeObserver(Observer*);
-
-
-    //-------- For testing only:
-
-    /// Resets the state of peer discovery, including stopping and unregistering all providers.
-    /// Does not return until this is completed.
-    static void shutdown();
-
-    C4PeerDiscovery() = delete;  // this is not an instantiable class
-};
 
 /** Abstract interface for a service that provides data for C4PeerDiscovery.
  *  **Other code shouldn't call into this API**; go through C4PeerDiscovery instead.
@@ -200,9 +226,12 @@ class C4PeerDiscovery {
  *  To implement a new protocol (DNS-SD, Bluetooth, ...): subclass this, implement the abstract
  *  methods, instantiate a singleton instance and call its `registerProvider()` method. Do not free it!
  *
+ *  All the abstract methods are asynchronous (except for \ref getSocketFactory) and shouldn't block.
+ *  The docs for each method specify what should be called when the operation is complete or fails.
+ *
  *  @note  This interface is thread-safe. Methods should be prepared to be called on arbitrary
  *         threads, and they may issue their own calls on arbitrary threads. */
-class C4PeerDiscoveryProvider {
+class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
   public:
     explicit C4PeerDiscoveryProvider(std::string_view name_) : name(name_) {}
 
@@ -213,6 +242,8 @@ class C4PeerDiscoveryProvider {
 
     /// The provider's name, for identification/logging/debugging purposes.
     std::string const name;
+
+    //-------- Abstract API for subclasses to implement:
 
     /// Begins browsing for peers.
     /// Implementation must call \ref browseStateChanged when ready or on error.
@@ -238,7 +269,7 @@ class C4PeerDiscoveryProvider {
     /// Returns the custom socket factory to use to connect to a peer URL, or NULL if no special factory is needed.
     virtual C4SocketFactory const* C4NULLABLE getSocketFactory() const = 0;
 
-    /// Initiates a connection to a peer.
+    /// Called by \ref C4Peer::connect -- initiates a connection to a peer.
     /// Implementation must call \ref C4Peer::connected when done or on failure.
     virtual void connect(C4Peer*) = 0;
 
@@ -256,20 +287,19 @@ class C4PeerDiscoveryProvider {
     /// Implementation must call \ref publishStateChanged on completion.
     virtual void unpublish() = 0;
 
-    /// Changes the published metadata.
+    /// Changes the published metadata. (No completion call needed.)
     virtual void updateMetadata(C4Peer::Metadata const&) = 0;
 
     //-------- For testing only:
 
-    /// In normal use, providers are static singletons and are never deleted, so this won't be called.
-    /// However, tests will call \ref C4PeerDiscovery::shutdown when they finish, to reset the entire state of peer
-    /// discovery, including unregistering and deleting providers.
-    /// But a provider will not be deleted until it has reported that browsing and publishing have stopped.
+    /// Called by \ref C4PeerDiscovery::shutdown, generally as part of teardown of a test.
+    /// Implementation must stop browsing and publishing and any other ongoing tasks,
+    /// then call the `onComplete` callback, after which it will be deleted.
     virtual void shutdown(std::function<void()> onComplete) = 0;
+
     virtual ~C4PeerDiscoveryProvider() = default;
 
   protected:
-
     /// Reports that browsing has started, stopped or failed.
     /// If `state` is false, this method will call `removePeer` on all online peers.
     void browseStateChanged(bool state, C4Error = {});

@@ -22,7 +22,6 @@
 #    include <dns_sd.h>
 #    include <netinet/in.h>
 
-
 // If `ADDRESS_IN_URL` is defined, peer URLs will use numeric IP addresses instead of mDNS hostnames,
 // e.g. `10.0.1.23` instead of `jens.local.`. I've turned this off because it takes longer to resolve and is
 // potentially less robust, i.e. if a peer's address changes. --Jens, March 3 2025
@@ -126,13 +125,13 @@ namespace litecore::p2p {
 
         void getAddressFailed(DNSServiceErrorType err) {
             _addressExpiration = C4Timestamp(0);
-            resolvedURL(nullptr, convertErrorCode(err));
+            resolvedURL("", convertErrorCode(err));
         }
 
-        bool addressValid() { return _addressExpiration > c4_now(); }
+        bool addressValid() const { return _addressExpiration > c4_now(); }
 
         string addressString() {
-#ifdef ADDRESS_IN_URL
+#    ifdef ADDRESS_IN_URL
             if ( !addressValid() ) return "";
             char buf[INET6_ADDRSTRLEN];
             if ( _address.sa_family == AF_INET ) {
@@ -144,9 +143,9 @@ namespace litecore::p2p {
                 strlcat(buf, "]", sizeof(buf));
             }
             return buf;
-#else
+#    else
             return _hostname;
-#endif
+#    endif
         }
 
         void removed() override {
@@ -227,7 +226,7 @@ namespace litecore::p2p {
         void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& meta) override {
             string           nameStr(displayName);
             C4Peer::Metadata metaCopy = meta;
-            dispatch_async(_queue, ^{ do_publish(std::move(nameStr), port, std::move(metaCopy)); });
+            dispatch_async(_queue, ^{ do_publish(nameStr, port, metaCopy); });
         }
 
         void unpublish() override {
@@ -236,32 +235,32 @@ namespace litecore::p2p {
 
         void updateMetadata(C4Peer::Metadata const& meta) override {
             C4Peer::Metadata metaCopy = meta;
-            dispatch_async(_queue, ^{ do_updateMetadata(std::move(metaCopy)); });
+            dispatch_async(_queue, ^{ do_updateMetadata(metaCopy); });
         }
 
         void shutdown(std::function<void()> onComplete) override {
             dispatch_async(_queue, ^{
-                do_stop();
-                do_unpublish();
-                onComplete();
+              do_stop();
+              do_unpublish();
+              onComplete();
             });
         }
 
         ~BonjourProvider() override {
-            if (this == sProvider)
-                sProvider = nullptr;
-            if ( _browseRef || _registerRef )
-                warn("Provider was not stopped before deallocating!");
+            if ( this == sProvider ) sProvider = nullptr;
+            if ( _browseRef || _registerRef ) warn("Provider was not stopped before deallocating!");
             freeServiceRef(_serviceRef);
             dispatch_release(_queue);
         }
 
-#pragma mark - BROWSER IMPLEMENTATION:
+#    pragma mark - BROWSER IMPLEMENTATION:
 
         // From here on, all methods are called on the dispatch queue.
 
       private:
-        string makeID(string const& name, string const& domain) { return name + "." + _serviceType + "." + domain; }
+        string makeID(string const& name, string const& domain) const {
+            return name + "." + _serviceType + "." + domain;
+        }
 
         DNSServiceErrorType openServiceRef() {
             if ( _serviceRef ) return 0;
@@ -334,7 +333,7 @@ namespace litecore::p2p {
 
 
         /// API request to monitor a peer's metadata.
-        void do_monitor(Retained<BonjourPeer> peer, bool start) {
+        void do_monitor(BonjourPeer* peer, bool start) {
             if ( start ) {
                 if ( peer->_monitorTxtRef ) return;
                 logInfo("monitoring TXT record of '%s'", peer->id.c_str());
@@ -379,7 +378,7 @@ namespace litecore::p2p {
         //---- Resolving peer addresses and connecting:
 
         /// API request to connect to a peer.
-        void do_resolveURL(Retained<BonjourPeer> peer) {
+        void do_resolveURL(BonjourPeer* peer) {
             // This has to be done in steps:
             // 1. call DNSServiceResolve to get the hostname and port.
             // 2. call DNSServiceGetAddrInfo with the hostname to get the address.
@@ -393,11 +392,11 @@ namespace litecore::p2p {
             if ( peer->_resolveRef || peer->_getAddrRef ) return;  // already resolving
 
             if ( !peer->_hostname.empty() ) {
-#ifdef ADDRESS_IN_URL
+#    ifdef ADDRESS_IN_URL
                 getAddress(peer);
-#else
+#    else
                 resolvedURL(peer);
-#endif
+#    endif
                 return;
             }
 
@@ -422,7 +421,7 @@ namespace litecore::p2p {
         }
 
         /// API request to cancel a connection attempt.
-        void do_cancelResolveURL(Retained<BonjourPeer> peer) {
+        void do_cancelResolveURL(BonjourPeer* peer) {
             freeServiceRef(peer->_resolveRef);
             freeServiceRef(peer->_getAddrRef);
         }
@@ -441,14 +440,14 @@ namespace litecore::p2p {
             peer->_port     = port;
             peer->setTxtRecord(txtRecord);
 
-#ifdef ADDRESS_IN_URL
+#    ifdef ADDRESS_IN_URL
             getAddress(peer);
-#else
+#    else
             resolvedURL(peer);
-#endif
+#    endif
         }
 
-#ifdef ADDRESS_IN_URL
+#    ifdef ADDRESS_IN_URL
         void getAddress(BonjourPeer* peer) {
             logInfo("Getting IP address of peer %s ...", peer->id.c_str());
             Assert(!peer->_hostname.empty());
@@ -480,24 +479,22 @@ namespace litecore::p2p {
                 peer->getAddressFailed(err);
             }
         }
-#endif
+#    endif
 
         void resolvedURL(BonjourPeer* peer) {
             net::Address addr("wss", peer->addressString(), peer->_port, "/db");  //TODO: Real port, db name
             peer->resolvedURL(string(addr.url()), {});
         }
 
-        void do_connect(Retained<BonjourPeer> peer) {
-            peer->connected(nullptr, C4Error{LiteCoreDomain, kC4ErrorUnimplemented});
-        }
+        void do_connect(BonjourPeer* peer) { peer->connected(nullptr, C4Error{LiteCoreDomain, kC4ErrorUnimplemented}); }
 
-        void do_cancelConnect(Retained<BonjourPeer> peer) {}
+        void do_cancelConnect(BonjourPeer* peer) {}
 
         //---- Service publishing:
 
 
         /// API request to register/advertise a service.
-        void do_publish(string displayName, uint16_t port, C4Peer::Metadata metadata) {
+        void do_publish(string const& displayName, uint16_t port, C4Peer::Metadata const& metadata) {
             if ( _registerRef ) return;
             Assert(!displayName.empty());
             Assert(port != 0);
@@ -509,7 +506,7 @@ namespace litecore::p2p {
 
                 _myPort = port;
                 if ( displayName != _myBaseName ) {
-                    _myBaseName = std::move(displayName);
+                    _myBaseName = displayName;
                     _myDupCount = 0;
                 }
                 err = encodeMyTxtRecord(metadata);
@@ -574,7 +571,7 @@ namespace litecore::p2p {
         }
 
         /// API request to update my service's metadata.
-        void do_updateMetadata(C4Peer::Metadata metadata) {
+        void do_updateMetadata(C4Peer::Metadata const& metadata) {
             if ( _registerRef ) {
                 auto err = encodeMyTxtRecord(metadata);
                 if ( err == 0 )
@@ -590,8 +587,7 @@ namespace litecore::p2p {
         // Updates _myTxtRecord from a Metadata map
         DNSServiceErrorType encodeMyTxtRecord(C4Peer::Metadata const& meta) {
             DNSServiceErrorType err = 0;
-            auto                txt = EncodeMetadataAsTXT(meta, &err);
-            if ( txt ) _myTxtRecord = std::move(txt);
+            if ( auto txt = EncodeMetadataAsTXT(meta, &err) ) _myTxtRecord = std::move(txt);
             return err;
         }
 
@@ -604,7 +600,7 @@ namespace litecore::p2p {
         string                 _myBaseName;         // Name of my service, as given by client
         string                 _myName;             // Actual published name of my service
         unsigned               _myDupCount = 0;     // Counter to append to _myName when > 0
-        uint16_t               _myPort;             // Port number of my service
+        uint16_t               _myPort     = 0;     // Port number of my service
         alloc_slice            _myTxtRecord;        // My encoded TXT record
         bool                   _published = false;  // True when my service is published
     };
