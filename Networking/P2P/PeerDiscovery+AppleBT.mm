@@ -98,12 +98,19 @@ namespace litecore::p2p {
             C4Peer::removed();
             _peripheral = nil;
             _psm = 0;
-            _connecting = false;
+            _connectState = NotConnecting;
         }
+
+        enum ConnectState {
+            NotConnecting,
+            WaitingForConnectable,
+            GettingPSM,
+            OpeningChannel,
+        };
 
         CBPeripheral*   _peripheral {};         // CoreBluetooth object representing this peer (could be nil)
         CBL2CAPPSM      _psm {};                // BTLE "port number" peer is listening on; 0 if unknown
-        bool            _connecting = false;    // True if I'm opening a connection
+        ConnectState    _connectState = NotConnecting;
     };
 
 
@@ -199,8 +206,8 @@ namespace litecore::p2p {
 
       private:
         dispatch_queue_t const      _queue;             // Dispatch queue I run on
-        LiteCoreBTCentral* const    _myCentral {};        // Obj-C instance that does the real discovery
-        LiteCoreBTPeripheral* const _myPeripheral {};     // Obj-C instance that does the real publishing
+        LiteCoreBTCentral* const    _myCentral {};      // Obj-C instance that does the real discovery
+        LiteCoreBTPeripheral* const _myPeripheral {};   // Obj-C instance that does the real publishing
     };
 
     
@@ -315,22 +322,33 @@ namespace litecore::p2p {
 
 
 - (void) connect: (Retained<BluetoothPeer>)peer {
-    if (auto peripheral = peer->_peripheral; peripheral && peer->connectable()) {
-        if (!peer->_connecting) {
-            peer->_connecting = true;
-            if (peer->_psm)
+    if (peer->_connectState > BluetoothPeer::NotConnecting)
+        return;
+    if (!peer->online())
+        peer->connected(nullptr, {NetworkDomain, kC4NetErrHostUnreachable});
+    peer->_connectState = BluetoothPeer::WaitingForConnectable;
+    [self _tryConnect: peer];
+}
+
+- (void) _tryConnect: (BluetoothPeer*)peer {
+    if (peer->_connectState == BluetoothPeer::WaitingForConnectable) {
+        if (auto peripheral = peer->_peripheral; peripheral && peer->connectable()) {
+            if (peer->_psm) {
+                // I know the PSM, so I can connect:
+                peer->_connectState = BluetoothPeer::OpeningChannel;
                 [peripheral openL2CAPChannel: peer->_psm];
-            else
+            } else {
+                // I don't know the PSM, so I have to connect in order to read it from a Characteristic:
+                peer->_connectState = BluetoothPeer::GettingPSM;
                 [_manager connectPeripheral: peer->_peripheral options: nil];
+            }
         }
-    } else {
-        peer->connected(nullptr, C4Error{NetworkDomain, kC4NetErrHostDown});
     }
 }
 
 
 - (void) cancelConnect: (Retained<BluetoothPeer>)peer {
-    peer->_connecting = false;
+    peer->_connectState = BluetoothPeer::NotConnecting;
 }
 
 
@@ -362,34 +380,37 @@ namespace litecore::p2p {
       advertisementData: (NSDictionary<NSString*,id>*)advert
                    RSSI: (NSNumber*)RSSI {
     auto peer = peerForPeripheral(peripheral);
-    if (RSSI.intValue < kConnectableRSSI || ![advert[CBAdvertisementDataIsConnectable] boolValue]) {
-        if (peer) {
-            if (RSSI.intValue >= kMinimumRSSI) {
-                peer->setConnectable(false);
-            } else {
-                [peer->_peripheral setDelegate: nil];
-                peer->_peripheral = nil;
-                [_manager cancelPeripheralConnection: peripheral];
-                _counterpart->removePeer(peer);
-            }
-        }
-    } else {
-        string displayName;
-        if (peripheral.name)
-            displayName = peripheral.name.UTF8String;
-        else if (id name = advert[CBAdvertisementDataLocalNameKey])
-            displayName = [name UTF8String];
-
+    if (RSSI.intValue >= kConnectableRSSI && [advert[CBAdvertisementDataIsConnectable] boolValue]) {
+        // Peer is connectable:
+        NSString* displayName = peripheral.name ?: advert[CBAdvertisementDataLocalNameKey];
         if (peer) {
             if (peer->_peripheral == nil)
                 peer->_peripheral = peripheral;
-            peer->setConnectable(true);
-            peer->setDisplayName(displayName);
+            if (displayName)
+                peer->setDisplayName(displayName.UTF8String);
+            if (!peer->connectable()) {
+                peer->setConnectable(true);
+                if (peer->_connectState == BluetoothPeer::WaitingForConnectable)
+                    [self _tryConnect: peer];
+            }
         } else {
-            string peerID = idStr(peripheral);
-            _counterpart->_log(LogLevel::Verbose, "peripheral %s has RSSI %d", peerID.c_str(), RSSI.intValue);
-            peer = fleece::make_retained<BluetoothPeer>(_counterpart, peerID, displayName, peripheral);
+            if (!displayName) displayName = @"";
+            peer = fleece::make_retained<BluetoothPeer>(_counterpart,
+                                                        idStr(peripheral),
+                                                        displayName.UTF8String,
+                                                        peripheral);
             _counterpart->addPeer(peer);
+        }
+    } else if (peer) {
+        // Peer not connectable:
+        if (RSSI.intValue >= kMinimumRSSI || peer->_connectState > BluetoothPeer::NotConnecting) {
+            peer->setConnectable(false);
+        } else {
+            // In fact the signal is so weak, let's forget this peer:
+            [peer->_peripheral setDelegate: nil];
+            peer->_peripheral = nil;
+            [_manager cancelPeripheralConnection: peripheral];
+            _counterpart->removePeer(peer);
         }
     }
 }
@@ -503,8 +524,10 @@ didUpdateValueForCharacteristic:(CBCharacteristic*)ch
             memcpy(&peer->_psm, ch.value.bytes, sizeof(CBL2CAPPSM));
             _counterpart->_log(LogLevel::Info, "%s (%s) listens on port/PSM %u",
                                idStr(peripheral), peripheral.name.UTF8String, peer->_psm);
-            if (peer->_connecting)
+            if (peer->_connectState > BluetoothPeer::NotConnecting) {
+                peer->_connectState = BluetoothPeer::OpeningChannel;
                 [peripheral openL2CAPChannel: peer->_psm];
+            }
         } else {
             _counterpart->_log(LogLevel::Warning, "%s (%s) has invalid port/PSM data (%zu bytes)",
                                idStr(peripheral), peripheral.name.UTF8String, ch.value.length);
@@ -522,7 +545,8 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
               error:(nullable NSError*)error
 {
     // Completion routine from opening an outgoing channel.
-    if (auto peer = peerForPeripheral(peripheral); peer && peer->_connecting) {
+    if (auto peer = peerForPeripheral(peripheral); peer && peer->_connectState) {
+        peer->_connectState = BluetoothPeer::NotConnecting;
         if (error) {
             _counterpart->_log(LogLevel::Error, "L2CAP connection to %s failed: %s",
                                idStr(peripheral), errorStr(error));
@@ -706,7 +730,7 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
         _counterpart->_log(LogLevel::Info, "Error publishing L2CAP channel: %s", errorStr(error));
         [self _stopAdvertise: errorStr(error)];
     } else {
-        _counterpart->_log(LogLevel::Info, "Published L2CAP channel on port/PSM %u", psm);
+        _counterpart->_log(LogLevel::Verbose, "Published L2CAP channel on port/PSM %u", psm);
         _psm = psm;
 
         [_manager updateValue: [NSData dataWithBytes: &_psm length: sizeof(_psm)]
