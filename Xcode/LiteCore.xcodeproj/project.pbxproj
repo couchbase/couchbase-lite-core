@@ -1354,7 +1354,7 @@
 		27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerDiscovery.cc; sourceTree = "<group>"; };
 		27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBTSocketFactory.mm; sourceTree = "<group>"; };
-		27B075342D6FEE2100AA6BFF /* AppleBTSocketFactory.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AppleBTSocketFactory.hh; sourceTree = "<group>"; };
+		27B075342D6FEE2100AA6BFF /* AppleBluetoothPeer+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "AppleBluetoothPeer+Internal.hh"; sourceTree = "<group>"; };
 		27B075432D7236E600AA6BFF /* ObserverList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ObserverList.hh; sourceTree = "<group>"; };
 		27B075442D726FAA00AA6BFF /* ReplicatorP2PTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorP2PTest.cc; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
@@ -2937,11 +2937,11 @@
 			children = (
 				27B075152D6D0E8C00AA6BFF /* tests */,
 				27B075162D6D0E8C00AA6BFF /* AppleBluetoothPeer.hh */,
+				27B075342D6FEE2100AA6BFF /* AppleBluetoothPeer+Internal.hh */,
 				27B075172D6D0E8C00AA6BFF /* AppleBluetoothPeer.mm */,
+				27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */,
 				27B075182D6D0E8C00AA6BFF /* AppleBonjourPeer.hh */,
 				27B075192D6D0E8C00AA6BFF /* AppleBonjourPeer.cc */,
-				27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */,
-				27B075342D6FEE2100AA6BFF /* AppleBTSocketFactory.hh */,
 			);
 			path = P2P;
 			sourceTree = "<group>";
