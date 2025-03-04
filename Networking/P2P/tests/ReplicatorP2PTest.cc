@@ -14,8 +14,8 @@
 #include "c4PeerDiscovery.hh"
 #include "c4Replicator.hh"
 #include "c4Socket+Internal.hh"
-#include "AppleBonjourPeer.hh"  //TEMP shouldn't need this
-#include "AppleBluetoothPeer.hh"     //TEMP shouldn't need this
+#include "AppleBonjourPeer.hh"    //TEMP shouldn't need this
+#include "AppleBluetoothPeer.hh"  //TEMP shouldn't need this
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
@@ -66,7 +66,7 @@ class ReplicatorP2PTest
     }
 
     // Finds a peer URL, waiting until one is discovered.
-    string findPeerURL() {
+    string findAPeerURL() {
         Assert(_browsing);
         unique_lock lock(_mutex);
         _peerURL = "";
@@ -89,6 +89,21 @@ class ReplicatorP2PTest
                 }
             });
         }
+    }
+
+    void replicateWithPeer(string_view peerURL) {
+        net::Address address{peerURL};
+        _sg.address                  = address;
+        _sg.remoteDBName             = "db"_sl;
+        C4ReplicationCollection coll = {kC4DefaultCollectionSpec, kC4OneShot, kC4Disabled};
+        replicate([&](C4ReplicatorParameters& params) {
+            params.socketFactory                  = _resolvingPeer->provider->getSocketFactory();
+            params.collections                    = &coll;
+            params.collectionCount                = 1;
+            params.collections[0].pushFilter      = _pushFilter;
+            params.collections[0].pullFilter      = _pullFilter;
+            params.collections[0].callbackContext = this;
+        });
     }
 
     //---- C4PeerDiscovery::Observer callbacks:
@@ -176,20 +191,9 @@ TEST_CASE_METHOD(ReplicatorP2PTest, "P2P Push DB") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     start(false);
-    string peerURL = findPeerURL();
+    string peerURL = findAPeerURL();
     cout << "Peer URL: " << peerURL << endl;
-    net::Address address{peerURL};
-    _sg.address                  = address;
-    _sg.remoteDBName             = "db"_sl;
-    C4ReplicationCollection coll = {kC4DefaultCollectionSpec, kC4OneShot, kC4Disabled};
-    replicate([&](C4ReplicatorParameters& params) {
-        params.socketFactory                  = _resolvingPeer->provider->getSocketFactory();
-        params.collections                    = &coll;
-        params.collectionCount                = 1;
-        params.collections[0].pushFilter      = _pushFilter;
-        params.collections[0].pullFilter      = _pullFilter;
-        params.collections[0].callbackContext = this;
-    });
+    replicateWithPeer(peerURL);
 }
 
 TEST_CASE_METHOD(ReplicatorP2PTest, "P2P Accept Connections") {
