@@ -22,6 +22,13 @@
 #    include <dns_sd.h>
 #    include <netinet/in.h>
 
+
+// If `ADDRESS_IN_URL` is defined, peer URLs will use numeric IP addresses instead of mDNS hostnames,
+// e.g. `10.0.1.23` instead of `jens.local.`. I've turned this off because it takes longer to resolve and is
+// potentially less robust, i.e. if a peer's address changes. --Jens, March 3 2025
+//#define ADDRESS_IN_URL
+
+
 namespace litecore::p2p {
     using namespace std;
 
@@ -125,6 +132,7 @@ namespace litecore::p2p {
         bool addressValid() { return _addressExpiration > c4_now(); }
 
         string addressString() {
+#ifdef ADDRESS_IN_URL
             if ( !addressValid() ) return "";
             char buf[INET6_ADDRSTRLEN];
             if ( _address.sa_family == AF_INET ) {
@@ -136,6 +144,9 @@ namespace litecore::p2p {
                 strlcat(buf, "]", sizeof(buf));
             }
             return buf;
+#else
+            return _hostname;
+#endif
         }
 
         void removed() override {
@@ -159,11 +170,10 @@ namespace litecore::p2p {
         DNSServiceRef _getAddrRef{};     // reference to DNSServiceGetAddrInfo task
     };
 
-#    pragma mark - BROWSER IMPL:
+#    pragma mark - BROWSER PUBLIC API:
 
     /// Implements DNS-SD peer discovery.
-    /// This class owns a dispatch queue, and all calls other than constructor/destructor
-    /// must be made on that queue.
+    /// This class is basically an Actor -- it owns a dispatch queue, and all API calls are forwarded to it.
     struct BonjourProvider
         : public C4PeerDiscoveryProvider
         , public Logging {
@@ -178,8 +188,6 @@ namespace litecore::p2p {
             if ( !ok || serviceType.empty() || serviceType.size() > 15 )
                 error::_throw(error::InvalidParameter, "invalid service type");
         }
-
-        bool running() const { return _serviceRef != nullptr; }
 
         void startBrowsing() override {
             dispatch_async(_queue, ^{ do_start(); });
@@ -248,6 +256,10 @@ namespace litecore::p2p {
             dispatch_release(_queue);
         }
 
+#pragma mark - BROWSER IMPLEMENTATION:
+
+        // From here on, all methods are called on the dispatch queue.
+
       private:
         string makeID(string const& name, string const& domain) { return name + "." + _serviceType + "." + domain; }
 
@@ -308,12 +320,12 @@ namespace litecore::p2p {
             } else if ( _published && string_view(serviceName) == _myName ) {
                 logVerbose("flags=%04x; found echo of my service '%s' in %s", flags, serviceName, domain);
             } else if ( flags & kDNSServiceFlagsAdd ) {
-                logInfo("flags=%04x; found '%s' in %s", flags, serviceName, domain);
+                logInfo("Adding peer '%s' in %s", serviceName, domain);
                 auto peer =
                         make_retained<BonjourPeer>(this, makeID(serviceName, domain), serviceName, interface, domain);
                 C4PeerDiscoveryProvider::addPeer(peer);
             } else {
-                logInfo("flags=%04x; lost '%s'", flags, serviceName);
+                logInfo("Removing peer '%s' in %s", serviceName, domain);
                 C4PeerDiscoveryProvider::removePeer(makeID(serviceName, domain));
             }
         }
@@ -381,7 +393,11 @@ namespace litecore::p2p {
             if ( peer->_resolveRef || peer->_getAddrRef ) return;  // already resolving
 
             if ( !peer->_hostname.empty() ) {
+#ifdef ADDRESS_IN_URL
                 getAddress(peer);
+#else
+                resolvedURL(peer);
+#endif
                 return;
             }
 
@@ -425,9 +441,14 @@ namespace litecore::p2p {
             peer->_port     = port;
             peer->setTxtRecord(txtRecord);
 
+#ifdef ADDRESS_IN_URL
             getAddress(peer);
+#else
+            resolvedURL(peer);
+#endif
         }
 
+#ifdef ADDRESS_IN_URL
         void getAddress(BonjourPeer* peer) {
             logInfo("Getting IP address of peer %s ...", peer->id.c_str());
             Assert(!peer->_hostname.empty());
@@ -459,6 +480,7 @@ namespace litecore::p2p {
                 peer->getAddressFailed(err);
             }
         }
+#endif
 
         void resolvedURL(BonjourPeer* peer) {
             net::Address addr("wss", peer->addressString(), peer->_port, "/db");  //TODO: Real port, db name
@@ -503,7 +525,7 @@ namespace litecore::p2p {
             if ( _myDupCount == 0 ) _myName = _myBaseName;
             else
                 _myName = stringprintf("%s %u", _myBaseName.c_str(), _myDupCount + 1);
-            logInfo("publishing my service '%s' on port %d", _myName.c_str(), _myPort);
+            logVerbose("publishing my service '%s' on port %d", _myName.c_str(), _myPort);
             auto regCallback = [](DNSServiceRef, DNSServiceFlags flags, DNSServiceErrorType err, const char* name,
                                   const char* /*regtype*/, const char* domain, void* ctx) {
                 static_cast<BonjourProvider*>(ctx)->regResult(flags, err, name, domain);
@@ -530,11 +552,11 @@ namespace litecore::p2p {
                     do_unpublish();
                 }
             } else if ( flags & kDNSServiceFlagsAdd ) {
-                logInfo("flags=%04x; Registered '%s' in %s", flags, serviceName, domain);
+                logInfo("Registered my peer '%s' in %s", serviceName, domain);
                 _published = true;
                 publishStateChanged(true);
             } else {
-                logInfo("flags=%04x; Lost registration '%s'", flags, serviceName);
+                logInfo("Unregistered my peer '%s' in %s", serviceName, domain);
                 _published = false;
                 publishStateChanged(false);
             }
