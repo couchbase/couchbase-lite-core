@@ -69,8 +69,7 @@ void C4Peer::setMetadata(Metadata md) {
 }
 
 void C4Peer::removed() {
-    resolvedURL("", {NetworkDomain, kC4NetErrHostUnreachable});     // cancel resolve attempt
-    connected(nullptr, {NetworkDomain, kC4NetErrHostUnreachable});  // cancel connect attempt
+    resolvedURL("", {NetworkDomain, kC4NetErrHostUnreachable});  // cancel resolve attempt
     unique_lock lock(_mutex);
     _online = false;
     _metadata.clear();
@@ -93,29 +92,7 @@ void C4Peer::resolvedURL(string url, C4Error error) {
     _resolveURLCallback         = {};
     lock.unlock();
 
-    if ( callback ) callback(std::move(url), error);
-}
-
-void C4Peer::connect(ConnectCallback cb) {
-    unique_lock lock(_mutex);
-    bool        givenCallback = !!cb;
-    Assert(!_connectCallback || !givenCallback, "Multiple connect requests to a C4Peer");
-    _connectCallback = std::move(cb);
-    lock.unlock();
-    if ( givenCallback ) provider->connect(this);
-    else
-        provider->cancelConnect(this);
-}
-
-bool C4Peer::connected(void* connection, C4Error error) {
-    unique_lock     lock(_mutex);
-    ConnectCallback callback = std::move(_connectCallback);
-    _connectCallback         = {};
-    lock.unlock();
-
-    if ( !callback ) return false;
-    callback(connection, error);
-    return true;
+    if ( callback ) callback(std::move(url), provider->getSocketFactory(), error);
 }
 
 #pragma mark - DISCOVERY:
