@@ -27,8 +27,8 @@ function(set_litecore_source)
         LiteCore/Support/StringUtil_Apple.mm
         LiteCore/Support/Instrumentation.cc
         Crypto/PublicKey+Apple.mm
-        Networking/P2P/PeerDiscovery+AppleDNSSD.cc
-        Networking/P2P/PeerDiscovery+AppleBT.mm
+        Networking/P2P/AppleBonjourPeer.cc
+        Networking/P2P/AppleBluetoothPeer.mm
         Networking/P2P/AppleBTSocketFactory.mm
         PARENT_SCOPE
     )
