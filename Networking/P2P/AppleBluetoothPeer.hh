@@ -1,5 +1,5 @@
 //
-// PeerDiscovery+AppleBT.hh
+// AppleBluetoothPeer.hh
 //
 // Copyright 2025-Present Couchbase, Inc.
 //

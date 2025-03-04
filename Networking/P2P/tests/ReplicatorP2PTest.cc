@@ -14,8 +14,8 @@
 #include "c4PeerDiscovery.hh"
 #include "c4Replicator.hh"
 #include "c4Socket+Internal.hh"
-#include "PeerDiscovery+AppleDNSSD.hh"  //TEMP shouldn't need this
-#include "PeerDiscovery+AppleBT.hh"     //TEMP shouldn't need this
+#include "AppleBonjourPeer.hh"  //TEMP shouldn't need this
+#include "AppleBluetoothPeer.hh"     //TEMP shouldn't need this
 #include "Logging.hh"
 #include "TestsCommon.hh"
 #include "CatchHelper.hh"
