@@ -13,9 +13,9 @@
 #ifdef __APPLE__
 
 #include "AppleBluetoothPeer.hh"
-#include "AppleBonjourPeer.hh"
+#include "AppleBluetoothPeer+Internal.hh"
+#include "AppleBonjourPeer.hh"  // for EncodeTXTToMetadata
 #include "Address.hh"
-#include "AppleBTSocketFactory.hh"
 #include "c4Socket.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -54,6 +54,9 @@ namespace litecore::p2p {
 }
 
 
+using ConnectCallback = void (^)(CBL2CAPChannel* _Nullable, C4Error);
+
+
 @interface LiteCoreBTCentral : NSObject <CBCentralManagerDelegate, CBPeripheralDelegate>
 - (instancetype) initWithCounterpart: (BluetoothProvider*)counterpart queue: (dispatch_queue_t)queue;
 - (void) startBrowsing;
@@ -61,7 +64,7 @@ namespace litecore::p2p {
 - (void) monitorPeer: (Retained<BluetoothPeer>)peer state: (bool)state;
 - (void) resolveURL: (Retained<BluetoothPeer>)peer;
 - (void) cancelResolveURL: (Retained<BluetoothPeer>)peer;
-- (void) connect: (Retained<BluetoothPeer>)peer;
+- (void) connect: (Retained<BluetoothPeer>)peer onComplete: (ConnectCallback)onComplete;
 - (void) cancelConnect: (Retained<BluetoothPeer>)peer;
 @end
 
@@ -94,11 +97,21 @@ namespace litecore::p2p {
             resolvedURL(string(addr.url()), kC4NoError);
         }
 
+        bool connected(CBL2CAPChannel* connection, C4Error error) {
+            ConnectCallback callback = _connectCallback;
+            _connectCallback         = nil;
+
+            if ( !callback ) return false;
+            callback(connection, error);
+            return true;
+        }
+
         void removed() override {
             C4Peer::removed();
             _peripheral = nil;
             _psm = 0;
             _connectState = NotConnecting;
+            _connectCallback = nil;
         }
 
         enum ConnectState {
@@ -108,9 +121,10 @@ namespace litecore::p2p {
             OpeningChannel,
         };
 
-        CBPeripheral*   _peripheral {};         // CoreBluetooth object representing this peer (could be nil)
-        CBL2CAPPSM      _psm {};                // BTLE "port number" peer is listening on; 0 if unknown
-        ConnectState    _connectState = NotConnecting;
+        CBPeripheral*   _peripheral {};                 // CoreBluetooth object representing this peer (could be nil)
+        CBL2CAPPSM      _psm {};                        // BTLE "port number" peer is listening on; 0 if unknown
+        ConnectCallback _connectCallback {};            // Holds callback during a connect operation
+        ConnectState    _connectState = NotConnecting;  // Current state of connection attempt
     };
 
 
@@ -156,12 +170,12 @@ namespace litecore::p2p {
             return &BTSocketFactory;
         }
 
-        void connect(C4Peer* peer) override {
+        void connect(C4Peer* peer, ConnectCallback onComplete) {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
-            dispatch_async(_queue, ^{ [_myCentral connect: btPeer]; });
+            dispatch_async(_queue, ^{ [_myCentral connect: btPeer onComplete: onComplete]; });
         }
 
-        void cancelConnect(C4Peer* peer) override {
+        void cancelConnect(C4Peer* peer) {
             Retained<BluetoothPeer> btPeer(dynamic_cast<BluetoothPeer*>(peer));
             dispatch_async(_queue, ^{ [_myCentral cancelConnect: btPeer]; });
         }
@@ -210,11 +224,18 @@ namespace litecore::p2p {
         LiteCoreBTPeripheral* const _myPeripheral {};   // Obj-C instance that does the real publishing
     };
 
-    
+
+    /// Initializes & registers the provider.
     void InitializeBluetoothProvider(string_view serviceType) {
         Assert(!sProvider);
         sProvider = new BluetoothProvider(string(serviceType));
         sProvider->registerProvider();
+    }
+
+
+    /// Opens a CBL2CAPChannel to a BluetoothPeer.
+    void OpenBTChannel(C4Peer* peer, void (^onComplete)(CBL2CAPChannel* _Nullable, C4Error)) {
+        dynamic_cast<BluetoothProvider*>(peer->provider)->connect(peer, onComplete);
     }
 
 
@@ -321,13 +342,16 @@ namespace litecore::p2p {
 - (void) cancelResolveURL: (Retained<BluetoothPeer>)peer { }
 
 
-- (void) connect: (Retained<BluetoothPeer>)peer {
-    if (peer->_connectState > BluetoothPeer::NotConnecting)
-        return;
-    if (!peer->online())
+- (void) connect: (Retained<BluetoothPeer>)peer onComplete: (ConnectCallback)onComplete {
+    Assert(onComplete);
+    Assert(!peer->_connectCallback, "Multiple connect requests to a C4Peer");
+    if (peer->online()) {
+        peer->_connectState = BluetoothPeer::WaitingForConnectable;
+        peer->_connectCallback = onComplete;
+        [self _tryConnect: peer];
+    } else {
         peer->connected(nullptr, {NetworkDomain, kC4NetErrHostUnreachable});
-    peer->_connectState = BluetoothPeer::WaitingForConnectable;
-    [self _tryConnect: peer];
+    }
 }
 
 - (void) _tryConnect: (BluetoothPeer*)peer {
@@ -349,6 +373,7 @@ namespace litecore::p2p {
 
 - (void) cancelConnect: (Retained<BluetoothPeer>)peer {
     peer->_connectState = BluetoothPeer::NotConnecting;
+    peer->_connectCallback = nil;
 }
 
 
@@ -554,7 +579,7 @@ didOpenL2CAPChannel:(nullable CBL2CAPChannel*)channel
             peer->connected(nullptr, c4err);
         } else {
             _counterpart->_log(LogLevel::Info, "Opened L2CAP connection %p to %s!", channel, idStr(peripheral));
-            if (!peer->connected((__bridge void*)channel, kC4NoError)) {
+            if (!peer->connected(channel, kC4NoError)) {
                 [channel.inputStream close];
                 [channel.outputStream close];
             }

@@ -100,7 +100,7 @@ class P2PResolveTest : public P2PTest {
     void addedPeer(C4Peer* peer) override {
         P2PTest::addedPeer(peer);
         Retained retainedPeer(peer);
-        peer->resolveURL([this, retainedPeer](string url, C4Error error) {
+        peer->resolveURL([this, retainedPeer](string url, C4SocketFactory const*, C4Error error) {
             if ( error ) {
                 Warn("*** Failed to resolve URL of %s peer %s -- %s", retainedPeer->provider->name.c_str(),
                      retainedPeer->id.c_str(), error.description().c_str());
@@ -175,11 +175,11 @@ class P2PConnectTest : public P2PTest {
         P2PTest::addedPeer(peer);
         if ( _shouldConnect && !_out && peer->provider->name == "Bluetooth" ) {
             Retained retainedPeer(peer);
-            peer->resolveURL([this, retainedPeer](string_view url, C4Error error) {
+            peer->resolveURL([this, retainedPeer](string_view url, C4SocketFactory const* factory, C4Error error) {
                 if ( !url.empty() ) {
                     Log("*** Opening connection to %s peer %s", retainedPeer->provider->name.c_str(),
                         retainedPeer->id.c_str());
-                    _out = make_retained<WebSocketLogger>(url, retainedPeer->provider->getSocketFactory(), "out");
+                    _out = make_retained<WebSocketLogger>(url, factory, "out");
                 } else {
                     Warn("*** Failed to resolve URL of %s peer %s -- %s", retainedPeer->provider->name.c_str(),
                          retainedPeer->id.c_str(), error.description().c_str());
