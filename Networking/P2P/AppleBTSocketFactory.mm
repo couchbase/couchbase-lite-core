@@ -196,7 +196,6 @@ using namespace litecore::p2p;
     free(_readBuffer);
     if (_ownsSocket)
         c4socket_release(_c4socket);
-    [super dealloc];
 }
 
 - (void) dispose {
