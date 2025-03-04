@@ -124,14 +124,16 @@ function(setup_litecore_build_unix)
                 -Wno-switch-enum # TODO: "enumeration values not explicitly handled in switch"
                 -Wno-alloca
                 -Wno-atomic-implicit-seq-cst # "implicit use of sequentially-consistent atomic may incur stronger memory barriers than necessary"
+                -Wno-c99-extensions
                 -Wno-c++98-compat
                 -Wno-c++98-compat-pedantic
                 -Wno-cast-align # "cast from X* to Y* increases required alignment"
                 -Wno-cast-function-type # "cast from X* to Y* converts to incompatible function type"
                 -Wno-covered-switch-default # "default label in switch which covers all enumeration values"
-                -Wno-c99-extensions
+                -Wno-ctad-maybe-unsupported # "'...' may not intend to support class template argument deduction"
                 -Wno-date-time # "expansion of date or time macro is not reproducible"
                 -Wno-deprecated-copy-with-user-provided-dtor # "definition of implicit copy constructor is deprecated because it has a user-provided destructor"
+                -Wno-direct-ivar-access # Obj-C: "instance variable is being directly accessed"
                 -Wno-exit-time-destructors # "declaration requires an exit-time destructor"
                 -Wno-extra-semi # "extra ';' after member function definition"
                 -Wno-float-equal
