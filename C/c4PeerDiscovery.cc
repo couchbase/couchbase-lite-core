@@ -173,7 +173,7 @@ static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Pee
 void C4PeerDiscovery::shutdown() {
     auto provs = providers();
     LogToAt(litecore::p2p::P2PLog, Info, "Shutting down peer discovery...");
-    counting_semaphore sem(0);
+    counting_semaphore<> sem(0);
     for (C4PeerDiscoveryProvider* provider : provs) {
         provider->shutdown([&]() { sem.release(); });
     }
