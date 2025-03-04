@@ -380,9 +380,9 @@ namespace litecore::p2p {
       advertisementData: (NSDictionary<NSString*,id>*)advert
                    RSSI: (NSNumber*)RSSI {
     auto peer = peerForPeripheral(peripheral);
-    if (RSSI.intValue >= kConnectableRSSI && [advert[CBAdvertisementDataIsConnectable] boolValue]) {
+    if (RSSI.intValue >= kConnectableRSSI && [(NSNumber*)advert[CBAdvertisementDataIsConnectable] boolValue]) {
         // Peer is connectable:
-        NSString* displayName = peripheral.name ?: advert[CBAdvertisementDataLocalNameKey];
+        NSString* displayName = peripheral.name ? peripheral.name : advert[CBAdvertisementDataLocalNameKey];
         if (peer) {
             if (peer->_peripheral == nil)
                 peer->_peripheral = peripheral;

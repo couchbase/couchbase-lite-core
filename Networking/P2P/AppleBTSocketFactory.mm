@@ -38,7 +38,7 @@ using namespace fleece;
 - (void) writeAndFree: (C4SliceResult) allocatedData;
 - (void) completedReceive: (size_t)byteCount;
 - (void) dispose;
-@property (readonly) C4Socket* c4Socket;
+@property (readonly, nonatomic) C4Socket* c4Socket;
 @end
 
 
@@ -196,6 +196,7 @@ using namespace litecore::p2p;
     free(_readBuffer);
     if (_ownsSocket)
         c4socket_release(_c4socket);
+    [super dealloc];
 }
 
 - (void) dispose {
