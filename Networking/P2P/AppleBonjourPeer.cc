@@ -12,7 +12,7 @@
 
 #ifdef __APPLE__
 
-#    include "PeerDiscovery+AppleDNSSD.hh"
+#    include "AppleBonjourPeer.hh"
 #    include "Address.hh"
 #    include "Error.hh"
 #    include "Logging.hh"
