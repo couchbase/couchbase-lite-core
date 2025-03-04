@@ -69,8 +69,8 @@ void C4Peer::setMetadata(Metadata md) {
 }
 
 void C4Peer::removed() {
-    resolvedURL("", {NetworkDomain, kC4NetErrHostUnreachable}); // cancel resolve attempt
-    connected(nullptr, {NetworkDomain, kC4NetErrHostUnreachable}); // cancel connect attempt
+    resolvedURL("", {NetworkDomain, kC4NetErrHostUnreachable});     // cancel resolve attempt
+    connected(nullptr, {NetworkDomain, kC4NetErrHostUnreachable});  // cancel connect attempt
     unique_lock lock(_mutex);
     _online = false;
     _metadata.clear();
@@ -90,7 +90,7 @@ void C4Peer::resolveURL(ResolveURLCallback cb) {
 void C4Peer::resolvedURL(string url, C4Error error) {
     unique_lock        lock(_mutex);
     ResolveURLCallback callback = std::move(_resolveURLCallback);
-    _resolveURLCallback = {};
+    _resolveURLCallback         = {};
     lock.unlock();
 
     if ( callback ) callback(std::move(url), error);
@@ -110,7 +110,7 @@ void C4Peer::connect(ConnectCallback cb) {
 bool C4Peer::connected(void* connection, C4Error error) {
     unique_lock     lock(_mutex);
     ConnectCallback callback = std::move(_connectCallback);
-    _connectCallback = {};
+    _connectCallback         = {};
     lock.unlock();
 
     if ( !callback ) return false;
@@ -174,22 +174,19 @@ void C4PeerDiscovery::shutdown() {
     auto provs = providers();
     LogToAt(litecore::p2p::P2PLog, Info, "Shutting down peer discovery...");
     counting_semaphore<> sem(0);
-    for (C4PeerDiscoveryProvider* provider : provs) {
+    for ( C4PeerDiscoveryProvider* provider : provs ) {
         provider->shutdown([&]() { sem.release(); });
     }
     // Now wait for each to finish:
-    for (size_t i = 0; i < provs.size(); ++i)
-        sem.acquire();
+    for ( size_t i = 0; i < provs.size(); ++i ) sem.acquire();
 
     unique_lock lock(sDiscoveryMutex);
     Assert(sPeers.empty());
     Assert(sObservers.size() == 0);
-    for (C4PeerDiscoveryProvider* provider : provs)
-        delete provider;
+    for ( C4PeerDiscoveryProvider* provider : provs ) delete provider;
     sProviders.clear();
     LogToAt(litecore::p2p::P2PLog, Info, "...peer discovery is shut down.");
 }
-
 
 #pragma mark - PROVIDER:
 
