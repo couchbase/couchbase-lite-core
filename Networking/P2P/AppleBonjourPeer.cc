@@ -1,5 +1,5 @@
 //
-// PeerDiscover+AppleDNSSD.cc
+// AppleBonjourPeer.cc
 //
 // Copyright 2025-Present Couchbase, Inc.
 //
