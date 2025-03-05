@@ -15,7 +15,7 @@ The higher-level component (TBD) will use this API to decide which peer(s) to co
 - **Browsing** is the task of discovering other peers.
 - **Publishing** is the task of making this app discoverable to other devices as a peer, and accepting incoming connections.
 - **Metadata** is a set of key-value pairs that peers can expose, which other peers can read and be notified of changes to. Reading a peer's metadata is often cheaper than connecting directly to it.
-- A **Provider** is a class that implements peer discovery and connections for some protocol, using a platform-specific API.
+- A **Provider** is a class that implements peer discovery and connections for some protocol, as a wrapper for a platform-specific API.
 - A **Connection** is a bidirectional data stream to/from a peer, implemented as a `C4Socket`. Some protocols may use regular ol' WebSockets, but others will use custom `C4SocketFactory` implementations.
 
 
@@ -58,11 +58,11 @@ Note that you never call `C4PeerDiscoveryProvider` directly.
 
 ## Implementing a Provider
 
-To implement a provider for a protocol, you subclass `C4PeerDiscoveryProvider` and implement the abstract methods. At runtime, call your provider's `registerProvider` method so that `C4PeerDiscovery` knows about it.
+To implement a provider for a protocol, you subclass `C4PeerDiscoveryProvider` and implement the abstract methods. These are all asynchronous, except for `getSocketFactory`. They should return quickly and announce results or changes by calling other methods, as described below.
 
-`C4PeerDiscoveryProvider` isn't called directly by client code, only by `C4PeerDiscovery` and `C4Peer`. 
+At runtime, create a singleton instance and call its `registerProvider` method so that `C4PeerDiscovery` knows about it.
 
-The abstract methods are all asynchronous, except for `getSocketFactory`. They should return quickly and announce results or changes by calling other methods, as described below.
+`C4PeerDiscoveryProvider` isn't called directly by client code, only by `C4PeerDiscovery` and `C4Peer`.
 
 ### `startBrowsing`, `stopBrowsing`
 
