@@ -16,7 +16,6 @@
 #include "fleece/InstanceCounted.hh"
 #include <functional>
 #include <mutex>
-#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -34,10 +33,14 @@ struct C4SocketFactory;
 class C4Peer;
 class C4PeerDiscoveryProvider;
 
+/** The official logging channel of peer-to-peer */
 extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
 
 /** API for accessing peer discovery. To be used primarily by LiteCore's higher-level P2P functionality.
  *  (This is more of a namespace than a class: all methods are static.)
+ *
+ *  For more details, read docs/P2P.md .
+ *
  *  @note  This API is thread-safe. */
 class C4PeerDiscovery {
   public:

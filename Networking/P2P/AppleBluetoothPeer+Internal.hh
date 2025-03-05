@@ -16,9 +16,9 @@
 #include "fleece/RefCounted.hh"
 #import <Foundation/Foundation.h>
 
-NS_ASSUME_NONNULL_BEGIN
+@class CBL2CAPChannel; // from CoreBluetooth
 
-@class CBL2CAPChannel;
+NS_ASSUME_NONNULL_BEGIN
 
 namespace litecore::p2p {
     static constexpr fleece::slice kBTURLScheme = "l2cap";
