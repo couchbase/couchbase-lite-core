@@ -56,6 +56,7 @@ function(setup_litecore_build)
             "-Wformat"
             "-Wformat-nonliteral"
             "-Wformat-security"
+            "-fobjc-arc"
         )
     endforeach()
 endfunction()
