@@ -28,14 +28,10 @@ using namespace litecore::p2p;
 class P2PTest : public C4PeerDiscovery::Observer {
   public:
     P2PTest() {
-        InitializeBonjourProvider("couchbase-p2p");
-        InitializeBluetoothProvider("couchbase-p2p");
-        C4PeerDiscovery::addObserver(this);
-    }
-
-    ~P2PTest() {
-        C4PeerDiscovery::removeObserver(this);
-        C4PeerDiscovery::shutdown();
+        RegisterBonjourProvider();
+        RegisterBluetoothProvider();
+        discovery = make_unique<C4PeerDiscovery>("litecore-test");
+        discovery->addObserver(this);
     }
 
     void browsing(C4PeerDiscoveryProvider* provider, bool active, C4Error error) override {
@@ -90,7 +86,8 @@ class P2PTest : public C4PeerDiscovery::Observer {
         }
     }
 
-    binary_semaphore sem{0};
+    unique_ptr<C4PeerDiscovery> discovery;
+    binary_semaphore            sem{0};
 };
 
 #pragma mark - RESOLVE TEST:
@@ -118,13 +115,13 @@ TEST_CASE_METHOD(P2PResolveTest, "P2P Resolve", "[P2P]") {
     md["time"] = alloc_slice("right now");
 
     Log("--- Main thread calling startBrowsing");
-    C4PeerDiscovery::startBrowsing();
-    C4PeerDiscovery::startPublishing("P2PTest", 1234, md);
+    discovery->startBrowsing();
+    discovery->startPublishing("P2PTest", 1234, md);
     sem.try_acquire_for(chrono::seconds(5));  // wait five seconds for test to run, then stop
     Log("--- Main thread calling stopBrowsing");
-    C4PeerDiscovery::stopBrowsing();
+    discovery->stopBrowsing();
     Log("--- Main thread calling stopPublishing");
-    C4PeerDiscovery::stopPublishing();
+    discovery->stopPublishing();
     sem.acquire();
     sem.acquire();
     Log("--- Done!");
@@ -205,13 +202,13 @@ TEST_CASE_METHOD(P2PConnectTest, "P2P Connect", "[P2P]") {
     md["time"] = alloc_slice("right now");
 
     Log("--- Main thread calling startBrowsing");
-    C4PeerDiscovery::startBrowsing();
-    C4PeerDiscovery::startPublishing("P2PTest", 1234, md);
+    discovery->startBrowsing();
+    discovery->startPublishing("P2PTest", 1234, md);
     sem.try_acquire_for(chrono::seconds(90));  // wait five seconds for test to run, then stop
     Log("--- Main thread calling stopBrowsing");
-    C4PeerDiscovery::stopBrowsing();
+    discovery->stopBrowsing();
     Log("--- Main thread calling stopPublishing");
-    C4PeerDiscovery::stopPublishing();
+    discovery->stopPublishing();
     sem.acquire();
     sem.acquire();
     Log("--- Done!");

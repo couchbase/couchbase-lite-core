@@ -11,17 +11,17 @@
 //
 
 #pragma once
-#include "c4PeerDiscovery.hh"
-#include "Base.hh"
-
 #ifdef __APPLE__
+#    include "c4PeerDiscovery.hh"
+#    include "fleece/slice.hh"
 
 namespace litecore::p2p {
 
-    void InitializeBonjourProvider(string_view serviceType);
+    /// Must be called once before instantiating C4PeerDiscovery.
+    void RegisterBonjourProvider();
 
     fleece::alloc_slice EncodeMetadataAsTXT(C4Peer::Metadata const&, int* outError = nullptr);
-    C4Peer::Metadata    DecodeTXTToMetadata(slice txtRecord);
+    C4Peer::Metadata    DecodeTXTToMetadata(fleece::slice txtRecord);
 }  // namespace litecore::p2p
 
 #endif  //__APPLE__

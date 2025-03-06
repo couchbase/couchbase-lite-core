@@ -12,6 +12,7 @@
 
 #include "SecureRandomize.hh"
 #include "Error.hh"
+#include "SecureDigest.hh"
 #include <random>
 
 #ifdef __APPLE__
@@ -34,13 +35,26 @@ namespace litecore {
         return uniform(e);
     }
 
-    void GenerateUUID(fleece::mutable_slice s) {
+    static void stampUUID(void* out, uint8_t version) {
+        auto bytes = (uint8_t*)out;
+        bytes[6]   = (bytes[6] & ~0xF0) | uint8_t(version << 4);
+        bytes[8]   = (bytes[8] & ~0xC0) | 0x80;
+    }
+
+    void GenerateUUID(fleece::mutable_slice out) {
         // https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
-        Assert(s.size == SizeOfUUID);
-        SecureRandomize(s);
-        auto bytes = (uint8_t*)s.buf;
-        bytes[6]   = (bytes[6] & ~0xF0) | 0x40;  // Set upper 4 bits to 0100
-        bytes[8]   = (bytes[8] & ~0xC0) | 0x80;  // Set upper 2 bits to 10
+        Assert(out.size == SizeOfUUID);
+        SecureRandomize(out);
+        stampUUID(out.buf, 4);
+    }
+
+    void GenerateNamespacedUUID(fleece::mutable_slice out, fleece::slice namespaceUUID, fleece::slice name) {
+        // https://datatracker.ietf.org/doc/html/rfc9562#name-uuid-version-5
+        Assert(out.size == SizeOfUUID);
+        Assert(namespaceUUID.size == SizeOfUUID);
+        SHA1 digest = (SHA1Builder{} << namespaceUUID << name).finish();
+        memcpy(out.buf, &digest, SizeOfUUID);  // copy first 128 bits of SHA-1
+        stampUUID(out.buf, 5);
     }
 
     void SecureRandomize(fleece::mutable_slice s) {

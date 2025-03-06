@@ -32,23 +32,23 @@ class ReplicatorP2PTest
     , public C4PeerDiscovery::Observer {
   public:
     ReplicatorP2PTest() {
-        //        InitializeBonjourProvider("couchbase-p2p");
-        InitializeBluetoothProvider("couchbase-p2p");
-        C4PeerDiscovery::addObserver(this);
-        _mayGoOffline = true;  // Bluetooth is prone to this
+        RegisterBonjourProvider();
+        RegisterBluetoothProvider();
+        _discovery = make_unique<C4PeerDiscovery>("litecore-test-p2p");
+        _discovery->addObserver(this);
     }
 
     ~ReplicatorP2PTest() {
         shutdown();
-        C4PeerDiscovery::removeObserver(this);
+        _discovery->removeObserver(this);
     }
 
     // Starts browsing & publishing, and waits for them to start up.
     void start(bool publish) {
         Assert(!_browsing && !_publishing && !_browseError && !_publishError);
         unique_lock lock(_mutex);
-        C4PeerDiscovery::startBrowsing();
-        if ( publish ) C4PeerDiscovery::startPublishing("P2PTest", 0, {});
+        _discovery->startBrowsing();
+        if ( publish ) _discovery->startPublishing("P2PTest", 0, {});
 
         _cond.wait(lock, [&] { return (_browsing && (!publish || _publishing)) || _browseError || _publishError; });
         REQUIRE(_browseError == kC4NoError);
@@ -59,8 +59,8 @@ class ReplicatorP2PTest
     void shutdown() {
         if ( _browsing || _publishing ) {
             unique_lock lock(_mutex);
-            C4PeerDiscovery::stopBrowsing();
-            C4PeerDiscovery::stopPublishing();
+            _discovery->stopBrowsing();
+            _discovery->stopPublishing();
 
             _cond.wait(lock, [&] { return !_browsing && !_publishing; });
         }
@@ -71,7 +71,7 @@ class ReplicatorP2PTest
         Assert(_browsing);
         unique_lock lock(_mutex);
         _peerURL = "";
-        if ( auto peers = C4PeerDiscovery::peers(); !peers.empty() ) { resolveURL(peers.begin()->second); }
+        if ( auto peers = _discovery->peers(); !peers.empty() ) { resolveURL(peers.begin()->second); }
 
         _cond.wait(lock, [&] { return !_peerURL.empty() || _peerURLError || !_browsing; });
         REQUIRE(!_peerURL.empty());
@@ -176,18 +176,19 @@ class ReplicatorP2PTest
         return true;
     }
 
-    mutex                  _mutex;
-    condition_variable     _cond;
-    bool                   _browsing     = false;
-    bool                   _publishing   = false;
-    C4Error                _browseError  = {};
-    C4Error                _publishError = {};
-    Retained<C4Peer>       _resolvingPeer;
-    string                 _peerURL;
-    C4SocketFactory const* _peerSocketFactory = nullptr;
-    C4Error                _peerURLError      = {};
-    bool                   _allowIncoming     = false;
-    c4::ref<C4Replicator>  _incomingRepl;
+    unique_ptr<C4PeerDiscovery> _discovery;
+    mutex                       _mutex;
+    condition_variable          _cond;
+    bool                        _browsing     = false;
+    bool                        _publishing   = false;
+    C4Error                     _browseError  = {};
+    C4Error                     _publishError = {};
+    Retained<C4Peer>            _resolvingPeer;
+    string                      _peerURL;
+    C4SocketFactory const*      _peerSocketFactory = nullptr;
+    C4Error                     _peerURLError      = {};
+    bool                        _allowIncoming     = false;
+    c4::ref<C4Replicator>       _incomingRepl;
 };
 
 #pragma mark - THE TESTS:

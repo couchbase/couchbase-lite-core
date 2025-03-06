@@ -321,6 +321,7 @@
 		27B075332D6FEDA900AA6BFF /* AppleBTSocketFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */; };
 		27B075422D722B6E00AA6BFF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
 		27B075452D726FAA00AA6BFF /* ReplicatorP2PTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075442D726FAA00AA6BFF /* ReplicatorP2PTest.cc */; };
+		27B217142D7A269300B63CF7 /* P2PSyncManager.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B217132D7A269300B63CF7 /* P2PSyncManager.cc */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1357,6 +1358,8 @@
 		27B075342D6FEE2100AA6BFF /* AppleBluetoothPeer+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "AppleBluetoothPeer+Internal.hh"; sourceTree = "<group>"; };
 		27B075432D7236E600AA6BFF /* ObserverList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ObserverList.hh; sourceTree = "<group>"; };
 		27B075442D726FAA00AA6BFF /* ReplicatorP2PTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorP2PTest.cc; sourceTree = "<group>"; };
+		27B217122D7A269300B63CF7 /* P2PSyncManager.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = P2PSyncManager.hh; sourceTree = "<group>"; };
+		27B217132D7A269300B63CF7 /* P2PSyncManager.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = P2PSyncManager.cc; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
@@ -2942,6 +2945,8 @@
 				27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */,
 				27B075182D6D0E8C00AA6BFF /* AppleBonjourPeer.hh */,
 				27B075192D6D0E8C00AA6BFF /* AppleBonjourPeer.cc */,
+				27B217122D7A269300B63CF7 /* P2PSyncManager.hh */,
+				27B217132D7A269300B63CF7 /* P2PSyncManager.cc */,
 			);
 			path = P2P;
 			sourceTree = "<group>";
@@ -4565,6 +4570,7 @@
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
 				2744B35B241854F2005A194D /* MessageBuilder.cc in Sources */,
 				2744B356241854F2005A194D /* GCDMailbox.cc in Sources */,
+				27B217142D7A269300B63CF7 /* P2PSyncManager.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
