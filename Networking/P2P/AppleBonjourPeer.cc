@@ -34,7 +34,10 @@ namespace litecore::p2p {
 
     extern LogDomain P2PLog;
 
+    static constexpr const char* kBaseServiceType = "_couchbaseP2P._tcp";
+
     static C4Error convertErrorCode(DNSServiceErrorType err) {
+        //TODO: Implement error code mapping
         if ( err ) return C4Error::make(NetworkDomain, 999, stringprintf("DNSServiceError %d", err));
         else
             return kC4NoError;
@@ -115,17 +118,21 @@ namespace litecore::p2p {
             return true;
         }
 
+#    ifdef ADDRESS_IN_URL
         void gotAddress(sockaddr const& addr, uint32_t ttl) {
             _address           = addr;
             _addressExpiration = c4_now() + 1000LL * ttl;
         }
 
+        bool addressValid() const { return _addressExpiration > c4_now(); }
+#    endif
+
         void getAddressFailed(DNSServiceErrorType err) {
+#    ifdef ADDRESS_IN_URL
             _addressExpiration = C4Timestamp(0);
+#    endif
             resolvedURL("", convertErrorCode(err));
         }
-
-        bool addressValid() const { return _addressExpiration > c4_now(); }
 
         string addressString() {
 #    ifdef ADDRESS_IN_URL
@@ -147,23 +154,27 @@ namespace litecore::p2p {
 
         void removed() override {
             C4Peer::removed();
-            _addressExpiration = C4Timestamp(0);
             freeServiceRef(_monitorTxtRef);
             freeServiceRef(_resolveRef);
+#    ifdef ADDRESS_IN_URL
+            _addressExpiration = C4Timestamp(0);
             freeServiceRef(_getAddrRef);
+#    endif
         }
 
         // Instance data is not protected by a mutex; all calls are made on a single dispatch queue.
-        string        _domain;
-        string        _hostname;
-        uint32_t      _interface{};
-        uint16_t      _port{};
-        sockaddr      _address{};
-        C4Timestamp   _addressExpiration{};
-        alloc_slice   _txtRecord;
+        string        _domain;           // DNS-SD domain; usually "local"
+        string        _hostname;         // mDNS hostname
+        uint32_t      _interface = 0;    // Index of network interface; passed back to a few calls
+        uint16_t      _port      = 0;    // Port number the peer listens on
+        alloc_slice   _txtRecord;        // Current TXT record in binary form
         DNSServiceRef _monitorTxtRef{};  // reference to DNSServiceQueryRecord task
         DNSServiceRef _resolveRef{};     // reference to DNSServiceResolve task
-        DNSServiceRef _getAddrRef{};     // reference to DNSServiceGetAddrInfo task
+#    ifdef ADDRESS_IN_URL
+        sockaddr      _address{};            // IPv4 or IPv6 address
+        C4Timestamp   _addressExpiration{};  // Timestamp after which _address is invalid
+        DNSServiceRef _getAddrRef{};         // reference to DNSServiceGetAddrInfo task
+#    endif
     };
 
 #    pragma mark - BROWSER PUBLIC API:
@@ -177,13 +188,17 @@ namespace litecore::p2p {
             : C4PeerDiscoveryProvider(discovery, "DNS-SD")
             , Logging(P2PLog)
             , _queue(dispatch_queue_create("LiteCore DNS-SD", DISPATCH_QUEUE_SERIAL))
-            , _serviceType(stringprintf("_%s._tcp", string(serviceID).c_str())) {
-            bool ok = true;
-            for ( char c : serviceID )
-                if ( !isalnum(uint8_t(c)) && c != '-' ) ok = false;
-            if ( !ok || serviceID.empty() || serviceID.size() > 15 )
-                error::_throw(error::InvalidParameter,
-                              "invalid service ID (max 15 characters, alphanumeric or hyphens)");
+            , _serviceType(string(kBaseServiceType).append(",").append(serviceID)) {
+                // The serviceID is a comma-separated "subtype" of our main service type kBaseServiceType.
+                // This is documented in <dns_sd.h> around line 1348,
+                // in the discussion of the `regType` param of `DNSServiceRegister`.
+                if (serviceID.empty() || serviceID.size() > 63)
+                    error::_throw(error::InvalidParameter, "service ID is invalid for DNS-SD (empty or > 63 bytes)");
+                for ( char c : serviceID ) {
+                    if ( c < ' ' || c == '.' || c == ',' || c == '\\' )
+                        error::_throw(error::InvalidParameter,
+                                      "service ID is invalid for DNS-SD (contains invalid character '%c')", c);
+                }
         }
 
         void startBrowsing() override {
@@ -368,12 +383,15 @@ namespace litecore::p2p {
         /// API request to get a peer's URL.
         void do_resolveURL(BonjourPeer* peer) {
             // If we have a valid cached address, skip resolution:
+#    ifdef ADDRESS_IN_URL
             if ( peer->addressValid() ) {
                 resolvedURL(peer);
                 return;
             }
+            if ( peer->_getAddrRef ) return;  // already resolving
+#    endif
 
-            if ( peer->_resolveRef || peer->_getAddrRef ) return;  // already resolving
+            if ( peer->_resolveRef ) return;  // already resolving
 
             if ( !peer->_hostname.empty() ) {
 #    ifdef ADDRESS_IN_URL
@@ -408,7 +426,9 @@ namespace litecore::p2p {
         /// API request to cancel getting a peer's URL.
         void do_cancelResolveURL(BonjourPeer* peer) {
             freeServiceRef(peer->_resolveRef);
+#    ifdef ADDRESS_IN_URL
             freeServiceRef(peer->_getAddrRef);
+#    endif
         }
 
         // completion routine of DNSServiceResolve
