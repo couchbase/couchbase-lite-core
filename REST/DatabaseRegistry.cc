@@ -81,19 +81,32 @@ namespace litecore::REST {
         return std::all_of(name.begin(), name.end(), isCharValidInDBName);
     }
 
-    bool DatabaseRegistry::registerDatabase(C4Database* db, optional<string> name,
-                                            C4ListenerDatabaseConfig const& dbConfig) {
+    void DatabaseRegistry::fillInName(C4Database* db, optional<string>& name) {
         if ( !name ) {
             alloc_slice path(db->getPath());
             name = databaseNameFromPath(FilePath(string(path)));
         } else if ( !isValidDatabaseName(*name) ) {
             error::_throw(error::InvalidParameter, "Invalid name for sharing a database");
         }
+    }
+
+    bool DatabaseRegistry::registerDatabase(C4Database* db, optional<string> name,
+                                            C4ListenerDatabaseConfig const& dbConfig) {
+        auto pool = make_retained<DatabasePool>(db);
+        pool->onOpen([](C4Database* db) { _c4db_setDatabaseTag(db, DatabaseTag_RESTListener); });
+        return registerDatabase(pool, name, dbConfig);
+    }
+
+    bool DatabaseRegistry::registerDatabase(DatabasePool* pool, optional<string> name,
+                                            C4ListenerDatabaseConfig const& dbConfig) {
+        if ( !name ) {
+            name = databaseNameFromPath(pool->databasePath());
+        } else if ( !isValidDatabaseName(*name) ) {
+            error::_throw(error::InvalidParameter, "Invalid name for sharing a database");
+        }
         lock_guard<mutex> lock(_mutex);
         if ( _databases.contains(*name) ) return false;
 
-        auto pool = make_retained<DatabasePool>(db);
-        pool->onOpen([](C4Database* db) { _c4db_setDatabaseTag(db, DatabaseTag_RESTListener); });
         _databases.emplace(*name, DBShare{.pool      = std::move(pool),
                                           .keySpaces = {makeKeyspace(*name, kC4DefaultCollectionSpec)},
                                           .config    = dbConfig});
