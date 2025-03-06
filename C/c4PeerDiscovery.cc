@@ -31,9 +31,6 @@ namespace litecore::p2p {
 C4LogDomain const kC4P2PLog = (C4LogDomain)&litecore::p2p::P2PLog;
 
 
-static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*));
-
-
 #pragma mark - PEER:
 
 string C4Peer::displayName() const {
@@ -41,7 +38,7 @@ string C4Peer::displayName() const {
     return _displayName;
 }
 
-void C4Peer::setDisplayName(std::string_view name) {
+void C4Peer::setDisplayName(string_view name) {
     unique_lock lock(_mutex);
     _displayName = string(name);
 }
@@ -65,7 +62,7 @@ void C4Peer::setMetadata(Metadata md) {
         if ( md == _metadata ) return;
         _metadata = std::move(md);
     }
-    notify(this, &C4PeerDiscovery::Observer::peerMetadataChanged);
+    provider->discovery().notify(this, &C4PeerDiscovery::Observer::peerMetadataChanged);
 }
 
 void C4Peer::removed() {
@@ -92,94 +89,88 @@ void C4Peer::resolvedURL(string url, C4Error error) {
     _resolveURLCallback         = {};
     lock.unlock();
 
-    if ( callback ) callback(std::move(url), provider->getSocketFactory(), error);
+    if ( callback ) {
+        optional<C4SocketFactory> factory = provider->getSocketFactory();
+        callback(std::move(url), (factory ? &*factory : nullptr), error);
+    }
 }
 
 #pragma mark - DISCOVERY:
 
 
-static mutex                                    sDiscoveryMutex;
-static vector<C4PeerDiscoveryProvider*>         sProviders;
-static ObserverList<C4PeerDiscovery::Observer*> sObservers;
-static unordered_map<string, Retained<C4Peer>>  sPeers;
+static mutex                                                   sFactoriesMutex;
+static unordered_map<string, C4PeerDiscovery::ProviderFactory> sProviderFactories;
 
-std::vector<C4PeerDiscoveryProvider*> C4PeerDiscovery::providers() {
-    unique_lock lock(sDiscoveryMutex);
-    return sProviders;
+void C4PeerDiscovery::registerProvider(string_view providerName, ProviderFactory factory) {
+    unique_lock lock(sFactoriesMutex);
+    sProviderFactories.emplace(providerName, factory);
 }
 
-void C4PeerDiscovery::startBrowsing() {
-    for ( auto provider : providers() ) provider->startBrowsing();
+C4PeerDiscovery::C4PeerDiscovery(string_view serviceID) {
+    unique_lock lock(sFactoriesMutex);
+    Assert(!sProviderFactories.empty(), "No C4PeerDiscoveryProviders have been registered");
+    for ( auto& [name, factory] : sProviderFactories ) _providers.emplace_back(factory(*this, serviceID));
 }
 
-void C4PeerDiscovery::stopBrowsing() {
-    for ( auto provider : providers() ) provider->stopBrowsing();
-}
-
-void C4PeerDiscovery::startPublishing(std::string_view displayName, uint16_t port, C4Peer::Metadata const& md) {
-    for ( auto provider : providers() ) provider->publish(displayName, port, md);
-}
-
-void C4PeerDiscovery::stopPublishing() {
-    for ( auto provider : providers() ) provider->unpublish();
-}
-
-void C4PeerDiscovery::updateMetadata(C4Peer::Metadata const& metadata) {
-    for ( auto provider : providers() ) provider->updateMetadata(metadata);
-}
-
-unordered_map<string, Retained<C4Peer>> C4PeerDiscovery::peers() {
-    unique_lock lock(sDiscoveryMutex);
-    return sPeers;
-}
-
-fleece::Retained<C4Peer> C4PeerDiscovery::peerWithID(std::string_view id) {
-    unique_lock lock(sDiscoveryMutex);
-    if ( auto i = sPeers.find(string(id)); i != sPeers.end() ) return i->second;
-    return nullptr;
-}
-
-void C4PeerDiscovery::addObserver(Observer* obs) { sObservers.add(obs); }
-
-void C4PeerDiscovery::removeObserver(Observer* obs) { sObservers.remove(obs); }
-
-static void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*)) {
-    sObservers.iterate([&](auto obs) { (obs->*method)(peer); });
-}
-
-void C4PeerDiscovery::shutdown() {
-    auto provs = providers();
+C4PeerDiscovery::~C4PeerDiscovery() {
     LogToAt(litecore::p2p::P2PLog, Info, "Shutting down peer discovery...");
     counting_semaphore<> sem(0);
-    for ( C4PeerDiscoveryProvider* provider : provs ) {
-        provider->shutdown([&]() { sem.release(); });
-    }
+    for ( auto& provider : _providers ) provider->shutdown([&]() { sem.release(); });
     // Now wait for each to finish:
-    for ( size_t i = 0; i < provs.size(); ++i ) sem.acquire();
+    for ( size_t i = 0; i < _providers.size(); ++i ) sem.acquire();
 
-    unique_lock lock(sDiscoveryMutex);
-    Assert(sPeers.empty());
-    Assert(sObservers.size() == 0);
-    for ( C4PeerDiscoveryProvider* provider : provs ) delete provider;
-    sProviders.clear();
+    unique_lock lock(_mutex);
+    Assert(_peers.empty());
     LogToAt(litecore::p2p::P2PLog, Info, "...peer discovery is shut down.");
 }
 
-#pragma mark - PROVIDER:
-
-void C4PeerDiscoveryProvider::registerProvider() {
-    unique_lock lock(sDiscoveryMutex);
-    sProviders.push_back(this);
+void C4PeerDiscovery::startBrowsing() {
+    for ( auto& provider : _providers ) provider->startBrowsing();
 }
 
-void C4PeerDiscoveryProvider::browseStateChanged(bool state, C4Error error) {
-    unique_lock              lock(sDiscoveryMutex);
+void C4PeerDiscovery::stopBrowsing() {
+    for ( auto& provider : _providers ) provider->stopBrowsing();
+}
+
+void C4PeerDiscovery::startPublishing(string_view displayName, uint16_t port, C4Peer::Metadata const& md) {
+    for ( auto& provider : _providers ) provider->publish(displayName, port, md);
+}
+
+void C4PeerDiscovery::stopPublishing() {
+    for ( auto& provider : _providers ) provider->unpublish();
+}
+
+void C4PeerDiscovery::updateMetadata(C4Peer::Metadata const& metadata) {
+    for ( auto& provider : _providers ) provider->updateMetadata(metadata);
+}
+
+unordered_map<string, Retained<C4Peer>> C4PeerDiscovery::peers() {
+    unique_lock lock(_mutex);
+    return _peers;  // creates a copy
+}
+
+fleece::Retained<C4Peer> C4PeerDiscovery::peerWithID(string_view id) {
+    unique_lock lock(_mutex);
+    if ( auto i = _peers.find(string(id)); i != _peers.end() ) return i->second;
+    return nullptr;
+}
+
+void C4PeerDiscovery::addObserver(Observer* obs) { _observers.add(obs); }
+
+void C4PeerDiscovery::removeObserver(Observer* obs) { _observers.remove(obs); }
+
+void C4PeerDiscovery::notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*)) {
+    _observers.iterate([&](auto obs) { (obs->*method)(peer); });
+}
+
+void C4PeerDiscovery::browseStateChanged(C4PeerDiscoveryProvider* provider, bool state, C4Error error) {
+    unique_lock              lock(_mutex);
     vector<Retained<C4Peer>> removedPeers;
     if ( state == false ) {
-        for ( auto i = sPeers.begin(); i != sPeers.end(); ) {
-            if ( i->second->provider == this ) {
+        for ( auto i = _peers.begin(); i != _peers.end(); ) {
+            if ( i->second->provider == provider ) {
                 removedPeers.emplace_back(i->second);
-                i = sPeers.erase(i);
+                i = _peers.erase(i);
             } else {
                 ++i;
             }
@@ -187,7 +178,7 @@ void C4PeerDiscoveryProvider::browseStateChanged(bool state, C4Error error) {
     }
     lock.unlock();
 
-    sObservers.iterate([&](auto obs) { obs->browsing(this, state, error); });
+    _observers.iterate([&](auto obs) { obs->browsing(provider, state, error); });
 
     for ( auto& peer : removedPeers ) {
         peer->removed();
@@ -195,13 +186,13 @@ void C4PeerDiscoveryProvider::browseStateChanged(bool state, C4Error error) {
     }
 }
 
-void C4PeerDiscoveryProvider::publishStateChanged(bool state, C4Error error) {
-    sObservers.iterate([&](auto obs) { obs->publishing(this, state, error); });
+void C4PeerDiscovery::publishStateChanged(C4PeerDiscoveryProvider* provider, bool state, C4Error error) {
+    _observers.iterate([&](auto obs) { obs->publishing(provider, state, error); });
 }
 
-Retained<C4Peer> C4PeerDiscoveryProvider::addPeer(C4Peer* peer) {
-    unique_lock lock(sDiscoveryMutex);
-    auto [i, added] = sPeers.insert({peer->id, peer});
+Retained<C4Peer> C4PeerDiscovery::addPeer(C4Peer* peer) {
+    unique_lock lock(_mutex);
+    auto [i, added] = _peers.insert({peer->id, peer});
     lock.unlock();
 
     if ( added ) {
@@ -214,12 +205,12 @@ Retained<C4Peer> C4PeerDiscoveryProvider::addPeer(C4Peer* peer) {
     }
 }
 
-bool C4PeerDiscoveryProvider::removePeer(string_view id) {
-    unique_lock      lock(sDiscoveryMutex);
+bool C4PeerDiscovery::removePeer(string_view id) {
+    unique_lock      lock(_mutex);
     Retained<C4Peer> peer = nullptr;
-    if ( auto i = sPeers.find(string(id)); i != sPeers.end() ) {
+    if ( auto i = _peers.find(string(id)); i != _peers.end() ) {
         peer = std::move(i->second);
-        sPeers.erase(i);
+        _peers.erase(i);
     }
     lock.unlock();
 
@@ -230,9 +221,9 @@ bool C4PeerDiscoveryProvider::removePeer(string_view id) {
     return true;
 }
 
-bool C4PeerDiscoveryProvider::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
+bool C4PeerDiscovery::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
     bool handled = false;
-    sObservers.iterate([&](auto obs) {
+    _observers.iterate([&](auto obs) {
         if ( !handled ) handled = obs->incomingConnection(peer, socket);
     });
     if ( !handled ) {

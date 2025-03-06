@@ -14,9 +14,12 @@
 #include "c4PeerDiscovery.hh"
 #include "c4Socket.hh"
 #include "fleece/RefCounted.hh"
+
+#undef DebugAssert  // this macro conflicts with something in Apple headers
+
 #import <Foundation/Foundation.h>
 
-@class CBL2CAPChannel; // from CoreBluetooth
+@class CBL2CAPChannel;  // from CoreBluetooth
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -28,8 +31,8 @@ namespace litecore::p2p {
     /// Opens a Bluetooth L2CAP channel to a peer, asynchronously.
     void OpenBTChannel(C4Peer*, void (^onComplete)(CBL2CAPChannel* _Nullable, C4Error));
 
-    /// Creates a C4Socket from an open incoming Bluetooth L2CAP connection.
-    fleece::Retained<C4Socket> BTSocketFromL2CAPChannel(CBL2CAPChannel* channel, bool incoming);
+    /// Creates a C4Socket from an open _incoming_ Bluetooth L2CAP connection.
+    fleece::Retained<C4Socket> BTSocketFromL2CAPChannel(CBL2CAPChannel* channel);
 
 }  // namespace litecore::p2p
 

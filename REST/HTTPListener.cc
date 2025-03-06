@@ -129,6 +129,18 @@ namespace litecore::REST {
         return _registry.registerDatabase(db, name, *dbConfigP);
     }
 
+    bool HTTPListener::registerDatabase(DatabasePool* db, optional<string> name,
+                                        C4ListenerDatabaseConfig const* dbConfigP) {
+        C4ListenerDatabaseConfig dbConfig;
+        if ( !dbConfigP ) {
+            dbConfig  = {.allowPush       = _config.allowPush,
+                         .allowPull       = _config.allowPull,
+                         .enableDeltaSync = _config.enableDeltaSync};
+            dbConfigP = &dbConfig;
+        }
+        return _registry.registerDatabase(db, name, *dbConfigP);
+    }
+
     bool HTTPListener::unregisterDatabase(C4Database* db) { return _registry.unregisterDatabase(db); }
 
     bool HTTPListener::registerCollection(const std::string& name, C4CollectionSpec const& collection) {
