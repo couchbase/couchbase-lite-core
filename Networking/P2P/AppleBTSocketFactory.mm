@@ -30,8 +30,12 @@ using namespace fleece;
 
 
 @interface LiteCoreBTSocket : NSObject <NSStreamDelegate>
-- (instancetype) initWithPeerID: (slice)peerID C4Socket: (C4Socket*)c4socket options: (slice)options context: (void*)context;
-- (instancetype) initWithPeerID: (slice) peerID channel: (CBL2CAPChannel*)channel incoming: (bool)incoming;
+- (instancetype) initWithPeerID: (slice)peerID
+                       C4Socket: (C4Socket*)c4socket
+                        options: (slice)options
+                       provider: (C4PeerDiscoveryProvider*)provider;
+- (instancetype) initWithPeerID: (slice) peerID
+                incomingChannel: (CBL2CAPChannel*)channel;
 - (void) connect;
 - (void) redundantOpen;
 - (void) closeSocket;
@@ -79,7 +83,7 @@ namespace litecore::p2p {
                 auto socket = [[LiteCoreBTSocket alloc] initWithPeerID: addr->hostname
                                                               C4Socket: c4sock
                                                                options: optionsFleece
-                                                               context: context];
+                                                              provider: static_cast<C4PeerDiscoveryProvider*>(context)];
                 [socket connect];
             }
         }
@@ -110,11 +114,10 @@ namespace litecore::p2p {
         .dispose = &doDispose,
     };
 
-    Retained<C4Socket> BTSocketFromL2CAPChannel(CBL2CAPChannel* channel, bool incoming) {
+    Retained<C4Socket> BTSocketFromL2CAPChannel(CBL2CAPChannel* channel) {
         @autoreleasepool {
             auto btSocket = [[LiteCoreBTSocket alloc] initWithPeerID: channel.peer.identifier.UUIDString.UTF8String
-                                                             channel: channel
-                                                            incoming: incoming];
+                                                     incomingChannel: channel];
             return btSocket.c4Socket;
         }
     }
@@ -126,36 +129,37 @@ using namespace litecore::p2p;
 
 @implementation LiteCoreBTSocket
 {
-    AllocedDict _options;
-    dispatch_queue_t _queue;
-    C4Socket* _c4socket;
-    id _keepMeAlive;
+    AllocedDict                 _options;
+    dispatch_queue_t            _queue;
+    C4Socket*                   _c4socket;
+    bool                        _ownsSocket;
+    C4PeerDiscoveryProvider*    _provider;
+    id                          _keepMeAlive;
 
-    string _peerID;
-    CBL2CAPChannel* _channel;
-    NSInputStream* _in;
-    NSOutputStream* _out;
-    uint8_t* _readBuffer;
-    std::vector<PendingWrite> _pendingWrites;
-    bool _hasBytes, _hasSpace;
-    size_t _receivedBytesPending;
-
-    bool _closing;
-    bool _ownsSocket;
-    bool _incoming;
+    std::string                 _peerID;
+    CBL2CAPChannel*             _channel;
+    NSInputStream*              _in;
+    NSOutputStream*             _out;
+    uint8_t*                    _readBuffer;
+    std::vector<PendingWrite>   _pendingWrites;
+    size_t                      _receivedBytesPending;
+    bool                        _hasBytes;
+    bool                        _hasSpace;
+    bool                        _closing;
 }
 
 // initializer for outgoing connection that doesn't have a CBL2CAPChannel yet
 - (instancetype) initWithPeerID: (slice)peerID
                        C4Socket: (C4Socket*)c4socket
                         options: (slice)options
-                        context: (void*)context
+                       provider: (C4PeerDiscoveryProvider*)provider
 {
     self = [self initWithPeerID: peerID];
     if (self) {
         _options = AllocedDict(options);
         _c4socket = c4socket;
         c4Socket_setNativeHandle(_c4socket, (__bridge void*)self);
+        _provider = provider;
         _keepMeAlive = self;          // Prevents dealloc until doDispose is called
     }
     return self;
@@ -163,16 +167,14 @@ using namespace litecore::p2p;
 
 // initializer for connection that already has a CBL2CAPChannel
 - (instancetype) initWithPeerID: (slice)peerID
-                        channel: (CBL2CAPChannel*)channel
-                       incoming: (bool)incoming
+                incomingChannel: (CBL2CAPChannel*)channel
 {
     self = [self initWithPeerID: peerID];
     if (self) {
         net::Address address(kBTURLScheme, peerID, channel.PSM, "/db");
-        _c4socket = c4socket_fromNative2(BTSocketFactory, (__bridge void*)self, (C4Address*)address, incoming);
+        _c4socket = c4socket_fromNative2(BTSocketFactory, (__bridge void*)self, (C4Address*)address, true);
         _ownsSocket = true;
         _keepMeAlive = self;          // Prevents dealloc until doDispose is called
-        _incoming = incoming;
         [self setChannel: channel];
     }
     return self;
@@ -249,7 +251,7 @@ using namespace litecore::p2p;
 
 - (void) connect {
     Assert(!_channel);
-    if (Retained<C4Peer> peer = C4PeerDiscovery::peerWithID(_peerID)) {
+    if (Retained<C4Peer> peer = _provider->discovery().peerWithID(_peerID)) {
         LogToAt(WSLog, Verbose, "BTSocket %p: connecting to %s", self, _peerID.c_str());
         Assert(peer->provider->name == "Bluetooth");
         OpenBTChannel(peer, ^(CBL2CAPChannel* channel, C4Error err) {
@@ -291,15 +293,13 @@ using namespace litecore::p2p;
 
 // Notifies LiteCore that the outgoing socket is connected.
 - (void) connected {
-    DebugAssert(!_incoming);
     LogToAt(WSLog, Info, "BTSocket %p: CONNECTED!", self);
     [self callC4Socket:^(C4Socket *socket) {
-        if (!self->_incoming) {
-            // Socket expects to receive HTTP response headers too:
-            Encoder enc;
-            enc.writeFormatted("{Connection: 'Upgrade', Upgrade: 'websocket', 'Sec-WebSocket-Protocol': 'BLIP_3+CBMobile_4'}");//FIXME: Don't hardcode this
-            c4socket_gotHTTPResponse(socket, 101, enc.finish());
-        }
+        // Socket expects to receive HTTP response headers too:
+        Encoder enc;
+        enc.writeFormatted("{Connection: 'Upgrade', Upgrade: 'websocket', 'Sec-WebSocket-Protocol': 'BLIP_3+CBMobile_4'}");//FIXME: Don't hardcode this
+        c4socket_gotHTTPResponse(socket, 101, enc.finish());
+
         c4socket_opened(socket);
     }];
 }

@@ -14,6 +14,7 @@
 
 #    include "AppleBonjourPeer.hh"
 #    include "Address.hh"
+#    include "c4SocketTypes.h"
 #    include "Error.hh"
 #    include "Logging.hh"
 #    include "NetworkInterfaces.hh"
@@ -32,10 +33,6 @@ namespace litecore::p2p {
     using namespace std;
 
     extern LogDomain P2PLog;
-
-    struct BonjourProvider;
-
-    static BonjourProvider* sProvider;
 
     static C4Error convertErrorCode(DNSServiceErrorType err) {
         if ( err ) return C4Error::make(NetworkDomain, 999, stringprintf("DNSServiceError %d", err));
@@ -176,16 +173,17 @@ namespace litecore::p2p {
     struct BonjourProvider
         : public C4PeerDiscoveryProvider
         , public Logging {
-        explicit BonjourProvider(string_view serviceType)
-            : C4PeerDiscoveryProvider("DNS-SD")
+        explicit BonjourProvider(C4PeerDiscovery& discovery, string_view serviceID)
+            : C4PeerDiscoveryProvider(discovery, "DNS-SD")
             , Logging(P2PLog)
             , _queue(dispatch_queue_create("LiteCore DNS-SD", DISPATCH_QUEUE_SERIAL))
-            , _serviceType(stringprintf("_%s._tcp", string(serviceType).c_str())) {
+            , _serviceType(stringprintf("_%s._tcp", string(serviceID).c_str())) {
             bool ok = true;
-            for ( char c : serviceType )
+            for ( char c : serviceID )
                 if ( !isalnum(uint8_t(c)) && c != '-' ) ok = false;
-            if ( !ok || serviceType.empty() || serviceType.size() > 15 )
-                error::_throw(error::InvalidParameter, "invalid service type");
+            if ( !ok || serviceID.empty() || serviceID.size() > 15 )
+                error::_throw(error::InvalidParameter,
+                              "invalid service ID (max 15 characters, alphanumeric or hyphens)");
         }
 
         void startBrowsing() override {
@@ -211,7 +209,7 @@ namespace litecore::p2p {
             dispatch_async(_queue, ^{ do_cancelResolveURL(bonjourPeer); });
         }
 
-        C4SocketFactory const* C4NULLABLE getSocketFactory() const override { return nullptr; }
+        optional<C4SocketFactory> getSocketFactory() const override { return nullopt; }
 
         void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& meta) override {
             string           nameStr(displayName);
@@ -237,8 +235,7 @@ namespace litecore::p2p {
         }
 
         ~BonjourProvider() override {
-            if ( this == sProvider ) sProvider = nullptr;
-            if ( _browseRef || _registerRef ) warn("Provider was not stopped before deallocating!");
+            if ( _browseRef || _registerRef ) warn("Provider was not shut down before deallocating!");
             freeServiceRef(_serviceRef);
             dispatch_release(_queue);
         }
@@ -332,8 +329,9 @@ namespace litecore::p2p {
                                    DNSServiceErrorType err, const char* /*fullname*/, uint16_t /*rrtype*/,
                                    uint16_t /*rrclass*/, uint16_t rdlen, const void* rdata, uint32_t ttl,
                                    void* ctx) -> void {
-                    auto peer = static_cast<BonjourPeer*>(ctx);
-                    sProvider->monitorTxtResult(flags, err, slice(rdata, rdlen), ttl, peer);
+                    auto peer     = static_cast<BonjourPeer*>(ctx);
+                    auto provider = dynamic_cast<BonjourProvider*>(peer->provider);
+                    provider->monitorTxtResult(flags, err, slice(rdata, rdlen), ttl, peer);
                 };
 
                 auto monitorTxtRef = _serviceRef;
@@ -367,12 +365,8 @@ namespace litecore::p2p {
 
         //---- Resolving peer addresses and connecting:
 
-        /// API request to connect to a peer.
+        /// API request to get a peer's URL.
         void do_resolveURL(BonjourPeer* peer) {
-            // This has to be done in steps:
-            // 1. call DNSServiceResolve to get the hostname and port.
-            // 2. call DNSServiceGetAddrInfo with the hostname to get the address.
-
             // If we have a valid cached address, skip resolution:
             if ( peer->addressValid() ) {
                 resolvedURL(peer);
@@ -395,8 +389,9 @@ namespace litecore::p2p {
                                DNSServiceErrorType err, const char* fullname, const char* hostname,
                                uint16_t portBE,  // In network byte order
                                uint16_t txtLen, const unsigned char* txtRecord, void* ctx) {
-                auto peer = static_cast<BonjourPeer*>(ctx);
-                sProvider->resolveResult(flags, err, fullname, hostname, ntohs(portBE), slice(txtRecord, txtLen), peer);
+                auto peer     = static_cast<BonjourPeer*>(ctx);
+                auto provider = dynamic_cast<BonjourProvider*>(peer->provider);
+                provider->resolveResult(flags, err, fullname, hostname, ntohs(portBE), slice(txtRecord, txtLen), peer);
             };
 
             auto resolveRef = _serviceRef;
@@ -410,7 +405,7 @@ namespace litecore::p2p {
             }
         }
 
-        /// API request to cancel a connection attempt.
+        /// API request to cancel getting a peer's URL.
         void do_cancelResolveURL(BonjourPeer* peer) {
             freeServiceRef(peer->_resolveRef);
             freeServiceRef(peer->_getAddrRef);
@@ -472,7 +467,7 @@ namespace litecore::p2p {
 #    endif
 
         void resolvedURL(BonjourPeer* peer) {
-            net::Address addr("wss", peer->addressString(), peer->_port, "/db");  //TODO: Real port, db name
+            net::Address addr("wss", peer->addressString(), peer->_port, "/db");  //TODO: Real db name
             peer->resolvedURL(string(addr.url()), {});
         }
 
@@ -591,10 +586,15 @@ namespace litecore::p2p {
         bool                   _published = false;  // True when my service is published
     };
 
-    void InitializeBonjourProvider(string_view serviceType) {
-        Assert(!sProvider);
-        sProvider = new BonjourProvider(serviceType);
-        sProvider->registerProvider();
+    void RegisterBonjourProvider() {
+        static once_flag sOnce;
+        call_once(sOnce, [] {
+            C4PeerDiscovery::registerProvider(
+                    "DNS-SD",
+                    [](C4PeerDiscovery& discovery, string_view serviceID) -> unique_ptr<C4PeerDiscoveryProvider> {
+                        return make_unique<BonjourProvider>(discovery, serviceID);
+                    });
+        });
     }
 
 }  // namespace litecore::p2p

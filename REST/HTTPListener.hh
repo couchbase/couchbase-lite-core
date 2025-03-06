@@ -71,6 +71,8 @@ namespace litecore::REST {
 
         bool registerDatabase(C4Database* db, std::optional<std::string> name = std::nullopt,
                               C4ListenerDatabaseConfig const* C4NULLABLE dbConfig = nullptr);
+        bool registerDatabase(DatabasePool* db, std::optional<std::string> name = std::nullopt,
+                              C4ListenerDatabaseConfig const* C4NULLABLE dbConfig = nullptr);
         bool unregisterDatabase(C4Database*);
         bool registerCollection(const std::string& name, C4CollectionSpec const& collection);
         bool unregisterCollection(const std::string& name, C4CollectionSpec const& collection);
