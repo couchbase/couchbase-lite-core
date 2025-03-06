@@ -66,6 +66,9 @@ namespace litecore::REST {
         bool registerDatabase(C4Database* db, std::optional<std::string> name,
                               C4ListenerDatabaseConfig const& dbConfig);
 
+        bool registerDatabase(DatabasePool* db, std::optional<std::string> name,
+                              C4ListenerDatabaseConfig const& dbConfig);
+
         /// Unregisters a database by its registered URI name.
         bool unregisterDatabase(const std::string& name);
 
@@ -116,6 +119,7 @@ namespace litecore::REST {
       private:
         DBShare* C4NULLABLE       _getShare(std::string const& name);
         DBShare const* C4NULLABLE _getShare(std::string const& name) const;
+        void                      fillInName(C4Database*, std::optional<std::string>& name);
 
         mutable std::mutex             _mutex;
         std::map<std::string, DBShare> _databases;

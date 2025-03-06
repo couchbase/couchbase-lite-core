@@ -11,14 +11,12 @@
 //
 
 #pragma once
-#include "c4PeerDiscovery.hh"
-#include "Base.hh"
-
 #ifdef __APPLE__
 
 namespace litecore::p2p {
 
-    void InitializeBluetoothProvider(string_view serviceType);
+    /// Must be called once before instantiating C4PeerDiscovery.
+    void RegisterBluetoothProvider();
 
 }  // namespace litecore::p2p
 
