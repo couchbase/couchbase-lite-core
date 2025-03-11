@@ -24,9 +24,9 @@ namespace litecore {
         bool setDigest(fleece::slice);
 
         /// The digest as a slice
-        [[nodiscard]] fleece::slice asSlice() const { return {_bytes, N}; }
+        [[nodiscard]] fleece::slice asSlice() const LIFETIMEBOUND { return {_bytes, N}; }
 
-        explicit operator fleece::slice() const { return asSlice(); }
+        explicit operator fleece::slice() const LIFETIMEBOUND { return asSlice(); }
 
         [[nodiscard]] std::string asBase64() const;
 
