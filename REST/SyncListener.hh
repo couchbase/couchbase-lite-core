@@ -26,7 +26,8 @@ namespace litecore::REST {
         explicit SyncListener(const C4ListenerConfig&);
         ~SyncListener();
 
-        Retained<Task> handleWebSocket(std::string const& databaseName, websocket::WebSocket*, std::string const& peerAddress);
+        Retained<Task> handleWebSocket(std::string const& databaseName, websocket::WebSocket*,
+                                       std::string const& peerAddress);
 
       protected:
         HTTPStatus handleRequest(Request& rq, websocket::Headers& headers,
