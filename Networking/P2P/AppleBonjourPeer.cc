@@ -194,7 +194,7 @@ namespace litecore::p2p {
                 // in the discussion of the `regType` param of `DNSServiceRegister`.
                 if (serviceID.empty() || serviceID.size() > 63)
                     error::_throw(error::InvalidParameter, "service ID is invalid for DNS-SD (empty or > 63 bytes)");
-                for ( char c : serviceID ) {
+                for ( uint8_t c : serviceID ) {
                     if ( c < ' ' || c == '.' || c == ',' || c == '\\' )
                         error::_throw(error::InvalidParameter,
                                       "service ID is invalid for DNS-SD (contains invalid character '%c')", c);

@@ -11,14 +11,18 @@
 //
 
 #pragma once
-#ifdef COUCHBASE_ENTERPRISE
 
-#    include "Base.hh"
 #    include "Actor.hh"
+#    include "Base.hh"
+#include "c4Database.hh"
 #    include "c4Listener.hh"
 #    include "c4PeerDiscovery.hh"
 #    include "c4ReplicatorTypes.h"
+#include "MetaPeer.hh"
+#include <span>
 #    include <variant>
+
+#ifdef COUCHBASE_ENTERPRISE
 
 namespace litecore {
     class DatabasePool;
@@ -34,47 +38,53 @@ namespace litecore::p2p {
 
     struct CopiedReplicatorParameters : public C4ReplicatorParameters {
         explicit CopiedReplicatorParameters(C4ReplicatorParameters const&);
-
-      private:
+        CopiedReplicatorParameters(CopiedReplicatorParameters const& params)
+        :CopiedReplicatorParameters((C4ReplicatorParameters const&)params) {}
+    private:
         std::unique_ptr<C4ReplicationCollection[]> _collections;
         std::vector<alloc_slice>                   _slices;
     };
 
     /** High-level manager for peer-to-peer database sync. */
     class SyncManager
-        : public actor::Actor
-        , private C4PeerDiscovery::Observer {
-      public:
+    : public actor::Actor
+    , private C4PeerDiscovery::Observer {
+    public:
         using DatabaseOrPool = std::variant<Retained<C4Database>, Retained<DatabasePool>>;
 
         /// Creates a SyncManager on a database.
-        explicit SyncManager(DatabaseOrPool, string_view serviceID, C4ReplicatorParameters const&);
+        explicit SyncManager(DatabaseOrPool,
+                             std::span<const std::string_view> providers,
+                             string_view serviceID,
+                             C4ReplicatorParameters const&);
+        ~SyncManager();
 
         void stop() { enqueue(FUNCTION_TO_QUEUE(SyncManager::_stop)); }
 
-      private:
-        void _stop();
+    private:
+        class ReplicateTask;
 
         // C4PeerDiscovery::Observer API:
-        void addedPeer(C4Peer* peer) override { enqueue(FUNCTION_TO_QUEUE(SyncManager::_addedPeer), Retained{peer}); }
+        void addedPeer(C4Peer* peer) override;
+        void removedPeer(C4Peer* peer) override;
+        void peerMetadataChanged(C4Peer* peer) override;
+        bool incomingConnection(C4Peer*, C4Socket*) override;
 
-        void removedPeer(C4Peer* peer) override {
-            enqueue(FUNCTION_TO_QUEUE(SyncManager::_removedPeer), Retained{peer});
-        }
-
-        void peerMetadataChanged(C4Peer* peer) override {
-            enqueue(FUNCTION_TO_QUEUE(SyncManager::_peerMetadataChanged), Retained{peer});
-        }
-
+        void _stop();
         void _addedPeer(Retained<C4Peer>);
         void _removedPeer(Retained<C4Peer>);
         void _peerMetadataChanged(Retained<C4Peer>);
+        void _incomingConnection(Retained<C4Peer>, C4Socket*);
 
-        Retained<DatabasePool>       _databasePool;
+        bool connectToPeer(MetaPeer*);
+
+        Retained<DatabasePool>          _databasePool;
+        std::string                     _databaseName;
+        C4UUID                          _myUUID;
+        C4PeerDiscovery                 _peerDiscovery;
+        MetaPeers                       _metaPeers;
+        Retained<REST::SyncListener> _syncListener;
         CopiedReplicatorParameters   _replicatorParams;
-        std::string                  _myID;
-        Retained<REST::SyncListener> _tcpListener;
-        C4PeerDiscovery              _peerDiscovery;
     };
 
 }  // namespace litecore::p2p
