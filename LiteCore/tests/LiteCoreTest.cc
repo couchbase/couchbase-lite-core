@@ -15,6 +15,7 @@
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Encoder.hh"
+#include "LogFunction.hh"
 #include "Logging.hh"
 #include <csignal>
 #include <cstdlib>
@@ -74,23 +75,10 @@ void ExpectException(litecore::error::Domain domain, int code, const std::functi
 
 #pragma mark - TESTFIXTURE:
 
-
-static LogDomain::Callback_t sPrevCallback;
-static atomic_uint           sWarningsLogged;
-
-static void logCallback(const LogDomain& domain, LogLevel level, const char* fmt, va_list args) {
-    if ( level >= LogLevel::Warning ) { ++sWarningsLogged; }
-    sPrevCallback(domain, level, fmt, args);
-}
-
-TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCount(c4_getObjectCount()) {
+TestFixture::TestFixture() : _objectCount(c4_getObjectCount()) {
     static once_flag once;
     call_once(once, [] {
         InitTestLogging();
-
-        sPrevCallback = LogDomain::currentCallback();
-        LogDomain::setCallback(&logCallback, false);
-
 #if TARGET_OS_IPHONE
         // iOS tests copy the fixture files into the test bundle.
         CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("org.couchbase.LiteCoreTests"));
@@ -103,6 +91,9 @@ TestFixture::TestFixture() : _warningsAlreadyLogged(sWarningsLogged), _objectCou
         CFRelease(path);
 #endif
     });
+
+    _logObserver = make_retained<LogFunction>([this](LogEntry const&) { ++_warningsLogged; });
+    LogObserver::add(_logObserver, LogLevel::Warning);
 }
 
 TestFixture::~TestFixture() {
@@ -115,9 +106,10 @@ TestFixture::~TestFixture() {
             fprintf(stderr, "***\n");
         }
     }
+    LogObserver::remove(_logObserver);
 }
 
-unsigned TestFixture::warningsLogged() const noexcept { return sWarningsLogged - _warningsAlreadyLogged; }
+unsigned TestFixture::warningsLogged() const noexcept { return _warningsLogged; }
 
 FilePath TestFixture::GetPath(const string& name, const string& extension) noexcept {
     static chrono::milliseconds unique;

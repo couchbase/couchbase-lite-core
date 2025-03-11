@@ -14,6 +14,7 @@
 #include "c4PredictiveQuery.h"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
+#include "c4Log.h"
 #include "fleece/Fleece.hh"
 #include "fleece/Fleece+CoreFoundation.h"
 #include <CoreML/CoreML.h>

@@ -123,7 +123,7 @@ namespace litecore::repl {
       protected:
         std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "PsvRepl"; }
 
-        void addLoggingKeyValuePairs(std::stringstream& output) const override;
+        std::string loggingKeyValuePairs() const override;
 
         // BLIP ConnectionDelegate API:
         void onHTTPResponse(int status, const websocket::Headers& headers) override;

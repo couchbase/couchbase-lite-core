@@ -44,6 +44,6 @@ SpacesBeforeTrailingComments: 2
 SpacesInAngles: Never
 SpacesInConditionalStatement: true
 SpacesInContainerLiterals: true
-Standard: c++17
+Standard: c++20
 TabWidth: 4
 UseTab: Never
