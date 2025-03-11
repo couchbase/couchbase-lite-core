@@ -196,14 +196,16 @@ namespace litecore {
         try {
             unique_lock lock(_mutex);
             _files[int(e.level)]->write(e);
-        } catchAndWarn();
+        }
+        catchAndWarn();
     }
 
     void LogFiles::observe(RawLogEntry const& e, const char* format, va_list args) noexcept {
         try {
             unique_lock lock(_mutex);
             _files[int(e.level)]->write(e, format, args);
-        } catchAndWarn();
+        }
+        catchAndWarn();
     }
 
     string LogFiles::newLogFilePath(string_view dir, LogLevel level) {
