@@ -34,6 +34,7 @@ function(set_litecore_source_base)
         Crypto/PublicKey.cc
         Crypto/SecureDigest.cc
         Crypto/SecureSymmetricCrypto.cc
+        Crypto/UUID.cc
         LiteCore/BlobStore/BlobStreams.cc
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
