@@ -16,9 +16,11 @@
 #include "ObserverList.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
+#include <c4DatabaseTypes.h>
 #include <functional>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -51,10 +53,17 @@ class C4PeerDiscovery {
     /// One-time registration of a provider class. The function will be called when constructing a C4PeerDiscovery.
     static void registerProvider(std::string_view providerName, ProviderFactory);
 
-    /// Constructor. Instantiates one of each registered provider class.
-    /// @param serviceID  An app-specific unique identifier. I will discover other devices that use this identifier.
-    ///                   It must be 15 characters or less and contain only ASCII letters, digits and hyphens.
+    static std::vector<std::string> registeredProviders();
+
+    /// Constructor. Uses each registered provider class.
+    /// @param serviceID  An app-specific unique identifier. Will discover other devices that use this identifier.
+    ///                   It must be 63 characters or less and may not contain `.`, `,` or `\\`.
     explicit C4PeerDiscovery(std::string_view serviceID);
+
+    /// Constructor. Uses the named provider classes.
+    /// @param serviceID  An app-specific unique identifier.
+    /// @param providers  A list of names of registered C4PeerDiscoveryProviders.
+    explicit C4PeerDiscovery(std::string_view serviceID, std::span<const std::string_view> providers);
 
     /// The destructor shuts everything down in an orderly fashion, not returning until complete.
     ~C4PeerDiscovery();
@@ -175,7 +184,7 @@ class C4Peer
     /// The provider that manages this peer
     C4PeerDiscoveryProvider* const provider;
 
-    /// Uniquely identifies this C4Peer across all providers.
+    /// Opaque string that uniquely identifies this `C4Peer` _instance_ across all providers.
     /// Examples are a DNS-SD service name + domain, or a Bluetooth LE peripheral UUID.
     std::string const id;
 
@@ -203,6 +212,11 @@ class C4Peer
 
     /// Returns all the metadata at once.
     Metadata getAllMetadata();
+
+    /// Metadata key whose value is a persistent unique ID for this peer device.
+    /// It stays the same from one launch to another, as long as it's serving the same database.
+    /// It can be used to recognize `C4Peer`s published by the same device on different protocols.
+    static constexpr const char* kDeviceUUIDKey = "_DID";
 
     //---- URLs:
 
@@ -234,6 +248,7 @@ class C4Peer
   private:
     mutable std::mutex _mutex;               // Must be locked while accessing state below (except atomics)
     std::string        _displayName;         // Arbitrary human-readable name registered by the peer
+    std::optional<C4UUID> _deviceUUID;       // Device UUID, if known
     Metadata           _metadata;            // Current known metadata
     ResolveURLCallback _resolveURLCallback;  // Holds callback during a resolveURL operation
     std::atomic<bool>  _online      = true;  // Set to false when peer is removed
