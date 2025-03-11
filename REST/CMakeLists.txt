@@ -1,8 +1,5 @@
 #[[
 LiteCore REST library CMake project
-
-This project builds a simple REST API for LiteCore to use in conjunction with the shared
-library tests.  It is *not* meant to be used anywhere else, so don't do it!
 ]]#
 
 cmake_minimum_required (VERSION 3.9)
@@ -18,10 +15,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
-### SOURCES:
+### STATIC LIBRARY:
 
-set(
-    ALL_SRC_FILES
+add_library(LiteCoreREST_Objects OBJECT
     c4Listener.cc
     c4Listener_CAPI.cc
     CertRequest.cc
@@ -31,13 +27,7 @@ set(
     Request.cc
     Response.cc
     Server.cc
-    EE/RESTSyncListener_stub.cc
 )
-
-### STATIC LIBRARY:
-
-add_library(LiteCoreREST_Objects OBJECT ${ALL_SRC_FILES})
-add_library(LiteCoreREST_Static STATIC $<TARGET_OBJECTS:LiteCoreREST_Objects>)
 target_include_directories(
     LiteCoreREST_Objects PRIVATE
     .
@@ -50,7 +40,6 @@ target_include_directories(
     ../Networking
     ../Networking/BLIP
     ../Networking/HTTP
-    ../Networking/P2P
     ../Networking/WebSockets
     ../Replicator
     ../vendor/fleece/API
@@ -59,11 +48,35 @@ target_include_directories(
     ../vendor/sockpp/include
     ../vendor/fleece/vendor/date/include
 )
-if(BUILD_ENTERPRISE)
+
+if (BUILD_ENTERPRISE)
+    set(EE_SRC ../../couchbase-lite-core-EE)
+    target_sources(LiteCoreREST_Objects PRIVATE
+        ${EE_SRC}/Listener/SyncListener.cc
+        ${EE_SRC}/P2P/MetaPeer.cc
+        ${EE_SRC}/P2P/P2PSyncManager.cc
+    )
     target_include_directories(
         LiteCoreREST_Objects PRIVATE
-        ../../vendor/couchbase-lite-core-EE/Listener
+        ${EE_SRC}/Listener
+        ${EE_SRC}/P2P
     )
+
+    if (APPLE)
+        target_sources(
+            LiteCoreREST_Objects PRIVATE
+            ${EE_SRC}/P2P/Apple/AppleBonjourPeer.cc
+            ${EE_SRC}/P2P/Apple/AppleBluetoothPeer.mm
+            ${EE_SRC}/P2P/Apple/AppleBTSocketFactory.mm
+        )
+        target_include_directories(
+            LiteCoreREST_Objects PRIVATE
+            ${EE_SRC}/P2P/Apple
+        )
+        target_compile_options(LiteCoreREST_Objects PRIVATE
+            -fobjc-arc
+        )
+    endif ()
 endif()
 
 target_compile_definitions(
@@ -76,6 +89,9 @@ target_link_libraries(
     LiteCoreREST_Objects PUBLIC
     LiteCoreObjects
 )
+
+add_library(LiteCoreREST_Static STATIC $<TARGET_OBJECTS:LiteCoreREST_Objects>)
+
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
@@ -90,4 +106,14 @@ if (APPLE)
             LiteCoreREST_Static INTERFACE
             "-framework Network"
     )
+    if (BUILD_ENTERPRISE)
+        target_link_libraries(
+                LiteCoreREST_Objects INTERFACE
+                "-framework CoreBluetooth"
+        )
+        target_link_libraries(
+                LiteCoreREST_Static INTERFACE
+                "-framework CoreBluetooth"
+        )
+    endif()
 endif()
