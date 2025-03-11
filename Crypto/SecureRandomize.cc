@@ -12,7 +12,6 @@
 
 #include "SecureRandomize.hh"
 #include "Error.hh"
-#include "SecureDigest.hh"
 #include <random>
 
 #ifdef __APPLE__
@@ -33,28 +32,6 @@ namespace litecore {
     uint32_t RandomNumber(uint32_t upperBound) {
         std::uniform_int_distribution<uint32_t> uniform(0, upperBound - 1);
         return uniform(e);
-    }
-
-    static void stampUUID(void* out, uint8_t version) {
-        auto bytes = (uint8_t*)out;
-        bytes[6]   = (bytes[6] & ~0xF0) | uint8_t(version << 4);
-        bytes[8]   = (bytes[8] & ~0xC0) | 0x80;
-    }
-
-    void GenerateUUID(fleece::mutable_slice out) {
-        // https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
-        Assert(out.size == SizeOfUUID);
-        SecureRandomize(out);
-        stampUUID(out.buf, 4);
-    }
-
-    void GenerateNamespacedUUID(fleece::mutable_slice out, fleece::slice namespaceUUID, fleece::slice name) {
-        // https://datatracker.ietf.org/doc/html/rfc9562#name-uuid-version-5
-        Assert(out.size == SizeOfUUID);
-        Assert(namespaceUUID.size == SizeOfUUID);
-        SHA1 digest = (SHA1Builder{} << namespaceUUID << name).finish();
-        memcpy(out.buf, &digest, SizeOfUUID);  // copy first 128 bits of SHA-1
-        stampUUID(out.buf, 5);
     }
 
     void SecureRandomize(fleece::mutable_slice s) {
