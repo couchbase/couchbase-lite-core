@@ -101,13 +101,25 @@ add_executable(
     ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
-    ${TOP}Networking/P2P/tests/PeerDiscoveryTest.cc
-    ${TOP}Networking/P2P/tests/ReplicatorP2PTest.cc
 
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
     ${TOP}vendor/fleece/vendor/catch/CaseListReporter.cc
 )
+
+if (BUILD_ENTERPRISE)
+    set(EE_SRC ../../../couchbase-lite-core-EE)
+    target_sources(
+        CppTests PRIVATE
+        ${EE_SRC}/P2P/tests/PeerDiscoveryTest.cc
+        ${EE_SRC}/P2P/tests/ReplicatorP2PTest.cc
+    )
+    target_include_directories(
+        CppTests PRIVATE
+        ${EE_SRC}/P2P
+        ${EE_SRC}/P2P/Apple
+    )
+endif()
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
