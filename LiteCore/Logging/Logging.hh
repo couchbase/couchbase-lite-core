@@ -56,7 +56,13 @@ namespace litecore {
 
     class LogDomain {
       public:
-        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info, bool internName = false);
+        /// Constructs and registers a LogDomain.
+        /// Instances are generally declared as globals, which are registered at init time.
+        /// Instances MUST NOT be destructed; they must live "forever".
+        /// @param name  The displayed name of the domain. This is usually a C string constant;
+        ///              if not, it MUST remain valid indefinitely.
+        /// @param level  Its default level.
+        explicit LogDomain(const char* name, LogLevel level = LogLevel::Info);
 
         static LogDomain* named(const char* name);
 

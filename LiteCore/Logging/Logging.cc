@@ -53,8 +53,7 @@ namespace litecore {
 
 #pragma mark - INITIALIZATION:
 
-    LogDomain::LogDomain(const char* name, LogLevel level, bool internName)
-        : _level(level), _name(internName ? strdup(name) : name), _observers(new LogObservers) {
+    LogDomain::LogDomain(const char* name, LogLevel level) : _level(level), _name(name), _observers(new LogObservers) {
         // Atomically add myself to the head of the list:
         LogDomain* first = sFirstDomain;
         do { _next = first; } while ( !sFirstDomain.compare_exchange_strong(first, this) );

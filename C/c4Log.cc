@@ -139,9 +139,7 @@ C4LogObserver* c4log_newObserver(C4LogObserverConfig config, C4Error* outError) 
     return nullptr;
 }
 
-void c4log_removeObserver(C4LogObserver* observer) noexcept {
-    LogObserver::remove(reinterpret_cast<LogObserver*>(observer));
-}
+void c4log_removeObserver(C4LogObserver* observer) noexcept { LogObserver::remove(toInternal(observer)); }
 
 C4LogObserver* c4log_replaceObserver(C4LogObserver* oldObs, C4LogObserverConfig config, C4Error* outError) noexcept {
     try {
@@ -292,6 +290,7 @@ void c4log_flushLogFiles() C4API {
 C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     if ( !name ) return kC4DefaultLog;
     auto domain = LogDomain::named(name);
+    // LogDomain instances are never deleted, so it's fine to use `new` and `strdup`.
     if ( !domain && create ) domain = new LogDomain(strdup(name));
     return toExternal(domain);
 }
