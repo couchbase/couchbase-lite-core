@@ -24,6 +24,7 @@
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "SecureSymmetricCrypto.hh"
+#include "slice_stream.hh"
 #include <cinttypes>
 #include <optional>
 
@@ -39,6 +40,48 @@ using namespace litecore;
 CBL_CORE_API_IMPL const char* const kC4DatabaseFilenameExtension = ".cblite2";
 
 CBL_CORE_API_IMPL C4StorageEngine const kC4SQLiteStorageEngine = "SQLite";
+
+
+FLPURE static int _digittoint(char ch) noexcept {
+    int d = ch - '0';
+    if ((unsigned) d < 10)
+        return d;
+    d = ch - 'a';
+    if ((unsigned) d < 6)
+        return d + 10;
+    d = ch - 'A';
+    if ((unsigned) d < 6)
+        return d + 10;
+    return -1;
+}
+
+std::string C4UUID::to_string() const {
+    string str = slice(this, sizeof(C4UUID)).hexString();
+    for (size_t pos = 20; pos >= 8; pos -= 4)
+        str.insert(pos, "-");
+    return str;
+}
+
+bool C4UUID::parse(std::string_view str, C4UUID* out) noexcept {
+    slice_istream in(str);
+    size_t dst = 0;
+    while (dst < sizeof(C4UUID)) {
+        if (in.eof())
+            return false;
+        uint8_t c = in.readByte();
+        if (int digit1 = _digittoint(c); digit1 >= 0) {
+            if (int digit2 = _digittoint(in.readByte()); digit2 >= 0)
+                out->bytes[dst++] = uint8_t((digit1 << 4) | digit2);
+            else
+                return false;
+        } else if (c != '-') {
+            return false;
+        }
+    }
+    return true;
+}
+
+
 
 C4EncryptionKey C4EncryptionKeyFromPassword(slice password, C4EncryptionAlgorithm alg) {
     C4EncryptionKey key;

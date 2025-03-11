@@ -73,12 +73,18 @@ typedef struct C4DatabaseConfig2 {
 CBL_CORE_API extern const char* const kC4DatabaseFilenameExtension;
 
 /** @} */
-/** \name Accessors
+/** \name C4UUID
     @{ */
 
 
 typedef struct C4UUID {
     uint8_t bytes[16];
+
+#ifdef __cplusplus
+    static bool parse(std::string_view, C4UUID*) noexcept;
+    std::string to_string() const;
+    fleece::slice asSlice() const {return {this, sizeof(*this)};}
+#endif
 } C4UUID;
 
 /** @} */
@@ -177,4 +183,21 @@ typedef struct C4DatabaseConfig {
 } C4DatabaseConfig;
 
 C4API_END_DECLS
+
+
+#ifdef __cplusplus
+FLPURE inline bool operator==(const C4UUID& a, const C4UUID& b) noexcept{
+    return ::memcmp(&a, &b, sizeof(C4UUID)) == 0;
+}
+template <>
+struct std::hash<C4UUID> {
+    std::size_t operator()(C4UUID const& id) const noexcept FLPURE {
+        std::size_t h;
+        ::memcpy(&h, &id, sizeof(h));
+        return h;
+    }
+};
+#endif
+
+
 C4_ASSUME_NONNULL_END

@@ -279,8 +279,6 @@ inline bool operator==(const C4Database::CollectionSpec& a, const C4Database::Co
     return a.name == b.name && a.effectiveScope() == b.effectiveScope();
 }
 
-inline bool operator!=(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) { return !(a == b); }
-
 template <>
 struct std::hash<C4Database::CollectionSpec> {
     std::size_t operator()(C4Database::CollectionSpec const& spec) const {
