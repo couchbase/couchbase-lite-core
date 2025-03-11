@@ -248,7 +248,6 @@ class C4Peer
   private:
     mutable std::mutex _mutex;               // Must be locked while accessing state below (except atomics)
     std::string        _displayName;         // Arbitrary human-readable name registered by the peer
-    std::optional<C4UUID> _deviceUUID;       // Device UUID, if known
     Metadata           _metadata;            // Current known metadata
     ResolveURLCallback _resolveURLCallback;  // Holds callback during a resolveURL operation
     std::atomic<bool>  _online      = true;  // Set to false when peer is removed
