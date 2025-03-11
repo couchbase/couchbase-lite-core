@@ -181,6 +181,10 @@ include_directories(${GENERATED_HEADERS_DIR})
 
 add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
 
+if (BUILD_ENTERPRISE)
+    add_subdirectory(../couchbase-lite-core-EE/P2P EE_P2P EXCLUDE_FROM_ALL)
+endif()
+
 ### sqlite3 LIBRARY:
 
 # Separate library to make possible replace or not use
@@ -297,6 +301,7 @@ if(BUILD_ENTERPRISE)
         ${LITECORE_LIBRARIES_PRIVATE}
         LiteCoreREST_Objects
         LiteCoreWebSocket
+        LiteCoreP2P
     )
 endif()
 

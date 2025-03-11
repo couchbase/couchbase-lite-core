@@ -51,33 +51,15 @@ target_include_directories(
 
 if (BUILD_ENTERPRISE)
     set(EE_SRC ../../couchbase-lite-core-EE)
-    target_sources(LiteCoreREST_Objects PRIVATE
+    target_sources(
+        LiteCoreREST_Objects PRIVATE
         ${EE_SRC}/Listener/SyncListener.cc
-        ${EE_SRC}/P2P/MetaPeer.cc
-        ${EE_SRC}/P2P/P2PSyncManager.cc
     )
     target_include_directories(
         LiteCoreREST_Objects PRIVATE
         ${EE_SRC}/Listener
-        ${EE_SRC}/P2P
     )
-
-    if (APPLE)
-        target_sources(
-            LiteCoreREST_Objects PRIVATE
-            ${EE_SRC}/P2P/Apple/AppleBonjourPeer.cc
-            ${EE_SRC}/P2P/Apple/AppleBluetoothPeer.mm
-            ${EE_SRC}/P2P/Apple/AppleBTSocketFactory.mm
-        )
-        target_include_directories(
-            LiteCoreREST_Objects PRIVATE
-            ${EE_SRC}/P2P/Apple
-        )
-        target_compile_options(LiteCoreREST_Objects PRIVATE
-            -fobjc-arc
-        )
-    endif ()
-endif()
+endif ()
 
 target_compile_definitions(
     LiteCoreREST_Objects PRIVATE
@@ -106,14 +88,4 @@ if (APPLE)
             LiteCoreREST_Static INTERFACE
             "-framework Network"
     )
-    if (BUILD_ENTERPRISE)
-        target_link_libraries(
-                LiteCoreREST_Objects INTERFACE
-                "-framework CoreBluetooth"
-        )
-        target_link_libraries(
-                LiteCoreREST_Static INTERFACE
-                "-framework CoreBluetooth"
-        )
-    endif()
 endif()
