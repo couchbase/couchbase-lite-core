@@ -106,14 +106,12 @@ void C4PeerDiscovery::registerProvider(string_view providerName, ProviderFactory
     sProviderFactories.emplace(providerName, factory);
 }
 
-
 std::vector<std::string> C4PeerDiscovery::registeredProviders() {
-    unique_lock lock(sFactoriesMutex);
+    unique_lock    lock(sFactoriesMutex);
     vector<string> names;
     for ( auto& [name, factory] : sProviderFactories ) names.push_back(name);
     return names;
 }
-
 
 C4PeerDiscovery::C4PeerDiscovery(string_view serviceID) {
     unique_lock lock(sFactoriesMutex);
@@ -121,19 +119,17 @@ C4PeerDiscovery::C4PeerDiscovery(string_view serviceID) {
     for ( auto& [name, factory] : sProviderFactories ) _providers.emplace_back(factory(*this, serviceID));
 }
 
-
 C4PeerDiscovery::C4PeerDiscovery(std::string_view serviceID, std::span<std::string_view const> providers) {
     Assert(!providers.empty());
     unique_lock lock(sFactoriesMutex);
     for ( auto& name : providers ) {
-        if (auto i = sProviderFactories.find(string(name)); i != sProviderFactories.end())
+        if ( auto i = sProviderFactories.find(string(name)); i != sProviderFactories.end() )
             _providers.emplace_back(i->second(*this, serviceID));
         else
             error::_throw(error::Unimplemented, "'%.*s' is not a registered peer discovery service",
-                FMTSLICE(slice(name)));
+                          FMTSLICE(slice(name)));
     }
 }
-
 
 C4PeerDiscovery::~C4PeerDiscovery() {
     LogToAt(litecore::p2p::P2PLog, Info, "Shutting down peer discovery...");
