@@ -181,4 +181,5 @@ target_link_libraries(
     BLIPObjects
     LiteCoreREST_Static
     LiteCoreWebSocket
+    LiteCoreP2P
 )
