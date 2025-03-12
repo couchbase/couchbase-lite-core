@@ -225,7 +225,7 @@ namespace litecore::qt {
         expr.append(args[1]);
         string id = expressionIdentifier(expr);
 
-        if ( ctx.delegate.hasPredictiveIndex(id) ) {
+        if ( ctx.delegate.hasPredictiveIndex(id, ctx) ) {
             return new (ctx) PredictionNode(args, ctx, id);
         } else {
             return FunctionNode::parse(kPredictionFnName, args, ctx);
