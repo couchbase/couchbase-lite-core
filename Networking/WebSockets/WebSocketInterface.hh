@@ -13,6 +13,7 @@
 #pragma once
 #include "fleece/RefCounted.hh"
 #include "fleece/InstanceCounted.hh"
+#include "fleece/slice.hh"
 #include "Logging.hh"
 #include "WeakHolder.hh"
 #include <atomic>

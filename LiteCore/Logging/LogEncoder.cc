@@ -326,7 +326,8 @@ namespace litecore {
         name of domain (1st time)   [nul-terminated string]
     Object ID                       [varint]            // Numbered sequentially starting at 1
         obj description (1st time)  [nul-terminated string]
-    Format string                   [nul-terminated string]
+    Format string ID                [varint]            // Same namespace as domain strings
+        format string               [nul-terminated string]  // only on first appearance
     Args                            ...
  
  Formats of arguments, by type:

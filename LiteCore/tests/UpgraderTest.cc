@@ -16,6 +16,7 @@
 #include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4BlobStore.hh"
+#include "c4Log.h"
 #include "Logging.hh"
 #include "TempArray.hh"
 #include "fleece/PlatformCompat.hh"

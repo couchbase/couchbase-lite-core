@@ -13,7 +13,6 @@
 #pragma once
 #include "c4Compat.h"
 #include "c4Error.h"
-#include "c4Log.h"
 #include "fleece/FLSlice.h"
 #ifdef __cplusplus
 #    include <cstdarg>
@@ -156,6 +155,9 @@ typedef struct C4KeyPair C4KeyPair;
 /** A LiteCore network listener -- supports the REST API, replication, or both. */
 typedef struct C4Listener C4Listener;
 
+/** Opaque handle to a registered logging observer. */
+typedef struct C4LogObserver C4LogObserver;
+
 /** Opaque handle to a compiled query. */
 typedef struct C4Query C4Query;
 
@@ -208,6 +210,10 @@ inline C4IndexUpdater* C4NULLABLE c4indexupdater_retain(C4IndexUpdater* C4NULLAB
 
 inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API { return (C4KeyPair*)c4base_retain(r); }
 
+inline C4LogObserver* C4NULLABLE c4logobserver_retain(C4LogObserver* C4NULLABLE r) C4API {
+    return (C4LogObserver*)c4base_retain(r);
+}
+
 inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API { return (C4Query*)c4base_retain(r); }
 
 CBL_CORE_API C4Document* C4NULLABLE        c4doc_retain(C4Document* C4NULLABLE) C4API;
@@ -227,6 +233,9 @@ inline void c4index_release(C4Index* C4NULLABLE i) C4API { c4base_release(i); }
 inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { c4base_release(u); }
 
 inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
+
+/** \note This function is thread-safe. */
+inline void c4logobserver_release(C4LogObserver* C4NULLABLE r) C4API { c4base_release(r); }
 
 /** \note This function is thread-safe. */
 inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
