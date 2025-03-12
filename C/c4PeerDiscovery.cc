@@ -152,11 +152,11 @@ void C4PeerDiscovery::stopBrowsing() {
 }
 
 void C4PeerDiscovery::startPublishing(string_view displayName, uint16_t port, C4Peer::Metadata const& md) {
-    for ( auto& provider : _providers ) provider->publish(displayName, port, md);
+    for ( auto& provider : _providers ) provider->startPublishing(displayName, port, md);
 }
 
 void C4PeerDiscovery::stopPublishing() {
-    for ( auto& provider : _providers ) provider->unpublish();
+    for ( auto& provider : _providers ) provider->stopPublishing();
 }
 
 void C4PeerDiscovery::updateMetadata(C4Peer::Metadata const& metadata) {

@@ -23,9 +23,9 @@ The higher-level component (TBD) will use this API to decide which peer(s) to co
 
 The API is currently available only in C++, because in C form it would be awkward and a lot more complicated; the only platform that would require C (.NET) is not supported in this release.
 
-The API consists of four classes (one of which isn't really a class) in the header `c4PeerDiscovery.hh`:
+The API consists of four classes in the header `c4PeerDiscovery.hh`:
 
-- `C4PeerDiscovery`, just a namespace for static methods. This is the top-level interface to start and stop peer discovery and publishing.
+- `C4PeerDiscovery`, which manages peer discovery and publishing.
 - `C4PeerDiscovery::Observer`, an abstract interface that delivers notifications about changes in status, peers coming online or going offline, and incoming connections.
 - `C4PeerDiscoveryProvider`, an abstract class that's subclassed by platform-specific code providing an implementation of peer discovery, usually for a single protocol. 
 - `C4Peer`, which represents a single peer found by a provider.
@@ -40,25 +40,26 @@ This entire API is thread-safe. Methods can be called on any thread without requ
 
 This will mostly be done by the higher-level peer-to-peer components in LiteCore.
 
-1. Register the provider(s).
-2. Instantiate an observer and register it with `C4PeerDiscovery::addObserver`.
-3. Call `C4PeerDiscovery::startBrowsing` and `C4PeerDiscovery::startPublishing`.
-4. Track the set of peers by monitoring `addedPeer` and `removedPeer` notifications.
-5. If you want to watch the metadata of peers, call their `monitorMetadata` methods.
-6. You can update your own metadata by calling `C4PeerDiscovery::updateMetadata`.
-7. Respond to an `incomingConnection` notification by creating an incoming replicator on the provided `C4Socket`.
-8. To replicate with a peer:
+1. Register the provider(s) by calling the static `C4PeerDiscovery::registerProvider`.
+2. Instantiate `C4PeerDiscovery`, passing it a "serviceID" string that identifies the application's P2P service. The serviceID will be used to advertise the device and discover other peers.
+3. Instantiate an observer and register it with `C4PeerDiscovery::addObserver`.
+4. Call `C4PeerDiscovery::startBrowsing` and `C4PeerDiscovery::startPublishing`.
+5. Track the set of peers by monitoring the `addedPeer` and `removedPeer` calls to your observer.
+6. If you want to watch the metadata of peers, call their `monitorMetadata` methods.
+7. You can update your own metadata by calling `C4PeerDiscovery::updateMetadata`.
+8. Respond to an `incomingConnection` notification by creating an incoming replicator on the provided `C4Socket`.
+9. To initiate replication with a peer:
    1. Call its `resolveURL` method, passing it a callback.
    2. When the callback is called, you're given a URL for the peer as well as a `C4SocketFactory`.
    3. Use those to start a replicator. (The socket factory goes in `C4ReplicatorParameters::socketFactory`.)
-9. To stop peer discovery, call `C4PeerDiscovery::stopBrowsing` and `C4PeerDiscovery::stopPublishing`.
+10. To stop peer discovery, call `C4PeerDiscovery::stopBrowsing` and `C4PeerDiscovery::stopPublishing`.
 
-Note that you never call `C4PeerDiscoveryProvider` directly.
+Note that you never need to call a `C4PeerDiscoveryProvider` directly. The only attribute you might want to use is its `name`, for logging purposes or to identify a specific provider (e.g. to prioritize DNS-SD over Bluetooth when connecting.)
 
 
 ## Implementing a Provider
 
-To implement a provider for a protocol, you subclass `C4PeerDiscoveryProvider` and implement the abstract methods. These are all asynchronous, except for `getSocketFactory`. They should return quickly and announce results or changes by calling other methods, as described below.
+To implement a provider for a protocol, you subclass `C4PeerDiscoveryProvider` and implement the abstract methods. These are all asynchronous, except for `getSocketFactory`. They should return quickly and announce results or changes by calling other methods, as described below. They must be thread-safe.
 
 At runtime, create a singleton instance and call its `registerProvider` method so that `C4PeerDiscovery` knows about it.
 
@@ -88,18 +89,20 @@ Otherwise, the details of the URL are up to you; at a minimum it needs a schema 
 
 The `getSocketFactory` method should return a custom `C4SocketFactory` for the protocol you're implementing. In particular, its `open` function will be passed the URL you created, as parsed into a `C4Address`.
 
-### `publish`, `unpublish`, `updateMetadata`
+### `startPublishing`, `stopPublishing`, `updateMetadata`
 
-Called by the `C4PeerDiscovery` methods of the same names, these are the flip-sides of the browsing methods above. `publish` should make this device discoverable; `unpublish` should turn that off. You call `publishStateChanged` when the state changes.
+Called by the `C4PeerDiscovery` methods of the same names, these are the flip-sides of the browsing methods above. `startPublishing` should make this device discoverable; `stopPublishing` should turn that off. You call `publishStateChanged` when the state changes.
 
-`updateMetadata` should update the metadata you're publishing. It doesn't need to call anything back.
+`updateMetadata` should update the metadata you're publishing, such that other peers will discover the change. It doesn't need to call anything back.
 
-Unless peer connections are made over regular TCP/IP WebSockets, you'll need to listen for incoming connections. In response you create a `C4Socket` using your custom `C4SocketFactory` and call `this->notifyIncomingConnection`. If this method returns false, the connection was not handled by any observer, so you should close it yourself.
+#### Incoming connections
+
+Unless peer connections are made over regular TCP/IP WebSockets, you'll need to listen for incoming connections while publishing. In response you create a `C4Socket` using your custom `C4SocketFactory` and call `this->notifyIncomingConnection`. If this method returns false, the connection was not handled by any observer, so you should close it yourself.
 
 ### `shutdown`
 
-This is called by `C4PeerDiscovery::shutdown`, which is not meant to be used in everyday life but is useful for tests. It completely shuts down peer discovery and frees all the objects, including the providers, so that each test can start from scratch.
+Called by `C4PeerDiscovery`'s destructor, prior to deleting your provider instance.
 
-In response to this you should stop browsing and publishing, and do any other asynchronous work with your underlying API. Then call the callback that was passed to `shutdown`.
+Your implementation should stop browsing and publishing, and do any other necessary asynchronous work with your underlying API. Then call the callback that was passed to `shutdown`.
 
-After that, your provider will be deleted. If you have a static singleton pointing to it, you'll need to clear it.
+Soon after that, your provider will be deleted.
