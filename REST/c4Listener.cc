@@ -10,6 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
+#ifdef COUCHBASE_ENTERPRISE
+
 #include "c4Listener.hh"
 #include "c4ListenerInternal.hh"
 #include "c4ExceptionUtils.hh"
@@ -20,8 +22,6 @@
 #include "SyncListener.hh"
 #include <algorithm>
 #include <sstream>
-
-#ifdef COUCHBASE_ENTERPRISE
 
 using namespace std;
 using namespace fleece;
