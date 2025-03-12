@@ -130,6 +130,9 @@ class C4PeerDiscovery {
     // Private-by-convention
     void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*));
 
+    // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
+    static constexpr int kAPIVersion = 2;
+
   private:
     std::mutex                                                _mutex;
     std::string                                               _serviceID;
@@ -310,11 +313,11 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// @param displayName  A user-visible name (optional)
     /// @param port  A port number, for protocols that need it (i.e. DNS-SD.)
     /// @param metadata  The peer metadata to advertise.
-    virtual void publish(std::string_view displayName, uint16_t port, C4Peer::Metadata const& metadata) = 0;
+    virtual void startPublishing(std::string_view displayName, uint16_t port, C4Peer::Metadata const& metadata) = 0;
 
     /// Stops publishing.
     /// Implementation must call \ref publishStateChanged on completion.
-    virtual void unpublish() = 0;
+    virtual void stopPublishing() = 0;
 
     /// Changes the published metadata. (No completion call needed.)
     virtual void updateMetadata(C4Peer::Metadata const&) = 0;
