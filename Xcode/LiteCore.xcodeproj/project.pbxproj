@@ -23,6 +23,19 @@
 			name = All;
 			productName = All;
 		};
+		27FD73922D834F8E00CC48BF /* All EE */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 27FD739F2D834F8E00CC48BF /* Build configuration list for PBXAggregateTarget "All EE" */;
+			buildPhases = (
+			);
+			dependencies = (
+				27FD73A92D834FAF00CC48BF /* PBXTargetDependency */,
+				27FD73AB2D834FB400CC48BF /* PBXTargetDependency */,
+				27FD73AD2D834FB700CC48BF /* PBXTargetDependency */,
+			);
+			name = "All EE";
+			productName = All;
+		};
 		EAE4736829BA112E00C28D49 /* Run Clang-Format */ = {
 			isa = PBXAggregateTarget;
 			buildConfigurationList = EAE4736929BA113000C28D49 /* Build configuration list for PBXAggregateTarget "Run Clang-Format" */;
@@ -38,7 +51,6 @@
 
 /* Begin PBXBuildFile section */
 		2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
-		2700BB5B217005A900797537 /* CoreMLPredictiveModel.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */; };
 		2700BB75217905FE00797537 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		2700BB76217906D200797537 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		2700BB772179070900797537 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
@@ -71,7 +83,6 @@
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F91E248578D000BE21D9 /* mbedSnippets.cc */; };
 		2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
-		27175B12261B91170045F3AC /* c4Listener_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27175B11261B91170045F3AC /* c4Listener_CAPI.cc */; };
 		2718B38A2CAF1545006C09CB /* libCatch2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2718B3892CAF1545006C09CB /* libCatch2.a */; };
 		2718B38B2CAF154C006C09CB /* libCatch2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2718B3892CAF1545006C09CB /* libCatch2.a */; };
 		271925132396FE160053DDA6 /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
@@ -97,13 +108,11 @@
 		2719252F23970C050053DDA6 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2719253023970C480053DDA6 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2719253523970E070053DDA6 /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
-		2719253823970ECC0053DDA6 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		2719253923970EEA0053DDA6 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		2719253A23970EEF0053DDA6 /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
 		271A98AA243D2204008C032D /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
 		271A98AE243D250A008C032D /* NetworkInterfaces.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271A98AC243D24FD008C032D /* NetworkInterfaces.cc */; };
 		271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271AB0152374AD09007B0319 /* IndexSpec.cc */; };
-		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
 		271BA4D2228373E500D49D13 /* BothKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA4D1228373E500D49D13 /* BothKeyStore.cc */; };
 		271E51B02B86CCB600DCC203 /* SelectNodes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E51AF2B86CCB600DCC203 /* SelectNodes.cc */; };
 		271E51B42B87FD4000DCC203 /* IndexedNodes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E51B32B87FD4000DCC203 /* IndexedNodes.cc */; };
@@ -185,15 +194,12 @@
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
 		27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27505DDC256335B000123115 /* VersionVectorTest.cc */; };
-		275067E2230B6C5400FA23B2 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
-		275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */; };
 		2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		2753AFC91EC0F4E900C12E98 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
-		275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
 		275B2DF42A4A0A1A00B7215E /* HybridClock.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B2DF32A4A0A1A00B7215E /* HybridClock.cc */; };
 		275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B35A4234E753800FE9CF0 /* Housekeeper.cc */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
@@ -219,7 +225,6 @@
 		276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
 		276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */; };
 		276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
-		277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		277071D6230B696E00F7EB95 /* HTTPTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271C069723078176000EC09B /* HTTPTypes.cc */; };
 		2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
 		2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
@@ -236,8 +241,6 @@
 		2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
 		278054952B3214BF009630D8 /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
-		2785C26B2D012B5600F22817 /* DatabaseRegistry.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2785C2692D012B5600F22817 /* DatabaseRegistry.hh */; };
-		2785C26C2D012B5600F22817 /* DatabaseRegistry.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2785C26A2D012B5600F22817 /* DatabaseRegistry.cc */; };
 		2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
@@ -270,16 +273,12 @@
 		278F478A24C914CD00E1CA7A /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F478924C914CC00E1CA7A /* SystemConfiguration.framework */; };
 		278F478B24C914DE00E1CA7A /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2791EA1420326F7100BD813C /* SQLiteChooser.c in Sources */ = {isa = PBXBuildFile; fileRef = 2791EA1320326F7100BD813C /* SQLiteChooser.c */; };
-		2796A28423072F7000774850 /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingRev+Blobs.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingRev+Blobs.cc */; };
 		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */; };
 		279D40F91EA533D900D8DD9D /* netUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* netUtils.hh */; };
 		279DE3DC247888490059AE4E /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
-		279DE3DE24788D1B0059AE4E /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
-		279DE3DF24788D1B0059AE4E /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
-		279DE3E824788DCF0059AE4E /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		279DE3E924788DCF0059AE4E /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */; };
 		27A83D58269F7DB2002B7EBA /* PropertyEncryption_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A83D57269F7DB2002B7EBA /* PropertyEncryption_stub.cc */; };
@@ -313,15 +312,8 @@
 		27AFF3B023036B5800B4D6C4 /* TCPSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */; };
 		27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
-		27B0751B2D6D0E8C00AA6BFF /* AppleBluetoothPeer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B075172D6D0E8C00AA6BFF /* AppleBluetoothPeer.mm */; };
-		27B0751D2D6D0E8C00AA6BFF /* AppleBonjourPeer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075192D6D0E8C00AA6BFF /* AppleBonjourPeer.cc */; };
-		27B0751E2D6D0E9B00AA6BFF /* PeerDiscoveryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075142D6D0E8C00AA6BFF /* PeerDiscoveryTest.cc */; };
 		27B075212D6D0EE200AA6BFF /* c4PeerDiscovery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */; };
 		27B075232D6D22AB00AA6BFF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
-		27B075332D6FEDA900AA6BFF /* AppleBTSocketFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */; };
-		27B075422D722B6E00AA6BFF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
-		27B075452D726FAA00AA6BFF /* ReplicatorP2PTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B075442D726FAA00AA6BFF /* ReplicatorP2PTest.cc */; };
-		27B217142D7A269300B63CF7 /* P2PSyncManager.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B217132D7A269300B63CF7 /* P2PSyncManager.cc */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -356,7 +348,6 @@
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
 		27C4035E2D10BFFE00CF0CB2 /* LogFiles.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C4035A2D10BFFE00CF0CB2 /* LogFiles.cc */; };
 		27C4035F2D10BFFE00CF0CB2 /* LogObserver.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C4035D2D10BFFE00CF0CB2 /* LogObserver.cc */; };
-		27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */; };
 		27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
 		27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
@@ -399,7 +390,6 @@
 		27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
 		27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
 		27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */; };
-		27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
 		27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */; };
 		27E3DD371DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD391DB450B300F2872D /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD361DB450B300F2872D /* Logging.hh */; };
@@ -408,9 +398,6 @@
 		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* RevTreeRecord.cc */; };
-		27E55D262CE55963000DE11A /* SyncListener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E55D232CE55963000DE11A /* SyncListener.hh */; };
-		27E55D272CE55963000DE11A /* HTTPListener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E55D202CE55963000DE11A /* HTTPListener.hh */; };
-		27E55D292CE55963000DE11A /* HTTPListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E55D212CE55963000DE11A /* HTTPListener.cc */; };
 		27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E609A11951E4C000202B72 /* RecordEnumerator.cc */; };
 		27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6737C1EC78144008F50C4 /* QueryTest.cc */; };
 		27E6739F1EC8DC97008F50C4 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
@@ -507,16 +494,156 @@
 		27FA568924AD0F8E00B2F1F8 /* Pusher+Revs.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FA568824AD0F8E00B2F1F8 /* Pusher+Revs.cc */; };
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FB0C3C205B18A500987D9C /* Instrumentation.cc */; };
-		27FC81F91EAAB7C60028E38E /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
 		27FC8DB622135BCE0083B033 /* ChangesFeed.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DB522135BCE0083B033 /* ChangesFeed.cc */; };
 		27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DBC22135BDA0083B033 /* RevFinder.cc */; };
+		27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72772D833D4800CC48BF /* ReplicateTask.cc */; };
+		27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72792D833D4800CC48BF /* SyncListener.cc */; };
+		27FD72C42D833F6100CC48BF /* PropertyEncryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD728C2D833D4800CC48BF /* PropertyEncryption.cc */; };
+		27FD72C52D833F7700CC48BF /* AppleBluetoothPeer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FD727C2D833D4800CC48BF /* AppleBluetoothPeer.mm */; };
+		27FD72C62D833F7D00CC48BF /* AppleBonjourPeer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD727F2D833D4800CC48BF /* AppleBonjourPeer.cc */; };
+		27FD72C72D833F8200CC48BF /* AppleBTSocketFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */; };
+		27FD72C82D833F8B00CC48BF /* MetaPeer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72872D833D4800CC48BF /* MetaPeer.cc */; };
+		27FD72C92D833F8E00CC48BF /* P2PSyncManager.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72892D833D4800CC48BF /* P2PSyncManager.cc */; };
+		27FD72CC2D83413E00CC48BF /* UUID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72CB2D83413E00CC48BF /* UUID.cc */; };
+		27FD72CD2D8342F600CC48BF /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
+		27FD72CE2D8342F600CC48BF /* c4Listener_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27175B11261B91170045F3AC /* c4Listener_CAPI.cc */; };
+		27FD72CF2D83430A00CC48BF /* HTTPListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E55D212CE55963000DE11A /* HTTPListener.cc */; };
+		27FD72D02D83430A00CC48BF /* DatabaseRegistry.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2785C26A2D012B5600F22817 /* DatabaseRegistry.cc */; };
+		27FD72D12D83431B00CC48BF /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
+		27FD72D32D8346D000CC48BF /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
+		27FD72DC2D83475100CC48BF /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
+		27FD72DE2D83475100CC48BF /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
+		27FD72DF2D83475100CC48BF /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
+		27FD72E02D83475100CC48BF /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
+		27FD72E12D83475100CC48BF /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
+		27FD72E22D83475100CC48BF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
+		27FD72E32D83475100CC48BF /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		27FD72E42D83475100CC48BF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		27FD72E52D83475100CC48BF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		27FD72E62D83475100CC48BF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
+		27FD72E82D83475100CC48BF /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
+		27FD72E92D83475100CC48BF /* Column.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A881D4D3F3400D806E0 /* Column.h */; };
+		27FD72EA2D83475100CC48BF /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
+		27FD72EB2D83475100CC48BF /* Database.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A891D4D3F3400D806E0 /* Database.h */; };
+		27FD72EC2D83475100CC48BF /* UnicodeCollator.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */; };
+		27FD72ED2D83475100CC48BF /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
+		27FD72EE2D83475100CC48BF /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
+		27FD72EF2D83475100CC48BF /* Backup.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A871D4D3F3400D806E0 /* Backup.h */; };
+		27FD72F02D83475100CC48BF /* Query.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E6DFEF1DA5AFF3008EB681 /* Query.hh */; };
+		27FD72F12D83475100CC48BF /* Assertion.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A861D4D3F3400D806E0 /* Assertion.h */; };
+		27FD72F22D83475100CC48BF /* Exception.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8A1D4D3F3400D806E0 /* Exception.h */; };
+		27FD72F32D83475100CC48BF /* PredictiveModel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27098AA5216C2108002751DA /* PredictiveModel.hh */; };
+		27FD72F42D83475100CC48BF /* Upgrader.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850AA1E9AF53B009CA22F /* Upgrader.hh */; };
+		27FD72F52D83475100CC48BF /* netUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* netUtils.hh */; };
+		27FD72F62D83475100CC48BF /* Server.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2728512D1EA46475009CA22F /* Server.hh */; };
+		27FD72F72D83475100CC48BF /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
+		27FD72F82D83475100CC48BF /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
+		27FD72F92D83475100CC48BF /* FilePath.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E89BA51D679542002C32B3 /* FilePath.hh */; };
+		27FD72FA2D83475100CC48BF /* PrebuiltCopier.hh in Headers */ = {isa = PBXBuildFile; fileRef = 72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */; };
+		27FD72FB2D83475100CC48BF /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
+		27FD72FC2D83475100CC48BF /* Statement.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8C1D4D3F3400D806E0 /* Statement.h */; };
+		27FD72FD2D83475100CC48BF /* Transaction.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8D1D4D3F3400D806E0 /* Transaction.h */; };
+		27FD72FE2D83475100CC48BF /* DocumentKeys.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */; };
+		27FD72FF2D83475100CC48BF /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
+		27FD73002D83475100CC48BF /* c4PredictiveQuery.h in Headers */ = {isa = PBXBuildFile; fileRef = 27098A96216C1D2E002751DA /* c4PredictiveQuery.h */; };
+		27FD73012D83475100CC48BF /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD361DB450B300F2872D /* Logging.hh */; };
+		27FD73022D83475100CC48BF /* VariadicBind.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8E1D4D3F3400D806E0 /* VariadicBind.h */; };
+		27FD73032D83475100CC48BF /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
+		27FD73042D83475100CC48BF /* Request.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272851281EA46421009CA22F /* Request.hh */; };
+		27FD73052D83475100CC48BF /* SQLiteCpp.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8B1D4D3F3400D806E0 /* SQLiteCpp.h */; };
+		27FD73122D83476F00CC48BF /* libEnterpriseBits.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FD72B22D833F0B00CC48BF /* libEnterpriseBits.a */; };
+		27FD731B2D83490200CC48BF /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
+		27FD731C2D83490200CC48BF /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
+		27FD731D2D83490200CC48BF /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
+		27FD731E2D83490200CC48BF /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
+		27FD731F2D83490200CC48BF /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
+		27FD73202D83490200CC48BF /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
+		27FD73212D83490200CC48BF /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
+		27FD73222D83490200CC48BF /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
+		27FD73232D83490200CC48BF /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
+		27FD73242D83490200CC48BF /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
+		27FD73252D83490200CC48BF /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
+		27FD73262D83490200CC48BF /* c4PredictiveQueryTest+CoreML.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */; };
+		27FD73272D83490200CC48BF /* c4IndexUpdaterTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */; };
+		27FD73282D83490200CC48BF /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
+		27FD73292D83490200CC48BF /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
+		27FD732A2D83490200CC48BF /* QuietReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */; };
+		27FD732B2D83490200CC48BF /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
+		27FD732C2D83490200CC48BF /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
+		27FD732D2D83490200CC48BF /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
+		27FD732E2D83490200CC48BF /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
+		27FD732F2D83490200CC48BF /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
+		27FD73302D83490200CC48BF /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
+		27FD73312D83490200CC48BF /* c4ArrayIndexTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA4740D12CC80C6D00401B68 /* c4ArrayIndexTest.cc */; };
+		27FD73322D83490200CC48BF /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
+		27FD73332D83490200CC48BF /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
+		27FD73342D83490200CC48BF /* CoreMLPredictiveModel.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */; };
+		27FD73362D83490200CC48BF /* libCatch2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2718B3892CAF1545006C09CB /* libCatch2.a */; };
+		27FD73372D83490200CC48BF /* libfleeceBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2EE62125FAD600123597 /* libfleeceBase.a */; };
+		27FD73392D83490200CC48BF /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		27FD733A2D83490200CC48BF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		27FD733B2D83490200CC48BF /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
+		27FD733C2D83490200CC48BF /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
+		27FD73482D834A8800CC48BF /* libLiteCoreEE.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FD730F2D83475100CC48BF /* libLiteCoreEE.dylib */; };
+		27FD73512D834B7A00CC48BF /* ResultTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270D5B932C1285FC00AA91E7 /* ResultTest.cc */; };
+		27FD73522D834B7A00CC48BF /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
+		27FD73532D834B7A00CC48BF /* SequenceSetTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278CE6F12BAA116300245552 /* SequenceSetTest.cc */; };
+		27FD73542D834B7A00CC48BF /* QueryTranslatorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D62A6A2B7D2AF0004C0787 /* QueryTranslatorTest.cc */; };
+		27FD73552D834B7A00CC48BF /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
+		27FD73562D834B7A00CC48BF /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
+		27FD73572D834B7A00CC48BF /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
+		27FD73582D834B7A00CC48BF /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
+		27FD73592D834B7A00CC48BF /* c4DocumentTest_Internal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */; };
+		27FD735A2D834B7A00CC48BF /* DBAccessTestWrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */; };
+		27FD735B2D834B7A00CC48BF /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
+		27FD735C2D834B7A00CC48BF /* c4CollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D163C26124A030018D39C /* c4CollectionTest.cc */; };
+		27FD735D2D834B7A00CC48BF /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
+		27FD735E2D834B7A00CC48BF /* VersionVectorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27505DDC256335B000123115 /* VersionVectorTest.cc */; };
+		27FD735F2D834B7A00CC48BF /* VectorRecordTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */; };
+		27FD73602D834B7A00CC48BF /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
+		27FD73612D834B7A00CC48BF /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
+		27FD73622D834B7A00CC48BF /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
+		27FD73632D834B7A00CC48BF /* QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E6737C1EC78144008F50C4 /* QueryTest.cc */; };
+		27FD73642D834B7A00CC48BF /* ArrayQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271E51B72B8819F500DCC203 /* ArrayQueryTest.cc */; };
+		27FD73652D834B7A00CC48BF /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
+		27FD73662D834B7A00CC48BF /* PredictiveQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */; };
+		27FD73672D834B7A00CC48BF /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
+		27FD73682D834B7A00CC48BF /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
+		27FD73692D834B7A00CC48BF /* LazyVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D62A3E2B72D92B004C0787 /* LazyVectorQueryTest.cc */; };
+		27FD736A2D834B7A00CC48BF /* c4IndexUpdaterTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = EADC3D4F2C1346DA00933269 /* c4IndexUpdaterTest.cc */; };
+		27FD736B2D834B7A00CC48BF /* PropertyEncryptionTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */; };
+		27FD736C2D834B7A00CC48BF /* UpgraderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850B41E9BE361009CA22F /* UpgraderTest.cc */; };
+		27FD736D2D834B7A00CC48BF /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
+		27FD736E2D834B7A00CC48BF /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
+		27FD736F2D834B7A00CC48BF /* ReplicatorCollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = FCC064D6287E31D6000C5BD7 /* ReplicatorCollectionTest.cc */; };
+		27FD73702D834B7A00CC48BF /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
+		27FD73712D834B7A00CC48BF /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
+		27FD73722D834B7A00CC48BF /* ReplicatorVVUpgradeTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27628CD12AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc */; };
+		27FD73732D834B7A00CC48BF /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
+		27FD73742D834B7A00CC48BF /* SGTestUser.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE0291D597C002106A3 /* SGTestUser.cc */; };
+		27FD73752D834B7A00CC48BF /* ReplicatorSG30Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA6AB80E2979A0D1009751A1 /* ReplicatorSG30Test.cc */; };
+		27FD73762D834B7A00CC48BF /* SG.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8AE1291D597C002106A3 /* SG.cc */; };
+		27FD73772D834B7A00CC48BF /* ReplParams.cc in Sources */ = {isa = PBXBuildFile; fileRef = EA8E8ADA291AC7D9002106A3 /* ReplParams.cc */; };
+		27FD73782D834B7A00CC48BF /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
+		27FD737A2D834B7A00CC48BF /* libCatch2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2718B3892CAF1545006C09CB /* libCatch2.a */; };
+		27FD737B2D834B7A00CC48BF /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
+		27FD737C2D834B7A00CC48BF /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
+		27FD737D2D834B7A00CC48BF /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
+		27FD737E2D834B7A00CC48BF /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
+		27FD737F2D834B7A00CC48BF /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
+		27FD73802D834B7A00CC48BF /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		27FD73812D834B7A00CC48BF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		27FD73822D834B7A00CC48BF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		27FD73832D834B7A00CC48BF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
+		27FD738F2D834B9B00CC48BF /* libEnterpriseBits.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FD72B22D833F0B00CC48BF /* libEnterpriseBits.a */; };
+		27FD73902D834E2100CC48BF /* PeerDiscoveryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */; };
+		27FD73912D834E2500CC48BF /* ReplicatorP2PTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72832D833D4800CC48BF /* ReplicatorP2PTest.cc */; };
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
 		27FE0CE824BE6E4900A36EC2 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		27FE0CE924BE6E6900A36EC2 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		27FE0CEA24BE6E7300A36EC2 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		27FE0CEB24BE6E7900A36EC2 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
-		27FE0CEC24BE6E9A00A36EC2 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		27FE0CED24BE6E9A00A36EC2 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		27FE0CEF24BE7C2A00A36EC2 /* DataFileTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277015081D523E2E008BADD7 /* DataFileTest.cc */; };
 		27FE0CF024BE7C2A00A36EC2 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
@@ -541,7 +668,6 @@
 		42B6B0E225A6A9D9004B20A7 /* URLTransformer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */; };
 		42BBA88A2BB623B9000D1675 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 42BBA8862BB623B9000D1675 /* PrivacyInfo.xcprivacy */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
-		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
 		72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */; };
 		72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */ = {isa = PBXBuildFile; fileRef = 72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */; };
 		72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
@@ -568,6 +694,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
+		27FD73072D83475100CC48BF /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.java";
+			fileType = sourcecode.java;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILE_DIR)/Java_com_couchbase_cbforest_Database.h",
+				"",
+			);
+			script = "/usr/bin/javah -classpath $SRCROOT/java/src -d $DERIVED_FILE_DIR com.couchbase.cbforest.$INPUT_FILE_BASE";
+		};
 		720EA3F11BA7EAD9002B8416 /* PBXBuildRule */ = {
 			isa = PBXBuildRule;
 			compilerSpec = com.apple.compilers.proxy.script;
@@ -620,13 +760,6 @@
 			remoteGlobalIDString = 2771A097228624C000B18E0A;
 			remoteInfo = LiteCoreWebSocket;
 		};
-		2719253623970EC50053DDA6 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
-			remoteInfo = "LiteCoreREST static";
-		};
 		272850E41E9CABD2009CA22F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -661,13 +794,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
-		};
-		275067E3230B6C6700FA23B2 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
-			remoteInfo = "LiteCoreREST static";
 		};
 		2752B274233D786B0014AD9D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -718,13 +844,6 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "LiteCore dylib";
 		};
-		278B8DD523077AA100DB027F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 2771A097228624C000B18E0A;
-			remoteInfo = LiteCoreWebSocket;
-		};
 		278F475724C9131000E1CA7A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -732,40 +851,12 @@
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "LiteCore dylib";
 		};
-		2796A2892307345E00774850 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
-			remoteInfo = "LiteCoreREST static";
-		};
 		2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
-		};
-		279DE3E024788D280059AE4E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
-			remoteInfo = "LiteCoreREST static";
-		};
-		279DE3E224788D2C0059AE4E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 2771A097228624C000B18E0A;
-			remoteInfo = LiteCoreWebSocket;
-		};
-		279DE3E424788DC30059AE4E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
-			remoteInfo = "LiteCoreREST static";
 		};
 		279DE3E624788DC30059AE4E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -858,6 +949,83 @@
 			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
 			remoteInfo = Fleece;
 		};
+		27FD72D62D83475100CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "LiteCore static";
+		};
+		27FD72D82D83475100CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2771A097228624C000B18E0A;
+			remoteInfo = LiteCoreWebSocket;
+		};
+		27FD73102D83476500CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FD72B12D833F0B00CC48BF;
+			remoteInfo = EnterpriseBits;
+		};
+		27FD73192D83490200CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
+			remoteInfo = Fleece;
+		};
+		27FD73492D834A9C00CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FD72D42D83475100CC48BF;
+			remoteInfo = "LiteCore EE dylib";
+		};
+		27FD734D2D834B7A00CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "CBForest static";
+		};
+		27FD734F2D834B7A00CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2771A097228624C000B18E0A;
+			remoteInfo = LiteCoreWebSocket;
+		};
+		27FD738D2D834B9500CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FD72B12D833F0B00CC48BF;
+			remoteInfo = EnterpriseBits;
+		};
+		27FD73A82D834FAF00CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FD72D42D83475100CC48BF;
+			remoteInfo = "LiteCore EE dylib";
+		};
+		27FD73AA2D834FB400CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FD734B2D834B7A00CC48BF;
+			remoteInfo = "CppTests EE";
+		};
+		27FD73AC2D834FB700CC48BF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FD73132D83490200CC48BF;
+			remoteInfo = "C4Tests EE";
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -887,6 +1055,15 @@
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD73842D834B7A00CC48BF /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -918,8 +1095,6 @@
 		27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+ArrayIndexes.cc"; sourceTree = "<group>"; };
 		27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+PredictiveIndexes.cc"; sourceTree = "<group>"; };
 		2709D3A52363651B00462AF7 /* CertHelper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CertHelper.hh; sourceTree = "<group>"; };
-		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
-		270BEE29206483C0005E8BE8 /* Listener */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Listener; path = "../../../couchbase-lite-core-EE/Listener"; sourceTree = "<group>"; };
 		270C6B871EBA2CD600E73415 /* LogDecoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogDecoder.cc; sourceTree = "<group>"; };
 		270C6B881EBA2CD600E73415 /* LogDecoder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LogDecoder.hh; sourceTree = "<group>"; };
 		270C6B891EBA2CD600E73415 /* LogEncoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogEncoder.cc; sourceTree = "<group>"; };
@@ -1346,20 +1521,10 @@
 		27AFF3A423036B2500B4D6C4 /* connector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = connector.cpp; sourceTree = "<group>"; };
 		27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stream_socket.cpp; sourceTree = "<group>"; };
 		27AFF3A623036B2500B4D6C4 /* datagram_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = datagram_socket.cpp; sourceTree = "<group>"; };
-		27B075142D6D0E8C00AA6BFF /* PeerDiscoveryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PeerDiscoveryTest.cc; sourceTree = "<group>"; };
-		27B075162D6D0E8C00AA6BFF /* AppleBluetoothPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AppleBluetoothPeer.hh; sourceTree = "<group>"; };
-		27B075172D6D0E8C00AA6BFF /* AppleBluetoothPeer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBluetoothPeer.mm; sourceTree = "<group>"; };
-		27B075182D6D0E8C00AA6BFF /* AppleBonjourPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AppleBonjourPeer.hh; sourceTree = "<group>"; };
-		27B075192D6D0E8C00AA6BFF /* AppleBonjourPeer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AppleBonjourPeer.cc; sourceTree = "<group>"; };
 		27B0751F2D6D0ED100AA6BFF /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
 		27B075202D6D0EE200AA6BFF /* c4PeerDiscovery.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerDiscovery.cc; sourceTree = "<group>"; };
 		27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
-		27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBTSocketFactory.mm; sourceTree = "<group>"; };
-		27B075342D6FEE2100AA6BFF /* AppleBluetoothPeer+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "AppleBluetoothPeer+Internal.hh"; sourceTree = "<group>"; };
 		27B075432D7236E600AA6BFF /* ObserverList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ObserverList.hh; sourceTree = "<group>"; };
-		27B075442D726FAA00AA6BFF /* ReplicatorP2PTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorP2PTest.cc; sourceTree = "<group>"; };
-		27B217122D7A269300B63CF7 /* P2PSyncManager.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = P2PSyncManager.hh; sourceTree = "<group>"; };
-		27B217132D7A269300B63CF7 /* P2PSyncManager.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = P2PSyncManager.cc; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
@@ -1551,7 +1716,6 @@
 		27E4872A1923F24D007D8940 /* RevTreeRecord.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTreeRecord.hh; sourceTree = "<group>"; };
 		27E55D202CE55963000DE11A /* HTTPListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPListener.hh; sourceTree = "<group>"; };
 		27E55D212CE55963000DE11A /* HTTPListener.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPListener.cc; sourceTree = "<group>"; };
-		27E55D232CE55963000DE11A /* SyncListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SyncListener.hh; sourceTree = "<group>"; };
 		27E609A11951E4C000202B72 /* RecordEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RecordEnumerator.cc; sourceTree = "<group>"; };
 		27E609A41951E53F00202B72 /* RecordEnumerator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RecordEnumerator.hh; sourceTree = "<group>"; };
 		27E6737C1EC78144008F50C4 /* QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryTest.cc; sourceTree = "<group>"; };
@@ -1660,12 +1824,45 @@
 		27FA569524B640E700B2F1F8 /* RemoteSequence.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequence.hh; sourceTree = "<group>"; };
 		27FB0C37205B177100987D9C /* Instrumentation.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Instrumentation.hh; sourceTree = "<group>"; };
 		27FB0C3C205B18A500987D9C /* Instrumentation.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Instrumentation.cc; sourceTree = "<group>"; };
-		27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libLiteCoreREST-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FC81F31EAAB1000028E38E /* REST-static.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-static.xcconfig"; sourceTree = "<group>"; };
 		27FC81F41EAAB4D30028E38E /* REST.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = REST.xcconfig; sourceTree = "<group>"; };
 		27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCore.xcconfig; sourceTree = "<group>"; wrapsLines = 1; };
 		27FC8DB522135BCE0083B033 /* ChangesFeed.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ChangesFeed.cc; sourceTree = "<group>"; };
 		27FC8DBC22135BDA0083B033 /* RevFinder.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RevFinder.cc; sourceTree = "<group>"; };
+		27FD72702D833D4800CC48BF /* SQLCipherUpgrader.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLCipherUpgrader.hh; sourceTree = "<group>"; };
+		27FD72712D833D4800CC48BF /* SQLCipherUpgrader.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLCipherUpgrader.cc; sourceTree = "<group>"; };
+		27FD72722D833D4800CC48BF /* sqlite3-see-aes256-ofb.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "sqlite3-see-aes256-ofb.c"; sourceTree = "<group>"; };
+		27FD72732D833D4800CC48BF /* sqlite3-see-cccrypt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = "sqlite3-see-cccrypt.c"; sourceTree = "<group>"; };
+		27FD72742D833D4800CC48BF /* UPDATING-SEE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "UPDATING-SEE.md"; sourceTree = "<group>"; };
+		27FD72762D833D4800CC48BF /* ReplicateTask.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicateTask.hh; sourceTree = "<group>"; };
+		27FD72772D833D4800CC48BF /* ReplicateTask.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicateTask.cc; sourceTree = "<group>"; };
+		27FD72782D833D4800CC48BF /* SyncListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SyncListener.hh; sourceTree = "<group>"; };
+		27FD72792D833D4800CC48BF /* SyncListener.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListener.cc; sourceTree = "<group>"; };
+		27FD727B2D833D4800CC48BF /* AppleBluetoothPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AppleBluetoothPeer.hh; sourceTree = "<group>"; };
+		27FD727C2D833D4800CC48BF /* AppleBluetoothPeer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBluetoothPeer.mm; sourceTree = "<group>"; };
+		27FD727D2D833D4800CC48BF /* AppleBluetoothPeer+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "AppleBluetoothPeer+Internal.hh"; sourceTree = "<group>"; };
+		27FD727E2D833D4800CC48BF /* AppleBonjourPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AppleBonjourPeer.hh; sourceTree = "<group>"; };
+		27FD727F2D833D4800CC48BF /* AppleBonjourPeer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AppleBonjourPeer.cc; sourceTree = "<group>"; };
+		27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBTSocketFactory.mm; sourceTree = "<group>"; };
+		27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PeerDiscoveryTest.cc; sourceTree = "<group>"; };
+		27FD72832D833D4800CC48BF /* ReplicatorP2PTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorP2PTest.cc; sourceTree = "<group>"; };
+		27FD72852D833D4800CC48BF /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		27FD72862D833D4800CC48BF /* MetaPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MetaPeer.hh; sourceTree = "<group>"; };
+		27FD72872D833D4800CC48BF /* MetaPeer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MetaPeer.cc; sourceTree = "<group>"; };
+		27FD72882D833D4800CC48BF /* P2PSyncManager.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = P2PSyncManager.hh; sourceTree = "<group>"; };
+		27FD72892D833D4800CC48BF /* P2PSyncManager.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = P2PSyncManager.cc; sourceTree = "<group>"; };
+		27FD728B2D833D4800CC48BF /* c4LocalReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4LocalReplicator.hh; sourceTree = "<group>"; };
+		27FD728C2D833D4800CC48BF /* PropertyEncryption.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryption.cc; sourceTree = "<group>"; };
+		27FD728E2D833D4800CC48BF /* LiteCoreREST_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreREST_EE.xcconfig; sourceTree = "<group>"; };
+		27FD728F2D833D4800CC48BF /* LiteCoreServ_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreServ_EE.xcconfig; sourceTree = "<group>"; };
+		27FD72902D833D4800CC48BF /* LiteCoreSync_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreSync_EE.xcconfig; sourceTree = "<group>"; };
+		27FD72942D833D4800CC48BF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		27FD72B22D833F0B00CC48BF /* libEnterpriseBits.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libEnterpriseBits.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		27FD72CA2D83413E00CC48BF /* UUID.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UUID.hh; sourceTree = "<group>"; };
+		27FD72CB2D83413E00CC48BF /* UUID.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UUID.cc; sourceTree = "<group>"; };
+		27FD730F2D83475100CC48BF /* libLiteCoreEE.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCoreEE.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		27FD73442D83490200CC48BF /* C4Tests EE */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "C4Tests EE"; sourceTree = BUILT_PRODUCTS_DIR; };
+		27FD738C2D834B7A00CC48BF /* CppTests EE */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "CppTests EE"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27FDDEF6236770F900860E69 /* pem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pem.h; sourceTree = "<group>"; };
 		27FDDEF7236770F900860E69 /* check_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = check_config.h; sourceTree = "<group>"; };
 		27FDDEF8236770F900860E69 /* error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
@@ -1796,7 +1993,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				2718B38B2CAF154C006C09CB /* libCatch2.a in Frameworks */,
-				275067E2230B6C5400FA23B2 /* libLiteCoreREST-static.a in Frameworks */,
 				2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */,
 				2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */,
 				27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */,
@@ -1813,7 +2009,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2719253823970ECC0053DDA6 /* libLiteCoreREST-static.a in Frameworks */,
 				2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */,
 				2719253023970C480053DDA6 /* libLiteCoreWebSocket.a in Frameworks */,
 				2701C22C1C4DA4D2006D7A99 /* libLiteCore.dylib in Frameworks */,
@@ -1869,7 +2064,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27FE0CEC24BE6E9A00A36EC2 /* libLiteCoreREST-static.a in Frameworks */,
 				27FE0CED24BE6E9A00A36EC2 /* libLiteCoreWebSocket.a in Frameworks */,
 				27FE0CEB24BE6E7900A36EC2 /* SystemConfiguration.framework in Frameworks */,
 				27FE0CEA24BE6E7300A36EC2 /* Security.framework in Frameworks */,
@@ -1885,7 +2079,6 @@
 			files = (
 				27B649472069721F00FC12F7 /* libLiteCore-static.a in Frameworks */,
 				279DE3E924788DCF0059AE4E /* libLiteCoreWebSocket.a in Frameworks */,
-				279DE3E824788DCF0059AE4E /* libLiteCoreREST-static.a in Frameworks */,
 				27B64960206975F900FC12F7 /* libc++.tbd in Frameworks */,
 				27B6495D2069758F00FC12F7 /* libz.tbd in Frameworks */,
 				27B6495A2069757D00FC12F7 /* CoreFoundation.framework in Frameworks */,
@@ -1918,10 +2111,59 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27FC81E51EAAB0D90028E38E /* Frameworks */ = {
+		27FD72B02D833F0B00CC48BF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD72DD2D83475100CC48BF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FD72DE2D83475100CC48BF /* libLiteCore-static.a in Frameworks */,
+				27FD72DF2D83475100CC48BF /* libLiteCoreWebSocket.a in Frameworks */,
+				27FD73122D83476F00CC48BF /* libEnterpriseBits.a in Frameworks */,
+				27FD72E02D83475100CC48BF /* libc++.tbd in Frameworks */,
+				27FD72E12D83475100CC48BF /* libz.tbd in Frameworks */,
+				27FD72E22D83475100CC48BF /* CoreBluetooth.framework in Frameworks */,
+				27FD72E32D83475100CC48BF /* CoreFoundation.framework in Frameworks */,
+				27FD72E42D83475100CC48BF /* Foundation.framework in Frameworks */,
+				27FD72E52D83475100CC48BF /* Security.framework in Frameworks */,
+				27FD72E62D83475100CC48BF /* SystemConfiguration.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD73352D83490200CC48BF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FD73482D834A8800CC48BF /* libLiteCoreEE.dylib in Frameworks */,
+				27FD73362D83490200CC48BF /* libCatch2.a in Frameworks */,
+				27FD73372D83490200CC48BF /* libfleeceBase.a in Frameworks */,
+				27FD73392D83490200CC48BF /* CoreFoundation.framework in Frameworks */,
+				27FD733A2D83490200CC48BF /* Security.framework in Frameworks */,
+				27FD733B2D83490200CC48BF /* CoreML.framework in Frameworks */,
+				27FD733C2D83490200CC48BF /* Vision.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD73792D834B7A00CC48BF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FD737B2D834B7A00CC48BF /* libLiteCore-static.a in Frameworks */,
+				27FD737C2D834B7A00CC48BF /* libLiteCoreWebSocket.a in Frameworks */,
+				27FD738F2D834B9B00CC48BF /* libEnterpriseBits.a in Frameworks */,
+				27FD737A2D834B7A00CC48BF /* libCatch2.a in Frameworks */,
+				27FD737D2D834B7A00CC48BF /* libc++.tbd in Frameworks */,
+				27FD737E2D834B7A00CC48BF /* libz.tbd in Frameworks */,
+				27FD737F2D834B7A00CC48BF /* CoreBluetooth.framework in Frameworks */,
+				27FD73802D834B7A00CC48BF /* CoreFoundation.framework in Frameworks */,
+				27FD73812D834B7A00CC48BF /* Foundation.framework in Frameworks */,
+				27FD73822D834B7A00CC48BF /* Security.framework in Frameworks */,
+				27FD73832D834B7A00CC48BF /* SystemConfiguration.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1930,11 +2172,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				2700BB75217905FE00797537 /* libLiteCore-static.a in Frameworks */,
-				279DE3DF24788D1B0059AE4E /* libLiteCoreWebSocket.a in Frameworks */,
-				279DE3DE24788D1B0059AE4E /* libLiteCoreREST-static.a in Frameworks */,
 				2700BB772179070900797537 /* libc++.tbd in Frameworks */,
 				72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */,
-				27B075422D722B6E00AA6BFF /* CoreBluetooth.framework in Frameworks */,
 				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
 				2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */,
 				2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */,
@@ -1955,15 +2194,6 @@
 				2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */,
 			);
 			name = EE;
-			sourceTree = "<group>";
-		};
-		270BEE1C20647E8A005E8BE8 /* EE */ = {
-			isa = PBXGroup;
-			children = (
-				270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */,
-				270BEE29206483C0005E8BE8 /* Listener */,
-			);
-			path = EE;
 			sourceTree = "<group>";
 		};
 		270D5B8B2C122B5200AA91E7 /* vector_search */ = {
@@ -2012,7 +2242,6 @@
 		271BA53122960DF900D49D13 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
-				27B0751A2D6D0E8C00AA6BFF /* P2P */,
 				2744B303241854F2005A194D /* BLIP */,
 				2744B36324186210005A194D /* HTTP */,
 				2744B32E241854F2005A194D /* WebSockets */,
@@ -2071,9 +2300,7 @@
 				276E02191EA983EE00FEFE8A /* Response.cc */,
 				2728512D1EA46475009CA22F /* Server.hh */,
 				2728512C1EA46475009CA22F /* Server.cc */,
-				27E55D232CE55963000DE11A /* SyncListener.hh */,
 				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
-				270BEE1C20647E8A005E8BE8 /* EE */,
 				276E020F1EA9712700FEFE8A /* tests */,
 			);
 			name = REST;
@@ -2370,6 +2597,7 @@
 				271BA53122960DF900D49D13 /* Networking */,
 				272851111EA44902009CA22F /* REST */,
 				2754616A22F21F3900DF87B0 /* Crypto */,
+				27FD72952D833D4800CC48BF /* couchbase-lite-core-EE */,
 				275072AD18E4A68E00A80C5A /* Objective-C Tests */,
 				27A924951D9B316D00086206 /* LiteCore iOS */,
 				27D74A721D4D3EC000D806E0 /* vendor */,
@@ -2394,11 +2622,14 @@
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
 				27A924941D9B316D00086206 /* LiteCore-iOS.app */,
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
-				27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */,
 				27DF7D631F4236500022F3DF /* libSQLite.a */,
 				27B64934206971FB00FC12F7 /* LiteCore.framework */,
 				2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */,
 				278F476724C9131000E1CA7A /* iOS Perf Test.app */,
+				27FD72B22D833F0B00CC48BF /* libEnterpriseBits.a */,
+				27FD730F2D83475100CC48BF /* libLiteCoreEE.dylib */,
+				27FD73442D83490200CC48BF /* C4Tests EE */,
+				27FD738C2D834B7A00CC48BF /* CppTests EE */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2510,6 +2741,8 @@
 				2762A01822EB92B900F9AB18 /* PublicKey.cc */,
 				2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */,
 				2743E31425F81406006F696D /* PublicKey+Windows.cc */,
+				27FD72CB2D83413E00CC48BF /* UUID.cc */,
+				27FD72CA2D83413E00CC48BF /* UUID.hh */,
 				2762A01B22EB933100F9AB18 /* mbedUtils.hh */,
 				2762A01C22EB933100F9AB18 /* mbedUtils.cc */,
 				2716F91D248578D000BE21D9 /* mbedSnippets.hh */,
@@ -2924,31 +3157,6 @@
 				27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */,
 			);
 			path = src;
-			sourceTree = "<group>";
-		};
-		27B075152D6D0E8C00AA6BFF /* tests */ = {
-			isa = PBXGroup;
-			children = (
-				27B075142D6D0E8C00AA6BFF /* PeerDiscoveryTest.cc */,
-				27B075442D726FAA00AA6BFF /* ReplicatorP2PTest.cc */,
-			);
-			path = tests;
-			sourceTree = "<group>";
-		};
-		27B0751A2D6D0E8C00AA6BFF /* P2P */ = {
-			isa = PBXGroup;
-			children = (
-				27B075152D6D0E8C00AA6BFF /* tests */,
-				27B075162D6D0E8C00AA6BFF /* AppleBluetoothPeer.hh */,
-				27B075342D6FEE2100AA6BFF /* AppleBluetoothPeer+Internal.hh */,
-				27B075172D6D0E8C00AA6BFF /* AppleBluetoothPeer.mm */,
-				27B075322D6FEDA900AA6BFF /* AppleBTSocketFactory.mm */,
-				27B075182D6D0E8C00AA6BFF /* AppleBonjourPeer.hh */,
-				27B075192D6D0E8C00AA6BFF /* AppleBonjourPeer.cc */,
-				27B217122D7A269300B63CF7 /* P2PSyncManager.hh */,
-				27B217132D7A269300B63CF7 /* P2PSyncManager.cc */,
-			);
-			path = P2P;
 			sourceTree = "<group>";
 		};
 		27B516E72B97BAA80049DD1D /* ext */ = {
@@ -3414,6 +3622,98 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		27FD72752D833D4800CC48BF /* Encryption */ = {
+			isa = PBXGroup;
+			children = (
+				27FD72702D833D4800CC48BF /* SQLCipherUpgrader.hh */,
+				27FD72712D833D4800CC48BF /* SQLCipherUpgrader.cc */,
+				27FD72722D833D4800CC48BF /* sqlite3-see-aes256-ofb.c */,
+				27FD72732D833D4800CC48BF /* sqlite3-see-cccrypt.c */,
+				27FD72742D833D4800CC48BF /* UPDATING-SEE.md */,
+			);
+			path = Encryption;
+			sourceTree = "<group>";
+		};
+		27FD727A2D833D4800CC48BF /* Listener */ = {
+			isa = PBXGroup;
+			children = (
+				27FD72762D833D4800CC48BF /* ReplicateTask.hh */,
+				27FD72772D833D4800CC48BF /* ReplicateTask.cc */,
+				27FD72782D833D4800CC48BF /* SyncListener.hh */,
+				27FD72792D833D4800CC48BF /* SyncListener.cc */,
+			);
+			path = Listener;
+			sourceTree = "<group>";
+		};
+		27FD72812D833D4800CC48BF /* Apple */ = {
+			isa = PBXGroup;
+			children = (
+				27FD727B2D833D4800CC48BF /* AppleBluetoothPeer.hh */,
+				27FD727C2D833D4800CC48BF /* AppleBluetoothPeer.mm */,
+				27FD727D2D833D4800CC48BF /* AppleBluetoothPeer+Internal.hh */,
+				27FD727E2D833D4800CC48BF /* AppleBonjourPeer.hh */,
+				27FD727F2D833D4800CC48BF /* AppleBonjourPeer.cc */,
+				27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */,
+			);
+			path = Apple;
+			sourceTree = "<group>";
+		};
+		27FD72842D833D4800CC48BF /* tests */ = {
+			isa = PBXGroup;
+			children = (
+				27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */,
+				27FD72832D833D4800CC48BF /* ReplicatorP2PTest.cc */,
+			);
+			path = tests;
+			sourceTree = "<group>";
+		};
+		27FD728A2D833D4800CC48BF /* P2P */ = {
+			isa = PBXGroup;
+			children = (
+				27FD72812D833D4800CC48BF /* Apple */,
+				27FD72842D833D4800CC48BF /* tests */,
+				27FD72852D833D4800CC48BF /* CMakeLists.txt */,
+				27FD72862D833D4800CC48BF /* MetaPeer.hh */,
+				27FD72872D833D4800CC48BF /* MetaPeer.cc */,
+				27FD72882D833D4800CC48BF /* P2PSyncManager.hh */,
+				27FD72892D833D4800CC48BF /* P2PSyncManager.cc */,
+			);
+			path = P2P;
+			sourceTree = "<group>";
+		};
+		27FD728D2D833D4800CC48BF /* Replicator */ = {
+			isa = PBXGroup;
+			children = (
+				27FD728B2D833D4800CC48BF /* c4LocalReplicator.hh */,
+				27FD728C2D833D4800CC48BF /* PropertyEncryption.cc */,
+			);
+			path = Replicator;
+			sourceTree = "<group>";
+		};
+		27FD72912D833D4800CC48BF /* xcconfigs */ = {
+			isa = PBXGroup;
+			children = (
+				27FD728E2D833D4800CC48BF /* LiteCoreREST_EE.xcconfig */,
+				27FD728F2D833D4800CC48BF /* LiteCoreServ_EE.xcconfig */,
+				27FD72902D833D4800CC48BF /* LiteCoreSync_EE.xcconfig */,
+			);
+			path = xcconfigs;
+			sourceTree = "<group>";
+		};
+		27FD72952D833D4800CC48BF /* couchbase-lite-core-EE */ = {
+			isa = PBXGroup;
+			children = (
+				27FD72752D833D4800CC48BF /* Encryption */,
+				27FD727A2D833D4800CC48BF /* Listener */,
+				27FD728A2D833D4800CC48BF /* P2P */,
+				27FD728D2D833D4800CC48BF /* Replicator */,
+				27FD72912D833D4800CC48BF /* xcconfigs */,
+				27FD72942D833D4800CC48BF /* README.md */,
+			);
+			name = "couchbase-lite-core-EE";
+			path = "/Users/snej/Couchbase/CBL_C/vendor/couchbase-lite-core-EE";
+			sourceTree = "<absolute>";
+		};
 		27FDDEED236770F900860E69 /* crypto */ = {
 			isa = PBXGroup;
 			children = (
@@ -3584,14 +3884,47 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27FC81E61EAAB0D90028E38E /* Headers */ = {
+		27FD72AE2D833F0B00CC48BF /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */,
-				27E55D262CE55963000DE11A /* SyncListener.hh in Headers */,
-				27E55D272CE55963000DE11A /* HTTPListener.hh in Headers */,
-				2785C26B2D012B5600F22817 /* DatabaseRegistry.hh in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD72E72D83475100CC48BF /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FD72E82D83475100CC48BF /* SQLite_Internal.hh in Headers */,
+				27FD72E92D83475100CC48BF /* Column.h in Headers */,
+				27FD72EA2D83475100CC48BF /* SQLiteDataFile.hh in Headers */,
+				27FD72EB2D83475100CC48BF /* Database.h in Headers */,
+				27FD72EC2D83475100CC48BF /* UnicodeCollator.hh in Headers */,
+				27FD72ED2D83475100CC48BF /* SequenceTracker.hh in Headers */,
+				27FD72EE2D83475100CC48BF /* PlatformIO.hh in Headers */,
+				27FD72EF2D83475100CC48BF /* Backup.h in Headers */,
+				27FD72F02D83475100CC48BF /* Query.hh in Headers */,
+				27FD72F12D83475100CC48BF /* Assertion.h in Headers */,
+				27FD72F22D83475100CC48BF /* Exception.h in Headers */,
+				27FD72F32D83475100CC48BF /* PredictiveModel.hh in Headers */,
+				27FD72F42D83475100CC48BF /* Upgrader.hh in Headers */,
+				27FD72F52D83475100CC48BF /* netUtils.hh in Headers */,
+				27FD72F62D83475100CC48BF /* Server.hh in Headers */,
+				27FD72F72D83475100CC48BF /* SQLiteKeyStore.hh in Headers */,
+				27FD72F82D83475100CC48BF /* EncryptedStream.hh in Headers */,
+				27FD72F92D83475100CC48BF /* FilePath.hh in Headers */,
+				27FD72FA2D83475100CC48BF /* PrebuiltCopier.hh in Headers */,
+				27FD72FB2D83475100CC48BF /* RawRevTree.hh in Headers */,
+				27FD72FC2D83475100CC48BF /* Statement.h in Headers */,
+				27FD72FD2D83475100CC48BF /* Transaction.h in Headers */,
+				27FD72FE2D83475100CC48BF /* DocumentKeys.hh in Headers */,
+				27FD72FF2D83475100CC48BF /* c4DocEnumerator.h in Headers */,
+				27FD73002D83475100CC48BF /* c4PredictiveQuery.h in Headers */,
+				27FD73012D83475100CC48BF /* Logging.hh in Headers */,
+				27FD73022D83475100CC48BF /* VariadicBind.h in Headers */,
+				27FD73032D83475100CC48BF /* DatabaseCookies.hh in Headers */,
+				27FD73042D83475100CC48BF /* Request.hh in Headers */,
+				27FD73052D83475100CC48BF /* SQLiteCpp.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3652,9 +3985,9 @@
 /* End PBXLegacyTarget section */
 
 /* Begin PBXNativeTarget section */
-		2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */ = {
+		2708FE3E1CF4CC880022F721 /* CppTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2708FE4F1CF4CC880022F721 /* Build configuration list for PBXNativeTarget "LiteCoreCppTests" */;
+			buildConfigurationList = 2708FE4F1CF4CC880022F721 /* Build configuration list for PBXNativeTarget "CppTests" */;
 			buildPhases = (
 				2708FE411CF4CC880022F721 /* Sources */,
 				2708FE4B1CF4CC880022F721 /* Frameworks */,
@@ -3663,11 +3996,10 @@
 			buildRules = (
 			);
 			dependencies = (
-				275067E4230B6C6700FA23B2 /* PBXTargetDependency */,
 				2708FE541CF4CCAB0022F721 /* PBXTargetDependency */,
 				2742D10B2305C233003197E1 /* PBXTargetDependency */,
 			);
-			name = LiteCoreCppTests;
+			name = CppTests;
 			productName = CppTests;
 			productReference = 2708FE521CF4CC880022F721 /* LiteCoreCppTests */;
 			productType = "com.apple.product-type.tool";
@@ -3683,7 +4015,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				2719253723970EC50053DDA6 /* PBXTargetDependency */,
 				2719253223970C5E0053DDA6 /* PBXTargetDependency */,
 				2797BCB61C10F76F00E5C991 /* PBXTargetDependency */,
 				27766E1F1982DED300CAA464 /* PBXTargetDependency */,
@@ -3704,8 +4035,6 @@
 			);
 			dependencies = (
 				274D04221BA892C500FF7C35 /* PBXTargetDependency */,
-				2796A28A2307345E00774850 /* PBXTargetDependency */,
-				278B8DD623077AA100DB027F /* PBXTargetDependency */,
 				27F370811DC025930096F717 /* PBXTargetDependency */,
 			);
 			name = C4Tests;
@@ -3802,7 +4131,6 @@
 			dependencies = (
 				27B649492069722500FC12F7 /* PBXTargetDependency */,
 				279DE3E724788DC30059AE4E /* PBXTargetDependency */,
-				279DE3E524788DC30059AE4E /* PBXTargetDependency */,
 			);
 			name = "LiteCore framework";
 			productName = LiteCore;
@@ -3865,26 +4193,90 @@
 			productReference = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		27FC81E71EAAB0D90028E38E /* LiteCoreREST static */ = {
+		27FD72B12D833F0B00CC48BF /* EnterpriseBits */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 27FC81F01EAAB0D90028E38E /* Build configuration list for PBXNativeTarget "LiteCoreREST static" */;
+			buildConfigurationList = 27FD72BA2D833F0B00CC48BF /* Build configuration list for PBXNativeTarget "EnterpriseBits" */;
 			buildPhases = (
-				27FC81E41EAAB0D90028E38E /* Sources */,
-				27FC81E51EAAB0D90028E38E /* Frameworks */,
-				27FC81E61EAAB0D90028E38E /* Headers */,
+				27FD72AE2D833F0B00CC48BF /* Headers */,
+				27FD72AF2D833F0B00CC48BF /* Sources */,
+				27FD72B02D833F0B00CC48BF /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = "LiteCoreREST static";
-			productName = "LiteCoreREST static";
-			productReference = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */;
+			name = EnterpriseBits;
+			packageProductDependencies = (
+			);
+			productName = EnterpriseBits;
+			productReference = 27FD72B22D833F0B00CC48BF /* libEnterpriseBits.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */ = {
+		27FD72D42D83475100CC48BF /* LiteCore EE dylib */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore dylib" */;
+			buildConfigurationList = 27FD73082D83475100CC48BF /* Build configuration list for PBXNativeTarget "LiteCore EE dylib" */;
+			buildPhases = (
+				27FD72D92D83475100CC48BF /* Generate repo_version.h */,
+				27FD72DA2D83475100CC48BF /* Generate .exp file */,
+				27FD72DB2D83475100CC48BF /* Sources */,
+				27FD72DD2D83475100CC48BF /* Frameworks */,
+				27FD72E72D83475100CC48BF /* Headers */,
+				27FD73062D83475100CC48BF /* Build Documentation (Doxygen) */,
+			);
+			buildRules = (
+				27FD73072D83475100CC48BF /* PBXBuildRule */,
+			);
+			dependencies = (
+				27FD73112D83476500CC48BF /* PBXTargetDependency */,
+				27FD72D52D83475100CC48BF /* PBXTargetDependency */,
+				27FD72D72D83475100CC48BF /* PBXTargetDependency */,
+			);
+			name = "LiteCore EE dylib";
+			productName = CBForestJNI;
+			productReference = 27FD730F2D83475100CC48BF /* libLiteCoreEE.dylib */;
+			productType = "com.apple.product-type.library.dynamic";
+		};
+		27FD73132D83490200CC48BF /* C4Tests EE */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 27FD733D2D83490200CC48BF /* Build configuration list for PBXNativeTarget "C4Tests EE" */;
+			buildPhases = (
+				27FD731A2D83490200CC48BF /* Sources */,
+				27FD73352D83490200CC48BF /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				27FD734A2D834A9C00CC48BF /* PBXTargetDependency */,
+				27FD73182D83490200CC48BF /* PBXTargetDependency */,
+			);
+			name = "C4Tests EE";
+			productName = CppTests;
+			productReference = 27FD73442D83490200CC48BF /* C4Tests EE */;
+			productType = "com.apple.product-type.tool";
+		};
+		27FD734B2D834B7A00CC48BF /* CppTests EE */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 27FD73852D834B7A00CC48BF /* Build configuration list for PBXNativeTarget "CppTests EE" */;
+			buildPhases = (
+				27FD73502D834B7A00CC48BF /* Sources */,
+				27FD73792D834B7A00CC48BF /* Frameworks */,
+				27FD73842D834B7A00CC48BF /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				27FD738E2D834B9500CC48BF /* PBXTargetDependency */,
+				27FD734C2D834B7A00CC48BF /* PBXTargetDependency */,
+				27FD734E2D834B7A00CC48BF /* PBXTargetDependency */,
+			);
+			name = "CppTests EE";
+			productName = CppTests;
+			productReference = 27FD738C2D834B7A00CC48BF /* CppTests EE */;
+			productType = "com.apple.product-type.tool";
+		};
+		720EA3DB1BA7EAD9002B8416 /* LiteCore CE dylib */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore CE dylib" */;
 			buildPhases = (
 				275BF3731F5F6CA20051374A /* Generate repo_version.h */,
 				2764ED3923873D92007F020F /* Generate .exp file */,
@@ -3898,10 +4290,8 @@
 			);
 			dependencies = (
 				2700BB74217905F000797537 /* PBXTargetDependency */,
-				279DE3E324788D2C0059AE4E /* PBXTargetDependency */,
-				279DE3E124788D280059AE4E /* PBXTargetDependency */,
 			);
-			name = "LiteCore dylib";
+			name = "LiteCore CE dylib";
 			productName = CBForestJNI;
 			productReference = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
@@ -3955,9 +4345,8 @@
 						CreatedOnToolsVersion = 9.0;
 						DevelopmentTeam = N2Q372V7W2;
 					};
-					27FC81E71EAAB0D90028E38E = {
-						CreatedOnToolsVersion = 8.3.2;
-						ProvisioningStyle = Automatic;
+					27FD72B12D833F0B00CC48BF = {
+						CreatedOnToolsVersion = 16.2;
 					};
 					720EA3DB1BA7EAD9002B8416 = {
 						DevelopmentTeam = N2Q372V7W2;
@@ -3987,12 +4376,15 @@
 			projectRoot = "";
 			targets = (
 				27EF80F91917EEC600A327B9 /* LiteCore-static */,
-				720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */,
+				720EA3DB1BA7EAD9002B8416 /* LiteCore CE dylib */,
+				27FD72D42D83475100CC48BF /* LiteCore EE dylib */,
 				27B64933206971FB00FC12F7 /* LiteCore framework */,
-				27FC81E71EAAB0D90028E38E /* LiteCoreREST static */,
 				2771A097228624C000B18E0A /* LiteCoreWebSocket */,
-				2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */,
+				27FD72B12D833F0B00CC48BF /* EnterpriseBits */,
+				2708FE3E1CF4CC880022F721 /* CppTests */,
+				27FD734B2D834B7A00CC48BF /* CppTests EE */,
 				274D04071BA75E1C00FF7C35 /* C4Tests */,
+				27FD73132D83490200CC48BF /* C4Tests EE */,
 				27139B2F18F8E9750021A9A3 /* LiteCore XCTests */,
 				27DF7D621F4236500022F3DF /* SQLite */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
@@ -4001,6 +4393,7 @@
 				27A924931D9B316D00086206 /* LiteCore-iOS shell */,
 				27A924AB1D9B316D00086206 /* LiteCore-iOS Tests */,
 				27B7E0F118F8FB4700044EBA /* All */,
+				27FD73922D834F8E00CC48BF /* All EE */,
 				EAE4736829BA112E00C28D49 /* Run Clang-Format */,
 			);
 		};
@@ -4223,6 +4616,68 @@
 			shellPath = "/bin/sh -e";
 			shellScript = "DST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/C/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../C/tests/data\" \"$DST\"\n\nDST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/LiteCore/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../LiteCore/tests/data\" \"$DST\"\n\nDST=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/Replicator/tests/\"\nmkdir -p \"$DST\"\ncp -R \"$SRCROOT/../Replicator/tests/data\" \"$DST\"\n";
 		};
+		27FD72D92D83475100CC48BF /* Generate repo_version.h */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../build_cmake/scripts/get_repo_version.sh",
+			);
+			name = "Generate repo_version.h";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/repo_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"\n";
+			showEnvVarsInLog = 0;
+		};
+		27FD72DA2D83475100CC48BF /* Generate .exp file */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../C/scripts/generate_export_list.py",
+				"$(SRCROOT)/../C/scripts/c4.txt",
+				"$(SRCROOT)/../C/scripts/c4_exp.txt",
+				"$(SRCROOT)/../C/scripts/c4_ee.txt",
+			);
+			name = "Generate .exp file";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/../C/c4.exp",
+				"$(SRCROOT)/../C/c4_ee.exp",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "\"$SCRIPT_INPUT_FILE_0\" \n";
+			showEnvVarsInLog = 0;
+		};
+		27FD73062D83475100CC48BF /* Build Documentation (Doxygen) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"$(SRCROOT)/../C/DoxygenDependencies.txt",
+			);
+			inputPaths = (
+			);
+			name = "Build Documentation (Doxygen)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/../docs/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "if which doxygen >/dev/null\nthen\n  cd $SRCROOT/../C\n  doxygen\nfi\n";
+		};
 		EAE4736E29BA113A00C28D49 /* Run Formatting Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -4280,20 +4735,16 @@
 				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
-				27B0751E2D6D0E9B00AA6BFF /* PeerDiscoveryTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
 				FCC064D7287E31D6000C5BD7 /* ReplicatorCollectionTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
-				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */,
 				27628CD22AC21F0D004C3740 /* ReplicatorVVUpgradeTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
 				EA8E8AE2291D597C002106A3 /* SGTestUser.cc in Sources */,
 				EA6AB8132979A0D1009751A1 /* ReplicatorSG30Test.cc in Sources */,
-				27B075452D726FAA00AA6BFF /* ReplicatorP2PTest.cc in Sources */,
 				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
 				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
-				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4351,10 +4802,8 @@
 				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */,
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
-				271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
-				27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				277D40062C2F3DE700DBDC97 /* c4IndexUpdaterTest.cc in Sources */,
 				2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */,
 				42030A3E2498442F00283CE8 /* SecureRandomize.cc in Sources */,
@@ -4367,7 +4816,6 @@
 				EA4740D22CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */,
 				42030A412498445600283CE8 /* FilePath.cc in Sources */,
 				273F481725A68588005D4FE2 /* TestsCommon.cc in Sources */,
-				2700BB5B217005A900797537 /* CoreMLPredictiveModel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4385,6 +4833,7 @@
 				27DDC54C236B56D000580B2B /* CertRequest.cc in Sources */,
 				277071D6230B696E00F7EB95 /* HTTPTypes.cc in Sources */,
 				27AFF3A723036B2500B4D6C4 /* inet6_address.cpp in Sources */,
+				27FD72D32D8346D000CC48BF /* Request.cc in Sources */,
 				2742D10C2305C25D003197E1 /* Response.cc in Sources */,
 				27469CFE233C35EB00A1EE1A /* TLSContext.cc in Sources */,
 				27AFF3A923036B2500B4D6C4 /* exception.cpp in Sources */,
@@ -4570,7 +5019,6 @@
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
 				2744B35B241854F2005A194D /* MessageBuilder.cc in Sources */,
 				2744B356241854F2005A194D /* GCDMailbox.cc in Sources */,
-				27B217142D7A269300B63CF7 /* P2PSyncManager.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
@@ -4598,8 +5046,6 @@
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
 				27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
-				27B0751B2D6D0E8C00AA6BFF /* AppleBluetoothPeer.mm in Sources */,
-				27B0751D2D6D0E8C00AA6BFF /* AppleBonjourPeer.cc in Sources */,
 				2747A1D0279B37E100F286AF /* SQLUtil.cc in Sources */,
 				27F2BEA0221DF1A0006C13EE /* DBAccess.cc in Sources */,
 				273407231DEE116600EA5532 /* PlatformIO.cc in Sources */,
@@ -4621,6 +5067,7 @@
 				27469D06233D719800A1EE1A /* Certificate.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
 				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
+				27FD72CC2D83413E00CC48BF /* UUID.cc in Sources */,
 				277911C12C6A96FA0044E660 /* Node.cc in Sources */,
 				272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
@@ -4633,7 +5080,6 @@
 				27D9655A23355DC900F4A51C /* SecureDigest.cc in Sources */,
 				27ADA7891F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
-				27B075332D6FEDA900AA6BFF /* AppleBTSocketFactory.mm in Sources */,
 				27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
@@ -4691,17 +5137,113 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		27FC81E41EAAB0D90028E38E /* Sources */ = {
+		27FD72AF2D833F0B00CC48BF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2785C26C2D012B5600F22817 /* DatabaseRegistry.cc in Sources */,
-				275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */,
-				27E55D292CE55963000DE11A /* HTTPListener.cc in Sources */,
-				275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */,
-				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
-				27175B12261B91170045F3AC /* c4Listener_CAPI.cc in Sources */,
-				2796A28423072F7000774850 /* Server.cc in Sources */,
+				27FD72C42D833F6100CC48BF /* PropertyEncryption.cc in Sources */,
+				27FD72CF2D83430A00CC48BF /* HTTPListener.cc in Sources */,
+				27FD72D02D83430A00CC48BF /* DatabaseRegistry.cc in Sources */,
+				27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */,
+				27FD72D12D83431B00CC48BF /* Server.cc in Sources */,
+				27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */,
+				27FD72C62D833F7D00CC48BF /* AppleBonjourPeer.cc in Sources */,
+				27FD72C52D833F7700CC48BF /* AppleBluetoothPeer.mm in Sources */,
+				27FD72C72D833F8200CC48BF /* AppleBTSocketFactory.mm in Sources */,
+				27FD72C82D833F8B00CC48BF /* MetaPeer.cc in Sources */,
+				27FD72C92D833F8E00CC48BF /* P2PSyncManager.cc in Sources */,
+				27FD72CD2D8342F600CC48BF /* c4Listener.cc in Sources */,
+				27FD72CE2D8342F600CC48BF /* c4Listener_CAPI.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD72DB2D83475100CC48BF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FD72DC2D83475100CC48BF /* c4.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD731A2D83490200CC48BF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FD731B2D83490200CC48BF /* c4Test.cc in Sources */,
+				27FD731C2D83490200CC48BF /* c4DatabaseTest.cc in Sources */,
+				27FD731D2D83490200CC48BF /* c4DatabaseInternalTest.cc in Sources */,
+				27FD731E2D83490200CC48BF /* c4DocumentTest.cc in Sources */,
+				27FD731F2D83490200CC48BF /* c4BlobStoreTest.cc in Sources */,
+				27FD73202D83490200CC48BF /* c4ObserverTest.cc in Sources */,
+				27FD73212D83490200CC48BF /* c4QueryTest.cc in Sources */,
+				27FD73222D83490200CC48BF /* c4ThreadingTest.cc in Sources */,
+				27FD73242D83490200CC48BF /* c4AllDocsPerformanceTest.cc in Sources */,
+				27FD73252D83490200CC48BF /* c4PerfTest.cc in Sources */,
+				27FD73272D83490200CC48BF /* c4IndexUpdaterTest.cc in Sources */,
+				27FD73282D83490200CC48BF /* c4CertificateTest.cc in Sources */,
+				27FD73292D83490200CC48BF /* SecureRandomize.cc in Sources */,
+				27FD732A2D83490200CC48BF /* QuietReporter.hh in Sources */,
+				27FD732B2D83490200CC48BF /* Logging_Stub.cc in Sources */,
+				27FD732C2D83490200CC48BF /* c4.c in Sources */,
+				27FD732D2D83490200CC48BF /* LogDecoder.cc in Sources */,
+				27FD732E2D83490200CC48BF /* Address.cc in Sources */,
+				27FD732F2D83490200CC48BF /* Error.cc in Sources */,
+				27FD73302D83490200CC48BF /* StringUtil.cc in Sources */,
+				27FD73312D83490200CC48BF /* c4ArrayIndexTest.cc in Sources */,
+				27FD73322D83490200CC48BF /* FilePath.cc in Sources */,
+				27FD73332D83490200CC48BF /* TestsCommon.cc in Sources */,
+				27FD73232D83490200CC48BF /* c4DatabaseEncryptionTest.cc in Sources */,
+				27FD73262D83490200CC48BF /* c4PredictiveQueryTest+CoreML.mm in Sources */,
+				27FD73342D83490200CC48BF /* CoreMLPredictiveModel.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27FD73502D834B7A00CC48BF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27FD73512D834B7A00CC48BF /* ResultTest.cc in Sources */,
+				27FD73522D834B7A00CC48BF /* LiteCoreTest.cc in Sources */,
+				27FD73532D834B7A00CC48BF /* SequenceSetTest.cc in Sources */,
+				27FD73542D834B7A00CC48BF /* QueryTranslatorTest.cc in Sources */,
+				27FD73552D834B7A00CC48BF /* TestsCommon.cc in Sources */,
+				27FD73562D834B7A00CC48BF /* c4Test.cc in Sources */,
+				27FD73572D834B7A00CC48BF /* c4BaseTest.cc in Sources */,
+				27FD73582D834B7A00CC48BF /* LogEncoderTest.cc in Sources */,
+				27FD73592D834B7A00CC48BF /* c4DocumentTest_Internal.cc in Sources */,
+				27FD735A2D834B7A00CC48BF /* DBAccessTestWrapper.cc in Sources */,
+				27FD735B2D834B7A00CC48BF /* DataFileTest.cc in Sources */,
+				27FD735C2D834B7A00CC48BF /* c4CollectionTest.cc in Sources */,
+				27FD735D2D834B7A00CC48BF /* DocumentKeysTest.cc in Sources */,
+				27FD735E2D834B7A00CC48BF /* VersionVectorTest.cc in Sources */,
+				27FD735F2D834B7A00CC48BF /* VectorRecordTest.cc in Sources */,
+				27FD73602D834B7A00CC48BF /* SequenceTrackerTest.cc in Sources */,
+				27FD73612D834B7A00CC48BF /* SQLiteFunctionsTest.cc in Sources */,
+				27FD73622D834B7A00CC48BF /* N1QLParserTest.cc in Sources */,
+				27FD73632D834B7A00CC48BF /* QueryTest.cc in Sources */,
+				27FD73642D834B7A00CC48BF /* ArrayQueryTest.cc in Sources */,
+				27FD73652D834B7A00CC48BF /* FTSTest.cc in Sources */,
+				27FD73662D834B7A00CC48BF /* PredictiveQueryTest.cc in Sources */,
+				27FD73672D834B7A00CC48BF /* VectorQueryTest.cc in Sources */,
+				27FD73682D834B7A00CC48BF /* PredictiveVectorQueryTest.cc in Sources */,
+				27FD73692D834B7A00CC48BF /* LazyVectorQueryTest.cc in Sources */,
+				27FD736A2D834B7A00CC48BF /* c4IndexUpdaterTest.cc in Sources */,
+				27FD736B2D834B7A00CC48BF /* PropertyEncryptionTests.cc in Sources */,
+				27FD736C2D834B7A00CC48BF /* UpgraderTest.cc in Sources */,
+				27FD736D2D834B7A00CC48BF /* CookieStoreTest.cc in Sources */,
+				27FD736E2D834B7A00CC48BF /* CertificateTest.cc in Sources */,
+				27FD736F2D834B7A00CC48BF /* ReplicatorCollectionTest.cc in Sources */,
+				27FD73702D834B7A00CC48BF /* ReplicatorLoopbackTest.cc in Sources */,
+				27FD73712D834B7A00CC48BF /* ReplicatorCollectionSGTest.cc in Sources */,
+				27FD73722D834B7A00CC48BF /* ReplicatorVVUpgradeTest.cc in Sources */,
+				27FD73732D834B7A00CC48BF /* ReplicatorAPITest.cc in Sources */,
+				27FD73742D834B7A00CC48BF /* SGTestUser.cc in Sources */,
+				27FD73752D834B7A00CC48BF /* ReplicatorSG30Test.cc in Sources */,
+				27FD73762D834B7A00CC48BF /* SG.cc in Sources */,
+				27FD73772D834B7A00CC48BF /* ReplParams.cc in Sources */,
+				27FD73782D834B7A00CC48BF /* ReplicatorSGTest.cc in Sources */,
+				27FD73902D834E2100CC48BF /* PeerDiscoveryTest.cc in Sources */,
+				27FD73912D834E2500CC48BF /* ReplicatorP2PTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4723,7 +5265,7 @@
 		};
 		2701C2311C4DA840006D7A99 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
+			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore CE dylib */;
 			targetProxy = 2701C2301C4DA840006D7A99 /* PBXContainerItemProxy */;
 		};
 		2708FE541CF4CCAB0022F721 /* PBXTargetDependency */ = {
@@ -4735,11 +5277,6 @@
 			isa = PBXTargetDependency;
 			target = 2771A097228624C000B18E0A /* LiteCoreWebSocket */;
 			targetProxy = 2719253123970C5E0053DDA6 /* PBXContainerItemProxy */;
-		};
-		2719253723970EC50053DDA6 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
-			targetProxy = 2719253623970EC50053DDA6 /* PBXContainerItemProxy */;
 		};
 		272850E51E9CABD2009CA22F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4758,13 +5295,8 @@
 		};
 		274D04221BA892C500FF7C35 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
+			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore CE dylib */;
 			targetProxy = 274D04211BA892C500FF7C35 /* PBXContainerItemProxy */;
-		};
-		275067E4230B6C6700FA23B2 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
-			targetProxy = 275067E3230B6C6700FA23B2 /* PBXContainerItemProxy */;
 		};
 		2752B275233D786B0014AD9D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4778,7 +5310,7 @@
 		};
 		27732CE21D734EFB006D3802 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */;
+			target = 2708FE3E1CF4CC880022F721 /* CppTests */;
 			targetProxy = 27732CE11D734EFB006D3802 /* PBXContainerItemProxy */;
 		};
 		27732CE41D734EFE006D3802 /* PBXTargetDependency */ = {
@@ -4793,43 +5325,18 @@
 		};
 		2779CC581E848BBC00F0D251 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
+			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore CE dylib */;
 			targetProxy = 2779CC571E848BBC00F0D251 /* PBXContainerItemProxy */;
-		};
-		278B8DD623077AA100DB027F /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 2771A097228624C000B18E0A /* LiteCoreWebSocket */;
-			targetProxy = 278B8DD523077AA100DB027F /* PBXContainerItemProxy */;
 		};
 		278F475624C9131000E1CA7A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
+			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore CE dylib */;
 			targetProxy = 278F475724C9131000E1CA7A /* PBXContainerItemProxy */;
-		};
-		2796A28A2307345E00774850 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
-			targetProxy = 2796A2892307345E00774850 /* PBXContainerItemProxy */;
 		};
 		2797BCB61C10F76F00E5C991 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
+			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore CE dylib */;
 			targetProxy = 2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */;
-		};
-		279DE3E124788D280059AE4E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
-			targetProxy = 279DE3E024788D280059AE4E /* PBXContainerItemProxy */;
-		};
-		279DE3E324788D2C0059AE4E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 2771A097228624C000B18E0A /* LiteCoreWebSocket */;
-			targetProxy = 279DE3E224788D2C0059AE4E /* PBXContainerItemProxy */;
-		};
-		279DE3E524788DC30059AE4E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
-			targetProxy = 279DE3E424788DC30059AE4E /* PBXContainerItemProxy */;
 		};
 		279DE3E724788DC30059AE4E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4875,6 +5382,61 @@
 			isa = PBXTargetDependency;
 			name = Fleece;
 			targetProxy = 27FA09C91D70BA3C005888AA /* PBXContainerItemProxy */;
+		};
+		27FD72D52D83475100CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
+			targetProxy = 27FD72D62D83475100CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD72D72D83475100CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2771A097228624C000B18E0A /* LiteCoreWebSocket */;
+			targetProxy = 27FD72D82D83475100CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD73112D83476500CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FD72B12D833F0B00CC48BF /* EnterpriseBits */;
+			targetProxy = 27FD73102D83476500CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD73182D83490200CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Fleece;
+			targetProxy = 27FD73192D83490200CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD734A2D834A9C00CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FD72D42D83475100CC48BF /* LiteCore EE dylib */;
+			targetProxy = 27FD73492D834A9C00CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD734C2D834B7A00CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
+			targetProxy = 27FD734D2D834B7A00CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD734E2D834B7A00CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2771A097228624C000B18E0A /* LiteCoreWebSocket */;
+			targetProxy = 27FD734F2D834B7A00CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD738E2D834B9500CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FD72B12D833F0B00CC48BF /* EnterpriseBits */;
+			targetProxy = 27FD738D2D834B9500CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD73A92D834FAF00CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FD72D42D83475100CC48BF /* LiteCore EE dylib */;
+			targetProxy = 27FD73A82D834FAF00CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD73AB2D834FB400CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FD734B2D834B7A00CC48BF /* CppTests EE */;
+			targetProxy = 27FD73AA2D834FB400CC48BF /* PBXContainerItemProxy */;
+		};
+		27FD73AD2D834FB700CC48BF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FD73132D83490200CC48BF /* C4Tests EE */;
+			targetProxy = 27FD73AC2D834FB700CC48BF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -5364,13 +5926,6 @@
 			};
 			name = Debug_EE;
 		};
-		2791EA1E2032745700BD813C /* Debug_EE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
-			buildSettings = {
-			};
-			name = Debug_EE;
-		};
 		2791EA212032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
@@ -5527,13 +6082,6 @@
 		2791EA312032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
-			buildSettings = {
-			};
-			name = Release_EE;
-		};
-		2791EA322032746700BD813C /* Release_EE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
 			buildSettings = {
 			};
 			name = Release_EE;
@@ -5928,19 +6476,571 @@
 			};
 			name = Release;
 		};
-		27FC81F11EAAB0D90028E38E /* Debug */ = {
+		27FD72BB2D833F0B00CC48BF /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
+			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		27FD72BC2D833F0B00CC48BF /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Test_CE;
+		};
+		27FD72BD2D833F0B00CC48BF /* Debug_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug_EE;
+		};
+		27FD72BE2D833F0B00CC48BF /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Test_EE;
+		};
+		27FD72BF2D833F0B00CC48BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		27FD72C02D833F0B00CC48BF /* Release_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				EXECUTABLE_PREFIX = lib;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_ENABLE_CPP_EXCEPTIONS = YES;
+				GCC_ENABLE_CPP_RTTI = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release_EE;
+		};
+		27FD73092D83475100CC48BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = LiteCoreEE;
+			};
+			name = Debug;
+		};
+		27FD730A2D83475100CC48BF /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = LiteCoreEE;
+			};
+			name = Test_CE;
+		};
+		27FD730B2D83475100CC48BF /* Debug_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = LiteCoreEE;
+			};
+			name = Debug_EE;
+		};
+		27FD730C2D83475100CC48BF /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = LiteCoreEE;
+			};
+			name = Test_EE;
+		};
+		27FD730D2D83475100CC48BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = LiteCoreEE;
+			};
+			name = Release;
+		};
+		27FD730E2D83475100CC48BF /* Release_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = LiteCoreEE;
+			};
+			name = Release_EE;
+		};
+		27FD733E2D83490200CC48BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		27FD733F2D83490200CC48BF /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_CE;
+		};
+		27FD73402D83490200CC48BF /* Debug_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_EE;
+		};
+		27FD73412D83490200CC48BF /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_EE;
+		};
+		27FD73422D83490200CC48BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		27FD73432D83490200CC48BF /* Release_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release_EE;
+		};
+		27FD73862D834B7A00CC48BF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		27FD73872D834B7A00CC48BF /* Test_CE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_CE;
+		};
+		27FD73882D834B7A00CC48BF /* Debug_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug_EE;
+		};
+		27FD73892D834B7A00CC48BF /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test_EE;
+		};
+		27FD738A2D834B7A00CC48BF /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		27FD738B2D834B7A00CC48BF /* Release_EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release_EE;
+		};
+		27FD73A02D834F8E00CC48BF /* Debug */ = {
+			isa = XCBuildConfiguration;
 			buildSettings = {
 			};
 			name = Debug;
 		};
-		27FC81F21EAAB0D90028E38E /* Release */ = {
+		27FD73A12D834F8E00CC48BF /* Test_CE */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
+			buildSettings = {
+			};
+			name = Test_CE;
+		};
+		27FD73A22D834F8E00CC48BF /* Debug_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug_EE;
+		};
+		27FD73A32D834F8E00CC48BF /* Test_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Test_EE;
+		};
+		27FD73A42D834F8E00CC48BF /* Release */ = {
+			isa = XCBuildConfiguration;
 			buildSettings = {
 			};
 			name = Release;
+		};
+		27FD73A52D834F8E00CC48BF /* Release_EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release_EE;
 		};
 		720EA3F31BA7EAD9002B8416 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -5992,13 +7092,6 @@
 				CURRENT_PROJECT_VERSION = 1;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
-			};
-			name = Test_CE;
-		};
-		D6200BFA2A57441D00790C0F /* Test_CE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
-			buildSettings = {
 			};
 			name = Test_CE;
 		};
@@ -6273,13 +7366,6 @@
 			};
 			name = Test_EE;
 		};
-		D6D93DE82A2ACD9D00E30981 /* Test_EE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
-			buildSettings = {
-			};
-			name = Test_EE;
-		};
 		D6D93DE92A2ACD9D00E30981 /* Test_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
@@ -6547,7 +7633,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2708FE4F1CF4CC880022F721 /* Build configuration list for PBXNativeTarget "LiteCoreCppTests" */ = {
+		2708FE4F1CF4CC880022F721 /* Build configuration list for PBXNativeTarget "CppTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2708FE501CF4CC880022F721 /* Debug */,
@@ -6729,20 +7815,72 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		27FC81F01EAAB0D90028E38E /* Build configuration list for PBXNativeTarget "LiteCoreREST static" */ = {
+		27FD72BA2D833F0B00CC48BF /* Build configuration list for PBXNativeTarget "EnterpriseBits" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				27FC81F11EAAB0D90028E38E /* Debug */,
-				D6200BFA2A57441D00790C0F /* Test_CE */,
-				2791EA1E2032745700BD813C /* Debug_EE */,
-				D6D93DE82A2ACD9D00E30981 /* Test_EE */,
-				27FC81F21EAAB0D90028E38E /* Release */,
-				2791EA322032746700BD813C /* Release_EE */,
+				27FD72BB2D833F0B00CC48BF /* Debug */,
+				27FD72BC2D833F0B00CC48BF /* Test_CE */,
+				27FD72BD2D833F0B00CC48BF /* Debug_EE */,
+				27FD72BE2D833F0B00CC48BF /* Test_EE */,
+				27FD72BF2D833F0B00CC48BF /* Release */,
+				27FD72C02D833F0B00CC48BF /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore dylib" */ = {
+		27FD73082D83475100CC48BF /* Build configuration list for PBXNativeTarget "LiteCore EE dylib" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27FD73092D83475100CC48BF /* Debug */,
+				27FD730A2D83475100CC48BF /* Test_CE */,
+				27FD730B2D83475100CC48BF /* Debug_EE */,
+				27FD730C2D83475100CC48BF /* Test_EE */,
+				27FD730D2D83475100CC48BF /* Release */,
+				27FD730E2D83475100CC48BF /* Release_EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		27FD733D2D83490200CC48BF /* Build configuration list for PBXNativeTarget "C4Tests EE" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27FD733E2D83490200CC48BF /* Debug */,
+				27FD733F2D83490200CC48BF /* Test_CE */,
+				27FD73402D83490200CC48BF /* Debug_EE */,
+				27FD73412D83490200CC48BF /* Test_EE */,
+				27FD73422D83490200CC48BF /* Release */,
+				27FD73432D83490200CC48BF /* Release_EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		27FD73852D834B7A00CC48BF /* Build configuration list for PBXNativeTarget "CppTests EE" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27FD73862D834B7A00CC48BF /* Debug */,
+				27FD73872D834B7A00CC48BF /* Test_CE */,
+				27FD73882D834B7A00CC48BF /* Debug_EE */,
+				27FD73892D834B7A00CC48BF /* Test_EE */,
+				27FD738A2D834B7A00CC48BF /* Release */,
+				27FD738B2D834B7A00CC48BF /* Release_EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		27FD739F2D834F8E00CC48BF /* Build configuration list for PBXAggregateTarget "All EE" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27FD73A02D834F8E00CC48BF /* Debug */,
+				27FD73A12D834F8E00CC48BF /* Test_CE */,
+				27FD73A22D834F8E00CC48BF /* Debug_EE */,
+				27FD73A32D834F8E00CC48BF /* Test_EE */,
+				27FD73A42D834F8E00CC48BF /* Release */,
+				27FD73A52D834F8E00CC48BF /* Release_EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore CE dylib" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				720EA3F31BA7EAD9002B8416 /* Debug */,

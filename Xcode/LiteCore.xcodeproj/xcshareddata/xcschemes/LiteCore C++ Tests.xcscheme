@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
                BuildableName = "LiteCoreCppTests"
-               BlueprintName = "LiteCoreCppTests"
+               BlueprintName = "CppTests"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -52,7 +52,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
             BuildableName = "LiteCoreCppTests"
-            BlueprintName = "LiteCoreCppTests"
+            BlueprintName = "CppTests"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -91,7 +91,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
             BuildableName = "LiteCoreCppTests"
-            BlueprintName = "LiteCoreCppTests"
+            BlueprintName = "CppTests"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
