@@ -218,7 +218,7 @@ namespace litecore::REST {
     void HTTPListener::Task::registerTask() {
         if ( !_taskID ) {
             _timeStarted = ::time(nullptr);
-            _taskID      = _listener->registerTask(this);
+            _listener->registerTask(this, _taskID);
         }
     }
 
@@ -236,16 +236,23 @@ namespace litecore::REST {
         json.writeFormatted("task_id: %u, age_secs: %lu", _taskID, age);
     }
 
-    unsigned HTTPListener::registerTask(Task* task) {
-        lock_guard<mutex> lock(_mutex);
-        _tasks.insert(task);
-        return _nextTaskID++;
+    void HTTPListener::registerTask(Task* task, unsigned& outID) {
+        {
+            lock_guard<mutex> lock(_mutex);
+            _tasks.insert(task);
+            outID = _nextTaskID++;
+        }
+        _taskObservers.notify(&TaskObserver::taskStarted, task);
     }
 
     void HTTPListener::unregisterTask(Task* task) {
-        lock_guard<mutex> lock(_mutex);
-        _tasks.erase(task);
-        _tasksCondition.notify_all();
+        Retained retainTask(task); // keep task alive until notify is called
+        {
+            lock_guard<mutex> lock(_mutex);
+            _tasks.erase(task);
+            _tasksCondition.notify_all();
+        }
+        _taskObservers.notify(&TaskObserver::taskStopped, task);
     }
 
     vector<Retained<HTTPListener::Task>> HTTPListener::tasks() {
@@ -258,6 +265,7 @@ namespace litecore::REST {
         }
         return result;
     }
+
 
     void HTTPListener::stopTasks() {
         auto allTasks = tasks();
