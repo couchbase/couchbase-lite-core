@@ -16,7 +16,7 @@
 #include "ObserverList.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
-#include <c4DatabaseTypes.h>
+#include "c4DatabaseTypes.h"
 #include <functional>
 #include <mutex>
 #include <optional>
@@ -128,7 +128,7 @@ class C4PeerDiscovery {
     bool notifyIncomingConnection(C4Peer*, C4Socket*);
 
     // Private-by-convention
-    void notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*));
+    void notifyMetadataChanged(C4Peer*);
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
     static constexpr int kAPIVersion = 2;

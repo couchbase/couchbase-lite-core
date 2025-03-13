@@ -13,6 +13,8 @@
 #pragma once
 #include "DatabaseRegistry.hh"
 #include "HTTPTypes.hh"
+#include "Logging.hh"
+#include "ObserverList.hh"
 #include "Server.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
@@ -22,7 +24,9 @@
 #include <set>
 #include <vector>
 
-#ifdef COUCHBASE_ENTERPRISE
+#ifndef COUCHBASE_ENTERPRISE
+#error Enterprise Edition only
+#endif
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -80,9 +84,11 @@ namespace litecore::REST {
         /** An asynchronous task (like a replication). */
         class Task
             : public RefCounted
+            , public Logging
             , public InstanceCountedIn<Task> {
           public:
-            explicit Task(HTTPListener* listener) : _listener(listener) {}
+            explicit Task(HTTPListener* listener, LogDomain& domain)
+            :Logging(domain), _listener(listener) {}
 
             HTTPListener* listener() const { return _listener; }
 
@@ -123,6 +129,15 @@ namespace litecore::REST {
         /// The currently-running tasks.
         std::vector<Retained<Task>> tasks();
 
+        class TaskObserver {
+        public:
+            virtual ~TaskObserver() = default;
+            virtual void taskStarted(Task*) = 0;
+            virtual void taskStopped(Task*) = 0;
+        };
+        void addTaskObserver(TaskObserver* observer) {_taskObservers.add(observer);}
+        void removeTaskObserver(TaskObserver* observer) {_taskObservers.remove(observer);}
+
       protected:
         friend class Task;
 
@@ -131,7 +146,7 @@ namespace litecore::REST {
 
         Server* server() const { return _server.get(); }
 
-        unsigned registerTask(Task*);
+        void registerTask(Task*, unsigned& outID);
         void     unregisterTask(Task*);
 
         // Socket::Delegate API
@@ -157,10 +172,9 @@ namespace litecore::REST {
         std::set<Retained<Task>>   _tasks;
         std::condition_variable    _tasksCondition;
         unsigned                   _nextTaskID{1};
+        ObserverList<TaskObserver*> _taskObservers;
     };
 
 }  // namespace litecore::REST
 
 C4_ASSUME_NONNULL_END
-
-#endif

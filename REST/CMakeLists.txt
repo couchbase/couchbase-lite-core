@@ -53,6 +53,7 @@ if (BUILD_ENTERPRISE)
     set(EE_SRC ../../couchbase-lite-core-EE)
     target_sources(
         LiteCoreREST_Objects PRIVATE
+        ${EE_SRC}/Listener/ReplicateTask.cc
         ${EE_SRC}/Listener/SyncListener.cc
     )
     target_include_directories(

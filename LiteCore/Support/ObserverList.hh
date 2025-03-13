@@ -7,6 +7,7 @@
 #pragma once
 #include "c4ExceptionUtils.hh"
 #include "Error.hh"
+#include "SmallVector.hh"
 #include "fleece/PlatformCompat.hh"  // for ssize_t
 #include <algorithm>
 #include <mutex>
@@ -82,9 +83,19 @@ namespace litecore {
             // variable containing {curIndex, prevLink} and point the list head to that. `remove` walks the list.
         }
 
+        /// Calls a method of each observer, using the `iterate` method.
+        /// For example, if `observers` is an `ObserverList<Obs*>` and class `Obs` has a method
+        /// `changed(int)`, then you could call `observers.notify(&Obs::changed, 42)`.
+        template <class U, typename... Args>
+        void notify(void (U::*method)(Args...), Args... args) const {
+            iterate([&](T const& observer) {
+                (observer->*method)(args...);
+            });
+        }
+
       private:
         mutable std::recursive_mutex _mutex;          // Allows reentrant calls to add/remove during iteration
-        std::vector<T>               _observers;      // The observer list
+        fleece::smallVector<T, 4>    _observers;      // The observer list
         mutable ssize_t              _curIndex = -1;  // Current iteration index, else -1
     };
 

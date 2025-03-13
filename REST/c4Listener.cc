@@ -28,6 +28,9 @@ using namespace fleece;
 using namespace litecore;
 using namespace litecore::REST;
 
+// Make sure this is the right version of the EE repo to build with:
+static_assert(SyncListener::kAPIVersion == 3, "LiteCore-EE version mismatch");
+
 namespace litecore::REST {
     C4LogDomain ListenerLog;
 }  // namespace litecore::REST
