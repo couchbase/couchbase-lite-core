@@ -79,6 +79,13 @@
 		270D5B8A2C110ED800AA91E7 /* VectorIndexSpec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270D5B892C110ED800AA91E7 /* VectorIndexSpec.cc */; };
 		270D5B972C12860900AA91E7 /* ResultTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270D5B932C1285FC00AA91E7 /* ResultTest.cc */; };
 		270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */; };
+		27115C952D83682D004FCC12 /* ListenerHarness.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27115C8E2D83682D004FCC12 /* ListenerHarness.hh */; };
+		27115C962D83682D004FCC12 /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27115C842D83682D004FCC12 /* c4Listener.cc */; };
+		27115C972D83682D004FCC12 /* HTTPListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27115C8B2D83682D004FCC12 /* HTTPListener.cc */; };
+		27115C982D83682D004FCC12 /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27115C8D2D83682D004FCC12 /* Server.cc */; };
+		27115C992D83682D004FCC12 /* DatabaseRegistry.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27115C892D83682D004FCC12 /* DatabaseRegistry.cc */; };
+		27115C9B2D83682D004FCC12 /* c4Listener_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27115C852D83682D004FCC12 /* c4Listener_CAPI.cc */; };
+		27115C9C2D83689E004FCC12 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27115C8F2D83682D004FCC12 /* SyncListenerTest.cc */; };
 		2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2712F5AE25D5A9AB0082D526 /* c4Error.cc */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F91E248578D000BE21D9 /* mbedSnippets.cc */; };
@@ -104,10 +111,8 @@
 		2719252A23970BDF0053DDA6 /* c4PredictiveQueryTest+CoreML.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */; };
 		2719252B23970BE40053DDA6 /* CoreMLPredictiveModel.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */; };
 		2719252C23970BFD0053DDA6 /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
-		2719252E23970BFD0053DDA6 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		2719252F23970C050053DDA6 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2719253023970C480053DDA6 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
-		2719253523970E070053DDA6 /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
 		2719253923970EEA0053DDA6 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		2719253A23970EEF0053DDA6 /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
 		271A98AA243D2204008C032D /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
@@ -130,7 +135,6 @@
 		272850F11E9D4F94009CA22F /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		272850F21E9D4FB1009CA22F /* libfleeceStatic.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libfleeceStatic.a */; };
 		2728512B1EA46421009CA22F /* Request.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272851281EA46421009CA22F /* Request.hh */; };
-		272851301EA46475009CA22F /* Server.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2728512D1EA46475009CA22F /* Server.hh */; };
 		272B1BE11FB13B7400F56620 /* stopwordset.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BDF1FB13B7400F56620 /* stopwordset.cc */; };
 		272B1BE21FB13B7400F56620 /* stopwordset.h in Headers */ = {isa = PBXBuildFile; fileRef = 272B1BE01FB13B7400F56620 /* stopwordset.h */; };
 		272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
@@ -505,11 +509,6 @@
 		27FD72C82D833F8B00CC48BF /* MetaPeer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72872D833D4800CC48BF /* MetaPeer.cc */; };
 		27FD72C92D833F8E00CC48BF /* P2PSyncManager.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72892D833D4800CC48BF /* P2PSyncManager.cc */; };
 		27FD72CC2D83413E00CC48BF /* UUID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72CB2D83413E00CC48BF /* UUID.cc */; };
-		27FD72CD2D8342F600CC48BF /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
-		27FD72CE2D8342F600CC48BF /* c4Listener_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27175B11261B91170045F3AC /* c4Listener_CAPI.cc */; };
-		27FD72CF2D83430A00CC48BF /* HTTPListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E55D212CE55963000DE11A /* HTTPListener.cc */; };
-		27FD72D02D83430A00CC48BF /* DatabaseRegistry.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2785C26A2D012B5600F22817 /* DatabaseRegistry.cc */; };
-		27FD72D12D83431B00CC48BF /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
 		27FD72D32D8346D000CC48BF /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
 		27FD72DC2D83475100CC48BF /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		27FD72DE2D83475100CC48BF /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -535,7 +534,6 @@
 		27FD72F32D83475100CC48BF /* PredictiveModel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27098AA5216C2108002751DA /* PredictiveModel.hh */; };
 		27FD72F42D83475100CC48BF /* Upgrader.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850AA1E9AF53B009CA22F /* Upgrader.hh */; };
 		27FD72F52D83475100CC48BF /* netUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* netUtils.hh */; };
-		27FD72F62D83475100CC48BF /* Server.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2728512D1EA46475009CA22F /* Server.hh */; };
 		27FD72F72D83475100CC48BF /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
 		27FD72F82D83475100CC48BF /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
 		27FD72F92D83475100CC48BF /* FilePath.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E89BA51D679542002C32B3 /* FilePath.hh */; };
@@ -658,7 +656,6 @@
 		27FE0CFD24BE817A00A36EC2 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		27FE0CFE24BE817A00A36EC2 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
 		27FE0CFF24BE817B00A36EC2 /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
-		27FE0D0124BE817B00A36EC2 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		27FE0D0224BE817B00A36EC2 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		42030A3E2498442F00283CE8 /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		42030A3F2498443D00283CE8 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
@@ -1073,7 +1070,6 @@
 		2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CoreMLPredictiveModel.mm; sourceTree = "<group>"; };
 		27027CCD255F4A9B00A96D7D /* VersionVector.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionVector.hh; sourceTree = "<group>"; };
 		27027CD1255F4A9B00A96D7D /* VersionVector.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVector.cc; sourceTree = "<group>"; };
-		27047CE3233AE8DE009D1CE9 /* ListenerHarness.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ListenerHarness.hh; sourceTree = "<group>"; };
 		2705154C1D8CBE6C00D62D05 /* c4Query.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Query.cc; sourceTree = "<group>"; };
 		270515581D907F6200D62D05 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
 		2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; wrapsLines = 1; };
@@ -1106,6 +1102,18 @@
 		270D5B932C1285FC00AA91E7 /* ResultTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ResultTest.cc; sourceTree = "<group>"; };
 		270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TCPSocket.hh; sourceTree = "<group>"; };
 		270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TCPSocket.cc; sourceTree = "<group>"; };
+		27115C842D83682D004FCC12 /* c4Listener.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
+		27115C852D83682D004FCC12 /* c4Listener_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener_CAPI.cc; sourceTree = "<group>"; };
+		27115C862D83682D004FCC12 /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
+		27115C872D83682D004FCC12 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		27115C882D83682D004FCC12 /* DatabaseRegistry.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseRegistry.hh; sourceTree = "<group>"; };
+		27115C892D83682D004FCC12 /* DatabaseRegistry.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseRegistry.cc; sourceTree = "<group>"; };
+		27115C8A2D83682D004FCC12 /* HTTPListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPListener.hh; sourceTree = "<group>"; };
+		27115C8B2D83682D004FCC12 /* HTTPListener.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPListener.cc; sourceTree = "<group>"; };
+		27115C8C2D83682D004FCC12 /* Server.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Server.hh; sourceTree = "<group>"; };
+		27115C8D2D83682D004FCC12 /* Server.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Server.cc; sourceTree = "<group>"; };
+		27115C8E2D83682D004FCC12 /* ListenerHarness.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ListenerHarness.hh; sourceTree = "<group>"; };
+		27115C8F2D83682D004FCC12 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
 		2712F5AE25D5A9AB0082D526 /* c4Error.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Error.cc; sourceTree = "<group>"; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* LiteCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiteCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1114,7 +1122,6 @@
 		2716F91E248578D000BE21D9 /* mbedSnippets.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedSnippets.cc; sourceTree = "<group>"; };
 		2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CertificateTest.cc; sourceTree = "<group>"; };
 		27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStoreTypes.h; sourceTree = "<group>"; };
-		27175B11261B91170045F3AC /* c4Listener_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener_CAPI.cc; sourceTree = "<group>"; };
 		27175B73261BC3030045F3AC /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; wrapsLines = 1; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		2719253B23970F4E0053DDA6 /* replacedb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = replacedb; path = data/replacedb; sourceTree = "<group>"; };
@@ -1152,8 +1159,6 @@
 		272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CppTests.xcconfig; sourceTree = "<group>"; };
 		272851271EA46421009CA22F /* Request.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Request.cc; sourceTree = "<group>"; };
 		272851281EA46421009CA22F /* Request.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Request.hh; sourceTree = "<group>"; };
-		2728512C1EA46475009CA22F /* Server.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Server.cc; sourceTree = "<group>"; };
-		2728512D1EA46475009CA22F /* Server.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Server.hh; sourceTree = "<group>"; };
 		272AEC3F1F55D87500051F0A /* StringUtil_icu.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil_icu.cc; sourceTree = "<group>"; };
 		272AEC431F55D87500051F0A /* StringUtil_winapi.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil_winapi.cc; sourceTree = "<group>"; };
 		272B1BDF1FB13B7400F56620 /* stopwordset.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = stopwordset.cc; sourceTree = "<group>"; };
@@ -1350,8 +1355,6 @@
 		2759DC251E70908900F3C4B2 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		275A73BD1ED255AF008CB57B /* c4ReplicatorImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorImpl.hh; sourceTree = "<group>"; };
 		275A74461ED37992008CB57B /* Base.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Base.hh; sourceTree = "<group>"; };
-		275A74D51ED3AA11008CB57B /* c4Listener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
-		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
 		275AA0192D1231DD00DA2EEA /* LogFunction.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LogFunction.hh; sourceTree = "<group>"; };
 		275AA5D72A5F603800ABC172 /* SourceID.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SourceID.hh; sourceTree = "<group>"; };
 		275B2DF22A4A0A1A00B7215E /* HybridClock.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HybridClock.hh; sourceTree = "<group>"; };
@@ -1459,8 +1462,6 @@
 		278054D82B321D54009630D8 /* LiteCore-IOS Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-IOS Tests.xcconfig"; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
 		2785C2682D012AA100F22817 /* c4Replicator+Pool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Replicator+Pool.hh"; sourceTree = "<group>"; };
-		2785C2692D012B5600F22817 /* DatabaseRegistry.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseRegistry.hh; sourceTree = "<group>"; };
-		2785C26A2D012B5600F22817 /* DatabaseRegistry.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseRegistry.cc; sourceTree = "<group>"; };
 		278963601D7A376900493096 /* EncryptedStream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EncryptedStream.cc; path = ../Support/EncryptedStream.cc; sourceTree = "<group>"; };
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
 		278963651D7B3E0E00493096 /* Stream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Stream.hh; path = ../Support/Stream.hh; sourceTree = "<group>"; };
@@ -1527,7 +1528,6 @@
 		27B075432D7236E600AA6BFF /* ObserverList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ObserverList.hh; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
-		27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
 		27B64934206971FB00FC12F7 /* LiteCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiteCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27B64936206971FC00FC12F7 /* LiteCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LiteCore.h; path = ../../Xcode/LiteCore/LiteCore.h; sourceTree = "<group>"; };
 		27B64937206971FC00FC12F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Xcode/LiteCore/Info.plist; sourceTree = "<group>"; };
@@ -1714,8 +1714,6 @@
 		27E487221922A64F007D8940 /* RevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTree.hh; sourceTree = "<group>"; };
 		27E487291923F24D007D8940 /* RevTreeRecord.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTreeRecord.cc; sourceTree = "<group>"; };
 		27E4872A1923F24D007D8940 /* RevTreeRecord.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevTreeRecord.hh; sourceTree = "<group>"; };
-		27E55D202CE55963000DE11A /* HTTPListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPListener.hh; sourceTree = "<group>"; };
-		27E55D212CE55963000DE11A /* HTTPListener.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPListener.cc; sourceTree = "<group>"; };
 		27E609A11951E4C000202B72 /* RecordEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RecordEnumerator.cc; sourceTree = "<group>"; };
 		27E609A41951E53F00202B72 /* RecordEnumerator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RecordEnumerator.hh; sourceTree = "<group>"; };
 		27E6737C1EC78144008F50C4 /* QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryTest.cc; sourceTree = "<group>"; };
@@ -2231,6 +2229,15 @@
 			path = tests;
 			sourceTree = "<group>";
 		};
+		27115C902D83682D004FCC12 /* tests */ = {
+			isa = PBXGroup;
+			children = (
+				27115C8E2D83682D004FCC12 /* ListenerHarness.hh */,
+				27115C8F2D83682D004FCC12 /* SyncListenerTest.cc */,
+			);
+			path = tests;
+			sourceTree = "<group>";
+		};
 		27139B1E18F8E9750021A9A3 /* Other Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -2283,23 +2290,14 @@
 		272851111EA44902009CA22F /* REST */ = {
 			isa = PBXGroup;
 			children = (
-				275A74D51ED3AA11008CB57B /* c4Listener.cc */,
-				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
-				27175B11261B91170045F3AC /* c4Listener_CAPI.cc */,
 				27DDC549236B56D000580B2B /* CertRequest.hh */,
 				27DDC54A236B56D000580B2B /* CertRequest.cc */,
-				2785C2692D012B5600F22817 /* DatabaseRegistry.hh */,
-				2785C26A2D012B5600F22817 /* DatabaseRegistry.cc */,
-				27E55D202CE55963000DE11A /* HTTPListener.hh */,
-				27E55D212CE55963000DE11A /* HTTPListener.cc */,
 				279D40F61EA533D900D8DD9D /* netUtils.hh */,
 				279D40F51EA533D900D8DD9D /* netUtils.cc */,
 				272851281EA46421009CA22F /* Request.hh */,
 				272851271EA46421009CA22F /* Request.cc */,
 				276E021A1EA983EE00FEFE8A /* Response.hh */,
 				276E02191EA983EE00FEFE8A /* Response.cc */,
-				2728512D1EA46475009CA22F /* Server.hh */,
-				2728512C1EA46475009CA22F /* Server.cc */,
 				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
 				276E020F1EA9712700FEFE8A /* tests */,
 			);
@@ -2989,9 +2987,7 @@
 			isa = PBXGroup;
 			children = (
 				2709D3A52363651B00462AF7 /* CertHelper.hh */,
-				27047CE3233AE8DE009D1CE9 /* ListenerHarness.hh */,
 				27E19D652316EDEA00E031F8 /* RESTClientTest.cc */,
-				27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -3637,10 +3633,21 @@
 		27FD727A2D833D4800CC48BF /* Listener */ = {
 			isa = PBXGroup;
 			children = (
+				27115C842D83682D004FCC12 /* c4Listener.cc */,
+				27115C852D83682D004FCC12 /* c4Listener_CAPI.cc */,
+				27115C862D83682D004FCC12 /* c4ListenerInternal.hh */,
+				27115C882D83682D004FCC12 /* DatabaseRegistry.hh */,
+				27115C892D83682D004FCC12 /* DatabaseRegistry.cc */,
+				27115C8A2D83682D004FCC12 /* HTTPListener.hh */,
+				27115C8B2D83682D004FCC12 /* HTTPListener.cc */,
 				27FD72762D833D4800CC48BF /* ReplicateTask.hh */,
 				27FD72772D833D4800CC48BF /* ReplicateTask.cc */,
+				27115C8C2D83682D004FCC12 /* Server.hh */,
+				27115C8D2D83682D004FCC12 /* Server.cc */,
 				27FD72782D833D4800CC48BF /* SyncListener.hh */,
 				27FD72792D833D4800CC48BF /* SyncListener.cc */,
+				27115C872D83682D004FCC12 /* CMakeLists.txt */,
+				27115C902D83682D004FCC12 /* tests */,
 			);
 			path = Listener;
 			sourceTree = "<group>";
@@ -3888,6 +3895,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27115C952D83682D004FCC12 /* ListenerHarness.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3909,7 +3917,6 @@
 				27FD72F32D83475100CC48BF /* PredictiveModel.hh in Headers */,
 				27FD72F42D83475100CC48BF /* Upgrader.hh in Headers */,
 				27FD72F52D83475100CC48BF /* netUtils.hh in Headers */,
-				27FD72F62D83475100CC48BF /* Server.hh in Headers */,
 				27FD72F72D83475100CC48BF /* SQLiteKeyStore.hh in Headers */,
 				27FD72F82D83475100CC48BF /* EncryptedStream.hh in Headers */,
 				27FD72F92D83475100CC48BF /* FilePath.hh in Headers */,
@@ -3946,7 +3953,6 @@
 				27098AA8216C2108002751DA /* PredictiveModel.hh in Headers */,
 				272850AD1E9AF53B009CA22F /* Upgrader.hh in Headers */,
 				279D40F91EA533D900D8DD9D /* netUtils.hh in Headers */,
-				272851301EA46475009CA22F /* Server.hh in Headers */,
 				274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */,
 				278963641D7A376900493096 /* EncryptedStream.hh in Headers */,
 				27E89BA81D679542002C32B3 /* FilePath.hh in Headers */,
@@ -4780,8 +4786,6 @@
 				2719252F23970C050053DDA6 /* CertificateTest.cc in Sources */,
 				2719252A23970BDF0053DDA6 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				2719252C23970BFD0053DDA6 /* RESTClientTest.cc in Sources */,
-				2719252E23970BFD0053DDA6 /* SyncListenerTest.cc in Sources */,
-				2719253523970E070053DDA6 /* c4Listener.cc in Sources */,
 				271925172396FE2C0053DDA6 /* PredictiveQueryTest.cc in Sources */,
 				2719252B23970BE40053DDA6 /* CoreMLPredictiveModel.mm in Sources */,
 				2719253A23970EEF0053DDA6 /* ReplicatorLoopbackTest.cc in Sources */,
@@ -4918,7 +4922,6 @@
 				27FE0CFF24BE817B00A36EC2 /* RESTClientTest.cc in Sources */,
 				EA4740D32CC80C6D00401B68 /* c4ArrayIndexTest.cc in Sources */,
 				2740A7522B321120003387E9 /* SGTestUser.cc in Sources */,
-				27FE0D0124BE817B00A36EC2 /* SyncListenerTest.cc in Sources */,
 				273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */,
 				27A924C91D9B374500086206 /* Catch_Tests.mm in Sources */,
 			);
@@ -5142,18 +5145,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				27FD72C42D833F6100CC48BF /* PropertyEncryption.cc in Sources */,
-				27FD72CF2D83430A00CC48BF /* HTTPListener.cc in Sources */,
-				27FD72D02D83430A00CC48BF /* DatabaseRegistry.cc in Sources */,
 				27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */,
-				27FD72D12D83431B00CC48BF /* Server.cc in Sources */,
 				27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */,
+				27115C962D83682D004FCC12 /* c4Listener.cc in Sources */,
+				27115C972D83682D004FCC12 /* HTTPListener.cc in Sources */,
+				27115C982D83682D004FCC12 /* Server.cc in Sources */,
+				27115C992D83682D004FCC12 /* DatabaseRegistry.cc in Sources */,
+				27115C9B2D83682D004FCC12 /* c4Listener_CAPI.cc in Sources */,
 				27FD72C62D833F7D00CC48BF /* AppleBonjourPeer.cc in Sources */,
 				27FD72C52D833F7700CC48BF /* AppleBluetoothPeer.mm in Sources */,
 				27FD72C72D833F8200CC48BF /* AppleBTSocketFactory.mm in Sources */,
 				27FD72C82D833F8B00CC48BF /* MetaPeer.cc in Sources */,
 				27FD72C92D833F8E00CC48BF /* P2PSyncManager.cc in Sources */,
-				27FD72CD2D8342F600CC48BF /* c4Listener.cc in Sources */,
-				27FD72CE2D8342F600CC48BF /* c4Listener_CAPI.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5235,6 +5238,7 @@
 				27FD736F2D834B7A00CC48BF /* ReplicatorCollectionTest.cc in Sources */,
 				27FD73702D834B7A00CC48BF /* ReplicatorLoopbackTest.cc in Sources */,
 				27FD73712D834B7A00CC48BF /* ReplicatorCollectionSGTest.cc in Sources */,
+				27115C9C2D83689E004FCC12 /* SyncListenerTest.cc in Sources */,
 				27FD73722D834B7A00CC48BF /* ReplicatorVVUpgradeTest.cc in Sources */,
 				27FD73732D834B7A00CC48BF /* ReplicatorAPITest.cc in Sources */,
 				27FD73742D834B7A00CC48BF /* SGTestUser.cc in Sources */,
