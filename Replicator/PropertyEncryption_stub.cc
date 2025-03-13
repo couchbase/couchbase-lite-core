@@ -18,12 +18,7 @@
 
 #include "PropertyEncryption.hh"
 
-#ifdef COUCHBASE_ENTERPRISE
-// NOTE: PropertyEncryption.cc is not in this repo, and is not open source.
-// It is part of Couchbase Lite Enterprise Edition (EE), which can be licensed in binary form
-// from Couchbase.
-#    include "../../../couchbase-lite-core-EE/Replicator/PropertyEncryption.cc"
-#else
+#ifndef COUCHBASE_ENTERPRISE
 
 // Stubs for CE:
 
