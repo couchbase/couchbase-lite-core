@@ -249,6 +249,4 @@ bool C4PeerDiscovery::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
     return handled;
 }
 
-void C4PeerDiscovery::notifyMetadataChanged(C4Peer* peer) {
-    _observers.notify(&Observer::peerMetadataChanged, peer);
-}
+void C4PeerDiscovery::notifyMetadataChanged(C4Peer* peer) { _observers.notify(&Observer::peerMetadataChanged, peer); }
