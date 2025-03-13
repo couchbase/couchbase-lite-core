@@ -75,7 +75,7 @@ namespace litecore {
         void closeUnused();
 
         /// The database configuration.
-        C4DatabaseConfig2 const& getConfiguration() const { return _dbConfig; }
+        C4DatabaseConfig2 const& getConfiguration() const LIFETIMEBOUND { return _dbConfig; }
 
         /// The filesystem path of the database.
         FilePath databasePath() const;
@@ -199,6 +199,36 @@ namespace litecore {
         bool                             _closed = false;  // Set by `close`
     };
 
+    /** A helper type that's a reference to either a C4Database or a DatabasePool. */
+    class DatabaseOrPool {
+      public:
+        DatabaseOrPool(Retained<C4Database> db) : _db(std::move(db)) { Assert(_db); }
+
+        DatabaseOrPool(Retained<DatabasePool> pool) : _pool(std::move(pool)) { Assert(_pool); }
+
+        DatabaseOrPool(C4Database* db) : DatabaseOrPool(Retained(db)) {}
+
+        DatabaseOrPool(DatabasePool* pool) : DatabaseOrPool(Retained(pool)) {}
+
+        C4Database* C4NULLABLE database() const { return _db; }
+
+        DatabasePool* C4NULLABLE pool() const { return _pool; }
+
+        Retained<DatabasePool> makePool() const { return _pool ? _pool : make_retained<DatabasePool>(_db); }
+
+        inline BorrowedDatabase borrow() const;
+
+        C4DatabaseConfig2 const& getConfiguration() const LIFETIMEBOUND {
+            return _db ? _db->getConfiguration() : _pool->getConfiguration();
+        }
+
+        bool operator==(DatabaseOrPool const&) const = default;
+
+      private:
+        Retained<C4Database>   _db;
+        Retained<DatabasePool> _pool;
+    };
+
     /** An RAII wrapper around a C4Database "borrowed" from a DatabasePool.
         When it exits scope, the database is returned to the pool.
         @note A `BorrowedDatabase`s lifetime should be kept short, and limited to a single thread. */
@@ -297,6 +327,10 @@ namespace litecore {
 
         C4Database* db() const noexcept LIFETIMEBOUND { return get(); }
     };
+
+    BorrowedDatabase DatabaseOrPool::borrow() const {
+        return _pool ? _pool->borrow() : BorrowedDatabase(_db);
+    }
 
     inline DatabasePool::Transaction DatabasePool::transaction() { return Transaction(*this); }
 

@@ -116,12 +116,12 @@ namespace litecore {
         void createReplicator() override {
             bool                      disableBlobs = _options->properties["disable_blob_support"_sl].asBool();
             std::shared_ptr<DBAccess> dbAccess;
-            if ( _database.index() == 0 ) {
-                auto dbOpenedAgain = std::get<0>(_database)->openAgain();
+            if ( auto db = _database.database() ) {
+                auto dbOpenedAgain = db->openAgain();
                 _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
                 dbAccess = make_shared<DBAccess>(dbOpenedAgain, disableBlobs);
             } else {
-                dbAccess = std::make_shared<DBAccess>(std::get<1>(_database), disableBlobs);
+                dbAccess = std::make_shared<DBAccess>(_database.pool(), disableBlobs);
             }
             auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory, nullptr
 #ifdef COUCHBASE_ENTERPRISE
@@ -224,14 +224,13 @@ namespace litecore {
         // Options to pass to the C4Socket
         alloc_slice socketOptions() const {
             // Get the database flags and the push/pull modes:
-            auto             cfg      = std::visit([](auto db) { return db->getConfiguration(); }, _database);
             C4ReplicatorMode pushMode = kC4Disabled, pullMode = kC4Disabled;
             for ( CollectionIndex i = 0; i < _options->collectionCount(); ++i ) {
                 pushMode = std::max(pushMode, _options->push(i));
                 pullMode = std::max(pullMode, _options->pull(i));
             }
             // From those, determine the compatible WS protocols:
-            auto protocols = Replicator::compatibleProtocols(cfg.flags, pushMode, pullMode);
+            auto protocols = Replicator::compatibleProtocols(_database.getConfiguration().flags, pushMode, pullMode);
 
             // Construct new Options including the protocols:
             Replicator::Options opts(kC4Disabled, kC4Disabled, _options->properties);

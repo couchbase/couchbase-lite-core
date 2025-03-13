@@ -80,7 +80,7 @@ struct C4Database
 
     virtual alloc_slice getPath() const = 0;
 
-    const Config& getConfiguration() const noexcept FLPURE { return _config; }
+    const Config& getConfiguration() const noexcept LIFETIMEBOUND FLPURE { return _config; }
 
     virtual alloc_slice getSourceID() const    = 0;
     virtual C4UUID      getPublicUUID() const  = 0;
