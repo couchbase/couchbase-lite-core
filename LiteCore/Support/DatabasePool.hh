@@ -328,9 +328,7 @@ namespace litecore {
         C4Database* db() const noexcept LIFETIMEBOUND { return get(); }
     };
 
-    BorrowedDatabase DatabaseOrPool::borrow() const {
-        return _pool ? _pool->borrow() : BorrowedDatabase(_db);
-    }
+    BorrowedDatabase DatabaseOrPool::borrow() const { return _pool ? _pool->borrow() : BorrowedDatabase(_db); }
 
     inline DatabasePool::Transaction DatabasePool::transaction() { return Transaction(*this); }
 
