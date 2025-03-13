@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1600"
-   version = "1.8">
+   LastUpgradeVersion = "1620"
+   version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
-      buildImplicitDependencies = "YES">
+      buildImplicitDependencies = "YES"
+      buildArchitectures = "Automatic">
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -14,84 +15,59 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
-               BuildableName = "LiteCoreCppTests"
-               BlueprintName = "LiteCoreCppTests"
+               BlueprintIdentifier = "27FD734B2D834B7A00CC48BF"
+               BuildableName = "CppTests EE"
+               BlueprintName = "CppTests EE"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
-      buildConfiguration = "Debug_EE"
+      buildConfiguration = "Test_EE"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES">
-      <Testables>
-      </Testables>
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      shouldAutocreateTestPlan = "YES">
    </TestAction>
    <LaunchAction
       buildConfiguration = "Test_EE"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      enableAddressSanitizer = "YES"
-      enableASanStackUseAfterReturn = "YES"
-      enableUBSanitizer = "YES"
       launchStyle = "0"
-      useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "$(SRCROOT)/../"
+      useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
-      migratedStopOnEveryIssue = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES">
+      allowLocationSimulation = "YES"
+      viewDebuggingEnabled = "No">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
-            BuildableName = "LiteCoreCppTests"
-            BlueprintName = "LiteCoreCppTests"
+            BlueprintIdentifier = "27FD734B2D834B7A00CC48BF"
+            BuildableName = "CppTests EE"
+            BlueprintName = "CppTests EE"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-         <CommandLineArgument
-            argument = "-r quiet --break"
-            isEnabled = "YES">
-         </CommandLineArgument>
-      </CommandLineArguments>
-      <AdditionalOptions>
-         <AdditionalOption
-            key = "MallocScribble"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
-      </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release_EE"
-      shouldUseLaunchSchemeArgsEnv = "NO"
-      savedToolIdentifier = "Time Profiler"
-      useCustomWorkingDirectory = "YES"
-      customWorkingDirectory = "$(SRCROOT)/../"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      savedToolIdentifier = ""
+      useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "2708FE3E1CF4CC880022F721"
-            BuildableName = "LiteCoreCppTests"
-            BlueprintName = "LiteCoreCppTests"
+            BlueprintIdentifier = "27FD734B2D834B7A00CC48BF"
+            BuildableName = "CppTests EE"
+            BlueprintName = "CppTests EE"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <CommandLineArguments>
-         <CommandLineArgument
-            argument = "-r list"
-            isEnabled = "YES">
-         </CommandLineArgument>
-      </CommandLineArguments>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug_EE">
