@@ -171,7 +171,7 @@ function(setup_litecore_build_unix)
         )
     endforeach()
     if (BUILD_ENTERPRISE)
-        foreach(target  LiteCoreP2P)
+        foreach(target  LiteCoreListener_Objects LiteCoreP2P)
             target_compile_options(${target} PRIVATE
                     ${LITECORE_COMPILE_OPTIONS}
                     ${LITECORE_WARNINGS}
