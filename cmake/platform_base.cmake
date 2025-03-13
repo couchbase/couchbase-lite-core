@@ -120,6 +120,7 @@ function(set_litecore_source_base)
         Replicator/IncomingRev+Blobs.cc
         Replicator/Inserter.cc
         Replicator/PropertyEncryption_stub.cc
+        $<$<BOOL:${BUILD_ENTERPRISE}>:../couchbase-lite-core-EE/Replicator/PropertyEncryption.cc>
         Replicator/Puller.cc
         Replicator/Pusher.cc
         Replicator/Pusher+Attachments.cc
