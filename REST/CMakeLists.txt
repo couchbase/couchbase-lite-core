@@ -44,24 +44,6 @@ target_include_directories(
     ../vendor/fleece/vendor/date/include
 )
 
-if (BUILD_ENTERPRISE)
-    set(EE_SRC ../../couchbase-lite-core-EE)
-    target_sources(
-        LiteCoreREST_Objects PRIVATE
-        c4Listener.cc
-        c4Listener_CAPI.cc
-        DatabaseRegistry.cc
-        HTTPListener.cc
-        Server.cc
-        ${EE_SRC}/Listener/ReplicateTask.cc
-        ${EE_SRC}/Listener/SyncListener.cc
-    )
-    target_include_directories(
-        LiteCoreREST_Objects PRIVATE
-        ${EE_SRC}/Listener
-    )
-endif ()
-
 target_compile_definitions(
     LiteCoreREST_Objects PRIVATE
     LITECORE_CPP_API=1
