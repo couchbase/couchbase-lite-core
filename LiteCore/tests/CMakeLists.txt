@@ -75,7 +75,6 @@ add_executable(
     LazyVectorQueryTest.cc
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTClientTest.cc
-    ${TOP}REST/tests/SyncListenerTest.cc
     ${TOP}vendor/fleece/Tests/API_ValueTests.cc
     ${TOP}vendor/fleece/Tests/DeltaTests.cc
     ${TOP}vendor/fleece/Tests/EncoderTests.cc
@@ -111,11 +110,13 @@ if (BUILD_ENTERPRISE)
     set(EE_SRC ../../../couchbase-lite-core-EE)
     target_sources(
         CppTests PRIVATE
+        ${EE_SRC}/Listener/tests/SyncListenerTest.cc
         ${EE_SRC}/P2P/tests/PeerDiscoveryTest.cc
         ${EE_SRC}/P2P/tests/ReplicatorP2PTest.cc
     )
     target_include_directories(
         CppTests PRIVATE
+        ${EE_SRC}/Listener
         ${EE_SRC}/P2P
         ${EE_SRC}/P2P/Apple
     )
@@ -181,5 +182,6 @@ target_link_libraries(
     BLIPObjects
     LiteCoreREST_Static
     LiteCoreWebSocket
+    $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreListener_Static>
     $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreP2P>
 )
