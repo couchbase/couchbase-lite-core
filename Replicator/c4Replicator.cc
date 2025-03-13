@@ -27,8 +27,6 @@ using namespace litecore::net;  // work around missing 'using' in c4LocalReplica
 using namespace std;
 using namespace litecore;
 
-using DatabaseOrPool = C4ReplicatorImpl::DatabaseOrPool;
-
 #pragma mark - C4DATABASE METHODS:
 
 // All instances are subclasses of C4ReplicatorImpl.
