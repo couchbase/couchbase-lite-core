@@ -3718,8 +3718,8 @@
 				27FD72942D833D4800CC48BF /* README.md */,
 			);
 			name = "couchbase-lite-core-EE";
-			path = "/Users/snej/Couchbase/CBL_C/vendor/couchbase-lite-core-EE";
-			sourceTree = "<absolute>";
+			path = "../../couchbase-lite-core-EE";
+			sourceTree = SOURCE_ROOT;
 		};
 		27FDDEED236770F900860E69 /* crypto */ = {
 			isa = PBXGroup;
