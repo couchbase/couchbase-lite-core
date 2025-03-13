@@ -88,9 +88,7 @@ namespace litecore {
         /// `changed(int)`, then you could call `observers.notify(&Obs::changed, 42)`.
         template <class U, typename... Args>
         void notify(void (U::*method)(Args...), Args... args) const {
-            iterate([&](T const& observer) {
-                (observer->*method)(args...);
-            });
+            iterate([&](T const& observer) { (observer->*method)(args...); });
         }
 
       private:
