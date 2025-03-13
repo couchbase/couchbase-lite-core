@@ -16,6 +16,7 @@
 #include "c4Database.hh"
 #include "c4Internal.hh"
 #include "c4Private.h"
+#include "DatabasePool.hh"
 #include "Replicator.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
@@ -25,9 +26,6 @@
 #include <vector>
 
 namespace litecore {
-    class DatabasePool;
-    class BorrowedDatabase;
-
     using namespace fleece;
     using namespace litecore;
     using namespace litecore::repl;
@@ -42,8 +40,6 @@ namespace litecore {
         // Subclass c4LocalReplicator is in the couchbase-lite-core-EE repo, which doesn not have a
         // submodule relationship to this one, so it's possible for it to get out of sync.
         static constexpr int API_VERSION = 5;
-
-        using DatabaseOrPool = std::variant<Retained<C4Database>, Retained<DatabasePool>>;
 
         void start(bool reset = false) noexcept override;
 
@@ -76,8 +72,6 @@ namespace litecore {
 #endif
 
       protected:
-        static BorrowedDatabase borrow(DatabaseOrPool const& dbp);
-
         /// Base constructor. For `db` you can pass either a `Retained<C4Database>` or a
         /// `Retained<DatabasePool>`.
         C4ReplicatorImpl(DatabaseOrPool db, const C4ReplicatorParameters& params);

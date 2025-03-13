@@ -193,10 +193,6 @@ namespace litecore {
     }
 #endif
 
-    BorrowedDatabase C4ReplicatorImpl::borrow(DatabaseOrPool const& dbp) {
-        return std::visit([](auto d) { return BorrowedDatabase(d); }, dbp);
-    }
-
     bool C4ReplicatorImpl::continuous(unsigned collectionIndex) const noexcept {
         return _options->push(collectionIndex) == kC4Continuous || _options->pull(collectionIndex) == kC4Continuous;
     }
@@ -237,12 +233,12 @@ namespace litecore {
 
     std::shared_ptr<DBAccess> C4ReplicatorImpl::makeDBAccess(DatabaseOrPool const& dbp, C4DatabaseTag tag) const {
         bool disableBlobs = _options->properties["disable_blob_support"_sl].asBool();
-        if ( std::holds_alternative<Retained<C4Database>>(dbp) ) {
-            auto dbOpenedAgain = std::get<Retained<C4Database>>(dbp)->openAgain();
+        if ( auto db = dbp.database() ) {
+            auto dbOpenedAgain = db->openAgain();
             _c4db_setDatabaseTag(dbOpenedAgain, tag);
             return make_shared<DBAccess>(dbOpenedAgain, disableBlobs);
         } else {
-            return std::make_shared<DBAccess>(std::get<Retained<DatabasePool>>(dbp), disableBlobs);
+            return std::make_shared<DBAccess>(dbp.pool(), disableBlobs);
         }
     }
 
@@ -385,13 +381,44 @@ namespace litecore {
 
     class C4ReplicatorImpl::PendingDocuments {
       public:
-        PendingDocuments(const C4ReplicatorImpl* repl, C4CollectionSpec spec) : collectionSpec(spec) {
-            // Lock the replicator and copy the necessary state now, so I don't have to lock while
-            // calling pendingDocumentIDs (which might call into the app's validation function.)
+        static PendingDocuments create(const C4ReplicatorImpl* repl, C4CollectionSpec const& spec) {
             LOCK(repl->_mutex);
-            replicator = repl->_replicator;
-            database   = repl->_database;
+            return PendingDocuments(repl, spec);
+        }
 
+        alloc_slice pendingDocumentIDs() {
+            Encoder enc;
+            enc.beginArray();
+            bool any      = false;
+            auto callback = [&](const C4DocumentInfo& info) {
+                enc.writeString(info.docID);
+                any = true;
+            };
+
+            if ( !replicator || !replicator->pendingDocumentIDs(collectionSpec, callback) ) {
+                auto bdb = database.borrow();
+                checkpointer->pendingDocumentIDs(bdb, callback);
+            }
+
+            if ( !any ) return {};
+            enc.endArray();
+            return enc.finish();
+        }
+
+        bool isDocumentPending(C4Slice docID) {
+            if ( replicator ) {
+                auto result = replicator->isDocumentPending(docID, collectionSpec);
+                if ( result.has_value() ) { return *result; }
+            }
+            auto bdb = database.borrow();
+            return checkpointer->isDocumentPending(bdb, docID);
+        }
+
+      private:
+        PendingDocuments(const C4ReplicatorImpl* repl, C4CollectionSpec const& spec)
+            : replicator(repl->_replicator)  // safe to copy these since caller locked the repl
+            , database(repl->_database)
+            , collectionSpec(spec) {
             // CBL-2448: Also make my own checkpointer and database in case a call comes in
             // after Replicator::terminate() is called.  The fix includes the replicator
             // pending document ID function now returning a boolean success, isDocumentPending returning
@@ -407,35 +434,6 @@ namespace litecore {
             checkpointer.emplace(repl->_options, repl->URL(), collectionSpec);
         }
 
-        alloc_slice pendingDocumentIDs() {
-            Encoder enc;
-            enc.beginArray();
-            bool any      = false;
-            auto callback = [&](const C4DocumentInfo& info) {
-                enc.writeString(info.docID);
-                any = true;
-            };
-
-            if ( !replicator || !replicator->pendingDocumentIDs(collectionSpec, callback) ) {
-                auto bdb = borrow(database);
-                checkpointer->pendingDocumentIDs(bdb, callback);
-            }
-
-            if ( !any ) return {};
-            enc.endArray();
-            return enc.finish();
-        }
-
-        bool isDocumentPending(C4Slice docID) {
-            if ( replicator ) {
-                auto result = replicator->isDocumentPending(docID, collectionSpec);
-                if ( result.has_value() ) { return *result; }
-            }
-            auto bdb = borrow(database);
-            return checkpointer->isDocumentPending(bdb, docID);
-        }
-
-      private:
         Retained<Replicator>   replicator;
         optional<Checkpointer> checkpointer;  // initialized in the constructor
         DatabaseOrPool         database;
@@ -443,10 +441,10 @@ namespace litecore {
     };
 
     bool C4ReplicatorImpl::isDocumentPending(C4Slice docID, C4CollectionSpec spec) const {
-        return PendingDocuments(this, spec).isDocumentPending(docID);
+        return PendingDocuments::create(this, spec).isDocumentPending(docID);
     }
 
     alloc_slice C4ReplicatorImpl::pendingDocumentIDs(C4CollectionSpec spec) const {
-        return PendingDocuments(this, spec).pendingDocumentIDs();
+        return PendingDocuments::create(this, spec).pendingDocumentIDs();
     }
 }  // namespace litecore
