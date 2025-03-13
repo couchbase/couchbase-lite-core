@@ -170,6 +170,16 @@ function(setup_litecore_build_unix)
             $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
         )
     endforeach()
+    if (BUILD_ENTERPRISE)
+        foreach(target  LiteCoreP2P)
+            target_compile_options(${target} PRIVATE
+                    ${LITECORE_COMPILE_OPTIONS}
+                    ${LITECORE_WARNINGS}
+                    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
+                    $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+            )
+        endforeach ()
+    endif ()
 
     set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
     check_type_size(socklen_t SOCKLEN_T)
