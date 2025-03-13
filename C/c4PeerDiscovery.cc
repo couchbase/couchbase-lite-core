@@ -62,7 +62,7 @@ void C4Peer::setMetadata(Metadata md) {
         if ( md == _metadata ) return;
         _metadata = std::move(md);
     }
-    provider->discovery().notify(this, &C4PeerDiscovery::Observer::peerMetadataChanged);
+    provider->discovery().notifyMetadataChanged(this);
 }
 
 void C4Peer::removed() {
@@ -178,10 +178,6 @@ void C4PeerDiscovery::addObserver(Observer* obs) { _observers.add(obs); }
 
 void C4PeerDiscovery::removeObserver(Observer* obs) { _observers.remove(obs); }
 
-void C4PeerDiscovery::notify(C4Peer* peer, void (C4PeerDiscovery::Observer::*method)(C4Peer*)) {
-    _observers.iterate([&](auto obs) { (obs->*method)(peer); });
-}
-
 void C4PeerDiscovery::browseStateChanged(C4PeerDiscoveryProvider* provider, bool state, C4Error error) {
     unique_lock              lock(_mutex);
     vector<Retained<C4Peer>> removedPeers;
@@ -197,16 +193,16 @@ void C4PeerDiscovery::browseStateChanged(C4PeerDiscoveryProvider* provider, bool
     }
     lock.unlock();
 
-    _observers.iterate([&](auto obs) { obs->browsing(provider, state, error); });
+    _observers.notify(&Observer::browsing, provider, state, error);
 
     for ( auto& peer : removedPeers ) {
         peer->removed();
-        notify(peer, &C4PeerDiscovery::Observer::removedPeer);
+        _observers.notify(&Observer::removedPeer, peer.get());
     }
 }
 
 void C4PeerDiscovery::publishStateChanged(C4PeerDiscoveryProvider* provider, bool state, C4Error error) {
-    _observers.iterate([&](auto obs) { obs->publishing(provider, state, error); });
+    _observers.notify(&Observer::publishing, provider, state, error);
 }
 
 Retained<C4Peer> C4PeerDiscovery::addPeer(C4Peer* peer) {
@@ -215,7 +211,7 @@ Retained<C4Peer> C4PeerDiscovery::addPeer(C4Peer* peer) {
     lock.unlock();
 
     if ( added ) {
-        notify(peer, &C4PeerDiscovery::Observer::addedPeer);
+        _observers.notify(&Observer::addedPeer, peer);
         return peer;
     } else {
         Assert(peer->provider == i->second->provider, "C4Peers of different providers have same ID '%s'",
@@ -236,13 +232,14 @@ bool C4PeerDiscovery::removePeer(string_view id) {
     if ( !peer ) return false;
 
     peer->removed();
-    notify(peer, &C4PeerDiscovery::Observer::removedPeer);
+    _observers.notify(&Observer::removedPeer, peer.get());
     return true;
 }
 
 bool C4PeerDiscovery::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
     bool handled = false;
     _observers.iterate([&](auto obs) {
+        // Only one Observer gets to handle it, so stop calling them after one returns true.
         if ( !handled ) handled = obs->incomingConnection(peer, socket);
     });
     if ( !handled ) {
@@ -250,4 +247,8 @@ bool C4PeerDiscovery::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
                 (peer ? peer->id.c_str() : "??"));
     }
     return handled;
+}
+
+void C4PeerDiscovery::notifyMetadataChanged(C4Peer* peer) {
+    _observers.notify(&Observer::peerMetadataChanged, peer);
 }
