@@ -62,13 +62,15 @@ class C4PeerDiscovery {
 
     /// Constructor. Uses the named provider classes.
     /// @param serviceID  An app-specific unique identifier.
-    /// @param providers  A list of names of registered C4PeerDiscoveryProviders.
-    explicit C4PeerDiscovery(std::string_view serviceID, std::span<const std::string_view> providers);
+    /// @param providerNames  A list of names of registered C4PeerDiscoveryProviders.
+    explicit C4PeerDiscovery(std::string_view serviceID, std::span<const std::string_view> providerNames);
 
     /// The destructor shuts everything down in an orderly fashion, not returning until complete.
     ~C4PeerDiscovery();
 
     std::string const& serviceID() const { return _serviceID; }
+
+    std::vector<std::unique_ptr<C4PeerDiscoveryProvider>> const& providers() const { return _providers; }
 
     /// Tells providers to start looking for peers.
     void startBrowsing();
@@ -272,6 +274,9 @@ class C4Peer
  *         threads, and they may issue their own calls on arbitrary threads. */
 class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
   public:
+    static constexpr std::string_view kDNS_SD      = "DNS-SD";       ///< Standard provider name
+    static constexpr std::string_view kBluetoothLE = "BluetoothLE";  ///< Standard provider name
+
     explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery_, std::string_view name_)
         : name(name_), _discovery(discovery_) {}
 
@@ -280,6 +285,10 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
 
     /// The provider's name, for identification/logging/debugging purposes.
     std::string const name;
+
+    bool isBrowsing() const { return _browsing; }
+
+    bool isPublishing() const { return _publishing; }
 
     //-------- Abstract API for subclasses to implement:
 
@@ -330,10 +339,16 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
   protected:
     /// Reports that browsing has started, stopped or failed.
     /// If `state` is false, this method will call `removePeer` on all online peers.
-    void browseStateChanged(bool state, C4Error error = {}) { _discovery.browseStateChanged(this, state, error); }
+    void browseStateChanged(bool state, C4Error error = {}) {
+        _browsing = state;
+        _discovery.browseStateChanged(this, state, error);
+    }
 
     /// Reports that publishing has started, stopped or failed.
-    void publishStateChanged(bool state, C4Error error = {}) { _discovery.publishStateChanged(this, state, error); }
+    void publishStateChanged(bool state, C4Error error = {}) {
+        _publishing = state;
+        _discovery.publishStateChanged(this, state, error);
+    }
 
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
@@ -351,7 +366,9 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// @returns  true if the connection was accepted, false if not.
     bool notifyIncomingConnection(C4Peer* peer, C4Socket* s) { return _discovery.notifyIncomingConnection(peer, s); }
 
-    C4PeerDiscovery& _discovery;
+    C4PeerDiscovery&  _discovery;
+    std::atomic<bool> _browsing   = false;
+    std::atomic<bool> _publishing = false;
 };
 
 C4_ASSUME_NONNULL_END
