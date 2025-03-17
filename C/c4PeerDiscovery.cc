@@ -24,11 +24,12 @@ using namespace fleece;
 using namespace litecore;
 
 namespace litecore::p2p {
-    extern LogDomain P2PLog;
+    extern LogDomain DiscoveryLog, P2PLog;
+    LogDomain        DiscoveryLog("Discovery");
     LogDomain        P2PLog("P2P");
 }  // namespace litecore::p2p
 
-C4LogDomain const kC4P2PLog = (C4LogDomain)&litecore::p2p::P2PLog;
+C4LogDomain const kC4DiscoveryLog = (C4LogDomain)&litecore::p2p::DiscoveryLog;
 
 
 #pragma mark - PEER:
@@ -132,7 +133,7 @@ C4PeerDiscovery::C4PeerDiscovery(std::string_view serviceID, std::span<std::stri
 }
 
 C4PeerDiscovery::~C4PeerDiscovery() {
-    LogToAt(litecore::p2p::P2PLog, Info, "Shutting down peer discovery...");
+    LogToAt(litecore::p2p::DiscoveryLog, Info, "Shutting down C4PeerDiscovery...");
     counting_semaphore<> sem(0);
     for ( auto& provider : _providers ) provider->shutdown([&]() { sem.release(); });
     // Now wait for each to finish:
@@ -140,7 +141,7 @@ C4PeerDiscovery::~C4PeerDiscovery() {
 
     unique_lock lock(_mutex);
     Assert(_peers.empty());
-    LogToAt(litecore::p2p::P2PLog, Info, "...peer discovery is shut down.");
+    LogToAt(litecore::p2p::DiscoveryLog, Info, "...C4PeerDiscovery shut down.");
 }
 
 void C4PeerDiscovery::startBrowsing() {
@@ -243,7 +244,7 @@ bool C4PeerDiscovery::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
         if ( !handled ) handled = obs->incomingConnection(peer, socket);
     });
     if ( !handled ) {
-        LogToAt(p2p::P2PLog, Warning, "No observer handled incoming connection from %s",
+        LogToAt(p2p::P2PLog, Warning, "No C4PeerDiscovery observer handled incoming connection from %s",
                 (peer ? peer->id.c_str() : "??"));
     }
     return handled;
