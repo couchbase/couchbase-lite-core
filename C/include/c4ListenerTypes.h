@@ -64,15 +64,15 @@ typedef struct C4ListenerConfig {
     C4ListenerHTTPAuthCallback C4NULLABLE httpAuthCallback;  ///< Callback for HTTP auth
     void* C4NULLABLE                      callbackContext;   ///< Client value passed to HTTP auth callback
 
-    bool allowPush;        ///< Allow peers to push changes to local db
-    bool allowPull;        ///< Allow peers to pull changes from local db
+    bool allowPush;        ///< Allow peers to _pull_ changes from local db (i.e. my replicator pushes)
+    bool allowPull;        ///< Allow peers to _push_ changes to local db (i.e. my replicator pulls)
     bool enableDeltaSync;  ///< Enable document-deltas optimization
 } C4ListenerConfig;
 
 /** Per-database configuration for a C4Listener. */
 typedef struct C4ListenerDatabaseConfig {
-    bool allowPush;        ///< Allow peers to push changes to local db
-    bool allowPull;        ///< Allow peers to pull changes from local db
+    bool allowPush;        ///< Allow peers to _pull_ changes from local db (i.e. my replicator pushes)
+    bool allowPull;        ///< Allow peers to _push_ changes to local db (i.e. my replicator pulls)
     bool enableDeltaSync;  ///< Enable document-deltas optimization
 } C4ListenerDatabaseConfig;
 
