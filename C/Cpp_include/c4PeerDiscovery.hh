@@ -38,8 +38,8 @@ struct C4SocketFactory;
 class C4Peer;
 class C4PeerDiscoveryProvider;
 
-/** The official logging channel of peer-to-peer */
-extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
+/** The official logging channel of peer discovery */
+extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
 
 /** Manages peer discovery. To be used primarily by LiteCore's higher-level P2P functionality.
  *  For more details, read docs/P2P.md .
