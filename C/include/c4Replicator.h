@@ -132,7 +132,7 @@ CBL_CORE_API C4ReplicatorStatus c4repl_getStatus(C4Replicator* repl) C4API;
 
 /** Returns the HTTP response headers as a Fleece-encoded dictionary.
         \note This function is thread-safe.  */
-CBL_CORE_API C4Slice c4repl_getResponseHeaders(C4Replicator* repl) C4API;
+CBL_CORE_API C4SliceResult c4repl_getResponseHeaders(C4Replicator* repl) C4API;
 
 /** Gets a fleece encoded list of IDs of documents who have revisions pending push.  This
      *  API is a snapshot and results may change between the time the call was made and the time

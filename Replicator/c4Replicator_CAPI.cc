@@ -100,7 +100,9 @@ void c4repl_free(C4Replicator* repl) noexcept {
 
 C4ReplicatorStatus c4repl_getStatus(C4Replicator* repl) noexcept { return repl->getStatus(); }
 
-C4Slice c4repl_getResponseHeaders(C4Replicator* repl) noexcept { return repl->getResponseHeaders(); }
+C4SliceResult c4repl_getResponseHeaders(C4Replicator* repl) noexcept {
+    return C4SliceResult(repl->getResponseHeaders());
+}
 
 C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4CollectionSpec spec, C4Error* outErr) noexcept {
     try {
