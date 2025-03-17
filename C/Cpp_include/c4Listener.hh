@@ -86,6 +86,24 @@ struct C4Listener final
     /// for use in an HTTP URI path.
     [[nodiscard]] static std::string URLNameFromPath(slice path);
 
+    /** Extended, memory-safe version of `C4ListenerConfig`.
+     *  The constructor copies all the pointed-to data into internal storage:
+     *  - `networkInterface`, `serverName`, `serverVersion`
+     *  - `tlsConfig`, with its `key`, `certificate` and `rootClientCerts` */
+    struct Config : C4ListenerConfig {
+        explicit Config(C4ListenerConfig const&);
+
+        Config(Config const& params) : Config((C4ListenerConfig const&)params) {}
+
+        ~Config() noexcept;
+
+      private:
+        C4TLSConfig              _tls;
+        Retained<C4KeyPair>      _key;
+        Retained<C4Cert>         _certificate, _rootClientCerts;
+        std::vector<alloc_slice> _slices;
+    };
+
     C4Listener(const C4Listener&) = delete;
 
     // internal use only
