@@ -13,6 +13,9 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4ReplicatorTypes.h"
+#include <memory>
+#include <span>
+#include <vector>
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -22,6 +25,10 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
+namespace fleece {
+    class Dict;
+    class MutableDict;
+}  // namespace fleece
 
 struct C4Replicator
     : public fleece::RefCounted
@@ -54,6 +61,32 @@ struct C4Replicator
 #ifdef COUCHBASE_ENTERPRISE
     virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const;
 #endif
+
+    /** Extended, memory-safe version of `C4ReplicatorParameters`.
+     *  The constructor copies all the pointed-to data into internal storage:
+     *  - `optionsDictFleece`
+     *  - `collections`
+     *  - each collection's `name`, `scope` and `optionsDictFleece` */
+    struct Parameters : C4ReplicatorParameters {
+        Parameters();
+        explicit Parameters(C4ReplicatorParameters const&);
+
+        Parameters(Parameters const& params) : Parameters((C4ReplicatorParameters const&)params) {}
+
+        std::span<C4ReplicationCollection> collections() noexcept { return _collections; }
+
+        std::span<const C4ReplicationCollection> collections() const noexcept { return _collections; }
+
+        C4ReplicationCollection& addCollection(C4CollectionSpec const&);
+
+        fleece::MutableDict copyOptions() const;       ///< Returns copy of options (never null)
+        void                setOptions(fleece::Dict);  ///< Updates options Dict
+
+      private:
+        alloc_slice                          _options;
+        std::vector<C4ReplicationCollection> _collections;
+        std::vector<alloc_slice>             _slices;
+    };
 };
 
 C4_ASSUME_NONNULL_END
