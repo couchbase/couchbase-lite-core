@@ -501,23 +501,24 @@ namespace litecore::net {
             if ( flags != 0 && flags != UINT32_MAX ) {
                 string message = tlsSocket->peer_certificate_status_message();
                 int    code;
-                if ( flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED )
+                if ( flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED ) {
                     code = kNetErrTLSCertUnknownRoot;
-                else if ( flags & MBEDTLS_X509_BADCERT_REVOKED )
+                } else if ( flags & MBEDTLS_X509_BADCERT_REVOKED ) {
                     code = kNetErrTLSCertRevoked;
-                else if ( flags & MBEDTLS_X509_BADCERT_EXPIRED )
+                } else if ( flags & MBEDTLS_X509_BADCERT_EXPIRED ) {
                     code = kNetErrTLSCertExpired;
-                else if ( flags & MBEDTLS_X509_BADCERT_CN_MISMATCH )
+                } else if ( flags & MBEDTLS_X509_BADCERT_CN_MISMATCH ) {
                     code = kNetErrTLSCertNameMismatch;
-                else if ( flags & MBEDTLS_X509_BADCERT_OTHER ) {
+                } else if ( flags & MBEDTLS_X509_BADCERT_OTHER ) {
                     if ( _tlsContext && _tlsContext->onlySelfSignedAllowed() ) {
                         code    = kNetErrTLSCertUntrusted;
                         message = "Self-signed only mode is active, and a non self-signed certificate was received";
                     } else {
                         code = kNetErrTLSCertUntrusted;
                     }
-                } else
+                } else {
                     code = kNetErrTLSHandshakeFailed;
+                }
                 setError(NetworkDomain, code, slice(message));
             }
         } else if ( err <= mbedtls_context::FATAL_ERROR_ALERT_BASE
