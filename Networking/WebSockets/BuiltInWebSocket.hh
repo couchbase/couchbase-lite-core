@@ -44,9 +44,6 @@ namespace litecore::websocket {
         : public WebSocketImpl
         , public net::HTTPLogic::CookieProvider {
       public:
-        /** This must be called once, for c4Replicator to use BuiltInWebSocket by default. */
-        static void registerWithReplicator();
-
         /** Client-side constructor. Call \ref connect() afterwards. */
         BuiltInWebSocket(const URL& url, const Parameters&, std::shared_ptr<repl::DBAccess> database);
 
