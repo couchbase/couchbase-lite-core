@@ -17,6 +17,7 @@
 #include "c4Database.hh"
 #include "c4ExceptionUtils.hh"
 #include "StringUtil.hh"
+#include "fleece/Mutable.hh"
 #include <cerrno>
 
 using namespace litecore::net;  // work around missing 'using' in c4LocalReplicator.hh in EE repo
@@ -157,6 +158,45 @@ void C4Replicator::validateRemote(const C4Address& addr, slice dbName) {
     C4Error error;
     if ( !addr.isValidRemote(dbName, &error) ) C4Error::raise(error);
 }
+
+#pragma mark - C4REPLICATOR PARAMETERS:
+
+C4Replicator::Parameters::Parameters() : C4ReplicatorParameters{} {}
+
+C4Replicator::Parameters::Parameters(C4ReplicatorParameters const& params)
+    : C4ReplicatorParameters(params), _collections(params.collections, params.collections + collectionCount) {
+    // `collections` is declared non-null, but `_collections.data()` returns nullptr if empty...
+    this->C4ReplicatorParameters::collections =
+            collectionCount ? _collections.data() : reinterpret_cast<C4ReplicationCollection*>(this);
+    optionsDictFleece = _options = alloc_slice(optionsDictFleece);
+    auto makeAllocated           = [this](auto& s) { s = _slices.emplace_back(s); };
+    for ( auto& c : collections() ) {
+        makeAllocated(c.collection.name);
+        makeAllocated(c.collection.scope);
+        makeAllocated(c.optionsDictFleece);
+    }
+}
+
+C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4CollectionSpec const& spec) {
+    _collections.push_back({.collection = spec});
+    this->C4ReplicatorParameters::collections = _collections.data();
+    collectionCount                           = _collections.size();
+    return _collections.back();
+}
+
+MutableDict C4Replicator::Parameters::copyOptions() const {
+    if ( _options ) return Doc{_options}.asDict().mutableCopy();
+    else
+        return MutableDict::newDict();
+}
+
+void C4Replicator::Parameters::setOptions(fleece::Dict options) {
+    Encoder enc;
+    enc.writeValue(options);
+    optionsDictFleece = _options = enc.finish();
+}
+
+#pragma mark - C4ADDRESS:
 
 bool C4Address::fromURL(slice url, C4Address* address, slice* dbName) {
     slice str = url;
