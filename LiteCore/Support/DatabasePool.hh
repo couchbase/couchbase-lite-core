@@ -202,19 +202,19 @@ namespace litecore {
     /** A helper type that's a reference to either a C4Database or a DatabasePool. */
     class DatabaseOrPool {
       public:
-        DatabaseOrPool(Retained<C4Database> db) : _db(std::move(db)) { Assert(_db); }
+        DatabaseOrPool(fleece::Retained<C4Database> db) : _db(std::move(db)) { Assert(_db); }
 
-        DatabaseOrPool(Retained<DatabasePool> pool) : _pool(std::move(pool)) { Assert(_pool); }
+        DatabaseOrPool(fleece::Retained<DatabasePool> pool) : _pool(std::move(pool)) { Assert(_pool); }
 
-        DatabaseOrPool(C4Database* db) : DatabaseOrPool(Retained(db)) {}
+        DatabaseOrPool(C4Database* db) : DatabaseOrPool(fleece::Retained(db)) {}
 
-        DatabaseOrPool(DatabasePool* pool) : DatabaseOrPool(Retained(pool)) {}
+        DatabaseOrPool(DatabasePool* pool) : DatabaseOrPool(fleece::Retained(pool)) {}
 
         C4Database* C4NULLABLE database() const { return _db; }
 
         DatabasePool* C4NULLABLE pool() const { return _pool; }
 
-        Retained<DatabasePool> makePool() const { return _pool ? _pool : make_retained<DatabasePool>(_db); }
+        fleece::Retained<DatabasePool> makePool() const { return _pool ? _pool : fleece::make_retained<DatabasePool>(_db); }
 
         inline BorrowedDatabase borrow() const;
 
@@ -225,8 +225,8 @@ namespace litecore {
         bool operator==(DatabaseOrPool const&) const = default;
 
       private:
-        Retained<C4Database>   _db;
-        Retained<DatabasePool> _pool;
+        fleece::Retained<C4Database>   _db;
+        fleece::Retained<DatabasePool> _pool;
     };
 
     /** An RAII wrapper around a C4Database "borrowed" from a DatabasePool.
