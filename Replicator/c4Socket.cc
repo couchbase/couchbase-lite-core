@@ -104,7 +104,7 @@ namespace litecore::repl {
         if ( _factory.dispose ) _factory.dispose(this);
     }
 
-    WebSocket* WebSocketFrom(C4Socket* c4sock) { return c4sock ? (C4SocketImpl*)c4sock : nullptr; }
+    WebSocket* WebSocketFrom(C4Socket* c4sock) { return dynamic_cast<C4SocketImpl*>(c4sock); }
 
     const C4SocketFactory& C4SocketImpl::registeredFactory() {
         if ( !sRegisteredFactory )
