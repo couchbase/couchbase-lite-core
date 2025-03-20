@@ -109,8 +109,8 @@ namespace litecore {
         /// Calls a method of each observer, using the `iterate` method.
         /// For example, if `observers` is an `ObserverList<Obs>` and class `Obs` has a method
         /// `changed(int)`, then you could call `observers.notify(&Obs::changed, 42)`.
-        template <typename... Args>
-        void notify(void (OBS::*method)(Args...), Args... args) const noexcept {
+        template <typename... Params, typename... Args>
+        void notify(void (OBS::*method)(Params...), Args... args) const noexcept {
             iterate([&](OBS* observer) { (observer->*method)(args...); });
         }
     };
