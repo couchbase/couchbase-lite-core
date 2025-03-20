@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
 #include "c4DocumentTypes.h"
 #include "fleece/Fleece.h"
@@ -115,6 +116,17 @@ typedef struct {
     void*            collectionContext;
 } C4DocumentEnded;
 
+/** Information about a blob being pushed or pulled. */
+typedef struct C4BlobProgress {
+    C4CollectionSpec collectionSpec;
+    C4String         docID;
+    C4String         docProperty;
+    C4BlobKey        blobKey;
+    uint64_t         bytesComplete;
+    uint64_t         bytesTotal;
+    C4Error          error;
+} C4BlobProgress;
+
 // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 /** Callback a client can register, to get progress information.
@@ -134,6 +146,7 @@ typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator*, bool pushing, C4
                                                  C4String docID, C4String docProperty, C4BlobKey blobKey,
                                                  uint64_t bytesComplete, uint64_t bytesTotal, C4Error error,
                                                  void* C4NULLABLE context);
+//TODO: Change this to take a C4BlobProgress* instead
 
 /** Callback that can choose to reject an incoming pulled revision, or stop a local
         revision from being pushed, by returning false.
