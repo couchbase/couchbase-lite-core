@@ -169,19 +169,31 @@ C4Replicator::Parameters::Parameters(C4ReplicatorParameters const& params)
     this->C4ReplicatorParameters::collections =
             collectionCount ? _collections.data() : reinterpret_cast<C4ReplicationCollection*>(this);
     optionsDictFleece = _options = alloc_slice(optionsDictFleece);
-    auto makeAllocated           = [this](auto& s) { s = _slices.emplace_back(s); };
-    for ( auto& c : collections() ) {
-        makeAllocated(c.collection.name);
-        makeAllocated(c.collection.scope);
-        makeAllocated(c.optionsDictFleece);
-    }
+    for ( auto& c : collections() ) makeAllocated(c);
 }
 
-C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4CollectionSpec const& spec) {
-    _collections.push_back({.collection = spec});
+inline void C4Replicator::Parameters::makeAllocated(C4ReplicationCollection& c) {
+    auto makeAllocated = [this](auto& s) { s = _slices.emplace_back(s); };
+    makeAllocated(c.collection.name);
+    makeAllocated(c.collection.scope);
+    makeAllocated(c.optionsDictFleece);
+}
+
+C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4CollectionSpec const& spec,
+                                                                 C4ReplicatorMode pushMode, C4ReplicatorMode pullMode) {
+    auto& coll = addCollection({.collection = spec});
+    coll.push  = pushMode;
+    coll.pull  = pullMode;
+    return coll;
+}
+
+C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4ReplicationCollection const& spec) {
+    _collections.push_back(spec);
+    C4ReplicationCollection& copiedSpec = _collections.back();
+    makeAllocated(copiedSpec);
     this->C4ReplicatorParameters::collections = _collections.data();
     collectionCount                           = _collections.size();
-    return _collections.back();
+    return copiedSpec;
 }
 
 MutableDict C4Replicator::Parameters::copyOptions() const {
