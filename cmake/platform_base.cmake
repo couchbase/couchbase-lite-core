@@ -137,6 +137,7 @@ function(set_litecore_source_base)
         LiteCore/Support/EncryptedStream.cc
         LiteCore/Support/FilePath.cc
         LiteCore/Support/HybridClock.cc
+        LiteCore/Support/ObserverList.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/SequenceSet.cc
         LiteCore/Support/StringUtil.cc

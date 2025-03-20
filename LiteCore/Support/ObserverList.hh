@@ -1,65 +1,99 @@
 //
 // ObserverList.hh
 //
-// Copyright © 2025 Couchbase. All rights reserved.
+// Copyright 2025-Present Couchbase, Inc.
+//
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #pragma once
-#include "c4ExceptionUtils.hh"
-#include "Error.hh"
+#include "c4Compat.h"
 #include "SmallVector.hh"
+#include "fleece/function_ref.hh"
 #include "fleece/PlatformCompat.hh"  // for ssize_t
-#include <algorithm>
+#include <atomic>
+#include <concepts>
 #include <mutex>
-#include <vector>
+
+C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore {
+    class ObserverListBase;
 
-    /** A thread-safe collection meant for use in implementing the Observer or Publish/Subscribe pattern.
+    /** Base class of observer interfaces used by ObserverList<>. */
+    class Observer {
+      public:
+        Observer() = default;
 
-        Its key feature is that _it is safe to mutate the collection during iteration_ -- a situation that commonly
-        occurs when a publisher is notifying its subscribers, and one of the subscribers calls back into
-        the publisher to remove itself.
+        Observer(const Observer&) {}
 
-        In addition, it is guaranteed that _once an item has been removed, it will not be found by an iterator_.
+      protected:
+        virtual ~Observer();
+
+      private:
+        friend class ObserverListBase;
+        Observer& operator=(const Observer&) = delete;
+        Observer(Observer&&)                 = delete;
+
+        std::atomic<ObserverListBase*> _list = nullptr;  // The ObserverList I belong to
+    };
+
+    // Abstract superclass of ObserverList<>.
+    class ObserverListBase {
+      public:
+        ObserverListBase() = default;
+        ~ObserverListBase();
+        void   add(Observer* obs);
+        bool   remove(Observer* obs);
+        size_t size() const;
+        void   iterate(fleece::function_ref<void(Observer*)> const& cb) const noexcept;
+
+      private:
+        friend class Observer;
+        ObserverListBase(ObserverListBase const&) = delete;
+        ObserverListBase(ObserverListBase&&)      = delete;
+
+        mutable std::recursive_mutex      _mutex;          // Allows reentrant calls during iteration
+        fleece::smallVector<Observer*, 4> _observers;      // My current Observers
+        mutable ssize_t                   _curIndex = -1;  // Current iteration index, else -1
+    };
+
+    /** A thread-safe collection for use in implementing the Observer or Publish/Subscribe pattern.
+        Its items, "observers", are pointers to instances of `OBS`, a subclass of `Observer`.
+        The `notify` method calls a method of all current observers, passing the same arguments to each.
+
+        Its key feature is that _it is safe to add/remove observers during iteration_ -- a situation that commonly
+        occurs when an observer is called and during the callback decides to unsubscribe itself.
+
+        In addition, it is guaranteed that _once an observer has been removed, it will not be found by an iterator_.
         (This is a problem with the easy approach of copying the subscriber list before iterating: another thread
         might remove a subscriber and delete it, and then the iterator can call into a deleted object. Even if the
-        subscriber isn't deleted, it may not expect to be called anymore which could lead to undefined behavior.) */
-    template <class T>
-    class ObserverList {
-      public:
-        /// Adds an item.
-        /// @param item  The value to add.
-        /// @param unique  If true (the default), will not add a duplicate item.
-        /// @returns  True if added, false if it's a duplicate.
-        bool add(T item, bool unique = true) {
-            std::unique_lock lock(_mutex);
-            if ( unique && std::ranges::find(_observers, item) != _observers.end() ) return false;
-            _observers.emplace_back(std::move(item));
-            return true;
-        }
+        subscriber isn't deleted, it may not expect to be called anymore which could lead to undefined behavior.)
 
-        /// Removes an item. When this method returns, the item is guaranteed not to be returned by any \ref iterate
-        /// methods on any threads, meaning that it's safe to delete/invalidate the item.
+        Observers automatically remove themselves when they're destructed, so the list never contains
+        dangling pointers. */
+    template <std::derived_from<Observer> OBS>
+    class ObserverList : private ObserverListBase {
+      public:
+        /// Adds an observer. It must not have been added already.
+        /// @param obs  The Observer to add.
+        void add(OBS* C4NONNULL obs) { ObserverListBase::add(obs); }
+
+        /// Removes an Observer. After this method returns, the Observer is guaranteed not to be
+        /// returned by any \ref iterate methods on any threads, meaning that it's safe to
+        /// delete/invalidate the Observer.
         /// @param item  The value to remove.
         /// @returns  True if removed, false if not found.
-        bool remove(T const& item) {
-            std::unique_lock lock(_mutex);
-            if ( auto i = std::ranges::find(_observers, item); i != _observers.end() ) {
-                if ( i - _observers.begin() < _curIndex ) --_curIndex;  // Fix iterator if items shift underneath it
-                _observers.erase(i);
-                return true;
-            } else {
-                return false;
-            }
-        }
+        bool remove(OBS* C4NONNULL item) { return ObserverListBase::remove(item); }
 
-        size_t size() const {
-            std::unique_lock lock(_mutex);
-            return _observers.size();
-        }
+        /// The number of Observers in the list.
+        size_t size() const { return ObserverListBase::size(); }
 
-        /// Invokes the callback once for each item, passing it a reference.
+        /// Invokes the callback once for each Observer, passing it a pointer.
         /// - Ordering is undefined.
         /// - Exceptions thrown during a callback are caught and logged; they do not stop the iteration.
         /// - It is safe for \ref add or \ref remove to be called by the callback (or something it calls.)
@@ -69,32 +103,18 @@ namespace litecore {
         /// @warning  Reentrant iterations are not allowed, i.e. a callback cannot call \ref iterate.
         template <typename Callback>
         void iterate(Callback const& cb) const noexcept {
-            std::unique_lock lock(_mutex);
-            Assert(_curIndex == -1, "Illegal reentrant iteration of ObserverList");
-            // Iterate backwards so I won't run into items added during a callback.
-            for ( _curIndex = ssize_t(_observers.size()) - 1; _curIndex >= 0; --_curIndex ) {
-                try {
-                    cb(_observers[_curIndex]);
-                }
-                catchAndWarn()
-            }
-            // Note: Reentrant iteration could be made legal with a bit more work.
-            // I would probably do it by replacing `_curIndex` with a linked list: `iterate` would create a local
-            // variable containing {curIndex, prevLink} and point the list head to that. `remove` walks the list.
+            ObserverListBase::iterate([&cb](Observer* item) { cb(static_cast<OBS*>(item)); });
         }
 
         /// Calls a method of each observer, using the `iterate` method.
-        /// For example, if `observers` is an `ObserverList<Obs*>` and class `Obs` has a method
+        /// For example, if `observers` is an `ObserverList<Obs>` and class `Obs` has a method
         /// `changed(int)`, then you could call `observers.notify(&Obs::changed, 42)`.
-        template <class U, typename... Args>
-        void notify(void (U::*method)(Args...), Args... args) const {
-            iterate([&](T const& observer) { (observer->*method)(args...); });
+        template <typename... Args>
+        void notify(void (OBS::*method)(Args...), Args... args) const noexcept {
+            iterate([&](OBS* observer) { (observer->*method)(args...); });
         }
-
-      private:
-        mutable std::recursive_mutex _mutex;          // Allows reentrant calls to add/remove during iteration
-        fleece::smallVector<T, 4>    _observers;      // The observer list
-        mutable ssize_t              _curIndex = -1;  // Current iteration index, else -1
     };
 
 }  // namespace litecore
+
+C4_ASSUME_NONNULL_END
