@@ -48,7 +48,7 @@ extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
 class C4PeerDiscovery {
   public:
     using ProviderFactory = std::unique_ptr<C4PeerDiscoveryProvider> (*)(C4PeerDiscovery& discovery,
-                                                                         std::string_view serviceID);
+                                                                         std::string_view peerGroupID);
 
     /// One-time registration of a provider class. The function will be called when constructing a C4PeerDiscovery.
     static void registerProvider(std::string_view providerName, ProviderFactory);
@@ -56,19 +56,19 @@ class C4PeerDiscovery {
     static std::vector<std::string> registeredProviders();
 
     /// Constructor. Uses each registered provider class.
-    /// @param serviceID  An app-specific unique identifier. Will discover other devices that use this identifier.
+    /// @param peerGroupID  An app-specific unique identifier. Will discover other devices that use this identifier.
     ///                   It must be 63 characters or less and may not contain `.`, `,` or `\\`.
-    explicit C4PeerDiscovery(std::string_view serviceID);
+    explicit C4PeerDiscovery(std::string_view peerGroupID);
 
     /// Constructor. Uses the named provider classes.
-    /// @param serviceID  An app-specific unique identifier.
+    /// @param peerGroupID  An app-specific unique identifier.
     /// @param providerNames  A list of names of registered C4PeerDiscoveryProviders.
-    explicit C4PeerDiscovery(std::string_view serviceID, std::span<const std::string_view> providerNames);
+    explicit C4PeerDiscovery(std::string_view peerGroupID, std::span<const std::string_view> providerNames);
 
     /// The destructor shuts everything down in an orderly fashion, not returning until complete.
     ~C4PeerDiscovery();
 
-    std::string const& serviceID() const { return _serviceID; }
+    std::string const& peerGroupID() const { return _peerGroupID; }
 
     std::vector<std::unique_ptr<C4PeerDiscoveryProvider>> const& providers() const { return _providers; }
 
@@ -133,11 +133,11 @@ class C4PeerDiscovery {
     void notifyMetadataChanged(C4Peer*);
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 2;
+    static constexpr int kAPIVersion = 3;
 
   private:
     std::mutex                                                _mutex;
-    std::string                                               _serviceID;
+    std::string                                               _peerGroupID;
     std::vector<std::unique_ptr<C4PeerDiscoveryProvider>>     _providers;  // List of providers. Never changes.
     std::unordered_map<std::string, fleece::Retained<C4Peer>> _peers;
     litecore::ObserverList<C4PeerDiscovery::Observer*>        _observers;
@@ -171,7 +171,7 @@ class C4PeerDiscovery::Observer {
     virtual bool incomingConnection(C4Peer*, C4Socket*) { return false; }
 };
 
-/** Represents a discovered peer device running the same serviceID.
+/** Represents a discovered peer device running the same peerGroupID.
  *  @note  This class is thread-safe.
  *  @note  This class is concrete, but may be subclassed by platform code if desired. */
 class C4Peer
