@@ -252,6 +252,7 @@
 		278963641D7A376900493096 /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
 		278963671D7B7E7D00493096 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963661D7B7E7D00493096 /* Stream.cc */; };
 		278B97762D8C837B00383915 /* CollectionName.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278B97752D8C837B00383915 /* CollectionName.cc */; };
+		278B97892D8C868500383915 /* P2PSyncManagerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278B97872D8C868500383915 /* P2PSyncManagerTest.cc */; };
 		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
 		278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
@@ -637,7 +638,6 @@
 		27FD73832D834B7A00CC48BF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
 		27FD738F2D834B9B00CC48BF /* libEnterpriseBits.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FD72B22D833F0B00CC48BF /* libEnterpriseBits.a */; };
 		27FD73902D834E2100CC48BF /* PeerDiscoveryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */; };
-		27FD73912D834E2500CC48BF /* ReplicatorP2PTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72832D833D4800CC48BF /* ReplicatorP2PTest.cc */; };
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
 		27FE0CE824BE6E4900A36EC2 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -1471,6 +1471,8 @@
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
 		278B97742D8C837B00383915 /* CollectionName.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CollectionName.hh; sourceTree = "<group>"; };
 		278B97752D8C837B00383915 /* CollectionName.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CollectionName.cc; sourceTree = "<group>"; };
+		278B97872D8C868500383915 /* P2PSyncManagerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = P2PSyncManagerTest.cc; sourceTree = "<group>"; };
+		278B97882D8C868500383915 /* PeerDiscoveryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PeerDiscoveryTest.hh; sourceTree = "<group>"; };
 		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
 		278CE5582B98E78D00245552 /* carray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = carray.h; sourceTree = "<group>"; };
@@ -1848,7 +1850,6 @@
 		27FD727F2D833D4800CC48BF /* AppleBonjourPeer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AppleBonjourPeer.cc; sourceTree = "<group>"; };
 		27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBTSocketFactory.mm; sourceTree = "<group>"; };
 		27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PeerDiscoveryTest.cc; sourceTree = "<group>"; };
-		27FD72832D833D4800CC48BF /* ReplicatorP2PTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorP2PTest.cc; sourceTree = "<group>"; };
 		27FD72852D833D4800CC48BF /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		27FD72862D833D4800CC48BF /* MetaPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MetaPeer.hh; sourceTree = "<group>"; };
 		27FD72872D833D4800CC48BF /* MetaPeer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MetaPeer.cc; sourceTree = "<group>"; };
@@ -3675,8 +3676,9 @@
 		27FD72842D833D4800CC48BF /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				278B97882D8C868500383915 /* PeerDiscoveryTest.hh */,
 				27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */,
-				27FD72832D833D4800CC48BF /* ReplicatorP2PTest.cc */,
+				278B97872D8C868500383915 /* P2PSyncManagerTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -5231,6 +5233,7 @@
 				27FD735F2D834B7A00CC48BF /* VectorRecordTest.cc in Sources */,
 				27FD73602D834B7A00CC48BF /* SequenceTrackerTest.cc in Sources */,
 				27FD73612D834B7A00CC48BF /* SQLiteFunctionsTest.cc in Sources */,
+				278B97892D8C868500383915 /* P2PSyncManagerTest.cc in Sources */,
 				27FD73622D834B7A00CC48BF /* N1QLParserTest.cc in Sources */,
 				27FD73632D834B7A00CC48BF /* QueryTest.cc in Sources */,
 				27FD73642D834B7A00CC48BF /* ArrayQueryTest.cc in Sources */,
@@ -5256,7 +5259,6 @@
 				27FD73772D834B7A00CC48BF /* ReplParams.cc in Sources */,
 				27FD73782D834B7A00CC48BF /* ReplicatorSGTest.cc in Sources */,
 				27FD73902D834E2100CC48BF /* PeerDiscoveryTest.cc in Sources */,
-				27FD73912D834E2500CC48BF /* ReplicatorP2PTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
