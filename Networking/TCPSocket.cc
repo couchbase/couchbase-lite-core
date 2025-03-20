@@ -98,13 +98,33 @@ namespace litecore::net {
             return socket;
     }
 
+    // Unwraps an IPv4 address embedded in IPv6, e.g. "::ffff:192.1.56.10".
+    // (These show up on macOS as addresses of incoming TCP connections.)
+    static optional<inet_address> asEmbeddedIPv4(inet6_address const& addr6) {
+        static constexpr uint8_t kEmbeddedIPv4[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff};
+
+        in6_addr addrBytes = addr6.address();
+        if ( memcmp(addrBytes.s6_addr, kEmbeddedIPv4, sizeof(kEmbeddedIPv4)) == 0 ) {
+            uint32_t addr4num;
+            memcpy(&addr4num, &addrBytes.s6_addr[12], sizeof(addr4num));
+            return inet_address(ntohl(addr4num), addr6.port());
+        } else {
+            return nullopt;
+        }
+    }
+
     string TCPSocket::peerAddress() {
         if ( auto socket = actualSocket(); socket ) {
             switch ( auto addr = socket->peer_address(); addr.family() ) {
                 case AF_INET:
                     return inet_address(addr).to_string();
                 case AF_INET6:
-                    return inet6_address(addr).to_string();
+                    {
+                        inet6_address addr6(addr);
+                        if ( auto addr4 = asEmbeddedIPv4(addr6) ) return addr4->to_string();
+                        else
+                            return addr6.to_string();
+                    }
             }
         }
         return "";
