@@ -208,6 +208,7 @@
 		275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B35A4234E753800FE9CF0 /* Housekeeper.cc */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
+		275E063D2D8C9C1B0065990D /* ObserverList.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E063C2D8C9C1B0065990D /* ObserverList.cc */; };
 		275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E4CCB22417D13006C5B71 /* Inserter.cc */; };
 		275E9905238360B200EA516B /* Checkpointer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E98FF238360B200EA516B /* Checkpointer.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
@@ -1370,6 +1371,7 @@
 		275CE1131E5BAC180084E014 /* Worker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Worker.cc; sourceTree = "<group>"; };
 		275CE1141E5BAC180084E014 /* Worker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Worker.hh; sourceTree = "<group>"; };
 		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TreeDocument.cc; sourceTree = "<group>"; };
+		275E063C2D8C9C1B0065990D /* ObserverList.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ObserverList.cc; sourceTree = "<group>"; };
 		275E4CCA22417D13006C5B71 /* Inserter.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Inserter.hh; sourceTree = "<group>"; };
 		275E4CCB22417D13006C5B71 /* Inserter.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Inserter.cc; sourceTree = "<group>"; };
 		275E4CD42241C763006C5B71 /* RevFinder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RevFinder.hh; sourceTree = "<group>"; };
@@ -2688,6 +2690,7 @@
 				27FB0C37205B177100987D9C /* Instrumentation.hh */,
 				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
 				27B075432D7236E600AA6BFF /* ObserverList.hh */,
+				275E063C2D8C9C1B0065990D /* ObserverList.cc */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
 				277911B12C6187CD0044E660 /* Result.hh */,
@@ -5102,6 +5105,7 @@
 				2763FE362B8570F300015EA4 /* QueryTranslator.cc in Sources */,
 				2744B355241854F2005A194D /* ThreadedMailbox.cc in Sources */,
 				27BEEE712A72FCEA005AD4BF /* SQLiteKeyStore+VectorIndex.cc in Sources */,
+				275E063D2D8C9C1B0065990D /* ObserverList.cc in Sources */,
 				27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */,
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
