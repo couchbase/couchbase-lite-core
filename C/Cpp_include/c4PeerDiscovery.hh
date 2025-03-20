@@ -98,7 +98,31 @@ class C4PeerDiscovery {
     /// Returns the peer (if any) with the given peer ID.
     fleece::Retained<C4Peer> peerWithID(std::string_view id);
 
-    class Observer;  // defined below
+    /** API for receiving notifications from C4PeerDiscovery.
+     *  @note Methods are called on arbitrary threads and may be called concurrently.
+     *        They should return as soon as possible.
+     *        It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
+    class Observer : public litecore::Observer {
+      public:
+        /// Notification that a provider has started/stopped browsing for peers.
+        virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
+
+        /// Notification that an online peer has been discovered.
+        virtual void addedPeer(C4Peer*) {}
+
+        /// Notification that a peer has gone offline.
+        virtual void removedPeer(C4Peer*) {}
+
+        /// Notification that a peer's metadata has changed.
+        virtual void peerMetadataChanged(C4Peer*) {}
+
+        /// Notification that a provider has made this app discoverable by peers, or stopped.
+        virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
+
+        /// Notification of an incoming socket connection from a peer. (Only occurs while publishing is enabled.)
+        /// @returns  True to accept the connection, false to reject it.
+        virtual bool incomingConnection(C4Peer*, C4Socket*) { return false; }
+    };
 
     /// Registers an observer.
     void addObserver(Observer*);
@@ -140,35 +164,7 @@ class C4PeerDiscovery {
     std::string                                               _peerGroupID;
     std::vector<std::unique_ptr<C4PeerDiscoveryProvider>>     _providers;  // List of providers. Never changes.
     std::unordered_map<std::string, fleece::Retained<C4Peer>> _peers;
-    litecore::ObserverList<C4PeerDiscovery::Observer*>        _observers;
-};
-
-/** API for receiving notifications from C4PeerDiscovery.
- *  @note Methods are called on arbitrary threads and may be called concurrently.
- *        They should return as soon as possible.
- *        It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
-class C4PeerDiscovery::Observer {
-  public:
-    virtual ~Observer() = default;
-
-    /// Notification that a provider has started/stopped browsing for peers.
-    virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
-
-    /// Notification that an online peer has been discovered.
-    virtual void addedPeer(C4Peer*) {}
-
-    /// Notification that a peer has gone offline.
-    virtual void removedPeer(C4Peer*) {}
-
-    /// Notification that a peer's metadata has changed.
-    virtual void peerMetadataChanged(C4Peer*) {}
-
-    /// Notification that a provider has made this app discoverable by peers, or stopped.
-    virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
-
-    /// Notification of an incoming socket connection from a peer. (Only occurs while publishing is enabled.)
-    /// @returns  True to accept the connection, false to reject it.
-    virtual bool incomingConnection(C4Peer*, C4Socket*) { return false; }
+    litecore::ObserverList<Observer>                          _observers;
 };
 
 /** Represents a discovered peer device running the same peerGroupID.
