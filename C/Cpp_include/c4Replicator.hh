@@ -77,12 +77,17 @@ struct C4Replicator
 
         std::span<const C4ReplicationCollection> collections() const noexcept { return _collections; }
 
-        C4ReplicationCollection& addCollection(C4CollectionSpec const&);
+        C4ReplicationCollection& addCollection(C4ReplicationCollection const&);
+
+        C4ReplicationCollection& addCollection(C4CollectionSpec const&, C4ReplicatorMode pushMode,
+                                               C4ReplicatorMode pullMode);
 
         fleece::MutableDict copyOptions() const;       ///< Returns copy of options (never null)
         void                setOptions(fleece::Dict);  ///< Updates options Dict
 
       private:
+        void makeAllocated(C4ReplicationCollection&);
+
         alloc_slice                          _options;
         std::vector<C4ReplicationCollection> _collections;
         std::vector<alloc_slice>             _slices;
