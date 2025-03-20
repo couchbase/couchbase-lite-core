@@ -1,10 +1,10 @@
 # Peer-To-Peer
 
-March 4 2025
+March 20 2025
 
 The component described here is the **Peer Discovery** API, the lowest level part. It's responsible for discovering other peers on the network and opening socket connections to them on demand, as well as making itself discoverable and handling incoming connections from other peers.
 
-The higher-level component (TBD) will use this API to decide which peer(s) to connect to and replicate with.
+The higher-level component (under construction; currently named `SyncManager`) will use this API to decide which peer(s) to connect to and replicate with.
 
 > Warning: This API is settling down, but is still in flux and may change.
 
@@ -40,8 +40,8 @@ This entire API is thread-safe. Methods can be called on any thread without requ
 
 This will mostly be done by the higher-level peer-to-peer components in LiteCore.
 
-1. Register the provider(s) by calling the static `C4PeerDiscovery::registerProvider`.
-2. Instantiate `C4PeerDiscovery`, passing it a "serviceID" string that identifies the application's P2P service. The serviceID will be used to advertise the device and discover other peers.
+1. Register the provider(s) by calling the static `C4PeerDiscovery::registerProvider`. This only has to be done once per process.
+2. Instantiate `C4PeerDiscovery`, passing it an app-specific "peerGroupID" string that identifies the application's P2P service. The peerGroupID will be used to advertise the device and discover other peers running this app.
 3. Instantiate an observer and register it with `C4PeerDiscovery::addObserver`.
 4. Call `C4PeerDiscovery::startBrowsing` and `C4PeerDiscovery::startPublishing`.
 5. Track the set of peers by monitoring the `addedPeer` and `removedPeer` calls to your observer.
@@ -50,20 +50,22 @@ This will mostly be done by the higher-level peer-to-peer components in LiteCore
 8. Respond to an `incomingConnection` notification by creating an incoming replicator on the provided `C4Socket`.
 9. To initiate replication with a peer:
    1. Call its `resolveURL` method, passing it a callback.
-   2. When the callback is called, you're given a URL for the peer as well as a `C4SocketFactory`.
+   2. When the callback is called, you're given a URL for the peer as well as a `C4SocketFactory*`.
    3. Use those to start a replicator. (The socket factory goes in `C4ReplicatorParameters::socketFactory`.)
 10. To stop peer discovery, call `C4PeerDiscovery::stopBrowsing` and `C4PeerDiscovery::stopPublishing`.
 
-Note that you never need to call a `C4PeerDiscoveryProvider` directly. The only attribute you might want to use is its `name`, for logging purposes or to identify a specific provider (e.g. to prioritize DNS-SD over Bluetooth when connecting.)
+> Note that you never need to call a `C4PeerDiscoveryProvider` directly. The only attribute you might want to use is its `name`, for logging purposes or to identify a specific provider (e.g. to prioritize DNS-SD over Bluetooth when connecting.)
 
 
 ## Implementing a Provider
 
-To implement a provider for a protocol, you subclass `C4PeerDiscoveryProvider` and implement the abstract methods. These are all asynchronous, except for `getSocketFactory`. They should return quickly and announce results or changes by calling other methods, as described below. They must be thread-safe.
+> Note: There are a few provider implementations already; the source code is in `couchbase-lite-core-EE/P2P/Apple`.
 
-At runtime, create a singleton instance and call its `registerProvider` method so that `C4PeerDiscovery` knows about it.
+To implement a provider for a protocol, you subclass `C4PeerDiscoveryProvider`. At runtime, call the static method `C4PeerDiscovery::registerProvider`, passing it a pointer to a `ProviderFactory` function that will, when called, return a new instance of your provider. 
 
-`C4PeerDiscoveryProvider` isn't called directly by client code, only by `C4PeerDiscovery` and `C4Peer`.
+Registration also takes a provider name, which identifies the protocol. Well-known provider names are declared as string constants `kDNS_SD` and `kBluetoothLE`; use these when appropriate, so clients of the API can identify providers of specific protocols.
+
+`C4PeerDiscoveryProvider` has several abstract methods you must implement. These are all asynchronous, except for `getSocketFactory`. They should return quickly and announce results or changes by calling other methods, as described below. They must be thread-safe.
 
 ### `startBrowsing`, `stopBrowsing`
 
@@ -103,6 +105,6 @@ Unless peer connections are made over regular TCP/IP WebSockets, you'll need to 
 
 Called by `C4PeerDiscovery`'s destructor, prior to deleting your provider instance.
 
-Your implementation should stop browsing and publishing, and do any other necessary asynchronous work with your underlying API. Then call the callback that was passed to `shutdown`.
+Your implementation should stop browsing and publishing, and do any other necessary asynchronous work with your underlying API. When finished it MUST call the callback that was passed to `shutdown`.
 
 Soon after that, your provider will be deleted.
