@@ -84,8 +84,10 @@ namespace litecore::net {
     void TLSContext::allowOnlyCert(slice certData) {
         if ( certData ) {
             _context->allow_only_certificate(string(certData));
+            _onlyOneCert = true;
         } else {
             resetRootCertFinder();
+            _onlyOneCert = false;
         }
     }
 

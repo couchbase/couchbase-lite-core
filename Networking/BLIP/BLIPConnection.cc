@@ -180,7 +180,7 @@ namespace litecore::blip {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotHTTPResponse), status, headers);
         }
 
-        virtual void onWebSocketGotTLSCertificate(slice certData) override {
+        void onWebSocketGotTLSCertificate(slice certData) override {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotTLSCertificate), alloc_slice{certData});
         }
 
