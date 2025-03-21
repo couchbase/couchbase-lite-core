@@ -183,6 +183,10 @@ namespace litecore {
     }
 
 #ifdef COUCHBASE_ENTERPRISE
+    void C4ReplicatorImpl::setPeerTLSCertificateValidator(PeerTLSCertificateValidator v) {
+        _peerTLSCertificateValidator = std::move(v);
+    }
+
     C4Cert* C4ReplicatorImpl::getPeerTLSCertificate() const {
         LOCK(_mutex);
         if ( !_peerTLSCertificate && _peerTLSCertificateData ) {

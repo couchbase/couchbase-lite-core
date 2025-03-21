@@ -19,6 +19,7 @@
 #include "Logging.hh"
 #include "WebSocketImpl.hh"
 #include <atomic>
+#include <c4ExceptionUtils.hh>
 #include <exception>
 #include <utility>
 #include <sstream>
@@ -139,8 +140,26 @@ namespace litecore::repl {
 
 #pragma mark - C4SOCKET C++ API:
 
+    bool C4SocketImpl::gotPeerCertificate(slice certData, std::string_view hostname) {
+        try {
+            _peerCertData = certData;
+            // Call WebSocket's registered validator function, if any:
+            return validatePeerCert(certData, hostname);
+        }
+        catchAndWarn() return false;
+    }
+
     void C4SocketImpl::gotHTTPResponse(int status, slice responseHeadersFleece) {
         try {
+            if ( _peerCertData ) {
+                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, _peerCertData);
+            } else if ( hasPeerCertValidator() ) {
+                const char* message =
+                        "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
+                WarnError("%s", message);
+                close(kCodeUnexpectedCondition, message);
+                return;
+            }
             Headers headers(responseHeadersFleece);
             WebSocketImpl::gotHTTPResponse(status, headers);
         } catch ( ... ) { closeWithException(); }

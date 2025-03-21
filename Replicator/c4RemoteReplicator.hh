@@ -130,6 +130,7 @@ namespace litecore {
 #else
             );
 #endif
+            webSocket->setPeerCertValidator(_peerTLSCertificateValidator);
             _replicator = new Replicator(dbAccess, webSocket, *this, _options);
 
             // Yes this line is disgusting, but the memory addresses that the logger logs

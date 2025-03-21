@@ -178,7 +178,7 @@ void c4Socket_setNativeHandle(C4Socket* socket, void* handle) noexcept { socket-
 
 void* C4NULLABLE c4Socket_getNativeHandle(C4Socket* socket) noexcept { return socket->getNativeHandle(); }
 
-inline repl::C4SocketImpl* internal(C4Socket* s) { return (repl::C4SocketImpl*)s; }
+static repl::C4SocketImpl* internal(C4Socket* s) { return (repl::C4SocketImpl*)s; }
 
 C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API {
     retain((RefCounted*)internal(socket));
@@ -186,6 +186,10 @@ C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API {
 }
 
 void c4socket_release(C4Socket* C4NULLABLE socket) C4API { release((RefCounted*)internal(socket)); }
+
+bool c4socket_gotPeerCertificate(C4Socket* socket, C4Slice certData, C4String hostname) C4API {
+    return socket->gotPeerCertificate(certData, slice(hostname));
+}
 
 void c4socket_gotHTTPResponse(C4Socket* socket, int status, C4Slice responseHeadersFleece) noexcept {
     socket->gotHTTPResponse(status, responseHeadersFleece);
