@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4ReplicatorTypes.h"
+#include <functional>
 #include <memory>
 #include <span>
 #include <vector>
@@ -59,7 +60,12 @@ struct C4Replicator
     bool        isDocumentPending(slice docID, C4CollectionSpec) const;
 
 #ifdef COUCHBASE_ENTERPRISE
-    virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const;
+    using PeerTLSCertificateValidator = std::function<bool(slice certData, std::string_view hostname)>;
+
+    /// Registers a callback that can accept or reject a peer's certificate during the TLS handshake.
+    virtual void setPeerTLSCertificateValidator(PeerTLSCertificateValidator) = 0;
+
+    virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const = 0;
 #endif
 
     /** Extended, memory-safe version of `C4ReplicatorParameters`.

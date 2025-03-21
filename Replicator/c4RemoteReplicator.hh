@@ -121,7 +121,8 @@ namespace litecore {
                 dbAccess = std::make_shared<DBAccess>(_database.pool(), disableBlobs);
             }
             auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
-            _replicator    = new Replicator(dbAccess, webSocket, *this, _options);
+            webSocket->setPeerCertValidator(_peerTLSCertificateValidator);
+            _replicator = new Replicator(dbAccess, webSocket, *this, _options);
 
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to

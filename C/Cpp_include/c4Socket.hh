@@ -54,6 +54,16 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
     static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle, const C4Address& address,
                                 bool incoming = true);
 
+    /** Notification that a socket is making a TLS connection and has received the peer's (usually
+        server's) certificate.
+        This notification occurs only after any other TLS validation options have passed
+        (`kC4ReplicatorOptionRootCerts`, `kC4ReplicatorOptionPinnedServerCert`,
+        `kC4ReplicatorOptionOnlySelfSignedServerCert`).
+        @param certData  The DER-encoded form of the peer's TLS certificate.
+        @param hostname  The DNS hostname of the peer. (This may be different from the original
+                         Address given, if there were HTTP redirects.)
+        @returns  True to proceed, false to abort the connection. */
+    virtual bool gotPeerCertificate(slice certData, std::string_view hostname) = 0;
 
     /** Notification that a socket has received an HTTP response, with the given headers (encoded
         as a Fleece dictionary.) This should be called just before \ref opened() or \ref closed().
