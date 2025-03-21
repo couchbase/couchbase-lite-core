@@ -68,6 +68,7 @@ namespace litecore {
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override;
 
 #ifdef COUCHBASE_ENTERPRISE
+        void    setPeerTLSCertificateValidator(PeerTLSCertificateValidator) override;
         C4Cert* getPeerTLSCertificate() const override;
 #endif
 
@@ -136,6 +137,7 @@ namespace litecore {
         mutable std::mutex            _mutex;
         DatabaseOrPool const          _database;
         Retained<Replicator::Options> _options;
+        PeerTLSCertificateValidator   _peerTLSCertificateValidator;
         Retained<Replicator>          _replicator;
         C4ReplicatorStatus            _status{kC4Stopped};
         bool                          _activeWhenSuspended{false};

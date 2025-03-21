@@ -69,6 +69,9 @@ namespace litecore::net {
         // Passing nullslice here resets the behavior to using the system trust store
         void allowOnlyCert(fleece::slice certData);
 
+        // True if `allowOnlyCert` has been called.
+        bool onlyOneCertAllowed() const { return _onlyOneCert; }
+
         // Used for P2P where remote certs are often dynamically generated
         // This will override any previous calls to setCertAuthCallback
         // or setRootCerts.  Passing false will reset the behavior to using
@@ -101,6 +104,7 @@ namespace litecore::net {
         fleece::Retained<crypto::Identity>       _identity;
         role_t                                   _role;
         bool                                     _onlySelfSigned{false};
+        bool                                     _onlyOneCert{false};
     };
 
 }  // namespace litecore::net

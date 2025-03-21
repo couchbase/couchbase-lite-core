@@ -524,7 +524,14 @@ namespace litecore::net {
             if ( flags != 0 && flags != UINT32_MAX ) {
                 string message = tlsSocket->peer_certificate_status_message();
                 int    code;
-                if ( flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED ) {
+                if ( flags & MBEDTLS_X509_BADCERT_OTHER ) {
+                    // validation callback rejected cert
+                    code = kNetErrTLSCertUntrusted;
+                    if ( _tlsContext && _tlsContext->onlyOneCertAllowed() )
+                        message = "The certificate does not match the known pinned certificate";
+                    else
+                        message = "Verification callback rejected the peer's certificate";
+                } else if ( flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED ) {
                     if ( _tlsContext && _tlsContext->onlySelfSignedAllowed() ) {
                         code    = kNetErrTLSCertUntrusted;
                         message = "Self-signed only mode is active, and a non self-signed certificate was received";
@@ -537,8 +544,6 @@ namespace litecore::net {
                     code = kNetErrTLSCertExpired;
                 else if ( flags & MBEDTLS_X509_BADCERT_CN_MISMATCH )
                     code = kNetErrTLSCertNameMismatch;
-                else if ( flags & MBEDTLS_X509_BADCERT_OTHER )
-                    code = kNetErrTLSCertUntrusted;
                 else
                     code = kNetErrTLSHandshakeFailed;
                 setError(NetworkDomain, code, slice(message));
