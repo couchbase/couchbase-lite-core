@@ -37,6 +37,8 @@ namespace litecore {
         /// Constructs a UUID from a slice. Asserts that its size is 16.
         explicit UUID(fleece::slice bytes);
 
+        constexpr explicit UUID(const char* str);
+
         // interoperability with C4UUID
         UUID(C4UUID const& c) : UUID(fleece::slice(&c, Size)) {}
 
@@ -97,6 +99,10 @@ namespace litecore {
             }
         }
         return (cp == end);
+    }
+
+    constexpr UUID::UUID(const char* str) {
+        if ( !parse(str, *this) ) throw std::invalid_argument("Invalid UUID string");
     }
 
     constexpr UUID operator""_uuid(const char* str, size_t len) {

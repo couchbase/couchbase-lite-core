@@ -12,11 +12,11 @@
 
 #pragma once
 #include "c4Base.hh"
+#include "c4DatabaseTypes.h"
 #include "c4Error.h"
 #include "ObserverList.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
-#include "c4DatabaseTypes.h"
 #include <functional>
 #include <mutex>
 #include <optional>
@@ -157,7 +157,7 @@ class C4PeerDiscovery {
     void notifyMetadataChanged(C4Peer*);
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 3;
+    static constexpr int kAPIVersion = 4;
 
   private:
     std::mutex                                                _mutex;
@@ -229,6 +229,11 @@ class C4Peer
     /// On failure, the callback is invoked with an empty string and an error.
     void resolveURL(ResolveURLCallback);
 
+    //---- Record-keeping, for use by SyncManager:
+
+    std::atomic<C4Timestamp> lastConnectionAttempt{};  ///< Last time a connection was attempted
+    std::atomic<C4Error>     lastConnectionError{};    ///< Error (if any) of last connection
+
     //---- Methods below are for subclasses and C4PeerDiscoveryProviders only:
 
     /// Updates the instance's displayName. (No notifications are posted.)
@@ -273,14 +278,17 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     static constexpr std::string_view kDNS_SD      = "DNS-SD";       ///< Standard provider name
     static constexpr std::string_view kBluetoothLE = "BluetoothLE";  ///< Standard provider name
 
-    explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery_, std::string_view name_)
-        : name(name_), _discovery(discovery_) {}
+    explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery, std::string_view providerName,
+                                     std::string_view peerGroupID_)
+        : name(providerName), peerGroupID(peerGroupID_), _discovery(discovery) {}
 
     /// The C4PeerDiscovery instance that owns this provider.
     C4PeerDiscovery& discovery() const { return _discovery; };
 
-    /// The provider's name, for identification/logging/debugging purposes.
+    /// The provider's name (e.g. "BluetoothLE") for identification/logging/debugging purposes.
     std::string const name;
+
+    std::string const peerGroupID;
 
     bool isBrowsing() const { return _browsing; }
 
@@ -366,5 +374,23 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     std::atomic<bool> _browsing   = false;
     std::atomic<bool> _publishing = false;
 };
+
+namespace litecore::p2p::btle {
+    /// Couchbase Lite P2P sync service namespace UUID.
+    /// This is combined with the peerGroupID to produce a type-5 UUID that's the actual service UUID.
+    constexpr const char* kP2PNamespaceID = "E0C3793A-0739-42A2-A800-8BED236D8815";
+
+    /// Service characteristic whose value is the L2CAP port (PSM) the peer is listening on.
+    /// (Apparently this is semi-standard? It appears in Apple's CoreBluetooth API headers.)
+    constexpr const char* kPortCharacteristicID = "ABDD3056-28FA-441D-A470-55A75A52553A";
+
+    /// Service characteristic whose value is the peer's Fleece-encoded metadata.
+    constexpr const char* kMetadataCharacteristicID = "936D7669-E532-42BF-8B8D-97E3C1073F74";
+}  // namespace litecore::p2p::btle
+
+namespace litecore::p2p::dns_sd {
+    /// DNS-SD service type. The peerGroupID is a subtype of this (concatenated with a comma).
+    static constexpr const char* kBaseServiceType = "_couchbaseP2P._tcp";
+}  // namespace litecore::p2p::dns_sd
 
 C4_ASSUME_NONNULL_END
