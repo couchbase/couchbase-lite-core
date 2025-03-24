@@ -38,8 +38,13 @@ struct C4SocketFactory;
 class C4Peer;
 class C4PeerDiscoveryProvider;
 
-/** The official logging channel of peer discovery */
+/** The official logging channel of peer discovery. */
 extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
+
+/** The official logging channel of P2P sync. */
+extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
+
+#pragma mark - PEER DISCOVERY:
 
 /** Manages peer discovery. To be used primarily by LiteCore's higher-level P2P functionality.
  *  For more details, read docs/P2P.md .
@@ -167,6 +172,8 @@ class C4PeerDiscovery {
     litecore::ObserverList<Observer>                          _observers;
 };
 
+#pragma mark - PEER:
+
 /** Represents a discovered peer device running the same peerGroupID.
  *  @note  This class is thread-safe.
  *  @note  This class is concrete, but may be subclassed by platform code if desired. */
@@ -214,11 +221,6 @@ class C4Peer
     /// Returns all the metadata at once.
     Metadata getAllMetadata();
 
-    /// Metadata key whose value is a persistent unique ID for this peer device.
-    /// It stays the same from one launch to another, as long as it's serving the same database.
-    /// It can be used to recognize `C4Peer`s published by the same device on different protocols.
-    static constexpr const char* kDeviceUUIDKey = "_DID";
-
     //---- URLs:
 
     using ResolveURLCallback = std::function<void(std::string, const C4SocketFactory* C4NULLABLE, C4Error)>;
@@ -227,6 +229,7 @@ class C4Peer
     /// To cancel resolution, call this again with a null callback.
     /// On success, the callback will be invoked with a URL string and a socket factory to use for connections.
     /// On failure, the callback is invoked with an empty string and an error.
+    /// @note  If the URL is already known, the callback will be invoked synchronously during this method.
     void resolveURL(ResolveURLCallback);
 
     //---- Record-keeping, for use by SyncManager:
@@ -259,6 +262,8 @@ class C4Peer
     std::atomic<bool>  _online      = true;  // Set to false when peer is removed
     std::atomic<bool>  _connectable = true;  // Set by providers by calling setConnectable
 };
+
+#pragma mark - PEER DISCOVERY PROVIDER:
 
 /** Abstract interface for a service that provides data for C4PeerDiscovery.
  *  **Other code shouldn't call into this API**; go through C4PeerDiscovery instead.
@@ -375,22 +380,41 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     std::atomic<bool> _publishing = false;
 };
 
-namespace litecore::p2p::btle {
-    /// Couchbase Lite P2P sync service namespace UUID.
-    /// This is combined with the peerGroupID to produce a type-5 UUID that's the actual service UUID.
-    constexpr const char* kP2PNamespaceID = "E0C3793A-0739-42A2-A800-8BED236D8815";
+#pragma mark - STANDARD UUIDs AND IDS:
 
-    /// Service characteristic whose value is the L2CAP port (PSM) the peer is listening on.
-    /// (Apparently this is semi-standard? It appears in Apple's CoreBluetooth API headers.)
-    constexpr const char* kPortCharacteristicID = "ABDD3056-28FA-441D-A470-55A75A52553A";
+namespace litecore {
+    class UUID;
+}
 
-    /// Service characteristic whose value is the peer's Fleece-encoded metadata.
-    constexpr const char* kMetadataCharacteristicID = "936D7669-E532-42BF-8B8D-97E3C1073F74";
-}  // namespace litecore::p2p::btle
+namespace litecore::p2p {
+    /// Namespace UUID used to construct peer UUIDs from certificates.
+    /// This is combined with the certificate's DER data to produce a type-5 UUID that's the peer UUID.
+    constexpr const char* kPeerCertUUIDNamespace = "A1F0F06F-F49A-4D9A-A08B-3B901D4ACD49";
 
-namespace litecore::p2p::dns_sd {
-    /// DNS-SD service type. The peerGroupID is a subtype of this (concatenated with a comma).
-    static constexpr const char* kBaseServiceType = "_couchbaseP2P._tcp";
-}  // namespace litecore::p2p::dns_sd
+    /// Constructs a peer UUID from its certificate.
+    UUID PeerUUIDFromCert(fleece::slice certData);
+    UUID PeerUUIDFromCert(C4Cert* cert);
+
+    namespace btle {
+        /// Namespace UUID used to construct BTLE service UUIDs.
+        /// This is combined with the peerGroupID to produce a type-5 UUID that's the actual service UUID.
+        constexpr const char* kPeerGroupUUIDNamespace = "E0C3793A-0739-42A2-A800-8BED236D8815";
+
+        /// Constructs a BTLE service UUID from the `peerGroupID`.
+        UUID ServiceUUIDFromPeerGroup(std::string_view peerGroup);
+
+        /// Service characteristic whose value is the L2CAP port (PSM) the peer is listening on.
+        /// (Apparently this is semi-standard? It appears in Apple's CoreBluetooth API headers.)
+        constexpr const char* kPortCharacteristicID = "ABDD3056-28FA-441D-A470-55A75A52553A";
+
+        /// Service characteristic whose value is the peer's Fleece-encoded metadata.
+        constexpr const char* kMetadataCharacteristicID = "936D7669-E532-42BF-8B8D-97E3C1073F74";
+    }  // namespace btle
+
+    namespace dns_sd {
+        /// DNS-SD service type. The peerGroupID is a subtype of this (concatenated with a comma).
+        static constexpr const char* kBaseServiceType = "_couchbaseP2P._tcp";
+    }  // namespace dns_sd
+}  // namespace litecore::p2p
 
 C4_ASSUME_NONNULL_END

@@ -11,11 +11,13 @@
 //
 
 #include "c4PeerDiscovery.hh"
+#include "c4Certificate.hh"
 #include "c4Log.h"
 #include "c4Socket.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "ObserverList.hh"
+#include "UUID.hh"
 #include <algorithm>
 #include <semaphore>
 
@@ -30,6 +32,7 @@ namespace litecore::p2p {
 }  // namespace litecore::p2p
 
 C4LogDomain const kC4DiscoveryLog = (C4LogDomain)&litecore::p2p::DiscoveryLog;
+C4LogDomain const kC4P2PLog       = (C4LogDomain)&litecore::p2p::P2PLog;
 
 
 #pragma mark - PEER:
@@ -251,3 +254,16 @@ bool C4PeerDiscovery::notifyIncomingConnection(C4Peer* peer, C4Socket* socket) {
 }
 
 void C4PeerDiscovery::notifyMetadataChanged(C4Peer* peer) { _observers.notify(&Observer::peerMetadataChanged, peer); }
+
+namespace litecore::p2p {
+    UUID PeerUUIDFromCert(slice certData) { return UUID::generateNamespaced(UUID(kPeerCertUUIDNamespace), certData); }
+
+    UUID PeerUUIDFromCert(C4Cert* cert) { return PeerUUIDFromCert(cert->getData(false)); }
+
+    namespace btle {
+        UUID ServiceUUIDFromPeerGroup(std::string_view peerGroup) {
+            return UUID::generateNamespaced(UUID(kPeerGroupUUIDNamespace), peerGroup);
+        }
+
+    }  // namespace btle
+}  // namespace litecore::p2p
