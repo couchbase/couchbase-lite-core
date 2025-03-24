@@ -108,3 +108,31 @@ Called by `C4PeerDiscovery`'s destructor, prior to deleting your provider instan
 Your implementation should stop browsing and publishing, and do any other necessary asynchronous work with your underlying API. When finished it MUST call the callback that was passed to `shutdown`.
 
 Soon after that, your provider will be deleted.
+
+
+## Provider Details
+
+The constants named here are defined at the bottom of `c4PeerDiscovery.hh`.
+
+>Note: You can find reference implementations of these in `couchbase-lite-core-EE/P2P/Apple/`.
+
+### Bluetooth LE
+
+The BTLE Service ID we use is a [Type 5 UUID][UUID5] derived from the app's `peerGroupID` string and the base namespace UUID `kP2PNamespaceID` (E0C3793A-0739-42A2-A800-8BED236D8815). The method `UUID::generateNamespaced`, in UUID.cc, has an implementation of the algorithm.
+
+We register two BTLE Characteristics on this service:
+
+- `kPortCharacteristicID` (ABDD3056-28FA-441D-A470-55A75A52553A), whose value is a 16-bit little-endian encoding of the PSM (port number) of the L2CAP channel the provider listens on. Peers will need to read this characteristic to be able to connect.
+- `kMetadataCharacteristicID` (936D7669-E532-42BF-8B8D-97E3C1073F74), whose value is the provider's metadata, encoded as a DNS_SD style TXT record. (That's alternating keys and values, each encoded as a length byte followed by the data.)
+
+### DNS-SD (aka Bonjour)
+
+We use the DNS-SD service type `kBaseServiceType`, which is `_couchbaseP2P._tcp`. The peerGroupID is used as a "subtype" when registering and browsing; for example, if the peerGroupID is "my-cool-app" then the full service type that's registered and browsed for would be `_couchbaseP2P._tcp,my-cool-app`.
+
+>Note: If Android doesn't support subtypes we'll have to rework this.
+
+The DNS-SD service name is the provider's `displayName`. It's basically ignored.
+
+The published port number is of course the port on which the C4Listener is listening.
+
+[UUID5]: https://datatracker.ietf.org/doc/html/rfc9562#name-uuid-version-5
