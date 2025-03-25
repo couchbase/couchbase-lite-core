@@ -12,7 +12,7 @@ function(setup_globals)
     set(LITECORE_SHARED_LINKER_FLAGS "-Wl,--exclude-libs,libgcc.a" CACHE INTERNAL "")
 
     # Enable 16k page size
-    set(LITECORE_SHARED_LINKER_FLAGS "${LITECORE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384"
+    set(LITECORE_SHARED_LINKER_FLAGS "${LITECORE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384" CACHE INTERNAL "")
 endfunction()
 
 function(set_litecore_source)
