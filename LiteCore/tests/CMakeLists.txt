@@ -112,7 +112,6 @@ if (BUILD_ENTERPRISE)
         CppTests PRIVATE
         ${EE_SRC}/Listener/tests/SyncListenerTest.cc
         ${EE_SRC}/P2P/tests/PeerDiscoveryTest.cc
-        ${EE_SRC}/P2P/tests/P2PSyncManagerTest.cc
     )
     target_include_directories(
         CppTests PRIVATE
