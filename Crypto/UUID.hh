@@ -42,7 +42,9 @@ namespace litecore {
         // interoperability with C4UUID
         UUID(C4UUID const& c) : UUID(fleece::slice(&c, Size)) {}
 
-        operator C4UUID const&() const { return *reinterpret_cast<const C4UUID*>(this); }
+        C4UUID const& asC4UUID() const { return *reinterpret_cast<const C4UUID*>(this); }
+
+        operator C4UUID const&() const { return asC4UUID(); }
 
         /// A pointer to the data bytes
         constexpr uint8_t const* data() const { return _bytes.data(); }
