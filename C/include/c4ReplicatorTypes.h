@@ -116,6 +116,8 @@ typedef struct {
     void*            collectionContext;
 } C4DocumentEnded;
 
+typedef const C4DocumentEnded* C4NONNULL* C4NONNULL C4DocumentEndedList;
+
 /** Information about a blob being pushed or pulled. */
 typedef struct C4BlobProgress {
     C4CollectionSpec collectionSpec;
@@ -138,8 +140,7 @@ typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator*, C4ReplicatorSta
         To also receive callbacks for successfully completed documents, set the
         kC4ReplicatorOptionProgressLevel option to a value greater than zero. */
 typedef void (*C4ReplicatorDocumentsEndedCallback)(C4Replicator*, bool pushing, size_t numDocs,
-                                                   const C4DocumentEnded* C4NONNULL docs[C4NONNULL],
-                                                   void* C4NULLABLE                 context);
+                                                   C4DocumentEndedList docs, void* C4NULLABLE context);
 
 /** Callback a client can register, to hear about the status of blobs. */
 typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator*, bool pushing, C4CollectionSpec collectionSpec,

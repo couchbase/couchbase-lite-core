@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef COUCHBASE_ENTERPRISE
 C4_ASSUME_NONNULL_BEGIN
 
 // ************************************************************************
@@ -44,7 +45,7 @@ extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
 /** The official logging channel of P2P sync. */
 extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
 
-#pragma mark - PEER DISCOVERY:
+#    pragma mark - PEER DISCOVERY:
 
 /** Manages peer discovery. To be used primarily by LiteCore's higher-level P2P functionality.
  *  For more details, read docs/P2P.md .
@@ -172,7 +173,7 @@ class C4PeerDiscovery {
     litecore::ObserverList<Observer>                          _observers;
 };
 
-#pragma mark - PEER:
+#    pragma mark - PEER:
 
 /** Represents a discovered peer device running the same peerGroupID.
  *  @note  This class is thread-safe.
@@ -263,7 +264,7 @@ class C4Peer
     std::atomic<bool>  _connectable = true;  // Set by providers by calling setConnectable
 };
 
-#pragma mark - PEER DISCOVERY PROVIDER:
+#    pragma mark - PEER DISCOVERY PROVIDER:
 
 /** Abstract interface for a service that provides data for C4PeerDiscovery.
  *  **Other code shouldn't call into this API**; go through C4PeerDiscovery instead.
@@ -380,7 +381,7 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     std::atomic<bool> _publishing = false;
 };
 
-#pragma mark - STANDARD UUIDs AND IDS:
+#    pragma mark - STANDARD UUIDs AND IDS:
 
 namespace litecore {
     class UUID;
@@ -418,3 +419,4 @@ namespace litecore::p2p {
 }  // namespace litecore::p2p
 
 C4_ASSUME_NONNULL_END
+#endif  // COUCHBASE_ENTERPRISE
