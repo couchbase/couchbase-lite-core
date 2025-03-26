@@ -51,6 +51,8 @@ namespace litecore::repl {
         // WebSocket public API:
         void connect() override;
 
+        alloc_slice peerTLSCertificateData() const override;
+
         // C4Socket API:
         bool gotPeerCertificate(slice certData, std::string_view hostname) override;
         void gotHTTPResponse(int httpStatus, slice responseHeadersFleece) override;
@@ -71,6 +73,7 @@ namespace litecore::repl {
 
       private:
         C4SocketFactory const _factory;
+        mutable std::mutex    _mutex;
         alloc_slice           _peerCertData;
     };
 }  // namespace litecore::repl
