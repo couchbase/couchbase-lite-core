@@ -88,7 +88,6 @@ namespace litecore::blip {
 
         void send(MessageOut*);
         void gotHTTPResponse(int status, const websocket::Headers& headers);
-        void gotTLSCertificate(slice certData);
         void connected();
         void closed(const CloseStatus&);
 
@@ -111,8 +110,6 @@ namespace litecore::blip {
 
         /** Called when the HTTP response arrives (just before onConnect or onClose). */
         virtual void onHTTPResponse(int status, const websocket::Headers& headers) {}
-
-        virtual void onTLSCertificate(slice certData) = 0;
 
         /** Called when the connection opens. */
         virtual void onConnect() {}

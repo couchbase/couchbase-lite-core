@@ -78,6 +78,11 @@ namespace litecore::websocket {
         _connectThread.detach();
     }
 
+    alloc_slice BuiltInWebSocket::peerTLSCertificateData() const {
+        string data = _socket->peerTLSCertificateData();
+        return data.empty() ? nullslice : alloc_slice(data);
+    }
+
     void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
         if ( _socket ) { _socket->close(); }
@@ -259,7 +264,6 @@ namespace litecore::websocket {
         }
 
         // Tell the delegate what happened:
-        if ( !certData.empty() ) delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
         if ( logic.status() != HTTPStatus::undefined ) gotHTTPResponse(int(logic.status()), logic.responseHeaders());
         if ( lastDisposition == HTTPLogic::kSuccess ) {
             return socket;

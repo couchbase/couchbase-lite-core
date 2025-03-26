@@ -138,6 +138,8 @@ namespace litecore::websocket {
 
         bool hasPeerCertValidator() const { return _peerCertValidator != nullptr; }
 
+        virtual alloc_slice peerTLSCertificateData() const { return nullslice; }
+
         /** Assigns the Delegate and opens the WebSocket. */
         void connect(Retained<WeakHolder<Delegate>>);
 
@@ -184,8 +186,6 @@ namespace litecore::websocket {
     class Delegate {
       public:
         virtual ~Delegate() = default;
-
-        virtual void onWebSocketGotTLSCertificate(slice certData) = 0;
 
         virtual void onWebSocketGotHTTPResponse(int status, const Headers& headers) {}
 
