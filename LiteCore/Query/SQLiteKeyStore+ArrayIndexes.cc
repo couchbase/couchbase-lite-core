@@ -30,12 +30,15 @@ namespace litecore {
 
         auto currSpec = db().getIndex(spec.name);
         if ( currSpec ) {
+            // Escape capitals in the unnest path of the new spec, to match the existing spec.
+            alloc_slice specUnnestPath{
+                    SQLiteKeyStore::transformCollectionName(spec.arrayOptions()->unnestPath.asString(), true)};
             // If there is already index with the index name,
             // eiher delete the current one, or use it (return false)
             while ( true ) {
                 if ( currSpec->type != IndexSpec::kArray ) break;
                 if ( !currSpec->arrayOptions() ) break;
-                if ( currSpec->arrayOptions()->unnestPath != spec.arrayOptions()->unnestPath ) break;
+                if ( currSpec->arrayOptions()->unnestPath != specUnnestPath ) break;
                 if ( !currSpec->what() || !spec.what() ) break;
                 if ( currSpec->what()->toJSONString() != spec.what()->toJSONString() ) break;
                 // Same index spec and unnestPath
