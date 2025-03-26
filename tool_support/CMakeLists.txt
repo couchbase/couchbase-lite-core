@@ -17,6 +17,7 @@ target_include_directories( tool_support PUBLIC
     ../C/include/
     ../C/Cpp_include/
     ../LiteCore/Support/
+    ../LiteCore/Logging/
     ../vendor/fleece/API/
     ../vendor/fleece/Fleece/Support/ # PlatformCompat.hh
 )
