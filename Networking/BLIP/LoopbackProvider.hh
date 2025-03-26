@@ -22,6 +22,7 @@
 #include <chrono>
 #include <iomanip>
 #include <memory>
+#include <mutex>
 #include <sstream>
 #include <cinttypes>
 #include <deque>
@@ -60,6 +61,8 @@ namespace litecore::websocket {
             _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_connect));
         }
 
+        std::pair<int, Headers> httpResponse() const override { return {200, _driver->responseHeaders()}; }
+
         bool send(fleece::slice msg, bool binary) override {
             auto newValue = (_driver->_bufferedBytes += msg.size);
             _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_send), fleece::alloc_slice(msg), binary);
@@ -72,7 +75,6 @@ namespace litecore::websocket {
                 _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_close), status, fleece::alloc_slice(message));
             }
         }
-
 
       protected:
         void bind(LoopbackWebSocket* peer, const websocket::Headers& responseHeaders) {
@@ -138,6 +140,12 @@ namespace litecore::websocket {
                 _responseHeaders = responseHeaders;
             }
 
+            Headers responseHeaders() const {
+                // _responseHeaders is set before connecting by bind() and not modified after that,
+                // so it's safe to access it without a mutex. This method returns a copy.
+                return _responseHeaders;
+            }
+
             bool connected() const { return _state == State::connected; }
 
           protected:
@@ -187,7 +195,6 @@ namespace litecore::websocket {
             void connectCompleted() {
                 logInfo("CONNECTED");
                 _state = State::connected;
-                _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketGotHTTPResponse, 200, _responseHeaders);
                 _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketConnect);
             }
 
@@ -288,10 +295,10 @@ namespace litecore::websocket {
             Retained<LoopbackWebSocket>   _webSocket;
             const actor::delay_t          _latency{0.0};
             Retained<LoopbackWebSocket>   _peer;
-            websocket::Headers            _responseHeaders;
             std::atomic<size_t>           _bufferedBytes{0};
             State                         _state{State::unconnected};
             std::deque<Retained<Message>> _msgWaitBuffer;
+            Headers                       _responseHeaders;
         };
     };
 

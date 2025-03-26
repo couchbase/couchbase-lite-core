@@ -84,6 +84,8 @@ namespace litecore::websocket {
         return data.empty() ? nullslice : alloc_slice(data);
     }
 
+    std::pair<int, Headers> BuiltInWebSocket::httpResponse() const { return {_responseStatus, _responseHeaders}; }
+
     void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
         if ( _socket ) { _socket->close(); }
@@ -264,8 +266,11 @@ namespace litecore::websocket {
             }
         }
 
-        // Tell the delegate what happened:
-        if ( logic.status() != HTTPStatus::undefined ) gotHTTPResponse(int(logic.status()), logic.responseHeaders());
+        if ( logic.status() != HTTPStatus::undefined ) {
+            _responseStatus  = int(logic.status());
+            _responseHeaders = logic.responseHeaders();
+        }
+
         if ( lastDisposition == HTTPLogic::kSuccess ) {
             return socket;
         } else {

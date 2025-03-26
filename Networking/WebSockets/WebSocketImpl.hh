@@ -58,7 +58,6 @@ namespace litecore::websocket {
         void close(int status = kCodeNormal, fleece::slice message = fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
-        void gotHTTPResponse(int status, const Headers& headers);
         void onConnect();
         void onCloseRequested(int status, fleece::slice message);
         void onClose(int posixErrno);
