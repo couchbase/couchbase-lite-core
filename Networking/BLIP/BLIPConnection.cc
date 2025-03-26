@@ -174,10 +174,6 @@ namespace litecore::blip {
             logStats();
         }
 
-        void onWebSocketGotHTTPResponse(int status, const websocket::Headers& headers) override {
-            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotHTTPResponse), status, headers);
-        }
-
         // websocket::Delegate interface:
         void onWebSocketConnect() override {
             _timeOpen.reset();
@@ -201,11 +197,6 @@ namespace litecore::blip {
             Assert(!_connectedWebSocket.test_and_set());
             retain(this);  // keep myself from being freed while I'm the webSocket's delegate
             _webSocket->connect(_weakThis);
-        }
-
-        void _gotHTTPResponse(int status, websocket::Headers headers) {
-            // _connection is reset to nullptr in _closed.
-            if ( _connection ) _connection->gotHTTPResponse(status, headers);
         }
 
         void _onWebSocketConnect() {
@@ -663,10 +654,6 @@ namespace litecore::blip {
 
     void Connection::setRequestHandler(string profile, bool atBeginning, RequestHandler handler) {
         _io->setRequestHandler(std::move(profile), atBeginning, std::move(handler));
-    }
-
-    void Connection::gotHTTPResponse(int status, const websocket::Headers& headers) {
-        delegateWeak()->invoke(&ConnectionDelegate::onHTTPResponse, status, headers);
     }
 
     void Connection::connected() {

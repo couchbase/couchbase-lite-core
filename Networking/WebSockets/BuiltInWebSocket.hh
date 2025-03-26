@@ -56,6 +56,8 @@ namespace litecore::websocket {
 
         alloc_slice peerTLSCertificateData() const override;
 
+        std::pair<int, Headers> httpResponse() const override;
+
       protected:
         ~BuiltInWebSocket() override;
 
@@ -98,6 +100,9 @@ namespace litecore::websocket {
         Retained<BuiltInWebSocket>      _selfRetain;     // Keeps me alive while connected
         Retained<net::TLSContext>       _tlsContext;     // TLS settings
         std::thread                     _connectThread;  // Thread that opens the connection
+
+        int     _responseStatus = 0;
+        Headers _responseHeaders;
 
         std::vector<fleece::slice>       _outbox;         // Byte ranges to be sent by writer
         std::vector<fleece::alloc_slice> _outboxAlloced;  // Same, but retains the heap data

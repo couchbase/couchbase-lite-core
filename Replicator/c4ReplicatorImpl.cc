@@ -282,14 +282,6 @@ namespace litecore {
         return _start(false);
     }
 
-    void C4ReplicatorImpl::replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) {
-        LOCK(_mutex);
-        if ( repl == _replicator ) {
-            Assert(!_responseHeaders);
-            _responseHeaders = headers.encode();
-        }
-    }
-
     void C4ReplicatorImpl::replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) {
         Retained<C4ReplicatorImpl> selfRetain = this;  // Keep myself alive till this method returns
 
@@ -300,6 +292,7 @@ namespace litecore {
             auto oldLevel = _status.level;
             updateStatusFromReplicator((C4ReplicatorStatus)newStatus);
             if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) {
+                _responseHeaders        = _replicator->httpResponse().second.encode();
                 _peerTLSCertificateData = _replicator->peerTLSCertificateData();
                 _peerTLSCertificate     = nullptr;
                 handleConnected();
