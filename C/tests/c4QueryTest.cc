@@ -1012,12 +1012,13 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "TestCreateArrayIndexTwice", "[Query]") {
-    auto coll = c4db_createCollection(db, { "profiles"_sl }, ERROR_INFO());
+    auto coll = c4db_createCollection(db, {"profiles"_sl}, ERROR_INFO());
     REQUIRE(coll);
     C4IndexOptions options{};
     options.unnestPath = "fooBar";
     C4Log(" -------- CreateIndex call 1:");
-    auto created = c4coll_createIndex(coll, "fooIndex"_sl, R"([])"_sl, kC4N1QLQuery, kC4ArrayIndex, &options, ERROR_INFO());
+    auto created =
+            c4coll_createIndex(coll, "fooIndex"_sl, R"([])"_sl, kC4N1QLQuery, kC4ArrayIndex, &options, ERROR_INFO());
     CHECK(created);
     C4Log(" -------- CreateIndex call 2:");
     created = c4coll_createIndex(coll, "fooIndex"_sl, R"([])"_sl, kC4N1QLQuery, kC4ArrayIndex, &options, ERROR_INFO());
