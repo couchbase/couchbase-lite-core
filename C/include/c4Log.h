@@ -101,7 +101,8 @@ CBL_CORE_API void c4log_initConsole(C4LogLevel) C4API;
     Fails if the configuration is invalid.
     @note Call \ref c4logobserver_release when done with the reference.
           (You don't need to keep it unless you're going to call \ref c4log_removeObserver later.) */
-NODISCARD CBL_CORE_API C4LogObserver* c4log_newObserver(C4LogObserverConfig config, C4Error* C4NULLABLE outError) C4API;
+NODISCARD CBL_CORE_API C4LogObserver* C4NULLABLE c4log_newObserver(C4LogObserverConfig config,
+                                                                   C4Error* C4NULLABLE outError) C4API;
 
 /** Unregisters a log observer. Does nothing if it's not registered.
     @note  This does not release your reference. You should call \ref c4logobserver_release afterward
