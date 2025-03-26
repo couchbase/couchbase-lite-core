@@ -82,6 +82,9 @@ CBL_CORE_API C4CertUsage c4cert_usages(C4Cert*) C4API;
     \note This will be true of root CA certs, as well as self-signed peer certs. */
 CBL_CORE_API bool c4cert_isSelfSigned(C4Cert*) C4API;
 
+/** Returns true if `cert` was signed by `issuer`. */
+CBL_CORE_API bool c4cert_isSignedBy(C4Cert* cert, C4Cert* issuer) C4API;
+
 /** Returns a certificate's public key.
     \note You are responsible for releasing the returned key reference. */
 NODISCARD CBL_CORE_API C4KeyPair* c4cert_getPublicKey(C4Cert*) C4API;
