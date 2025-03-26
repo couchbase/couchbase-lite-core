@@ -371,6 +371,11 @@ namespace litecore::crypto {
                && x509_crt_check_signature(_cert, _cert, nullptr) == 0;
     }
 
+    bool Cert::isSignedBy(Cert* issuer) {
+        return x509_name_cmp(&_cert->issuer, &issuer->_cert->subject) == 0
+               && x509_crt_check_signature(_cert, issuer->_cert, nullptr) == 0;
+    }
+
     bool Cert::hasChain() {
         // mbedTLS certs are chained as a linked list through their `next` pointers.
         return _cert->next != nullptr;
