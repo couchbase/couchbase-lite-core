@@ -123,6 +123,11 @@ namespace litecore::repl {
         }
     }
 
+    alloc_slice C4SocketImpl::peerTLSCertificateData() const {
+        unique_lock lock(_mutex);
+        return _peerCertData;
+    }
+
     void C4SocketImpl::requestClose(int status, fleece::slice message) { _factory.requestClose(this, status, message); }
 
     void C4SocketImpl::closeSocket() { _factory.close(this); }
@@ -142,24 +147,18 @@ namespace litecore::repl {
 
     bool C4SocketImpl::gotPeerCertificate(slice certData, std::string_view hostname) {
         try {
-            _peerCertData = certData;
+            {
+                unique_lock lock(_mutex);
+                _peerCertData = certData;
+            }
             // Call WebSocket's registered validator function, if any:
-            return validatePeerCert(certData, hostname);
+            if ( !validatePeerCert(certData, hostname) ) return false;
         }
         catchAndWarn() return false;
     }
 
     void C4SocketImpl::gotHTTPResponse(int status, slice responseHeadersFleece) {
         try {
-            if ( _peerCertData ) {
-                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, _peerCertData);
-            } else if ( hasPeerCertValidator() ) {
-                const char* message =
-                        "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
-                WarnError("%s", message);
-                close(kCodeUnexpectedCondition, message);
-                return;
-            }
             Headers headers(responseHeadersFleece);
             WebSocketImpl::gotHTTPResponse(status, headers);
         } catch ( ... ) { closeWithException(); }
@@ -167,6 +166,13 @@ namespace litecore::repl {
 
     void C4SocketImpl::opened() {
         try {
+            if ( hasPeerCertValidator() && !peerTLSCertificateData() ) {
+                const char* message =
+                        "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
+                WarnError("%s", message);
+                close(kCodeUnexpectedCondition, message);
+                return;
+            }
             WebSocketImpl::onConnect();
         } catch ( ... ) { closeWithException(); }
     }

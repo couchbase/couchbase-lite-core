@@ -594,10 +594,6 @@ namespace litecore::repl {
 
 #pragma mark - BLIP DELEGATE:
 
-    void Replicator::onTLSCertificate(slice certData) {
-        if ( _delegate ) _delegate->replicatorGotTLSCertificate(certData);
-    }
-
     void Replicator::onHTTPResponse(int status, const websocket::Headers& headers) {
         enqueue(FUNCTION_TO_QUEUE(Replicator::_onHTTPResponse), status, headers);
     }
