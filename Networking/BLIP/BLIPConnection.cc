@@ -178,10 +178,6 @@ namespace litecore::blip {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotHTTPResponse), status, headers);
         }
 
-        void onWebSocketGotTLSCertificate(slice certData) override {
-            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotTLSCertificate), alloc_slice{certData});
-        }
-
         // websocket::Delegate interface:
         void onWebSocketConnect() override {
             _timeOpen.reset();
@@ -210,11 +206,6 @@ namespace litecore::blip {
         void _gotHTTPResponse(int status, websocket::Headers headers) {
             // _connection is reset to nullptr in _closed.
             if ( _connection ) _connection->gotHTTPResponse(status, headers);
-        }
-
-        void _gotTLSCertificate(alloc_slice certData) {
-            // _connection is reset to nullptr in _closed.
-            if ( _connection ) _connection->gotTLSCertificate(certData);
         }
 
         void _onWebSocketConnect() {
@@ -676,10 +667,6 @@ namespace litecore::blip {
 
     void Connection::gotHTTPResponse(int status, const websocket::Headers& headers) {
         delegateWeak()->invoke(&ConnectionDelegate::onHTTPResponse, status, headers);
-    }
-
-    void Connection::gotTLSCertificate(slice certData) {
-        delegateWeak()->invoke(&ConnectionDelegate::onTLSCertificate, certData);
     }
 
     void Connection::connected() {

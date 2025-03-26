@@ -73,7 +73,6 @@ namespace litecore::repl {
             virtual void replicatorGotHTTPResponse(Replicator* NONNULL, int status, const websocket::Headers& headers) {
             }
 
-            virtual void replicatorGotTLSCertificate(slice certData)                 = 0;
             virtual void replicatorStatusChanged(Replicator* NONNULL, const Status&) = 0;
 
             virtual void replicatorConnectionClosed(Replicator* NONNULL, const CloseStatus&) {}
@@ -115,6 +114,8 @@ namespace litecore::repl {
 
         slice remoteURL() const { return _remoteURL; }
 
+        alloc_slice peerTLSCertificateData() { return webSocket()->peerTLSCertificateData(); }
+
         C4CollectionSpec collectionSpec(CollectionIndex i) const {
             Assert(i < _subRepls.size());
             return _subRepls[i].collectionSpec;
@@ -127,7 +128,6 @@ namespace litecore::repl {
 
         // BLIP ConnectionDelegate API:
         void onHTTPResponse(int status, const websocket::Headers& headers) override;
-        void onTLSCertificate(slice certData) override;
 
         void onConnect() override { enqueue(FUNCTION_TO_QUEUE(Replicator::_onConnect)); }
 
