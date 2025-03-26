@@ -110,8 +110,6 @@ namespace litecore {
 
         // ---- ReplicatorDelegate API:
 
-        // Replicator::Delegate method, notifying that the WebSocket has connected.
-        void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override;
         // Replicator::Delegate method, notifying that the status level or progress have changed.
         void replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) override;
         // Replicator::Delegate method, notifying that document(s) have finished.

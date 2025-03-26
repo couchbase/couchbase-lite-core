@@ -128,6 +128,13 @@ namespace litecore::repl {
         return _peerCertData;
     }
 
+    std::pair<int, Headers> C4SocketImpl::httpResponse() const {
+        unique_lock lock(_mutex);
+        if ( _responseHeadersFleece ) return {_responseStatus, Headers(_responseHeadersFleece)};
+        else
+            return {_responseStatus, Headers()};
+    }
+
     void C4SocketImpl::requestClose(int status, fleece::slice message) { _factory.requestClose(this, status, message); }
 
     void C4SocketImpl::closeSocket() { _factory.close(this); }
@@ -158,10 +165,9 @@ namespace litecore::repl {
     }
 
     void C4SocketImpl::gotHTTPResponse(int status, slice responseHeadersFleece) {
-        try {
-            Headers headers(responseHeadersFleece);
-            WebSocketImpl::gotHTTPResponse(status, headers);
-        } catch ( ... ) { closeWithException(); }
+        unique_lock lock(_mutex);
+        _responseStatus        = status;
+        _responseHeadersFleece = responseHeadersFleece;
     }
 
     void C4SocketImpl::opened() {

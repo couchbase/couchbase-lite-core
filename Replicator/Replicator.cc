@@ -262,6 +262,8 @@ namespace litecore::repl {
             _subRepls[coll].puller->start(_subRepls[coll].checkpointer->remoteMinSequence());
     }
 
+    pair<int, websocket::Headers> Replicator::httpResponse() const { return webSocket()->httpResponse(); }
+
     void Replicator::docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex coll) {
         Retained<Pusher> pusher = _subRepls[coll].pusher;
         if ( pusher ) pusher->docRemoteAncestorChanged(std::move(docID), std::move(revID));
@@ -594,25 +596,22 @@ namespace litecore::repl {
 
 #pragma mark - BLIP DELEGATE:
 
-    void Replicator::onHTTPResponse(int status, const websocket::Headers& headers) {
-        enqueue(FUNCTION_TO_QUEUE(Replicator::_onHTTPResponse), status, headers);
-    }
-
-    void Replicator::_onHTTPResponse(int status, websocket::Headers headers) {
-        if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
-            gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
-                                   "Incompatible replication protocol "
-                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
-        }
-        if ( _delegate ) _delegate->replicatorGotHTTPResponse(this, status, headers);
-        if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
-            _correlationID = x_corr;
-            logInfo("Received X-Correlation-Id");
-        }
-    }
-
     void Replicator::_onConnect() {
         logInfo("Connected!");
+
+        if ( auto socket = connection().webSocket(); socket->role() == websocket::Role::Client ) {
+            auto [status, headers] = socket->httpResponse();
+            if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
+                gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
+                                       "Incompatible replication protocol "
+                                       "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
+            }
+            if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
+                _correlationID = x_corr;
+                logInfo("Received X-Correlation-Id");
+            }
+        }
+
         Signpost::mark(Signpost::replicatorConnect, uintptr_t(this));
         if ( _connectionState != Connection::kClosing ) {
             // skip this if stop() already called
