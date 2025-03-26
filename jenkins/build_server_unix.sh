@@ -138,7 +138,7 @@ build_binaries () {
         libgcc_sname=`basename "$libgcc_s"`
 
         cp -p "$libstdcpp" "./install/lib/$libstdcppname" -v
-        ln -s "$libstdcppname" "./install/lib/${libstdcppname}.6" -v
+        ln -s "./install/lib/${libstdcppname}.6" "$libstdcppname" -v
         cp -p "${libgcc_s}" "./install/lib" -v
     fi
     if [[ -z ${SKIP_TESTS} ]] && [[ ${EDITION} == 'enterprise' ]]; then
