@@ -188,7 +188,9 @@ namespace litecore::crypto {
 
         bool isSigned() override { return true; }
 
-        bool                isSelfSigned();
+        bool isSelfSigned();
+        bool isSignedBy(Cert* issuer);
+
         DistinguishedName   subjectName() override;
         unsigned            keyUsage() override;
         NSCertType          nsCertType() override;

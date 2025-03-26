@@ -1044,6 +1044,8 @@ bool c4cert_isSigned(C4Cert* cert) noexcept { return cert->isSigned(); }
 
 bool c4cert_isSelfSigned(C4Cert* cert) noexcept { return cert->isSelfSigned(); }
 
+bool c4cert_isSignedBy(C4Cert* cert, C4Cert* issuer) noexcept { return cert->isSignedBy(issuer); }
+
 C4Cert* c4cert_signRequest(C4Cert* c4Cert, const C4CertIssuerParameters* C4NULLABLE c4Params,
                            C4KeyPair* issuerPrivateKey, C4Cert* issuerC4Cert, C4Error* outError) noexcept {
     return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
