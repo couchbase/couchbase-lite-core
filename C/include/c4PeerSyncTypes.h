@@ -46,6 +46,7 @@ typedef void (*C4PeerSync_ReplicatorCallback)(C4PeerSync*,                ///< S
                                               bool outgoing,              ///< Direction of replicator
                                               const C4ReplicatorStatus*,  ///< Status/progress
                                               void* C4NULLABLE context);
+
 /** Callback that notifies that documents have been pushed or pulled. */
 typedef void (*C4PeerSync_DocsCallback)(C4PeerSync*,                  ///< Sender
                                         const C4PeerID*,              ///< Peer UUID

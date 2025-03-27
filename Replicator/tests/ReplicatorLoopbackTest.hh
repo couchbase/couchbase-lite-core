@@ -322,14 +322,13 @@ class ReplicatorLoopbackTest
 
 #pragma mark - CALLBACKS:
 
-
     void replicatorStatusChanged(Replicator* repl, const Replicator::Status& status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 
         if ( repl == _replClient ) {
-            if (!_gotResponse) {
-                _gotResponse = true;
+            if ( !_gotResponse ) {
+                _gotResponse           = true;
                 auto [status, headers] = repl->httpResponse();
                 Check(status == 200);
                 Check(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
