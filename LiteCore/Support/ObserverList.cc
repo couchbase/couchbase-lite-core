@@ -27,7 +27,9 @@ namespace litecore {
     }
 
     ObserverListBase::~ObserverListBase() {
-        iterate([](Observer* obs) { obs->_list = nullptr; });
+        std::unique_lock lock(_mutex);
+        Assert(_curIndex == -1, "ObserverList being destructed during iteration");
+        for ( auto& obs : _observers ) obs->_list = nullptr;
     }
 
     void ObserverListBase::add(Observer* obs) {
@@ -43,7 +45,7 @@ namespace litecore {
         std::unique_lock  lock(_mutex);
         ObserverListBase* expected = this;
         // Clear observer's `_list`, if it pointed to me:
-        if ( !obs->_list.compare_exchange_strong(expected, this) ) return false;
+        if ( !obs->_list.compare_exchange_strong(expected, nullptr) ) return false;
         // Remove it from my vector:
         if ( auto i = std::ranges::find(_observers, obs); i != _observers.end() ) {
             if ( i - _observers.begin() < _curIndex ) --_curIndex;  // Fix iterator if items shift underneath it
