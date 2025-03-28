@@ -64,7 +64,7 @@ namespace litecore {
         /// Constructs a pool that will manage multiple instances of the given database file.
         /// If this database was opened read-only, then no writeable instances will be provided.
         /// @warning  The C4Database is now owned by the pool and shouldn't be used directly.
-        explicit DatabasePool(C4Database*);
+        explicit DatabasePool(fleece::Retained<C4Database>&&);
 
         /// Closes all databases, waiting until all borrowed ones have been returned.
         /// No more databases can be borrowed after this method begins.
@@ -214,8 +214,10 @@ namespace litecore {
 
         DatabasePool* C4NULLABLE pool() const { return _pool; }
 
-        fleece::Retained<DatabasePool> makePool() const {
-            return _pool ? _pool : fleece::make_retained<DatabasePool>(_db);
+        fleece::Retained<DatabasePool> makePool() {
+            if (!_pool)
+                _pool = fleece::make_retained<DatabasePool>(std::move(_db));
+            return _pool;
         }
 
         inline BorrowedDatabase borrow() const;
