@@ -227,6 +227,7 @@ namespace litecore::repl {
                     enum { kNoRetry, kRetryLater, kRetryNow } retry = kNoRetry;
 
                     if ( synced ) {
+                        if ( progress.reply->boolProperty("noop") ) rev->alreadyExisted = true;
                         logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")", SPLAT(rev->docID), SPLAT(rev->revID),
                                    (uint64_t)rev->sequence);
                         finishedDocument(rev);

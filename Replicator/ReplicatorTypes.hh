@@ -106,8 +106,6 @@ namespace litecore::repl {
 
         std::vector<C4Slice> history();
 
-        void notifyInserted();
-
       protected:
         ~RevToInsert() override;
 
