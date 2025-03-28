@@ -215,8 +215,7 @@ namespace litecore {
         DatabasePool* C4NULLABLE pool() const { return _pool; }
 
         fleece::Retained<DatabasePool> makePool() {
-            if (!_pool)
-                _pool = fleece::make_retained<DatabasePool>(std::move(_db));
+            if ( !_pool ) _pool = fleece::make_retained<DatabasePool>(std::move(_db));
             return _pool;
         }
 
