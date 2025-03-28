@@ -300,26 +300,30 @@ namespace litecore { namespace crypto {
 
     // Public function to generate a new key-pair
     Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
+        printf("[DBG] - I.3.2.1\n");
         @autoreleasepool {
             LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
             char timestr[100] = "LiteCore ";
             fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
+            printf("[DBG] - I.3.2.2\n");
             NSDictionary* params = @ {
                 (id)kSecAttrKeyType:        (id)kSecAttrKeyTypeRSA,
                 (id)kSecAttrKeySizeInBits:  @(keySizeInBits),
                 (id)kSecAttrIsPermanent:    @YES,
                 (id)kSecAttrLabel:          @(timestr),
             };
-
+            printf("[DBG] - I.3.2.3\n");
             SecKeyRef publicKey = NULL, privateKey = NULL;
             CFErrorRef error;
+            printf("[DBG] - I.3.2.4\n");
             privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
+            printf("[DBG] - I.3.2.5\n");
             if (!privateKey) {
                 warnCFError(error, "SecKeyCreateRandomKey");
                 return nullptr;
             }
             publicKey = SecKeyCopyPublicKey(privateKey);
-
+            printf("[DBG] - I.3.2.6\n");
             return new KeychainKeyPair(keySizeInBits, publicKey, privateKey);
         }
     }

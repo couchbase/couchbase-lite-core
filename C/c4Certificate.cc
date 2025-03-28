@@ -271,10 +271,12 @@ PersistentPrivateKey* C4KeyPair::getPersistentPrivateKey() {
 }
 
 Retained<C4KeyPair> C4KeyPair::generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent) {
+    printf("[DBG] - I.3.1\n");
     AssertParam(algorithm == kC4RSA, "Invalid algorithm");
     Retained<PrivateKey> privateKey;
     if ( persistent ) {
 #    ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+        printf("[DBG] - I.3.2\n");
         privateKey = PersistentPrivateKey::generateRSA(sizeInBits);
 #    else
         C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
