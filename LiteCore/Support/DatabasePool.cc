@@ -40,7 +40,7 @@ namespace litecore {
         _dbConfig.parentDirectory = _dbDir;
     }
 
-    DatabasePool::DatabasePool(C4Database* main) : DatabasePool(main->getName(), main->getConfiguration()) {
+    DatabasePool::DatabasePool(Retained<C4Database>&& main) : DatabasePool(main->getName(), main->getConfiguration()) {
         logInfo("initial database is %s", nameOf(main).c_str());
         _dbTag              = _c4db_getDatabaseTag(main);
         Cache& cache        = writeable() ? _readWrite : _readOnly;
@@ -247,8 +247,8 @@ namespace litecore {
     BorrowedDatabase DatabasePool::tryBorrowWriteable() { return borrow(_readWrite, false); }
 
     // Called by BorrowedDatabase's destructor and its reset method.
-    void DatabasePool::returnDatabase(fleece::Retained<C4Database> db) {
-        Assert(db && !db->isInTransaction());
+    void DatabasePool::returnDatabase(Retained<C4Database> db) {
+        DebugAssert(db);
         unique_lock lock(_mutex);
 
         Cache& cache = (db->getConfiguration().flags & kC4DB_ReadOnly) ? _readOnly : _readWrite;
@@ -260,6 +260,7 @@ namespace litecore {
                 if ( entry.borrower != tid )
                     Warn("DatabasePool::returnDatabase: Calling thread is not the same that borrowed db");
                 Assert(entry.borrowCount > 0);
+                Assert(entry.borrowCount > 1 || !db->isInTransaction(), "Returning db while in transaction");
                 if ( --entry.borrowCount == 0 ) {
                     entry.borrower = {};
                     if ( cache.created > cache.capacity || _closed ) {
