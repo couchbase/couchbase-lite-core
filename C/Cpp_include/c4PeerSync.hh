@@ -15,6 +15,7 @@
 #include "c4PeerSyncTypes.h"
 #include "fleece/InstanceCounted.hh"
 
+#ifdef COUCHBASE_ENTERPRISE
 C4_ASSUME_NONNULL_BEGIN
 
 // ************************************************************************
@@ -36,7 +37,7 @@ struct C4PeerSync : fleece::InstanceCounted {
     /** Returns this instance's peer UUID, as visible to other peers.
         (The UUID is derived from the C4Cert given in the parameters.)
         @note  This function is thread-safe. */
-    C4UUID uuid() const noexcept;
+    C4PeerID myID() const noexcept;
 
     /** Starts a C4PeerSync, beginning peer discovery and replication.
         This call is asynchronous and returns immediately. When it succeeds or fails, the
@@ -57,3 +58,4 @@ struct C4PeerSync : fleece::InstanceCounted {
 };
 
 C4_ASSUME_NONNULL_END
+#endif  // COUCHBASE_ENTERPRISE
