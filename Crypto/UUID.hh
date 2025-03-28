@@ -37,6 +37,7 @@ namespace litecore {
         /// Constructs a UUID from a slice. Asserts that its size is 16.
         explicit UUID(fleece::slice bytes);
 
+        /// Constructs a UUID from a hex string.
         constexpr explicit UUID(const char* str);
 
         // interoperability with C4UUID

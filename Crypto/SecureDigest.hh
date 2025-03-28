@@ -32,8 +32,6 @@ namespace litecore {
 
         bool operator==(const Hash& x) const { return memcmp(&_bytes, &x._bytes, N) == 0; }
 
-        bool operator!=(const Hash& x) const { return !(*this == x); }
-
       protected:
         Hash() { memset(_bytes, 0, N); }
 
@@ -135,3 +133,13 @@ namespace litecore {
         return (SHA1Builder{} << name).finish().asSlice().hexString();
     }
 }  // namespace litecore
+
+// Makes UUID hashable, for use in unordered_map:
+template <unsigned int N>
+struct std::hash<litecore::Hash<N>> {
+    std::size_t operator()(litecore::Hash<N> const& id) const noexcept FLPURE {
+        std::size_t h;
+        ::memcpy(&h, &id, sizeof(h));
+        return h;
+    }
+};
