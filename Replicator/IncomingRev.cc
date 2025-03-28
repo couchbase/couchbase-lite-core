@@ -430,6 +430,7 @@ namespace litecore::repl {
 
         if ( _revMessage ) {
             MessageBuilder response(_revMessage);
+            if ( _rev->alreadyExisted ) response.addProperty("noop", "true");
             if ( _rev->error.code != 0 ) response.makeError((Error)c4ToBLIPError(_rev->error));
             _revMessage->respond(response);
             _revMessage = nullptr;

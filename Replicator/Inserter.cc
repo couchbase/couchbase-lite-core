@@ -145,12 +145,14 @@ namespace litecore::repl {
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                auto doc = collection->putDocument(put, nullptr, outError);
+                size_t commonAncestorIndex;
+                auto   doc = collection->putDocument(put, &commonAncestorIndex, outError);
                 if ( !doc ) return false;
                 auto collPath = _options->collectionPath(collectionIndex());
                 logVerbose("    {'%.*s (%.*s)' #%.*s <- %.*s} seq %" PRIu64, SPLAT(rev->docID), SPLAT(collPath),
                            SPLAT(rev->revID), SPLAT(rev->historyBuf), (uint64_t)doc->selectedRev().sequence);
                 rev->sequence = doc->selectedRev().sequence;
+                if ( commonAncestorIndex == 0 ) rev->alreadyExisted = true;
                 if ( doc->selectedRev().flags & kRevIsConflict ) {
                     // Note that rev was inserted but caused a conflict:
                     logInfo("Created conflict with '%.*s (%.*s)' #%.*s", SPLAT(rev->docID), SPLAT(collPath),

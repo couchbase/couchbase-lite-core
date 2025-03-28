@@ -365,7 +365,8 @@ namespace litecore::repl {
             return true;
         } else if ( status == 304 ) {
             // 304 means server has my rev already
-            synced = true;
+            change->alreadyExisted = true;
+            synced                 = true;
         } else if ( status == 409 ) {
             // 409 means a push conflict
             if ( _proposeChanges ) {
