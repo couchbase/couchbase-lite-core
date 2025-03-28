@@ -19,7 +19,12 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
-typedef C4UUID C4PeerID;
+/** The unique ID of a peer, derived from its X.509 certificate.
+    (It's technically a SHA256 digest, not a UUID, but we sometimes call it a UUID.)
+    A `C4PeerID` is not tied to a single discovery protocol but is shared across them. */
+typedef struct C4PeerID {
+    uint8_t bytes[32];
+} C4PeerID;
 
 /** Callback that notifies that C4PeerSync has started, failed to start, or stopped. */
 typedef void (*C4PeerSync_StatusCallback)(C4PeerSync*,   ///< Sender
