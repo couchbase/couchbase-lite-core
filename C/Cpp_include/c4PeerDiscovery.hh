@@ -392,10 +392,6 @@ namespace litecore::p2p {
     /// This is combined with the certificate's DER data to produce a type-5 UUID that's the peer UUID.
     constexpr const char* kPeerCertUUIDNamespace = "A1F0F06F-F49A-4D9A-A08B-3B901D4ACD49";
 
-    /// Constructs a peer UUID from its certificate.
-    UUID PeerUUIDFromCert(fleece::slice certData);
-    UUID PeerUUIDFromCert(C4Cert* cert);
-
     namespace btle {
         /// Namespace UUID used to construct BTLE service UUIDs.
         /// This is combined with the peerGroupID to produce a type-5 UUID that's the actual service UUID.

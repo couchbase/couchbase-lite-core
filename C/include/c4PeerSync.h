@@ -24,20 +24,25 @@ CBL_CORE_API C4PeerSync* C4NULLABLE c4peersync_new(const C4PeerSyncParameters*, 
 /** Returns this instance's peer UUID, as visible to other peers.
     (The UUID is derived from the C4Cert given in the parameters.)
     @note  This function is thread-safe. */
-CBL_CORE_API C4PeerID c4peersync_getUUID(C4PeerSync*) C4API;
+CBL_CORE_API C4PeerID c4peersync_getMyID(C4PeerSync*) C4API;
 
 /** Starts a C4PeerSync, beginning peer discovery and replication.
-    This call is asynchronous and returns immediately. When it succeeds or fails, the
+    This call is **asynchronous** and returns immediately. When it succeeds or fails, the
     `C4PeerSync_StatusCallback` will be called.
     @note  This function is thread-safe. */
 CBL_CORE_API void c4peersync_start(C4PeerSync*) C4API;
 
-/** Stops a C4PeerSync. Stops all active replicators, stops the listener, and stops peer discovery
-    and publishing.
-    This call is asynchronous and returns immediately. When complete, the
+/** Stops a C4PeerSync's active replicators, listener, peer discovery and publishing.
+    This call is **asynchronous** and returns immediately. When complete, the
     `C4PeerSync_StatusCallback` will be called.
     @note  This function is thread-safe. */
 CBL_CORE_API void c4peersync_stop(C4PeerSync*) C4API;
+
+/// Derives a C4PeerID from a `C4Cert`.
+CBL_CORE_API C4PeerID c4peerid_fromCert(C4Cert*) C4API;
+
+/// Derives a C4PeerID from an X.509 certificate's DER (not PEM!) data.
+CBL_CORE_API C4PeerID c4peerid_fromCertData(C4Slice certData) C4API;
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END
