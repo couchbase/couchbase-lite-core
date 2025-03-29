@@ -303,14 +303,15 @@ namespace litecore { namespace crypto {
         printf("[DBG] - generateRSA\n");
         @autoreleasepool {
             LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
-//            char timestr[100] = "LiteCore ";
-//            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
+            char timestr[100] = "LiteCore ";
+            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
             printf("[DBG] - before NSDictionary* params\n");
             NSDictionary* params = @ {
                 (id)kSecAttrKeyType:        (id)kSecAttrKeyTypeRSA,
                 (id)kSecAttrKeySizeInBits:  @(keySizeInBits),
                 (id)kSecAttrIsPermanent:    @YES,
-                (id)kSecAttrLabel:          @"LiteCore ",
+//                (id)kSecAttrLabel:          @"LiteCore ",
+                (id)kSecAttrLabel:          @(timestr),
             };
 
             SecKeyRef publicKey = NULL, privateKey = NULL;
