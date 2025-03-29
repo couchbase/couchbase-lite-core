@@ -302,13 +302,13 @@ namespace litecore { namespace crypto {
     Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
         @autoreleasepool {
             LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
-            char timestr[100] = "LiteCore ";
-            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
+//            char timestr[100] = "LiteCore ";
+//            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false, nullptr);
             NSDictionary* params = @ {
                 (id)kSecAttrKeyType:        (id)kSecAttrKeyTypeRSA,
                 (id)kSecAttrKeySizeInBits:  @(keySizeInBits),
                 (id)kSecAttrIsPermanent:    @YES,
-                (id)kSecAttrLabel:          @(timestr),
+                (id)kSecAttrLabel:          @"LiteCore ",
             };
 
             SecKeyRef publicKey = NULL, privateKey = NULL;
