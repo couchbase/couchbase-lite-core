@@ -313,7 +313,9 @@ namespace litecore { namespace crypto {
 
             SecKeyRef publicKey = NULL, privateKey = NULL;
             CFErrorRef error;
+            printf("[DBG] - calling SecKeyCreateRandomKey\n");
             privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
+            printf("[DBG] - after SecKeyCreateRandomKey\n");
             if (!privateKey) {
                 warnCFError(error, "SecKeyCreateRandomKey");
                 return nullptr;
