@@ -93,7 +93,7 @@ namespace litecore {
                 }
                 curSeq = _sqlKeyStore.lastSequence();
                 LogTo(QueryLog, "LazyIndex: Indexed sequences of %s are %s ; latest seq is %llu", _indexName.c_str(),
-                      indexedSequences.to_string().c_str(), (long long)curSeq);
+                      indexedSequences.to_string().c_str(), (unsigned long long)curSeq);
                 if ( indexedSequences.contains(sequence_t{1}, curSeq + 1) ) break;  // Index is up-to-date
 
                 // Find the first missing sequence:

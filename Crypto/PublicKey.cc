@@ -43,7 +43,7 @@ namespace litecore::crypto {
     }
 
     string Key::description() {
-        return stringprintf("%zd-bit %s %s key", mbedtls_pk_get_bitlen(_pk), mbedtls_pk_get_name(_pk),
+        return stringprintf("%zu-bit %s %s key", mbedtls_pk_get_bitlen(_pk), mbedtls_pk_get_name(_pk),
                             (isPrivate() ? "private" : "public"));
     }
 

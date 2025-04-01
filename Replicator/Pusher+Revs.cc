@@ -63,7 +63,7 @@ namespace litecore::repl {
     void Pusher::sendRevision(Retained<RevToSend> request) {
         if ( !connected() ) return;
 
-        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%d/%d]", SPLAT(request->docID), SPLAT(request->revID),
+        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%u/%u]", SPLAT(request->docID), SPLAT(request->revID),
                    (uint64_t)request->sequence, _revisionsInFlight, tuning::kMaxRevsInFlight);
 
         // Get the document & revision:
@@ -356,7 +356,7 @@ namespace litecore::repl {
         if ( willLog(LogLevel::Verbose) ) {
             alloc_slice old(ancestor.toJSON());
             alloc_slice nuu(root.toJSON());
-            logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
+            logVerbose("Encoded revision as delta, saving %zu bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
                        nuu.size - delta.size, SPLAT(old), SPLAT(nuu), SPLAT(delta));
         }
 #ifdef LITECORE_CPPTEST
