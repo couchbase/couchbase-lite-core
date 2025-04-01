@@ -269,7 +269,6 @@ set(
     vendor/SQLiteCpp/sqlite3/ext
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
     vendor/sockpp/include
     vendor/vector_search
 )
@@ -400,7 +399,6 @@ target_include_directories(
     vendor/fleece/API
     vendor/sockpp/include
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
 )
 
 target_link_libraries(
