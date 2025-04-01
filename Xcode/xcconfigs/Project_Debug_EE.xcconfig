@@ -14,6 +14,4 @@
 
 #include "Project_Debug.xcconfig"
 
-GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COUCHBASE_ENTERPRISE SQLITE_HAS_CODEC DEBUG=1 _LIBCPP_ENABLE_ASSERTIONS=0
-// Overwrites the definition in Project_Debug.xcconfig.
-// If that one changes, update the above line accordingly!
+GCC_PREPROCESSOR_DEFINITIONS = $(GCC_PREPROCESSOR_DEFINITIONS) COUCHBASE_ENTERPRISE SQLITE_HAS_CODEC
