@@ -307,7 +307,7 @@ namespace litecore { namespace crypto {
     // Public function to generate a new key-pair
     Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
         @autoreleasepool {
-            LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
+            LogTo(TLSLogDomain, "Generating %u-bit RSA key-pair in Keychain", keySizeInBits);
             char timestr[100] = "LiteCore ";
             fleece::DateFormat::format(timestr + strlen(timestr), time(nullptr)*1000, false, {});
             NSDictionary* params = @ {
@@ -774,7 +774,7 @@ namespace litecore { namespace crypto {
             }
             err = SecTrustGetTrustResult(trust, &result);
             checkOSStatus(err, "SecTrustEvaluate", "Couldn't validate certificate");
-            LogTo(TLSLogDomain, "    ...SecTrustEvaluate returned %d", result);
+            LogTo(TLSLogDomain, "    ...SecTrustEvaluate returned %u", result);
             if (result != kSecTrustResultUnspecified && result != kSecTrustResultProceed)
                 return nullptr;
             

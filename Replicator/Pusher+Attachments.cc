@@ -96,7 +96,7 @@ namespace litecore::repl {
         increment(_blobsInFlight);
         MessageBuilder reply(req);
         reply.compressed = req->boolProperty("compress"_sl);
-        logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)", SPLAT(digest), blob->getLength(),
+        logVerbose("Sending blob %.*s (length=%" PRIu64 ", compress=%d)", SPLAT(digest), blob->getLength(),
                    reply.compressed);
         Retained<Replicator> repl = replicator();
 
