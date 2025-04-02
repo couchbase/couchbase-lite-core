@@ -13,7 +13,9 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4PeerSyncTypes.h"
+#include "c4Replicator.hh"
 #include "fleece/InstanceCounted.hh"
+#include <span>
 
 #ifdef COUCHBASE_ENTERPRISE
 C4_ASSUME_NONNULL_BEGIN
@@ -29,7 +31,38 @@ C4_ASSUME_NONNULL_BEGIN
     with matching `peerGroupID`s, and replicates with them to sync a database. */
 struct C4PeerSync : fleece::InstanceCounted {
   public:
-    explicit C4PeerSync(C4PeerSyncParameters const&);
+    class Delegate {
+      public:
+        virtual ~Delegate() = default;
+
+        virtual void peerSyncStatus(bool started, C4Error const&) {}
+
+        virtual void peerDiscovery(C4PeerID const&, bool online) {}
+
+        virtual bool peerAuthenticate(C4PeerID const&, C4Cert*) = 0;
+
+        virtual void peerReplicationStatus(C4PeerID const&, C4ReplicatorStatus const&, bool incoming) {}
+
+        virtual void peerDocumentsEnded(C4PeerID const&, bool pushing, std::span<const C4DocumentEnded*>) {}
+
+        virtual void peerBlobProgress(C4PeerID const&, bool pushing, C4BlobProgress const&) {}
+    };
+
+    struct Parameters {
+        std::string_view                  peerGroupID;  ///< App identifier for peer discovery
+        std::span<const std::string_view> protocols;    ///< Which protocols to use (empty = all)
+        C4Cert*                           tlsCert;      ///< My TLS certificate (server+client)
+        C4KeyPair*                        tlsKeyPair;   ///< Certificate's key-pair
+
+        C4Database*                        database;           ///< Database to sync
+        std::span<C4ReplicationCollection> collections;        ///< Collections to sync
+        fleece::slice                      optionsDictFleece;  ///< Replicator options
+        C4ReplicatorProgressLevel          progressLevel = kC4ReplProgressOverall;
+        Delegate*                          delegate;
+    };
+
+    explicit C4PeerSync(Parameters const&);
+    explicit C4PeerSync(C4PeerSyncParameters const*);
 
     /** @note  It is guaranteed that no more callbacks will be made after the destructor returns. */
     ~C4PeerSync() noexcept;
@@ -54,6 +87,8 @@ struct C4PeerSync : fleece::InstanceCounted {
 
   private:
     class Impl;
+    class CppImpl;
+    class CImpl;
     std::unique_ptr<Impl> _impl;
 };
 

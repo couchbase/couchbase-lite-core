@@ -206,9 +206,9 @@ namespace litecore {
 
         DatabaseOrPool(fleece::Retained<DatabasePool> pool) : _pool(std::move(pool)) { Assert(_pool); }
 
-        DatabaseOrPool(C4Database* db) : DatabaseOrPool(fleece::Retained(db)) {}
+        DatabaseOrPool(C4Database* db) : _db(db) {}
 
-        DatabaseOrPool(DatabasePool* pool) : DatabaseOrPool(fleece::Retained(pool)) {}
+        DatabaseOrPool(DatabasePool* pool) : _pool(pool) {}
 
         C4Database* C4NULLABLE database() const { return _db; }
 
