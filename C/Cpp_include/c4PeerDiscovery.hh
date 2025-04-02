@@ -163,7 +163,7 @@ class C4PeerDiscovery {
     void notifyMetadataChanged(C4Peer*);
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 4;
+    static constexpr int kAPIVersion = 5;
 
   private:
     std::mutex                                                _mutex;
