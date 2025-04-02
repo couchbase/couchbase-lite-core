@@ -132,6 +132,7 @@ function(setup_litecore_build_unix)
                 -Wno-c99-extensions
                 -Wno-date-time # "expansion of date or time macro is not reproducible"
                 -Wno-deprecated-copy-with-user-provided-dtor # "definition of implicit copy constructor is deprecated because it has a user-provided destructor"
+                -Wno-documentation # Temporary workaround for Xcode 16.3 false warnings. #TODO: Removed when fixed
                 -Wno-exit-time-destructors # "declaration requires an exit-time destructor"
                 -Wno-extra-semi # "extra ';' after member function definition"
                 -Wno-float-equal
@@ -140,6 +141,7 @@ function(setup_litecore_build_unix)
                 -Wno-gnu-anonymous-struct # "anonymous structs are a GNU extension"
                 -Wno-gnu-zero-variadic-macro-arguments # "token pasting of ',' and __VA_ARGS__ is a GNU extension"
                 -Wno-inconsistent-missing-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
+                -Wno-missing-designated-field-initializers # "missing field 'x' initializer"
                 -Wno-missing-field-initializers # "missing field 'x' initializer"
                 -Wno-missing-noreturn # "function could be declared with attribute 'noreturn'"
                 -Wno-nested-anon-types # "anonymous types declared in an anonymous union are an extension"
@@ -149,6 +151,7 @@ function(setup_litecore_build_unix)
                 -Wno-shadow-field # "parameter shadows member inherited from type"
                 -Wno-shadow-uncaptured-local # "declaration [of a lambda parameter] shadows a local variable"
                 -Wno-suggest-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
+                -Wno-switch-default # "'switch' missing 'default' label"
                 -Wno-undef      # `#if X` where X isn't defined
                 -Wno-unused-macros
                 -Wno-unused-exception-parameter

@@ -58,12 +58,6 @@ target_include_directories(
     ../vendor/sockpp/include
     ../vendor/fleece/vendor/date/include
 )
-if(BUILD_ENTERPRISE)
-    target_include_directories(
-        LiteCoreREST_Objects PRIVATE
-        ../../vendor/couchbase-lite-core-EE/Listener
-    )
-endif()
 
 target_compile_definitions(
     LiteCoreREST_Objects PRIVATE
