@@ -16,6 +16,7 @@
 #include <cctype>
 #include <cstdarg>
 #include <cstring>
+#include <ranges>
 #include <vector>
 #include <sstream>
 #include <string_view>
@@ -64,13 +65,25 @@ namespace litecore {
         If the separator is not found, returns the original string and an empty string. */
     std::pair<std::string_view, std::string_view> split2(std::string_view str, std::string_view separator);
 
-    /** Returns the strings in the vector concatenated together,
+    /** Concatenates the items in the span/vector onto the stream using `<<`,
         with the separator (if non-null) between them. */
-    std::string join(const std::vector<std::string>&, const char* separator = nullptr);
+    template <std::ranges::range R>
+    std::stringstream& join(std::stringstream& s, R const& vec, const char* separator = nullptr) {
+        int n = 0;
+        for ( auto& item : vec ) {
+            if ( n++ && separator ) s << separator;
+            s << item;
+        }
+        return s;
+    }
 
-    /** Concatenates the strings in the vector onto the stream,
+    /** Returns the items in the span/vector concatenated together (stringified with `<<`),
         with the separator (if non-null) between them. */
-    std::stringstream& join(std::stringstream&, const std::vector<std::string>&, const char* separator = nullptr);
+    template <std::ranges::range R>
+    std::string join(R const& vec, const char* separator) {
+        std::stringstream s;
+        return std::move(join(s, vec, separator)).str();
+    }
 
     /** Removes last character from string (in place.) Does nothing if string is empty. */
     void chop(std::string&) noexcept;
