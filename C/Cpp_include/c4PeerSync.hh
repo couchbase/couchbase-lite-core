@@ -31,20 +31,27 @@ C4_ASSUME_NONNULL_BEGIN
     with matching `peerGroupID`s, and replicates with them to sync a database. */
 struct C4PeerSync : fleece::InstanceCounted {
   public:
+    /** API to receive notifications from C4PeerSync. */
     class Delegate {
       public:
         virtual ~Delegate() = default;
 
+        /// Notification that C4PeerSync has started or stopped, possibly with an error.
         virtual void peerSyncStatus(bool started, C4Error const&) {}
 
+        /// Notification that a peer has come online or gone offline.
         virtual void peerDiscovery(C4PeerID const&, bool online) {}
 
+        /// Must authenticate a TLS connection to/from a peer, based on properties of its certificate.
         virtual bool peerAuthenticate(C4PeerID const&, C4Cert*) = 0;
 
+        /// A replication with a peer has changed status.
         virtual void peerReplicationStatus(C4PeerID const&, C4ReplicatorStatus const&, bool incoming) {}
 
+        /// A replication with a peer has transferred documents.
         virtual void peerDocumentsEnded(C4PeerID const&, bool pushing, std::span<const C4DocumentEnded*>) {}
 
+        /// A replication with a peer is transferring a blob..
         virtual void peerBlobProgress(C4PeerID const&, bool pushing, C4BlobProgress const&) {}
     };
 
@@ -58,13 +65,13 @@ struct C4PeerSync : fleece::InstanceCounted {
         std::span<C4ReplicationCollection> collections;        ///< Collections to sync
         fleece::slice                      optionsDictFleece;  ///< Replicator options
         C4ReplicatorProgressLevel          progressLevel = kC4ReplProgressOverall;
-        Delegate*                          delegate;
+        Delegate*                          delegate;  ///< Your object that receives notifications
     };
 
     explicit C4PeerSync(Parameters const&);
     explicit C4PeerSync(C4PeerSyncParameters const*);
 
-    /** @note  It is guaranteed that no more callbacks will be made after the destructor returns. */
+    /** @note  It is guaranteed that the delegate will not be called after the destructor returns. */
     ~C4PeerSync() noexcept;
 
     /** Returns this instance's peer UUID, as visible to other peers.
