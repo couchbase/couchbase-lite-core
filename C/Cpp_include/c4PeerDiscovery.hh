@@ -13,6 +13,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4DatabaseTypes.h"
+#include "c4PeerSyncTypes.h"  // for C4PeerID
 #include "c4Error.h"
 #include "ObserverList.hh"
 #include "fleece/InstanceCounted.hh"
@@ -61,21 +62,29 @@ class C4PeerDiscovery {
 
     static std::vector<std::string> registeredProviders();
 
-    /// Constructor. Uses each registered provider class.
+    /// Constructor. Uses all registered providers.
     /// @param peerGroupID  An app-specific unique identifier. Will discover other devices that use this identifier.
     ///                   It must be 63 characters or less and may not contain `.`, `,` or `\\`.
-    explicit C4PeerDiscovery(std::string_view peerGroupID);
+    /// @param myPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
+    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& myPeerID);
 
     /// Constructor. Uses the named provider classes.
     /// @param peerGroupID  An app-specific unique identifier.
+    /// @param myPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
     /// @param providerNames  A list of names of registered C4PeerDiscoveryProviders.
-    explicit C4PeerDiscovery(std::string_view peerGroupID, std::span<const std::string_view> providerNames);
+    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& myPeerID,
+                             std::span<const std::string_view> providerNames);
 
     /// The destructor shuts everything down in an orderly fashion, not returning until complete.
     ~C4PeerDiscovery();
 
+    /// The peer group ID.
     std::string const& peerGroupID() const { return _peerGroupID; }
 
+    /// This device's peer ID.
+    C4PeerID const& peerID() const { return _peerID; }
+
+    /// The `C4PeerDiscoveryProvider`s in use.
     std::vector<std::unique_ptr<C4PeerDiscoveryProvider>> const& providers() const { return _providers; }
 
     /// Tells providers to start looking for peers.
@@ -163,11 +172,12 @@ class C4PeerDiscovery {
     void notifyMetadataChanged(C4Peer*);
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 5;
+    static constexpr int kAPIVersion = 6;
 
   private:
     std::mutex                                                _mutex;
-    std::string                                               _peerGroupID;
+    std::string const                                         _peerGroupID;
+    C4PeerID const                                            _peerID;
     std::vector<std::unique_ptr<C4PeerDiscoveryProvider>>     _providers;  // List of providers. Never changes.
     std::unordered_map<std::string, fleece::Retained<C4Peer>> _peers;
     litecore::ObserverList<Observer>                          _observers;
