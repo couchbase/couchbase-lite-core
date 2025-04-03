@@ -93,6 +93,7 @@ struct C4Replicator
 
         fleece::MutableDict copyOptions() const;       ///< Returns copy of options (never null)
         void                setOptions(fleece::Dict);  ///< Updates options Dict
+        void                updateOptions(std::function<void(fleece::MutableDict)> const& callback);
 
       private:
         void makeAllocated(C4ReplicationCollection&);
