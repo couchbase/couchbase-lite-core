@@ -199,7 +199,7 @@ typedef struct C4ReplicationCollection {
     C4Slice optionsDictFleece;
 
     C4ReplicatorValidationFunction C4NULLABLE pushFilter;       ///< Callback that can reject outgoing revisions
-    C4ReplicatorValidationFunction C4NULLABLE pullFilter;       ///< Callback that can reject outgoing revisions
+    C4ReplicatorValidationFunction C4NULLABLE pullFilter;       ///< Callback that can reject incoming revisions
     void* C4NULLABLE                          callbackContext;  ///< Value to be passed to the callbacks.
 } C4ReplicationCollection;
 
