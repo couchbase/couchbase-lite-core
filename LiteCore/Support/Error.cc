@@ -622,4 +622,19 @@ namespace litecore {
         throw error(LiteCore, AssertionFailed, messageStr, err.backtrace);
     }
 
+    void error::assertArgFailed(const char* expr, const char* message, ...) {
+        string messageStr = "Invalid argument: ";
+        if ( message ) {
+            va_list args;
+            va_start(args, message);
+            messageStr += vstringprintf(message, args);
+            va_end(args);
+        } else {
+            messageStr += expr;
+        }
+        error err(LiteCore, InvalidParameter, messageStr);
+        err.captureBacktrace(1);
+        throw err;
+    }
+
 }  // namespace litecore
