@@ -187,6 +187,15 @@ C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4CollectionSpe
     return coll;
 }
 
+pair<C4ReplicatorMode, C4ReplicatorMode> C4Replicator::Parameters::maxModes() const {
+    C4ReplicatorMode push = kC4Disabled, pull = kC4Disabled;
+    for ( auto coll : collections() ) {
+        push = std::max(push, coll.push);
+        pull = std::max(pull, coll.pull);
+    }
+    return {push, pull};
+}
+
 C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4ReplicationCollection const& spec) {
     _collections.push_back(spec);
     C4ReplicationCollection& copiedSpec = _collections.back();
