@@ -217,6 +217,12 @@ void C4Replicator::Parameters::setOptions(fleece::Dict options) {
     optionsDictFleece = _options = enc.finish();
 }
 
+void C4Replicator::Parameters::updateOptions(function<void(MutableDict)> const& callback) {
+    MutableDict options = copyOptions();
+    callback(options);
+    setOptions(options);
+}
+
 #pragma mark - C4ADDRESS:
 
 bool C4Address::fromURL(slice url, C4Address* address, slice* dbName) {
