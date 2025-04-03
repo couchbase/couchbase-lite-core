@@ -83,6 +83,9 @@ struct C4Replicator
 
         std::span<const C4ReplicationCollection> collections() const noexcept { return _collections; }
 
+        /// The highest push and pull modes of any collections.
+        std::pair<C4ReplicatorMode, C4ReplicatorMode> maxModes() const;
+
         C4ReplicationCollection& addCollection(C4ReplicationCollection const&);
 
         C4ReplicationCollection& addCollection(C4CollectionSpec const&, C4ReplicatorMode pushMode,
