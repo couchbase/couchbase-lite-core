@@ -233,6 +233,18 @@ namespace litecore {
         return ss.str();
     }
 
+    string SQLiteKeyStore::untransformCollectionName(std::string_view name) {
+        ostringstream ss;
+        const char*   name_cstr = name.data();
+        while ( char c = *name_cstr++ ) {
+            if ( c == '\\' && *name_cstr >= 'A' && *name_cstr <= 'Z' ) {
+                continue;  // Skip the backslash before capital letters
+            }
+            ss << c;
+        }
+        return ss.str();
+    }
+
     string SQLiteKeyStore::tableName(const string& keyStoreName) {
         return "kv_" + transformCollectionName(keyStoreName, true);
     }
