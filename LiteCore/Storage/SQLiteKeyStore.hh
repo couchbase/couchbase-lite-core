@@ -56,6 +56,8 @@ namespace litecore {
         /// Modifies a collection name to either add or remove mangling necessary for
         /// case sensitive collection names in a case insensitive environment
         [[nodiscard]] static std::string transformCollectionName(const std::string& name, bool mangle);
+        /// Removes mangling from a collection name by removing backslashes before capital letters
+        [[nodiscard]] static std::string untransformCollectionName(std::string_view name);
         [[nodiscard]] static std::string tableName(const string& keyStoreName);
 
         bool read(Record& rec, ReadBy, ContentOption) const override;
