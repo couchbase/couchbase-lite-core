@@ -63,7 +63,8 @@ namespace litecore::repl {
             {{WebSocketDomain, 400, 0}, true, "Unrecognized collection"_sl},
             {{WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
             {{WebSocketDomain, 503, 0}, false, "The server is over capacity"_sl},
-            {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl}};
+            {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl},
+            {{POSIXDomain, 28, 0}, true, "No space left on device"_sl}};
 
     std::string Replicator::ProtocolName() {
         stringstream result;
