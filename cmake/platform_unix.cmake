@@ -152,6 +152,7 @@ function(setup_litecore_build_unix)
                 -Wno-shadow-uncaptured-local # "declaration [of a lambda parameter] shadows a local variable"
                 -Wno-suggest-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
                 -Wno-undef      # `#if X` where X isn't defined
+                -Wno-unsafe-buffer-usage-in-container # "the two-parameter std::span construction is unsafe"
                 -Wno-unused-macros
                 -Wno-unused-exception-parameter
                 -Wno-unused-parameter # Unused fn parameter
