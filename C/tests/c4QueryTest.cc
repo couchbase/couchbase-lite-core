@@ -313,6 +313,48 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query partial value index", "[Query][C]")
     }
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query partial value index with compound expressions", "[Query][C]") {
+    C4Error err;
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
+    // First add some documents with specific fields to test
+    {
+        TransactionHelper t(db);
+        createFleeceRev(db, "compound1"_sl, kRevID,
+                        R"({"locationID": "store1", "status": "active", "isPurged": false})"_sl);
+        createFleeceRev(db, "compound2"_sl, kRevID,
+                        R"({"locationID": "store2", "status": "inactive", "isPurged": true})"_sl);
+        createFleeceRev(db, "compound3"_sl, kRevID,
+                        R"({"locationID": "store1", "status": "active", "isPurged": true})"_sl);
+    }
+
+    // Create a partial value index with compound expressions
+    C4IndexOptions options{};
+    options.where = R"(["=", [".isPurged"], false])";
+
+    // This is what was causing the bug - a value index with multiple expressions and a WHERE clause
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("compound_idx"), c4str(R"([".locationID", ".status", ".isPurged"])"),
+                               kC4JSONQuery, kC4ValueIndex, &options, WITH_ERROR(&err)));
+
+    // Verify that the index works by running a query that would use it
+    compileSelect("SELECT META().id FROM _ WHERE locationID = 'store1' AND status = 'active' AND isPurged = false",
+                  kC4N1QLQuery);
+    REQUIRE(query);
+    CHECK(run() == (vector<string>{"compound1"}));
+
+    // Create another index with N1QL syntax to verify that works too
+    C4IndexOptions options2{};
+    options2.where = "isPurged = true";
+    REQUIRE(c4coll_createIndex(defaultColl, C4STR("compound_idx2"), c4str("locationID, status, isPurged"), kC4N1QLQuery,
+                               kC4ValueIndex, &options2, WITH_ERROR(&err)));
+
+    // Verify the second index works
+    compileSelect("SELECT META().id FROM _ WHERE locationID = 'store1' AND status = 'active' AND isPurged = true",
+                  kC4N1QLQuery);
+    REQUIRE(query);
+    CHECK(run() == (vector<string>{"compound3"}));
+}
+
 static bool lookForIndex(C4Database* db, slice name) {
     bool found       = false;
     auto defaultColl = C4QueryTest::getCollection(db, kC4DefaultCollectionSpec);
