@@ -331,10 +331,12 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     virtual void resolveURL(C4Peer*) = 0;
 
     /// Cancels any in-progress resolveURL calls.
-    virtual void cancelResolveURL(C4Peer*) = 0;
+    /// Default implementation does nothing.
+    virtual void cancelResolveURL(C4Peer*) {}
 
     /// Returns the custom socket factory to use to connect to a peer URL, or nullopt if no special factory is needed.
-    virtual std::optional<C4SocketFactory> getSocketFactory() const = 0;
+    /// Default implementation returns `nullopt`.
+    virtual std::optional<C4SocketFactory> getSocketFactory() const;
 
     /// Publishes/advertises a service so other devices can discover this one as a peer and connect to it.
     /// Implementation must call \ref publishStateChanged on success/failure.
