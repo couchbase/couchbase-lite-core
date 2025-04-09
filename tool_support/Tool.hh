@@ -18,9 +18,11 @@
 
 #pragma once
 #include "fleece/Fleece.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "ArgumentTokenizer.hh"
 #include <algorithm>
+#include <Backtrace.hh>
 #include <charconv>
 #include <deque>
 #include <functional>
@@ -54,13 +56,14 @@ class Tool {
             return run();
         } catch ( const exit_error& x ) { return x.status; } catch ( const fail_error& ) {
             return 1;
+        } catch ( const litecore::error& x ) {
+            errorOccurred(litecore::stringprintf("Uncaught LiteCore exception: %s", x.what()));
+            if ( x.backtrace ) x.backtrace->writeTo(std::cerr);
+            std::cerr << std::endl;
         } catch ( const std::exception& x ) {
             errorOccurred(litecore::stringprintf("Uncaught C++ exception: %s", x.what()));
-            return 1;
-        } catch ( ... ) {
-            errorOccurred("Uncaught unknown C++ exception");
-            return 1;
-        }
+        } catch ( ... ) { errorOccurred("Uncaught unknown C++ exception"); }
+        return 1;
     }
 
     Tool(const Tool& parent)
