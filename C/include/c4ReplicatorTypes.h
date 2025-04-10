@@ -259,7 +259,10 @@ typedef struct C4ReplicatorParameters {
                      ///< Implemented by BuiltInWebSocket.
 #define kC4ReplicatorAuthClientCert    "clientCert"     ///< TLS client certificate (value platform-dependent)
 #define kC4ReplicatorAuthClientCertKey "clientCertKey"  ///< Client cert's private key (data)
+#define kC4ReplicatorAuthClientCertKeyIsExternal \
+    "clientCertKeyIsExternal"                           ///< if true key (data) is a pointer to External PrivateKey
 #define kC4ReplicatorAuthToken         "token"          ///< Session cookie or auth token (string)
+
 
 // [2]: auth.type values:
 #define kC4AuthTypeBasic         "Basic"           ///< HTTP Basic (the default)

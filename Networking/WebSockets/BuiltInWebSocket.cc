@@ -22,6 +22,7 @@
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include <string>
+#include "c4Certificate.hh"
 
 using namespace litecore;
 using namespace litecore::repl;
@@ -253,8 +254,20 @@ namespace litecore::websocket {
                 return false;
             }
             if ( slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData ) {
-                _tlsContext->setIdentity(certData, keyData);
-                return true;
+                Retained<crypto::Cert> cert = new crypto::Cert(certData);
+                if ( bool isExternal = auth[kC4ReplicatorAuthClientCertKeyIsExternal].asBool(); isExternal ) {
+#ifdef COUCHBASE_ENTERPRISE
+                    C4KeyPair* c4Key = nullptr;
+                    memcpy(&c4Key, keyData.buf, sizeof(void*));
+                    _tlsContext->setIdentity(new crypto::Identity(cert, c4Key->getPrivateKey()));
+                    return true;
+#else
+                    return false;
+#endif
+                } else {
+                    _tlsContext->setIdentity(certData, keyData);
+                    return true;
+                }
             } else {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
                 Retained<crypto::Cert>       cert = new crypto::Cert(certData);
