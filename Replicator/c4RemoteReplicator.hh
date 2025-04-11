@@ -221,8 +221,12 @@ namespace litecore {
 
 
       private:
-        alloc_slice const                                            _url;
-        const C4SocketFactory*                                       _socketFactory{nullptr};
+        alloc_slice const      _url;
+        const C4SocketFactory* _socketFactory{nullptr};
+        // _socketExternalKey comes from C4ReplicatorParameters::externalKey. This parameter is
+        // part of kC4ReplicatorOptionAuthentication. When kC4ReplicatorAuthClientCertKeyIsExternal is true, we
+        // don't have the private key data in kC4ReplicatorAuthClientCertKey. Instead, the private key will
+        // be in the form of object, externalKey.
         std::unique_ptr<const C4KeyPair, void (*)(const C4KeyPair*)> _socketExternalKey{
                 nullptr, [](const C4KeyPair* k) { c4keypair_release(const_cast<C4KeyPair*>(k)); }};
         C4SocketFactory        _customSocketFactory{};  // Storage for *_socketFactory if non-null
