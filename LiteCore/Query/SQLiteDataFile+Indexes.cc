@@ -331,7 +331,7 @@ namespace litecore {
             if ( pos != string::npos )
                 path = string_view{indexTableName.data() + pos + KeyStore::kUnnestSeparator.size,
                                    indexTableName.length() - pos - KeyStore::kUnnestSeparator.size};
-            std::string unescapedPath = SQLiteKeyStore::untransformCollectionName(path);
+            std::string unescapedPath = SQLiteKeyStore::transformCollectionName(string(path), false);
             options.emplace<IndexSpec::ArrayOptions>(IndexSpec::ArrayOptions{unescapedPath});
         }
 

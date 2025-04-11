@@ -221,27 +221,17 @@ namespace litecore {
         ostringstream ss;
         const char*   name_cstr = name.c_str();
         while ( char c = *name_cstr++ ) {
+            // Remove escape characters
             if ( c == '\\' ) { continue; }
 
             if ( mangle ) {
+                // Escape capital letters
                 if ( c >= 'A' && c <= 'Z' ) { ss << '\\'; }
             }
 
             ss << c;
         }
 
-        return ss.str();
-    }
-
-    string SQLiteKeyStore::untransformCollectionName(std::string_view name) {
-        ostringstream ss;
-        const char*   name_cstr = name.data();
-        while ( char c = *name_cstr++ ) {
-            if ( c == '\\' && *name_cstr >= 'A' && *name_cstr <= 'Z' ) {
-                continue;  // Skip the backslash before capital letters
-            }
-            ss << c;
-        }
         return ss.str();
     }
 
