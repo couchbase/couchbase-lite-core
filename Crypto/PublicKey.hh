@@ -115,6 +115,9 @@ namespace litecore::crypto {
 
     /** A key-pair stored externally; subclasses must implement the crypto operations. */
     class ExternalPrivateKey : public PrivateKey {
+      public:
+        virtual bool isPrivateKeyDataAvailable() override { return false; }
+
       protected:
         explicit ExternalPrivateKey(unsigned keySizeInBits);
 
