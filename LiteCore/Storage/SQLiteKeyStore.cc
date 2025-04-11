@@ -221,9 +221,11 @@ namespace litecore {
         ostringstream ss;
         const char*   name_cstr = name.c_str();
         while ( char c = *name_cstr++ ) {
+            // Remove escape characters
             if ( c == '\\' ) { continue; }
 
             if ( mangle ) {
+                // Escape capital letters
                 if ( c >= 'A' && c <= 'Z' ) { ss << '\\'; }
             }
 
