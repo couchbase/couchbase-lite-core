@@ -22,8 +22,8 @@ namespace litecore::repl {
     // Main factory function to create a WebSocket.
     fleece::Retained<websocket::WebSocket> CreateWebSocket(const websocket::URL&, const fleece::alloc_slice& options,
                                                            std::shared_ptr<DBAccess>, const C4SocketFactory*,
-                                                           void* nativeHandle = nullptr,
-                                                           const C4KeyPair* externakKey = nullptr);
+                                                           void*            nativeHandle = nullptr,
+                                                           const C4KeyPair* externakKey  = nullptr);
 
     // Returns the WebSocket object associated with a C4Socket
     websocket::WebSocket* WebSocketFrom(C4Socket* c4sock);
@@ -35,7 +35,7 @@ namespace litecore::repl {
       public:
         static const C4SocketFactory& registeredFactory();
 
-        using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL, fleece::alloc_slice options,
+        using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL, fleece::alloc_slice         options,
                                                               std::shared_ptr<DBAccess>, const C4KeyPair* externalKey);
         static void registerInternalFactory(InternalFactory);
 

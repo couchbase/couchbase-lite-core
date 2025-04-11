@@ -30,10 +30,11 @@ using namespace litecore::websocket;
 
 void C4RegisterBuiltInWebSocket() {
     // NOLINTBEGIN(performance-unnecessary-value-param)
-    C4SocketImpl::registerInternalFactory(
-            [](websocket::URL url, fleece::alloc_slice options, std::shared_ptr<DBAccess> database, const C4KeyPair* externalKey) -> WebSocketImpl* {
-                return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options, externalKey), database);
-            });
+    C4SocketImpl::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
+                                             std::shared_ptr<DBAccess> database,
+                                             const C4KeyPair*          externalKey) -> WebSocketImpl* {
+        return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options, externalKey), database);
+    });
     // NOLINTEND(performance-unnecessary-value-param)
 }
 
@@ -255,17 +256,17 @@ namespace litecore::websocket {
             }
             if ( bool isExternal = auth[kC4ReplicatorAuthClientCertKeyIsExternal].asBool(); isExternal ) {
 #ifdef COUCHBASE_ENTERPRISE
-                if (!parameters().externalKey) {
+                if ( !parameters().externalKey ) {
                     closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
                                                 "Missing externalKey when 'clientCertKeyIsExternal' is true"_sl));
                     return false;
                 }
-                Retained<crypto::Cert>       cert = new crypto::Cert(certData);
-                _tlsContext->setIdentity(new crypto::Identity(cert, const_cast<C4KeyPair*>(parameters().externalKey)->getPrivateKey()));
+                Retained<crypto::Cert> cert = new crypto::Cert(certData);
+                _tlsContext->setIdentity(
+                        new crypto::Identity(cert, const_cast<C4KeyPair*>(parameters().externalKey)->getPrivateKey()));
                 return true;
 #else
-                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorUnsupported,
-                                            "External Key is not supported"_sl));
+                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorUnsupported, "External Key is not supported"_sl));
                 return false;
 #endif
             } else if ( slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData ) {
