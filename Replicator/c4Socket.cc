@@ -62,7 +62,7 @@ namespace litecore::repl {
 
     Retained<WebSocket> CreateWebSocket(const websocket::URL& url, const alloc_slice& options,
                                         shared_ptr<DBAccess> database, const C4SocketFactory* factory,
-                                        void* nativeHandle) {
+                                        void* nativeHandle, const C4KeyPair* externalKey) {
         if ( !factory ) factory = sRegisteredFactory;
 
         if ( factory ) {
@@ -70,7 +70,7 @@ namespace litecore::repl {
             return ret;
         } else if ( sRegisteredInternalFactory ) {
             Assert(!nativeHandle);
-            return sRegisteredInternalFactory(url, options, std::move(database));
+            return sRegisteredInternalFactory(url, options, std::move(database), externalKey);
         } else {
             throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
         }
@@ -80,12 +80,13 @@ namespace litecore::repl {
         return f ? *f : C4SocketImpl::registeredFactory();
     }
 
-    WebSocketImpl::Parameters C4SocketImpl::convertParams(slice c4SocketOptions) {
+    WebSocketImpl::Parameters C4SocketImpl::convertParams(slice c4SocketOptions, const C4KeyPair* externalKey) {
         WebSocketImpl::Parameters params = {};
         params.options                   = AllocedDict(c4SocketOptions);
         params.webSocketProtocols        = params.options[kC4SocketOptionWSProtocols].asString();
         params.heartbeatSecs             = (int)params.options[kC4ReplicatorHeartbeatInterval].asInt();
         params.networkInterface          = params.options[kC4SocketOptionNetworkInterface].asString();
+        params.externalKey               = externalKey;
         return params;
     }
 

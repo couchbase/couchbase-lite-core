@@ -54,6 +54,8 @@ namespace litecore {
                 _customSocketFactory = *params.socketFactory;
                 _socketFactory       = &_customSocketFactory;
             }
+            if ( params.externalKey )
+                _socketExternalKey.reset(c4keypair_retain(const_cast<C4KeyPair*>(params.externalKey)));
         }
 
         void start(bool reset) noexcept override {
@@ -117,8 +119,9 @@ namespace litecore {
             _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
             auto dbAccess =
                     make_shared<DBAccess>(dbOpenedAgain, _options->properties["disable_blob_support"_sl].asBool());
-            auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
-            _replicator    = new Replicator(dbAccess, webSocket, *this, _options);
+            auto webSocket =
+                    CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory, nullptr, _socketExternalKey.get());
+            _replicator = new Replicator(dbAccess, webSocket, *this, _options);
 
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to
@@ -218,8 +221,10 @@ namespace litecore {
 
 
       private:
-        alloc_slice const      _url;
-        const C4SocketFactory* _socketFactory{nullptr};
+        alloc_slice const                                            _url;
+        const C4SocketFactory*                                       _socketFactory{nullptr};
+        std::unique_ptr<const C4KeyPair, void (*)(const C4KeyPair*)> _socketExternalKey{
+                nullptr, [](const C4KeyPair* k) { c4keypair_release(const_cast<C4KeyPair*>(k)); }};
         C4SocketFactory        _customSocketFactory{};  // Storage for *_socketFactory if non-null
         litecore::actor::Timer _retryTimer;
         unsigned               _retryCount{0};

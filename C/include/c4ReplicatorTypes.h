@@ -203,6 +203,7 @@ typedef struct C4ReplicatorParameters {
     const C4SocketFactory* C4NULLABLE                 socketFactory;    ///< Custom C4SocketFactory, if not NULL
     C4ReplicationCollection*                          collections;
     size_t                                            collectionCount;
+    const C4KeyPair* C4NULLABLE                       externalKey;
 } C4ReplicatorParameters;
 
 #pragma mark - CONSTANTS:
