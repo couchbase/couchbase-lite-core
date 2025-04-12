@@ -15,6 +15,7 @@
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
 #include "CookieStore.hh"
+#include "c4Certificate.hh"
 #include "c4Database.hh"
 #include "c4ReplicatorTypes.h"
 #include "c4Socket+Internal.hh"
@@ -22,7 +23,6 @@
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include <string>
-#include "c4Certificate.hh"
 
 using namespace litecore;
 using namespace litecore::repl;
@@ -32,7 +32,7 @@ void C4RegisterBuiltInWebSocket() {
     // NOLINTBEGIN(performance-unnecessary-value-param)
     C4SocketImpl::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
                                              std::shared_ptr<DBAccess> database,
-                                             const C4KeyPair*          externalKey) -> WebSocketImpl* {
+                                             C4KeyPair*                externalKey) -> WebSocketImpl* {
         return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options, externalKey), database);
     });
     // NOLINTEND(performance-unnecessary-value-param)
@@ -254,14 +254,9 @@ namespace litecore::websocket {
                                             "Missing TLS client cert in C4Replicator config"_sl));
                 return false;
             }
-            if ( bool isExternal = auth[kC4ReplicatorAuthClientCertKeyIsExternal].asBool(); isExternal ) {
+            if ( parameters().externalKey ) {
 #ifdef COUCHBASE_ENTERPRISE
-                if ( !parameters().externalKey ) {
-                    closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                                "Missing externalKey when 'clientCertKeyIsExternal' is true"_sl));
-                    return false;
-                }
-                Retained<crypto::Cert> cert = new crypto::Cert(certData);
+                Retained<crypto::Cert> cert = make_retained<crypto::Cert>(certData);
                 _tlsContext->setIdentity(
                         new crypto::Identity(cert, const_cast<C4KeyPair*>(parameters().externalKey)->getPrivateKey()));
                 return true;

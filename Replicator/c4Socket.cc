@@ -62,7 +62,7 @@ namespace litecore::repl {
 
     Retained<WebSocket> CreateWebSocket(const websocket::URL& url, const alloc_slice& options,
                                         shared_ptr<DBAccess> database, const C4SocketFactory* factory,
-                                        void* nativeHandle, const C4KeyPair* externalKey) {
+                                        void* nativeHandle, C4KeyPair* externalKey) {
         if ( !factory ) factory = sRegisteredFactory;
 
         if ( factory ) {
@@ -80,7 +80,7 @@ namespace litecore::repl {
         return f ? *f : C4SocketImpl::registeredFactory();
     }
 
-    WebSocketImpl::Parameters C4SocketImpl::convertParams(slice c4SocketOptions, const C4KeyPair* externalKey) {
+    WebSocketImpl::Parameters C4SocketImpl::convertParams(slice c4SocketOptions, C4KeyPair* externalKey) {
         WebSocketImpl::Parameters params = {};
         params.options                   = AllocedDict(c4SocketOptions);
         params.webSocketProtocols        = params.options[kC4SocketOptionWSProtocols].asString();

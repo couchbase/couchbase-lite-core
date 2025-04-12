@@ -203,7 +203,7 @@ typedef struct C4ReplicatorParameters {
     const C4SocketFactory* C4NULLABLE                 socketFactory;    ///< Custom C4SocketFactory, if not NULL
     C4ReplicationCollection*                          collections;
     size_t                                            collectionCount;
-    const C4KeyPair* C4NULLABLE                       externalKey;
+    C4KeyPair* C4NULLABLE                             externalKey;
 } C4ReplicatorParameters;
 
 #pragma mark - CONSTANTS:
@@ -260,9 +260,7 @@ typedef struct C4ReplicatorParameters {
                      ///< Implemented by BuiltInWebSocket.
 #define kC4ReplicatorAuthClientCert    "clientCert"     ///< TLS client certificate (value platform-dependent)
 #define kC4ReplicatorAuthClientCertKey "clientCertKey"  ///< Client cert's private key (data)
-#define kC4ReplicatorAuthClientCertKeyIsExternal                                                                       \
-    "clientCertKeyIsExternal"           ///< if true key (data) is a pointer to External PrivateKey
-#define kC4ReplicatorAuthToken "token"  ///< Session cookie or auth token (string)
+#define kC4ReplicatorAuthToken         "token"          ///< Session cookie or auth token (string)
 
 
 // [2]: auth.type values:

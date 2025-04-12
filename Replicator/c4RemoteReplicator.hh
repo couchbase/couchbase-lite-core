@@ -227,8 +227,8 @@ namespace litecore {
         // part of kC4ReplicatorOptionAuthentication. When kC4ReplicatorAuthClientCertKeyIsExternal is true, we
         // don't have the private key data in kC4ReplicatorAuthClientCertKey. Instead, the private key will
         // be in the form of object, externalKey.
-        std::unique_ptr<const C4KeyPair, void (*)(const C4KeyPair*)> _socketExternalKey{
-                nullptr, [](const C4KeyPair* k) { c4keypair_release(const_cast<C4KeyPair*>(k)); }};
+        std::unique_ptr<C4KeyPair, void (*)(C4KeyPair*)> _socketExternalKey{nullptr,
+                                                                            [](C4KeyPair* k) { c4keypair_release(k); }};
         C4SocketFactory        _customSocketFactory{};  // Storage for *_socketFactory if non-null
         litecore::actor::Timer _retryTimer;
         unsigned               _retryCount{0};
