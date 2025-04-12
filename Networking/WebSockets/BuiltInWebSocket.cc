@@ -257,8 +257,7 @@ namespace litecore::websocket {
             if ( parameters().externalKey ) {
 #ifdef COUCHBASE_ENTERPRISE
                 Retained<crypto::Cert> cert = make_retained<crypto::Cert>(certData);
-                _tlsContext->setIdentity(
-                        new crypto::Identity(cert, const_cast<C4KeyPair*>(parameters().externalKey)->getPrivateKey()));
+                _tlsContext->setIdentity(new crypto::Identity(cert, parameters().externalKey->getPrivateKey()));
                 return true;
 #else
                 closeWithError(c4error_make(LiteCoreDomain, kC4ErrorUnsupported, "External Key is not supported"_sl));
