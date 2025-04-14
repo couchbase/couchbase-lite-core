@@ -110,7 +110,7 @@ class C4PeerDiscovery {
     /// Returns a copy of the current known set of peers.
     std::unordered_map<std::string, fleece::Retained<C4Peer>> peers();
 
-    /// Returns the peer (if any) with the given peer ID.
+    /// Returns the peer (if any) with the given ID.
     fleece::Retained<C4Peer> peerWithID(std::string_view id);
 
     /** API for receiving notifications from C4PeerDiscovery.
@@ -122,11 +122,11 @@ class C4PeerDiscovery {
         /// Notification that a provider has started/stopped browsing for peers.
         virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
 
-        /// Notification that an online peer has been discovered.
-        virtual void addedPeer(C4Peer*) {}
+        /// Notification that one or more online peers have been discovered.
+        virtual void addedPeers(std::span<fleece::Retained<C4Peer> const>) {}
 
-        /// Notification that a peer has gone offline.
-        virtual void removedPeer(C4Peer*) {}
+        /// Notification that one or more peers have gone offline.
+        virtual void removedPeers(std::span<fleece::Retained<C4Peer> const>) {}
 
         /// Notification that a peer's metadata has changed.
         virtual void peerMetadataChanged(C4Peer*) {}
@@ -146,7 +146,13 @@ class C4PeerDiscovery {
     /// After this method returns, no more calls will be made to the observer and it can safely be destructed.
     void removeObserver(Observer*);
 
-    //---- API for providers only:
+    // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
+    static constexpr int kAPIVersion = 7;
+
+  protected:
+    //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
+    friend class C4Peer;
+    friend class C4PeerDiscoveryProvider;
 
     /// Reports that browsing has started, stopped or failed.
     /// If `state` is false, this method will call `removePeer` on all online peers.
@@ -158,28 +164,27 @@ class C4PeerDiscovery {
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
     /// (If you want to avoid creating a redundant peer, you can call \ref C4PeerDiscovery::peerWithID to check.)
-    fleece::Retained<C4Peer> addPeer(C4Peer*);
+    fleece::Retained<C4Peer> addPeer(C4Peer*, bool moreComing);
 
     /// Unregisters the peer with this ID.
-    bool removePeer(std::string_view id);
+    bool removePeer(std::string_view id, bool moreComing);
 
     /// Notifies observers about an incoming connection from a peer.
     /// @note  If the connection is not accepted, caller must close the C4Socket.
     /// @returns  true if the connection was accepted, false if not.
     bool notifyIncomingConnection(C4Peer*, C4Socket*);
 
-    // Private-by-convention
     void notifyMetadataChanged(C4Peer*);
 
-    // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 6;
-
   private:
+    void notifyPeerChanges();
+
     std::mutex                                                _mutex;
     std::string const                                         _peerGroupID;
     C4PeerID const                                            _peerID;
     std::vector<std::unique_ptr<C4PeerDiscoveryProvider>>     _providers;  // List of providers. Never changes.
     std::unordered_map<std::string, fleece::Retained<C4Peer>> _peers;
+    std::vector<fleece::Retained<C4Peer>>                     _peersComing, _peersGoing;
     litecore::ObserverList<Observer>                          _observers;
 };
 
@@ -194,11 +199,10 @@ class C4Peer
   public:
     using Metadata = C4PeerDiscovery::Metadata;
 
-    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_)
-        : provider(provider_), id(std::move(id_)), _displayName(std::move(displayName_)) {}
+    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_) : provider(provider_), id(std::move(id_)) {}
 
-    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, std::string displayName_, Metadata md)
-        : provider(provider_), id(std::move(id_)), _displayName(std::move(displayName_)), _metadata(std::move(md)) {}
+    C4Peer(C4PeerDiscoveryProvider* provider_, std::string id_, Metadata md)
+        : provider(provider_), id(std::move(id_)), _metadata(std::move(md)) {}
 
     /// The provider that manages this peer
     C4PeerDiscoveryProvider* const provider;
@@ -207,9 +211,6 @@ class C4Peer
     /// Examples are a DNS-SD service name + domain, or a Bluetooth LE peripheral UUID.
     std::string const id;
 
-    /// Human-readable name, if any.
-    std::string displayName() const;
-
     /// True if the peer is in the set of active peers (C4PeerDiscovery::peers);
     /// false once it goes offline and is removed from the set.
     /// @note  Once offline, an instance never comes back online; instead a new instance is created.
@@ -217,7 +218,7 @@ class C4Peer
 
     /// True if it's OK to connect to the peer.
     /// Bluetooth peers return false if their signal strength is below a threshold.
-    /// @note This property can sometimes change rapidly, so it does not post notifications.
+    /// @note This property can sometimes change rapidly, so it does not trigger notifications.
     bool connectable() const { return _connectable; }
 
     //---- Metadata:
@@ -250,9 +251,6 @@ class C4Peer
 
     //---- Methods below are for subclasses and C4PeerDiscoveryProviders only:
 
-    /// Updates the instance's displayName. (No notifications are posted.)
-    void setDisplayName(std::string_view);
-
     /// Sets the `connectable` property. (No notifications are posted.)
     void setConnectable(bool c) { _connectable = c; }
 
@@ -267,7 +265,6 @@ class C4Peer
 
   private:
     mutable std::mutex _mutex;               // Must be locked while accessing state below (except atomics)
-    std::string        _displayName;         // Arbitrary human-readable name registered by the peer
     Metadata           _metadata;            // Current known metadata
     ResolveURLCallback _resolveURLCallback;  // Holds callback during a resolveURL operation
     std::atomic<bool>  _online      = true;  // Set to false when peer is removed
@@ -355,12 +352,12 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
 
     /// Called when the owning \ref C4PeerDiscovery is being deleted.
     /// Implementation must stop browsing and publishing and any other ongoing tasks,
-    /// then call the `onComplete` callback, after which it will be deleted.
+    /// then call the \ref onComplete callback, after which it will be deleted.
     virtual void shutdown(std::function<void()> onComplete) = 0;
 
   protected:
     /// Reports that browsing has started, stopped or failed.
-    /// If `state` is false, this method will call `removePeer` on all online peers.
+    /// If `state` is false, this method will call \ref removePeer on all online peers.
     void browseStateChanged(bool state, C4Error error = {}) {
         _browsing = state;
         _discovery.browseStateChanged(this, state, error);
@@ -375,20 +372,37 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
     /// (If you want to avoid creating a redundant peer, you can call \ref C4PeerDiscovery::peerWithID to check.)
-    fleece::Retained<C4Peer> addPeer(C4Peer* peer) { return _discovery.addPeer(peer); }
+    /// @param peer  The new C4Peer (or subclass) instance.
+    /// @param moreComing  If you discover multiple peers at once, set this to `true` for all but
+    ///                    the last one. This tells C4PeerDiscovery it can batch them all together
+    ///                    into one `addedPeers` notification.
+    fleece::Retained<C4Peer> addPeer(C4Peer* peer, bool moreComing = false) {
+        return _discovery.addPeer(peer, moreComing);
+    }
 
     /// Unregisters a peer that has gone offline.
-    bool removePeer(C4Peer* peer) { return removePeer(peer->id); }
+    /// @param peer  The peer that went offline.
+    /// @param moreComing  If multiple peers go offline at once, set this to `true` for all but
+    ///                    the last one. This tells C4PeerDiscovery it can batch them all together
+    ///                    into one `addedPeers` notification.
+    bool removePeer(C4Peer* peer, bool moreComing = false) { return removePeer(peer->id, moreComing); }
 
     /// Unregisters any peer with this ID that has gone offline.
-    bool removePeer(std::string_view id) { return _discovery.removePeer(id); }
+    /// @param id  The ID of the peer that went offline.
+    /// @param moreComing  If multiple peers go offline at once, set this to `true` for all but
+    ///                    the last one. This tells C4PeerDiscovery it can batch them all together
+    ///                    into one `addedPeers` notification.
+    bool removePeer(std::string_view id, bool moreComing) { return _discovery.removePeer(id, moreComing); }
 
     /// Notifies observers about an incoming connection from a peer.
     /// @note  If the connection is not accepted, caller must close the C4Socket.
     /// @returns  true if the connection was accepted, false if not.
     bool notifyIncomingConnection(C4Peer* peer, C4Socket* s) { return _discovery.notifyIncomingConnection(peer, s); }
 
-    C4PeerDiscovery&  _discovery;
+    /// The owning `C4PeerDiscovery` instance.
+    C4PeerDiscovery& _discovery;
+
+  private:
     std::atomic<bool> _browsing   = false;
     std::atomic<bool> _publishing = false;
 };
