@@ -86,7 +86,9 @@ namespace litecore::repl {
         params.webSocketProtocols        = params.options[kC4SocketOptionWSProtocols].asString();
         params.heartbeatSecs             = (int)params.options[kC4ReplicatorHeartbeatInterval].asInt();
         params.networkInterface          = params.options[kC4SocketOptionNetworkInterface].asString();
-        params.externalKey               = externalKey;
+#ifdef COUCHBASE_ENTERPRISE
+        params.externalKey = externalKey;
+#endif
         return params;
     }
 

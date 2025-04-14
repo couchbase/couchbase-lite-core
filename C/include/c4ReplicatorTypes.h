@@ -262,7 +262,6 @@ typedef struct C4ReplicatorParameters {
 #define kC4ReplicatorAuthClientCertKey "clientCertKey"  ///< Client cert's private key (data)
 #define kC4ReplicatorAuthToken         "token"          ///< Session cookie or auth token (string)
 
-
 // [2]: auth.type values:
 #define kC4AuthTypeBasic         "Basic"           ///< HTTP Basic (the default)
 #define kC4AuthTypeSession       "Session"         ///< SG session cookie

@@ -254,16 +254,14 @@ namespace litecore::websocket {
                                             "Missing TLS client cert in C4Replicator config"_sl));
                 return false;
             }
-            if ( parameters().externalKey ) {
 #ifdef COUCHBASE_ENTERPRISE
+            if ( parameters().externalKey ) {
                 Retained<crypto::Cert> cert = make_retained<crypto::Cert>(certData);
                 _tlsContext->setIdentity(new crypto::Identity(cert, parameters().externalKey->getPrivateKey()));
                 return true;
-#else
-                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorUnsupported, "External Key is not supported"_sl));
-                return false;
+            }
 #endif
-            } else if ( slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData ) {
+            if ( slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData ) {
                 _tlsContext->setIdentity(certData, keyData);
                 return true;
             } else {
