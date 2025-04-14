@@ -54,6 +54,9 @@ namespace litecore {
                 _customSocketFactory = *params.socketFactory;
                 _socketFactory       = &_customSocketFactory;
             }
+#if COUCHBASE_ENTERPRISE
+            _socketExternalKey = params.externalKey;
+#endif
         }
 
         void start(bool reset) noexcept override {
@@ -117,8 +120,14 @@ namespace litecore {
             _c4db_setDatabaseTag(dbOpenedAgain, DatabaseTag_C4RemoteReplicator);
             auto dbAccess =
                     make_shared<DBAccess>(dbOpenedAgain, _options->properties["disable_blob_support"_sl].asBool());
-            auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
-            _replicator    = new Replicator(dbAccess, webSocket, *this, _options);
+            auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory, nullptr
+#ifdef COUCHBASE_ENTERPRISE
+                                             ,
+                                             _socketExternalKey);
+#else
+            );
+#endif
+            _replicator = new Replicator(dbAccess, webSocket, *this, _options);
 
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to
@@ -220,6 +229,13 @@ namespace litecore {
       private:
         alloc_slice const      _url;
         const C4SocketFactory* _socketFactory{nullptr};
+        // _socketExternalKey comes from C4ReplicatorParameters::externalKey. It belongs to
+        // kC4ReplicatorOptionAuthentication, but it's not present in the corresponding dictionary.
+        // It's mutually exclusive with kC4ReplicatorAuthClientCertKey, which provides the option
+        // by key-data.
+#if COUCHBASE_ENTERPRISE
+        Retained<C4KeyPair> _socketExternalKey;
+#endif
         C4SocketFactory        _customSocketFactory{};  // Storage for *_socketFactory if non-null
         litecore::actor::Timer _retryTimer;
         unsigned               _retryCount{0};

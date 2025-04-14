@@ -29,10 +29,11 @@ using namespace litecore::websocket;
 
 void C4RegisterBuiltInWebSocket() {
     // NOLINTBEGIN(performance-unnecessary-value-param)
-    C4SocketImpl::registerInternalFactory(
-            [](websocket::URL url, fleece::alloc_slice options, std::shared_ptr<DBAccess> database) -> WebSocketImpl* {
-                return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options), database);
-            });
+    C4SocketImpl::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
+                                             std::shared_ptr<DBAccess> database,
+                                             C4KeyPair*                externalKey) -> WebSocketImpl* {
+        return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options, externalKey), database);
+    });
     // NOLINTEND(performance-unnecessary-value-param)
 }
 
@@ -252,6 +253,13 @@ namespace litecore::websocket {
                                             "Missing TLS client cert in C4Replicator config"_sl));
                 return false;
             }
+#ifdef COUCHBASE_ENTERPRISE
+            if ( parameters().externalKey ) {
+                Retained<crypto::Cert> cert = make_retained<crypto::Cert>(certData);
+                _tlsContext->setIdentity(new crypto::Identity(cert, parameters().externalKey->getPrivateKey()));
+                return true;
+            }
+#endif
             if ( slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData ) {
                 _tlsContext->setIdentity(certData, keyData);
                 return true;
