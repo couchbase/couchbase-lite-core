@@ -55,7 +55,7 @@ namespace litecore {
                 _socketFactory       = &_customSocketFactory;
             }
 #if COUCHBASE_ENTERPRISE
-            if ( params.externalKey ) _socketExternalKey = params.externalKey;
+            _socketExternalKey = params.externalKey;
 #endif
         }
 
@@ -123,7 +123,7 @@ namespace litecore {
             auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory, nullptr
 #ifdef COUCHBASE_ENTERPRISE
                                              ,
-                                             _socketExternalKey.get());
+                                             _socketExternalKey);
 #else
             );
 #endif

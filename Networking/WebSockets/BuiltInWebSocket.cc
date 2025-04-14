@@ -15,7 +15,6 @@
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
 #include "CookieStore.hh"
-#include "c4Certificate.hh"
 #include "c4Database.hh"
 #include "c4ReplicatorTypes.h"
 #include "c4Socket+Internal.hh"

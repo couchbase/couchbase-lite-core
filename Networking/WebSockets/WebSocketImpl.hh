@@ -47,7 +47,7 @@ namespace litecore::websocket {
             fleece::alloc_slice networkInterface;    ///< Network interface
             fleece::AllocedDict options;             ///< Other options
 #ifdef COUCHBASE_ENTERPRISE
-            Retained<C4KeyPair> externalKey;  ///< Client cert uses external key. Its life is tied to the Replicator.
+            Retained<C4KeyPair> externalKey;  ///< Client cert uses external key..
 #endif
         };
 

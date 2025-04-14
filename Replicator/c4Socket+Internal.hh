@@ -23,7 +23,7 @@ namespace litecore::repl {
     fleece::Retained<websocket::WebSocket> CreateWebSocket(const websocket::URL&, const fleece::alloc_slice& options,
                                                            std::shared_ptr<DBAccess>, const C4SocketFactory*,
                                                            void*      nativeHandle = nullptr,
-                                                           C4KeyPair* externakKey  = nullptr);
+                                                           C4KeyPair* externalKey  = nullptr);
 
     // Returns the WebSocket object associated with a C4Socket
     websocket::WebSocket* WebSocketFrom(C4Socket* c4sock);
