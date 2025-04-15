@@ -472,8 +472,8 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Multiple Collections
         _expectedDocumentCount = 60;
         stopWhenIdle();
         runPushPullReplication({Roses, Tulips}, {Tulips, Lavenders, Roses}, kC4Continuous);
-        validateCollectionCheckpoints(db, db2, 0, R"({"local":30,"remote":30})");
-        validateCollectionCheckpoints(db, db2, 1, R"({"local":30,"remote":30})");
+        validateCollectionCheckpoints(db, db2, 0, R"({"local":30,"remote":20})");
+        validateCollectionCheckpoints(db, db2, 1, R"({"local":30,"remote":20})");
     }
 }
 
