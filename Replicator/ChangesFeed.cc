@@ -132,13 +132,6 @@ namespace litecore::repl {
             uint32_t nChanges = nextObservation.numChanges;
             if ( nChanges == 0 ) break;
 
-            //TODO: Detect & ignore changes made by a concurrent pull replication from the same remote;
-            // i.e don't echo changes back to the peer we got them from in the first place!
-            // It's not harmful, but it's wasteful.
-            // (There used to be old code here that checked the `external` flag to do that,
-            // but it turned out it had been nonfunctional for quite a while. We'd need a better
-            // mechanism for discovering where the changes came from.) --Jens, Feb 2025
-
             logVerbose("Observed %u db changes #%" PRIu64 " ... #%" PRIu64, nChanges, (uint64_t)c4changes[0].sequence,
                        (uint64_t)c4changes[nChanges - 1].sequence);
 
@@ -155,6 +148,9 @@ namespace litecore::repl {
                 info.revID          = c4change->revID;
                 info.sequence       = c4change->sequence;
                 info.bodySize       = c4change->bodySize;
+
+                if ( !allowObservedChange(info) ) continue;
+
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
@@ -262,7 +258,14 @@ namespace litecore::repl {
     ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate& delegate, const Options* options, DBAccess& db,
                                                  Checkpointer* cp)
         : ChangesFeed(delegate, options, db, cp)  // DBAccess is a subclass of access_lock<C4Database*>
-        , _usingVersionVectors(db.usingVersionVectors()) {}
+        , _usingVersionVectors(db.usingVersionVectors()) {
+        if ( _options->push(_collectionIndex) == kC4Continuous ) _db.echoCanceler.trackCollection(_collectionIndex);
+    }
+
+    void ReplicatorChangesFeed::setContinuous(bool continuous) {
+        ChangesFeed::setContinuous(continuous);
+        if ( continuous ) _db.echoCanceler.trackCollection(_collectionIndex);
+    }
 
     // Assigns rev->remoteAncestorRevID based on the document.
     // Returns false to reject the document if the remote is equal to or newer than this rev.
@@ -289,5 +292,17 @@ namespace litecore::repl {
         if ( _getForeignAncestors ) ((DBAccess&)_db).markRevsSyncedNow();  // make sure foreign ancestors are up to date
         return ChangesFeed::getMoreChanges(limit);
     }
+
+    inline bool ReplicatorChangesFeed::allowObservedChange(C4DocumentInfo const& info) {
+        // Ignore changes made by a concurrent continuous pull replication from the same remote;
+        // i.e don't echo changes back to the peer we got them from in the first place!
+        // It's not harmful, but it's wasteful.
+        if ( _db.echoCanceler.revIsEchoed(_collectionIndex, info.docID, info.revID) ) {
+            logVerbose("Ignoring echo of pulled '%.*s' %.*s", SPLAT(info.docID), SPLAT(info.revID));
+            return false;
+        }
+        return true;
+    }
+
 
 }  // namespace litecore::repl

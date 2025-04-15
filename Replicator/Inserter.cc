@@ -58,6 +58,7 @@ namespace litecore::repl {
                 rev->trimBody();  // don't need body any more
                 if ( docSaved ) {
                     rev->owner->revisionProvisionallyInserted(rev->revocationMode != RevocationMode::kNone);
+                    _db->echoCanceler.addRev(collectionIndex(), rev->docID, rev->revID);
                 } else {
                     // Notify owner of a rev that failed:
                     string desc = docErr.description();

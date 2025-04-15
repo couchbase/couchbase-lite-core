@@ -52,7 +52,7 @@ namespace litecore::repl {
         ~ChangesFeed() override;
 
         // Setup:
-        void setContinuous(bool continuous) { _continuous = continuous; }
+        virtual void setContinuous(bool continuous) { _continuous = continuous; }
 
         void setLastSequence(C4SequenceNumber s) { _maxSequence = s; }
 
@@ -87,6 +87,8 @@ namespace litecore::repl {
       protected:
         std::string loggingClassName() const override { return "ChangesFeed"; }
 
+        virtual bool allowObservedChange(C4DocumentInfo const&) { return true; }
+
         virtual bool getRemoteRevID(RevToSend* rev NONNULL, C4Document* doc NONNULL) const;
 
       private:
@@ -119,14 +121,18 @@ namespace litecore::repl {
       public:
         ReplicatorChangesFeed(Delegate& delegate, const Options* options, DBAccess& db, Checkpointer* cp);
 
+        void setContinuous(bool continuous) override;
+
         void setFindForeignAncestors(bool use) { _getForeignAncestors = use; }
 
         [[nodiscard]] Changes getMoreChanges(unsigned limit) override;
 
       protected:
+        bool allowObservedChange(C4DocumentInfo const&) override;
         bool getRemoteRevID(RevToSend* rev NONNULL, C4Document* doc NONNULL) const override;
 
       private:
         const bool _usingVersionVectors;
     };
+
 }  // namespace litecore::repl
