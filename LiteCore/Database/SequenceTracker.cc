@@ -365,7 +365,7 @@ namespace litecore {
             }
             ++nRemoved;
         }
-        logVerbose("Removed %zu old entries (%zu left; idle has %zd, byDocID has %zu)", nRemoved, _changes.size(),
+        logVerbose("Removed %zu old entries (%zu left; idle has %zu, byDocID has %zu)", nRemoved, _changes.size(),
                    _idle.size(), _byDocID.size());
     }
 
