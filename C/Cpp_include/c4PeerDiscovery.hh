@@ -54,8 +54,9 @@ extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
  *  @note  This API is thread-safe. */
 class C4PeerDiscovery {
   public:
-    using ProviderFactory = std::unique_ptr<C4PeerDiscoveryProvider> (*)(C4PeerDiscovery& discovery,
-                                                                         std::string_view peerGroupID);
+    using ProviderDeleter = void (*)(C4PeerDiscoveryProvider*);
+    using ProviderRef     = std::unique_ptr<C4PeerDiscoveryProvider, ProviderDeleter>;
+    using ProviderFactory = ProviderRef (*)(C4PeerDiscovery& discovery, std::string_view peerGroupID);
 
     /// One-time registration of a provider class. The function will be called when constructing a C4PeerDiscovery.
     static void registerProvider(std::string_view providerName, ProviderFactory);
@@ -85,7 +86,7 @@ class C4PeerDiscovery {
     C4PeerID const& peerID() const { return _peerID; }
 
     /// The `C4PeerDiscoveryProvider`s in use.
-    std::vector<std::unique_ptr<C4PeerDiscoveryProvider>> const& providers() const { return _providers; }
+    std::vector<ProviderRef> const& providers() const { return _providers; }
 
     /// Tells providers to start looking for peers.
     void startBrowsing();
@@ -147,7 +148,7 @@ class C4PeerDiscovery {
     void removeObserver(Observer*);
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 7;
+    static constexpr int kAPIVersion = 8;
 
   protected:
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
@@ -182,7 +183,7 @@ class C4PeerDiscovery {
     std::mutex                                                _mutex;
     std::string const                                         _peerGroupID;
     C4PeerID const                                            _peerID;
-    std::vector<std::unique_ptr<C4PeerDiscoveryProvider>>     _providers;  // List of providers. Never changes.
+    std::vector<ProviderRef>                                  _providers;  // List of providers. Never changes.
     std::unordered_map<std::string, fleece::Retained<C4Peer>> _peers;
     std::vector<fleece::Retained<C4Peer>>                     _peersComing, _peersGoing;
     litecore::ObserverList<Observer>                          _observers;
