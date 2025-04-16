@@ -135,6 +135,11 @@ namespace litecore::actor {
 
         void logStats() { _mailbox.logStats(); }
 
+#ifdef ACTORS_USE_GCD
+        /** Access to the Actor's GCD dispatch queue. Useful with Apple APIs that can invoke
+            callbacks on a specific queue, like CFStream and DNSService (dns_sd.h). */
+        dispatch_queue_t dispatchQueue() const { return _mailbox.dispatchQueue(); }
+#endif
 
 #ifdef ACTORS_SUPPORT_ASYNC
         /** Body of an async method: Creates an Provider from the lambda given,
