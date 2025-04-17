@@ -180,8 +180,8 @@ target_link_libraries(
     LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
-    LiteCoreREST_Static
-    LiteCoreWebSocket
-    $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreListener_Static>
+    LiteCoreREST_Objects
     $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreP2P>
+    $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreListener_Static>
+    LiteCoreWebSocket
 )

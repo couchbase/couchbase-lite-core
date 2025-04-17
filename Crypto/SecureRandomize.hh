@@ -12,7 +12,9 @@
 
 #pragma once
 #include "fleece/slice.hh"
+#include <climits>
 #include <cstdint>
+#include <memory>
 
 namespace litecore {
 
