@@ -43,8 +43,8 @@ using namespace litecore;
 
 
 extern "C" {
-CBL_CORE_API std::atomic_int gC4ExpectExceptions;
-bool                         C4ExpectingExceptions();
+CBL_CORE_API_IMPL std::atomic_int gC4ExpectExceptions;
+bool                              C4ExpectingExceptions();
 
 bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; }  // LCOV_EXCL_LINE
 }

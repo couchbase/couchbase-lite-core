@@ -26,7 +26,7 @@ using namespace fleece::impl;
 using namespace litecore;
 
 
-CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {};
+CBL_CORE_API_IMPL const C4QueryOptions kC4DefaultQueryOptions = {};
 
 C4Query::C4Query(C4Collection* coll, C4QueryLanguage language, slice queryExpression)
     : _database(asInternal(coll)->dbImpl())

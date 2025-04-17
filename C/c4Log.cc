@@ -25,11 +25,11 @@ using namespace std;
 using namespace litecore;
 
 // NOLINTBEGIN(cppcoreguidelines-interfaces-global-init)
-CBL_CORE_API const C4LogDomain kC4DefaultLog   = (C4LogDomain)&kC4Cpp_DefaultLog;
-CBL_CORE_API const C4LogDomain kC4DatabaseLog  = (C4LogDomain)&DBLog;
-CBL_CORE_API const C4LogDomain kC4QueryLog     = (C4LogDomain)&QueryLog;
-CBL_CORE_API const C4LogDomain kC4SyncLog      = (C4LogDomain)&SyncLog;
-CBL_CORE_API const C4LogDomain kC4WebSocketLog = (C4LogDomain)&websocket::WSLogDomain;
+CBL_CORE_API_IMPL const C4LogDomain kC4DefaultLog   = (C4LogDomain)&kC4Cpp_DefaultLog;
+CBL_CORE_API_IMPL const C4LogDomain kC4DatabaseLog  = (C4LogDomain)&DBLog;
+CBL_CORE_API_IMPL const C4LogDomain kC4QueryLog     = (C4LogDomain)&QueryLog;
+CBL_CORE_API_IMPL const C4LogDomain kC4SyncLog      = (C4LogDomain)&SyncLog;
+CBL_CORE_API_IMPL const C4LogDomain kC4WebSocketLog = (C4LogDomain)&websocket::WSLogDomain;
 
 // NOLINTEND(cppcoreguidelines-interfaces-global-init)
 
