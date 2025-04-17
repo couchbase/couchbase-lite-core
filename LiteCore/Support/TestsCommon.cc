@@ -148,7 +148,7 @@ fleece::alloc_slice json5slice(string_view str) {
 
 string json5(string_view str) { return string(json5slice(str)); }
 
-extern "C" CBL_CORE_API std::atomic_int gC4ExpectExceptions;
+extern "C" CBL_CORE_API_IMPL std::atomic_int gC4ExpectExceptions;
 
 // While in scope, suppresses warnings about errors, and debugger exception breakpoints (in Xcode)
 ExpectingExceptions::ExpectingExceptions() {
