@@ -7,6 +7,7 @@
 #include <array>
 #include <compare>
 #include <cstring>  // for memcpy
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>

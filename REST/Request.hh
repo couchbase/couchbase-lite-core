@@ -63,7 +63,6 @@ namespace litecore::REST {
 
       protected:
         Request(Method, std::string path, std::string queries, websocket::Headers headers, alloc_slice body);
-        Request() = default;
 
         bool readFromHTTP(slice httpData);  // data must extend at least to CRLF
 
