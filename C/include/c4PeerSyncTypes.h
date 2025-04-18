@@ -100,6 +100,16 @@ typedef struct C4PeerSyncParameters {
 extern const C4String kPeerSyncProtocol_DNS_SD;       ///< DNS-SD ("Bonjour") protocol over IP.
 extern const C4String kPeerSyncProtocol_BluetoothLE;  ///< Bluetooth LE protocol with L2CAP.
 
+/** Information about a peer, returned from \ref c4peersync_getPeerInfo.
+    @note  References must be freed by calling \ref c4peerinfo_free. */
+typedef struct C4PeerInfo {
+    C4Cert* C4NULLABLE   certificate;
+    C4PeerID* C4NULLABLE neighbors;
+    size_t               neighborCount;
+    C4ReplicatorStatus   replicatorStatus;
+    bool                 online;
+} C4PeerInfo;
+
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END
 #endif  // COUCHBASE_ENTERPRISE
