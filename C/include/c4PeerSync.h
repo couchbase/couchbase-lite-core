@@ -38,6 +38,19 @@ CBL_CORE_API void c4peersync_start(C4PeerSync*) C4API;
     @note  This function is thread-safe. */
 CBL_CORE_API void c4peersync_stop(C4PeerSync*) C4API;
 
+/** Returns the IDs of all online peers. `*outCount` will be set to the size of the array.
+    @note  You are responsible for freeing the result via the regular `free()` function.
+    @note  This function is thread-safe. */
+CBL_CORE_API C4PeerID* C4NULLABLE c4peersync_getOnlinePeers(C4PeerSync*, size_t* outCount) C4API;
+
+/** Gets information about a peer. Returns NULL if the peer ID is unknown.
+    @note  You are responsible for freeing the result via \ref c4peerinfo_free.
+    @note  This function is thread-safe. */
+CBL_CORE_API C4PeerInfo* C4NULLABLE c4peersync_getPeerInfo(C4PeerSync*, C4PeerID) C4API;
+
+/** Frees a C4PeerInfo reference. */
+CBL_CORE_API void c4peerinfo_free(C4PeerInfo* C4NULLABLE) C4API;
+
 /// Derives a C4PeerID from a `C4Cert`.
 CBL_CORE_API C4PeerID c4peerid_fromCert(C4Cert*) C4API;
 
