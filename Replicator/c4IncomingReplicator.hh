@@ -34,7 +34,9 @@ namespace litecore {
 
         void createReplicator() override {
             Assert(_openSocket);
+#ifdef COUCHBASE_ENTERPRISE
             _openSocket->setPeerCertValidator(_peerTLSCertificateValidator);
+#endif
             _replicator = new Replicator(makeDBAccess(_database, DatabaseTag_C4IncomingReplicator), _openSocket, *this,
                                          _options);
 

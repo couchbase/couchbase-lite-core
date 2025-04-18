@@ -329,8 +329,8 @@ class ReplicatorLoopbackTest
         if ( repl == _replClient ) {
             if ( !_gotResponse ) {
                 _gotResponse           = true;
-                auto [status, headers] = repl->httpResponse();
-                Check(status == 200);
+                auto [httpStatus, headers] = repl->httpResponse();
+                Check(httpStatus == 200);
                 Check(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
             }
 

@@ -121,7 +121,9 @@ namespace litecore {
                 dbAccess = std::make_shared<DBAccess>(_database.pool(), disableBlobs);
             }
             auto webSocket = CreateWebSocket(_url, socketOptions(), dbAccess, _socketFactory);
+#ifdef COUCHBASE_ENTERPRISE
             webSocket->setPeerCertValidator(_peerTLSCertificateValidator);
+#endif
             _replicator = new Replicator(dbAccess, webSocket, *this, _options);
 
             // Yes this line is disgusting, but the memory addresses that the logger logs

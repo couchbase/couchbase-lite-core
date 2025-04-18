@@ -134,11 +134,13 @@ namespace litecore {
         mutable std::mutex            _mutex;
         DatabaseOrPool const          _database;
         Retained<Replicator::Options> _options;
-        PeerTLSCertificateValidator   _peerTLSCertificateValidator;
         Retained<Replicator>          _replicator;
         C4ReplicatorStatus            _status{kC4Stopped};
         bool                          _activeWhenSuspended{false};
         bool                          _cancelStop{false};
+#ifdef COUCHBASE_ENTERPRISE
+        PeerTLSCertificateValidator   _peerTLSCertificateValidator;
+#endif
 
       private:
         class PendingDocuments;
