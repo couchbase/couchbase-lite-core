@@ -64,3 +64,15 @@ c4indexupdater_valueAt
 c4indexupdater_setVectorAt
 c4indexupdater_skipVectorAt
 c4indexupdater_finish
+
+c4peerid_fromCert
+c4peerid_fromCertData
+c4peerinfo_free
+c4peersync_new
+c4peersync_getMyID
+c4peersync_start
+c4peersync_stop
+c4peersync_getOnlinePeers
+c4peersync_getPeerInfo
+kPeerSyncProtocol_DNS_SD
+kPeerSyncProtocol_BluetoothLE

@@ -263,8 +263,10 @@ namespace litecore {
         _selfRetain = this;  // keep myself alive till Replicator stops
         updateStatusFromReplicator(_replicator->status());
         _responseHeaders        = nullptr;
+#ifdef COUCHBASE_ENTERPRISE
         _peerTLSCertificateData = nullslice;
         _peerTLSCertificate     = nullptr;
+#endif
         _replicator->start(reset);
         return true;
     }
@@ -293,8 +295,10 @@ namespace litecore {
             updateStatusFromReplicator((C4ReplicatorStatus)newStatus);
             if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) {
                 _responseHeaders        = _replicator->httpResponse().second.encode();
+#ifdef COUCHBASE_ENTERPRISE
                 _peerTLSCertificateData = _replicator->peerTLSCertificateData();
                 _peerTLSCertificate     = nullptr;
+#endif
                 handleConnected();
             }
             if ( _status.level == kC4Stopped ) {

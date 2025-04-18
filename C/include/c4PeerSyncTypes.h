@@ -97,8 +97,8 @@ typedef struct C4PeerSyncParameters {
     C4PeerSyncCallbacks       callbacks;
 } C4PeerSyncParameters;
 
-extern const C4String kPeerSyncProtocol_DNS_SD;       ///< DNS-SD ("Bonjour") protocol over IP.
-extern const C4String kPeerSyncProtocol_BluetoothLE;  ///< Bluetooth LE protocol with L2CAP.
+CBL_CORE_API extern const C4String kPeerSyncProtocol_DNS_SD;       ///< DNS-SD ("Bonjour") protocol over IP.
+CBL_CORE_API extern const C4String kPeerSyncProtocol_BluetoothLE;  ///< Bluetooth LE protocol with L2CAP.
 
 /** Information about a peer, returned from \ref c4peersync_getPeerInfo.
     @note  References must be freed by calling \ref c4peerinfo_free. */
