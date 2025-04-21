@@ -176,6 +176,10 @@ namespace litecore::blip {
 #endif
         }
 
+        void onWebSocketGotTLSCertificate(slice certData) override {
+            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_gotTLSCertificate), alloc_slice{certData});
+        }
+
         // websocket::Delegate interface:
         void onWebSocketConnect() override {
             _timeOpen.reset();
@@ -199,6 +203,11 @@ namespace litecore::blip {
             Assert(!_connectedWebSocket.test_and_set());
             retain(this);  // keep myself from being freed while I'm the webSocket's delegate
             _webSocket->connect(_weakThis);
+        }
+
+        void _gotTLSCertificate(alloc_slice certData) {
+            // _connection is reset to nullptr in _closed.
+            if ( _connection ) _connection->gotTLSCertificate(certData);
         }
 
         void _onWebSocketConnect() {
@@ -656,6 +665,10 @@ namespace litecore::blip {
 
     void Connection::setRequestHandler(string profile, bool atBeginning, RequestHandler handler) {
         _io->setRequestHandler(std::move(profile), atBeginning, std::move(handler));
+    }
+
+    void Connection::gotTLSCertificate(slice certData) {
+        delegateWeak()->invoke(&ConnectionDelegate::onTLSCertificate, certData);
     }
 
     void Connection::connected() {

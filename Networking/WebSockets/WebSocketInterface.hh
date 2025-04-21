@@ -138,8 +138,6 @@ namespace litecore::websocket {
 
         bool hasPeerCertValidator() const { return _peerCertValidator != nullptr; }
 
-        virtual alloc_slice peerTLSCertificateData() const { return nullslice; }
-
         /** The HTTP response status and headers.
             Available after a client socket connects. Otherwise zero status and empty headers. */
         virtual std::pair<int, Headers> httpResponse() const = 0;
@@ -190,6 +188,8 @@ namespace litecore::websocket {
     class Delegate {
       public:
         virtual ~Delegate() = default;
+
+        virtual void onWebSocketGotTLSCertificate(slice certData) = 0;
 
         virtual void onWebSocketConnect()          = 0;
         virtual void onWebSocketClose(CloseStatus) = 0;

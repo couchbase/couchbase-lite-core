@@ -79,11 +79,6 @@ namespace litecore::websocket {
         _connectThread.detach();
     }
 
-    alloc_slice BuiltInWebSocket::peerTLSCertificateData() const {
-        string data = _socket->peerTLSCertificateData();
-        return data.empty() ? nullslice : alloc_slice(data);
-    }
-
     std::pair<int, Headers> BuiltInWebSocket::httpResponse() const { return {_responseStatus, _responseHeaders}; }
 
     void BuiltInWebSocket::closeSocket() {
@@ -265,6 +260,8 @@ namespace litecore::websocket {
                 return nullptr;
             }
         }
+
+        if ( !certData.empty() ) delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
 
         if ( logic.status() != HTTPStatus::undefined ) {
             _responseStatus  = int(logic.status());

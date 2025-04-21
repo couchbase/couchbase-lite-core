@@ -262,11 +262,7 @@ namespace litecore {
                 std::string(*_options).c_str(), SPLAT(_replicator->remoteURL()));
         _selfRetain = this;  // keep myself alive till Replicator stops
         updateStatusFromReplicator(_replicator->status());
-        _responseHeaders        = nullptr;
-#ifdef COUCHBASE_ENTERPRISE
-        _peerTLSCertificateData = nullslice;
-        _peerTLSCertificate     = nullptr;
-#endif
+        _responseHeaders = nullptr;
         _replicator->start(reset);
         return true;
     }
@@ -284,6 +280,14 @@ namespace litecore {
         return _start(false);
     }
 
+    void C4ReplicatorImpl::replicatorGotTLSCertificate(slice certData) {
+#ifdef COUCHBASE_ENTERPRISE
+        LOCK(_mutex);
+        _peerTLSCertificateData = certData;
+        _peerTLSCertificate     = nullptr;
+#endif
+    }
+
     void C4ReplicatorImpl::replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) {
         Retained<C4ReplicatorImpl> selfRetain = this;  // Keep myself alive till this method returns
 
@@ -295,10 +299,6 @@ namespace litecore {
             updateStatusFromReplicator((C4ReplicatorStatus)newStatus);
             if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) {
                 _responseHeaders        = _replicator->httpResponse().second.encode();
-#ifdef COUCHBASE_ENTERPRISE
-                _peerTLSCertificateData = _replicator->peerTLSCertificateData();
-                _peerTLSCertificate     = nullptr;
-#endif
                 handleConnected();
             }
             if ( _status.level == kC4Stopped ) {

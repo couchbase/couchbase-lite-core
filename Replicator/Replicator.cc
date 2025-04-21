@@ -602,6 +602,10 @@ namespace litecore::repl {
 
 #pragma mark - BLIP DELEGATE:
 
+    void Replicator::onTLSCertificate(slice certData) {
+        if ( _delegate ) _delegate->replicatorGotTLSCertificate(certData);
+    }
+
     void Replicator::_onConnect() {
         logInfo("Connected!");
 

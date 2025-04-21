@@ -123,11 +123,6 @@ namespace litecore::repl {
         }
     }
 
-    alloc_slice C4SocketImpl::peerTLSCertificateData() const {
-        unique_lock lock(_mutex);
-        return _peerCertData;
-    }
-
     std::pair<int, Headers> C4SocketImpl::httpResponse() const {
         unique_lock lock(_mutex);
         if ( _responseHeadersFleece ) return {_responseStatus, Headers(_responseHeadersFleece)};
@@ -154,31 +149,34 @@ namespace litecore::repl {
 
     bool C4SocketImpl::gotPeerCertificate(slice certData, std::string_view hostname) {
         try {
-            {
-                unique_lock lock(_mutex);
-                _peerCertData = certData;
-            }
+            _peerCertData = certData;
             // Call WebSocket's registered validator function, if any:
-            if ( !validatePeerCert(certData, hostname) ) return false;
+            return validatePeerCert(certData, hostname);
         }
         catchAndWarn() return false;
     }
 
     void C4SocketImpl::gotHTTPResponse(int status, slice responseHeadersFleece) {
-        unique_lock lock(_mutex);
-        _responseStatus        = status;
-        _responseHeadersFleece = responseHeadersFleece;
-    }
-
-    void C4SocketImpl::opened() {
         try {
-            if ( hasPeerCertValidator() && !peerTLSCertificateData() ) {
+            {
+                unique_lock lock(_mutex);
+                _responseStatus        = status;
+                _responseHeadersFleece = responseHeadersFleece;
+            }
+            if ( _peerCertData ) {
+                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, _peerCertData);
+            } else if ( hasPeerCertValidator() ) {
                 const char* message =
                         "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
                 WarnError("%s", message);
                 close(kCodeUnexpectedCondition, message);
                 return;
             }
+        } catch ( ... ) { closeWithException(); }
+    }
+
+    void C4SocketImpl::opened() {
+        try {
             WebSocketImpl::onConnect();
         } catch ( ... ) { closeWithException(); }
     }
