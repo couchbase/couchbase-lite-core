@@ -87,6 +87,7 @@ namespace litecore::blip {
         friend class BLIPIO;
 
         void send(MessageOut*);
+        void gotTLSCertificate(slice certData);
         void connected();
         void closed(const CloseStatus&);
 
@@ -106,6 +107,8 @@ namespace litecore::blip {
     class ConnectionDelegate {
       public:
         virtual ~ConnectionDelegate() = default;
+
+        virtual void onTLSCertificate(slice certData) = 0;
 
         /** Called when the connection opens. */
         virtual void onConnect() {}

@@ -54,8 +54,6 @@ namespace litecore::websocket {
         /** Starts the TCP connection for a client socket. */
         void connect() override;
 
-        alloc_slice peerTLSCertificateData() const override;
-
         std::pair<int, Headers> httpResponse() const override;
 
       protected:

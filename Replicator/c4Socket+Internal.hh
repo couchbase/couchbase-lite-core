@@ -51,8 +51,6 @@ namespace litecore::repl {
         // WebSocket public API:
         void connect() override;
 
-        alloc_slice peerTLSCertificateData() const override;
-
         std::pair<int, websocket::Headers> httpResponse() const override;
 
         // C4Socket API:

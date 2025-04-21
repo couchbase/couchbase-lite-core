@@ -322,6 +322,8 @@ class ReplicatorLoopbackTest
 
 #pragma mark - CALLBACKS:
 
+    void replicatorGotTLSCertificate(slice certData) override {}
+
     void replicatorStatusChanged(Replicator* repl, const Replicator::Status& status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
