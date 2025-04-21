@@ -345,6 +345,7 @@ namespace litecore::crypto {
         Retained<PersistentPrivateKey> retVal    = nullptr;
         SECURITY_STATUS                result;
 
+        alloc_slice existingData;
         do {
             // Windows is terrible for this...it seems this is the only way to do this.
             // Instead of being able to tag the key with something, I have to go through
@@ -357,12 +358,11 @@ namespace litecore::crypto {
 
             if ( openResult != ERROR_SUCCESS ) { continue; }
 
-            alloc_slice existingData;
             try {
                 existingData = NCryptPrivateKey::publicKeyRawData(hKey);
             } catch ( ... ) { LogWarn(TLSLogDomain, "Skipping unreadable key..."); }
 
-            if ( existingData == publicKey->data(KeyFormat::Raw) ) {
+            if ( existingData && existingData == publicKey->data(KeyFormat::Raw) ) {
                 retVal = new NCryptPrivateKey(getBlockSize(hKey) * 8, hKey);
                 break;
             }
@@ -371,8 +371,10 @@ namespace litecore::crypto {
         NCryptFreeObject(hProvider);
         if ( retVal == nullptr ) {
             if ( result == NTE_NO_MORE_ITEMS ) {
-                LogError(TLSLogDomain, "Unable to find matching private key!");
-                error::_throw(error::CryptoError, "Unable to find matching private key!");
+                if ( !existingData ) LogWarn(TLSLogDomain, "No existing data is found.");
+                else
+                    LogWarn(TLSLogDomain, "Unable to find matching private key!");
+                return nullptr;
             }
 
             throwSecurityStatus(result, "NCryptEnumKeys", "Couldn't enumerate keys in storage");
