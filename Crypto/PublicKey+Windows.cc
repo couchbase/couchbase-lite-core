@@ -362,6 +362,8 @@ namespace litecore::crypto {
                 existingData = NCryptPrivateKey::publicKeyRawData(hKey);
             } catch ( ... ) { LogWarn(TLSLogDomain, "Skipping unreadable key..."); }
 
+            if (!existingData) continue;
+
             if ( existingData == publicKey->data(KeyFormat::Raw) ) {
                 retVal = new NCryptPrivateKey(getBlockSize(hKey) * 8, hKey);
                 break;
