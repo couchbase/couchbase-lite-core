@@ -17,6 +17,7 @@
 #include "Batcher.hh"
 #include "Stopwatch.hh"
 #include "c4DatabaseTypes.h"
+#include <access_lock.hh>
 #include <array>
 #include <optional>
 #include <utility>
@@ -189,18 +190,19 @@ namespace litecore::repl {
         void delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn>);
 
       public:
+        using WorkerHandler = std::function<void(Retained<blip::MessageIn>)>;
+
         template <typename WORKER>
         void registerWorkerHandler(WORKER* worker, const char* profile NONNULL,
                                    void (WORKER::*method)(Retained<blip::MessageIn>)) {
-            std::function<void(Retained<blip::MessageIn>)> fn(std::bind(method, worker, std::placeholders::_1));
-            pair<string, CollectionIndex>                  key{profile, worker->collectionIndex()};
-            _workerHandlers.emplace(key, worker->asynchronize(profile, fn));
+            WorkerHandler                 fn(std::bind(method, worker, std::placeholders::_1));
+            pair<string, CollectionIndex> key{profile, worker->collectionIndex()};
+            _workerHandlers.useLocked()->emplace(key, worker->asynchronize(profile, fn));
         }
 
       private:
-        using WorkerHandler  = std::function<void(Retained<blip::MessageIn>)>;
-        using WorkerHandlers = std::map<pair<string, CollectionIndex>, blip::Connection::RequestHandler>;
-        WorkerHandlers _workerHandlers;
+        using WorkerHandlers = std::map<pair<string, CollectionIndex>, WorkerHandler>;
+        access_lock<WorkerHandlers> _workerHandlers;
 
         // Member variables:
 
@@ -222,7 +224,7 @@ namespace litecore::repl {
 
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
 
-        void setMsgHandlerFor3_0_Client(const Retained<blip::MessageIn>&);
+        void setMsgHandlerFor3_0_Client(Retained<blip::MessageIn>);
 
         Delegate*               _delegate;         // Delegate whom I report progress/errors to
         blip::Connection::State _connectionState;  // Current BLIP connection state
@@ -236,7 +238,7 @@ namespace litecore::repl {
         vector<SubReplicator> _subRepls;
         bool                  _getCollectionsRequested{};  // True while "getCollections" request pending
         alloc_slice           _remoteURL;
-        bool                  _setMsgHandlerFor3_0_ClientDone{false};
+        std::atomic<bool>     _setMsgHandlerFor3_0_ClientDone{false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
         alloc_slice                                    _correlationID{};
 #ifdef LITECORE_CPPTEST
