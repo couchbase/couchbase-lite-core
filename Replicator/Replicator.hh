@@ -120,6 +120,15 @@ namespace litecore::repl {
             return _subRepls[i].collectionSpec;
         }
 
+        /// Allows clients to receive BLIP messages by registering their own handlers.
+        /// @note  Not for use by Workers; they should call \ref registerWorkerHandler instead.
+        void registerBLIPHandler(string profile, bool atBeginning, blip::Connection::RequestHandler handler) {
+            connection().setRequestHandler(std::move(profile), atBeginning, std::move(handler));
+        }
+
+        /// Allows clients to send BLIP messages.
+        void sendBLIPRequest(blip::MessageBuilder& msg) { connection().sendRequest(msg); }
+
       protected:
         std::string loggingClassName() const override { return _options->isActive() ? "Repl" : "PsvRepl"; }
 

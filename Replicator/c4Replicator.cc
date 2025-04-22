@@ -30,9 +30,6 @@ using namespace litecore;
 
 #pragma mark - C4DATABASE METHODS:
 
-// All instances are subclasses of C4ReplicatorImpl.
-static C4ReplicatorImpl* asInternal(const C4Replicator* repl) { return (C4ReplicatorImpl*)repl; }
-
 static Retained<C4Replicator> newRemoteReplicator(DatabaseOrPool db, C4Address serverAddress, slice remoteDatabaseName,
                                                   const C4ReplicatorParameters& params, slice logPrefix) {
     if ( !params.socketFactory ) {

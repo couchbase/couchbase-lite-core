@@ -182,6 +182,7 @@ namespace litecore {
         if ( _options->setProgressLevel(level) ) { logVerbose("Set progress notification level to %d", level); }
     }
 
+
 #ifdef COUCHBASE_ENTERPRISE
     void C4ReplicatorImpl::setPeerTLSCertificateValidator(PeerTLSCertificateValidator v) {
         _peerTLSCertificateValidator = std::move(v);
@@ -194,6 +195,23 @@ namespace litecore {
             _peerTLSCertificateData = nullptr;
         }
         return _peerTLSCertificate;
+    }
+
+    void C4ReplicatorImpl::_registerBLIPHandlersNow(BLIPHandlerSpecs specs) {
+        for ( auto& s : specs )
+            _replicator->registerBLIPHandler(std::move(s.profile), s.atBeginning, std::move(s.handler));
+    }
+
+    void C4ReplicatorImpl::registerBLIPHandlers(BLIPHandlerSpecs const& specs) {
+        LOCK(_mutex);
+        if ( _replicator ) _registerBLIPHandlersNow(specs);
+        else
+            _pendingHandlers.insert(_pendingHandlers.end(), specs.begin(), specs.end());
+    }
+
+    void C4ReplicatorImpl::sendBLIPRequest(blip::MessageBuilder& request) {
+        LOCK(_mutex);
+        _replicator->sendBLIPRequest(request);
     }
 #endif
 
@@ -263,6 +281,12 @@ namespace litecore {
         _selfRetain = this;  // keep myself alive till Replicator stops
         updateStatusFromReplicator(_replicator->status());
         _responseHeaders = nullptr;
+
+#ifdef COUCHBASE_ENTERPRISE
+        _registerBLIPHandlersNow(std::move(_pendingHandlers));
+        _pendingHandlers.clear();
+#endif
+
         _replicator->start(reset);
         return true;
     }
@@ -298,7 +322,7 @@ namespace litecore {
             auto oldLevel = _status.level;
             updateStatusFromReplicator((C4ReplicatorStatus)newStatus);
             if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) {
-                _responseHeaders        = _replicator->httpResponse().second.encode();
+                _responseHeaders = _replicator->httpResponse().second.encode();
                 handleConnected();
             }
             if ( _status.level == kC4Stopped ) {
