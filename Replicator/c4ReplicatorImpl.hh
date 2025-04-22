@@ -30,6 +30,11 @@ namespace litecore {
     using namespace litecore;
     using namespace litecore::repl;
 
+    namespace blip {
+        class MessageBuilder;
+        class MessageIn;
+    }  // namespace blip
+
     /** Abstract subclass of the public C4Replicator that implements common functionality. */
     struct C4ReplicatorImpl
         : public C4Replicator
@@ -70,6 +75,17 @@ namespace litecore {
 #ifdef COUCHBASE_ENTERPRISE
         void    setPeerTLSCertificateValidator(PeerTLSCertificateValidator) override;
         C4Cert* getPeerTLSCertificate() const override;
+
+        struct BLIPHandlerSpec {
+            std::string                           profile;
+            bool                                  atBeginning;
+            std::function<void(blip::MessageIn*)> handler;
+        };
+
+        using BLIPHandlerSpecs = std::vector<BLIPHandlerSpec>;
+
+        void registerBLIPHandlers(BLIPHandlerSpecs const&);
+        void sendBLIPRequest(blip::MessageBuilder&);
 #endif
 
       protected:
@@ -140,10 +156,15 @@ namespace litecore {
         bool                          _activeWhenSuspended{false};
         bool                          _cancelStop{false};
 #ifdef COUCHBASE_ENTERPRISE
-        PeerTLSCertificateValidator   _peerTLSCertificateValidator;
+        PeerTLSCertificateValidator _peerTLSCertificateValidator;
+        BLIPHandlerSpecs            _pendingHandlers;
 #endif
 
       private:
+#ifdef COUCHBASE_ENTERPRISE
+        void _registerBLIPHandlersNow(BLIPHandlerSpecs);
+#endif
+
         class PendingDocuments;
 
         std::string _loggingName;
@@ -157,5 +178,8 @@ namespace litecore {
         std::atomic<C4ReplicatorDocumentsEndedCallback> _onDocumentsEnded;
         std::atomic<C4ReplicatorBlobProgressCallback>   _onBlobProgress;
     };
+
+    // All instances are subclasses of C4ReplicatorImpl.
+    inline C4ReplicatorImpl* asInternal(const C4Replicator* repl) { return (C4ReplicatorImpl*)repl; }
 
 }  // namespace litecore
