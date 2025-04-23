@@ -78,7 +78,10 @@ function Build() {
         $MsArch = "x64"
     }
 
+    # This -T version controls which version of the MSVC toolchain is used.
+    # Once it is decided for a given minor release line, it should not be changed.
     & "C:\Program Files\CMake\bin\cmake.exe" `
+        -T version=14.36 `
         -A $MsArch `
         -DEDITION="$Edition" `
         -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
