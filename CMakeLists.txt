@@ -119,6 +119,8 @@ add_definitions(
     -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
 )
 
+add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
 if(BUILD_ENTERPRISE)
     add_definitions(
         -DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
