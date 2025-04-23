@@ -308,7 +308,16 @@ if(BUILD_ENTERPRISE)
 endif()
 
 if(LITECORE_BUILD_SHARED)
-    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+    if(MSVC)
+        add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects> MSVC/dllmain.c)
+        target_include_directories(
+            LiteCore PRIVATE
+            C/include
+        )
+    else()
+        add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+    endif()
+
     target_include_directories(
         LiteCore INTERFACE
         C/include
