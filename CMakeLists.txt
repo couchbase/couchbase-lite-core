@@ -127,6 +127,10 @@ endif()
 
 if(MSVC)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
+
+    # CBL-6931 : Workaround to avoid crash when locking mutex on VC++ Runtime version < 14.4.
+    add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
     if(WINDOWS_STORE)
         message(FATAL_ERROR "UWP no longer supported")
     else()
