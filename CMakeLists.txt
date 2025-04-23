@@ -119,8 +119,6 @@ add_definitions(
     -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
 )
 
-add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
-
 if(BUILD_ENTERPRISE)
     add_definitions(
         -DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
@@ -129,6 +127,10 @@ endif()
 
 if(MSVC)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
+
+    # CBL-6931 : Workaround to avoid crash when locking mutex on VC++ Runtime version < 14.4.
+    add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
     if(WINDOWS_STORE)
         message(FATAL_ERROR "UWP no longer supported")
     else()
