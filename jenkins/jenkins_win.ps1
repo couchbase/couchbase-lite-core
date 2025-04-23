@@ -24,7 +24,7 @@ try {
 
     # This -T version controls which version of the MSVC toolchain is used.
     # Once it is decided for a given minor release line, it should not be changed.
-    & 'C:\Program Files\CMake\bin\cmake.exe' -A x64 -T version=14.36 -DCMAKE_SYSTEM_VERSION="10.0" -DBUILD_ENTERPRISE=ON ..\..
+    & 'C:\Program Files\CMake\bin\cmake.exe' -A x64 -T version=14.36.17.6 -DCMAKE_SYSTEM_VERSION="10.0" -DBUILD_ENTERPRISE=ON ..\..
     if($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run CMake!" -ForegroundColor Red
         exit 1
