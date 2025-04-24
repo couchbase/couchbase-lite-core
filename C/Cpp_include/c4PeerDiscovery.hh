@@ -109,7 +109,7 @@ class C4PeerDiscovery {
     void updateMetadata(Metadata const&);
 
     /// Returns a copy of the current known set of peers.
-    std::unordered_map<std::string, fleece::Retained<C4Peer>> peers();
+    std::unordered_map<std::string, fleece::Ref<C4Peer>> peers();
 
     /// Returns the peer (if any) with the given ID.
     fleece::Retained<C4Peer> peerWithID(std::string_view id);
@@ -124,10 +124,10 @@ class C4PeerDiscovery {
         virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
 
         /// Notification that one or more online peers have been discovered.
-        virtual void addedPeers(std::span<fleece::Retained<C4Peer> const>) {}
+        virtual void addedPeers(std::span<fleece::Ref<C4Peer> const>) {}
 
         /// Notification that one or more peers have gone offline.
-        virtual void removedPeers(std::span<fleece::Retained<C4Peer> const>) {}
+        virtual void removedPeers(std::span<fleece::Ref<C4Peer> const>) {}
 
         /// Notification that a peer's metadata has changed.
         virtual void peerMetadataChanged(C4Peer*) {}
@@ -165,7 +165,7 @@ class C4PeerDiscovery {
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
     /// (If you want to avoid creating a redundant peer, you can call \ref C4PeerDiscovery::peerWithID to check.)
-    fleece::Retained<C4Peer> addPeer(C4Peer*, bool moreComing);
+    fleece::Ref<C4Peer> addPeer(C4Peer*, bool moreComing);
 
     /// Unregisters the peer with this ID.
     bool removePeer(std::string_view id, bool moreComing);
@@ -180,13 +180,13 @@ class C4PeerDiscovery {
   private:
     void notifyPeerChanges();
 
-    std::mutex                                                _mutex;
-    std::string const                                         _peerGroupID;
-    C4PeerID const                                            _peerID;
-    std::vector<ProviderRef>                                  _providers;  // List of providers. Never changes.
-    std::unordered_map<std::string, fleece::Retained<C4Peer>> _peers;
-    std::vector<fleece::Retained<C4Peer>>                     _peersComing, _peersGoing;
-    litecore::ObserverList<Observer>                          _observers;
+    std::mutex                                           _mutex;
+    std::string const                                    _peerGroupID;
+    C4PeerID const                                       _peerID;
+    std::vector<ProviderRef>                             _providers;  // List of providers. Never changes.
+    std::unordered_map<std::string, fleece::Ref<C4Peer>> _peers;
+    std::vector<fleece::Ref<C4Peer>>                     _peersComing, _peersGoing;
+    litecore::ObserverList<Observer>                     _observers;
 };
 
 #    pragma mark - PEER:
@@ -377,9 +377,7 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// @param moreComing  If you discover multiple peers at once, set this to `true` for all but
     ///                    the last one. This tells C4PeerDiscovery it can batch them all together
     ///                    into one `addedPeers` notification.
-    fleece::Retained<C4Peer> addPeer(C4Peer* peer, bool moreComing = false) {
-        return _discovery.addPeer(peer, moreComing);
-    }
+    fleece::Ref<C4Peer> addPeer(C4Peer* peer, bool moreComing = false) { return _discovery.addPeer(peer, moreComing); }
 
     /// Unregisters a peer that has gone offline.
     /// @param peer  The peer that went offline.

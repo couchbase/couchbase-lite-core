@@ -205,7 +205,8 @@ namespace litecore::repl {
         } else {
             auto rev = make_retained<RevToSend>(info, _checkpointer->collectionSpec(),
                                                 _options->collectionCallbackContext(_collectionIndex));
-            return shouldPushRev(rev, e) ? rev : nullptr;
+            if ( shouldPushRev(rev, e) ) return rev;
+            return nullptr;
         }
     }
 
