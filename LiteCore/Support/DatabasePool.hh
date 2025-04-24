@@ -64,7 +64,7 @@ namespace litecore {
         /// Constructs a pool that will manage multiple instances of the given database file.
         /// If this database was opened read-only, then no writeable instances will be provided.
         /// @warning  The C4Database is now owned by the pool and shouldn't be used directly.
-        explicit DatabasePool(fleece::Retained<C4Database>&&);
+        explicit DatabasePool(fleece::Ref<C4Database>&&);
 
         /// Closes all databases, waiting until all borrowed ones have been returned.
         /// No more databases can be borrowed after this method begins.
@@ -181,11 +181,11 @@ namespace litecore {
         BorrowedDatabase  borrow(Cache& cache, bool orWait);
         [[noreturn]] void borrowFailed(Cache&);
 
-        fleece::Retained<C4Database> newDB(Cache&);
-        void                         closeDB(fleece::Retained<C4Database>) noexcept;
-        void                         returnDatabase(fleece::Retained<C4Database>);
-        void                         _closeUnused(Cache&);
-        void                         _closeAll(Cache&);
+        fleece::Ref<C4Database> newDB(Cache&);
+        void                    closeDB(fleece::Ref<C4Database>) noexcept;
+        void                    returnDatabase(fleece::Ref<C4Database>);
+        void                    _closeUnused(Cache&);
+        void                    _closeAll(Cache&);
 
         std::string const                _dbName;          // Name of database
         C4DatabaseConfig2                _dbConfig;        // Database config
@@ -202,9 +202,9 @@ namespace litecore {
     /** A helper type that's a reference to either a C4Database or a DatabasePool. */
     class DatabaseOrPool {
       public:
-        DatabaseOrPool(fleece::Retained<C4Database> db) : _db(std::move(db)) { Assert(_db); }
+        DatabaseOrPool(fleece::Ref<C4Database> db) : _db(std::move(db)) {}
 
-        DatabaseOrPool(fleece::Retained<DatabasePool> pool) : _pool(std::move(pool)) { Assert(_pool); }
+        DatabaseOrPool(fleece::Ref<DatabasePool> pool) : _pool(std::move(pool)) {}
 
         DatabaseOrPool(C4Database* db) : _db(db) {}
 
@@ -214,9 +214,9 @@ namespace litecore {
 
         DatabasePool* C4NULLABLE pool() const { return _pool; }
 
-        fleece::Retained<DatabasePool> makePool() {
-            if ( !_pool ) _pool = fleece::make_retained<DatabasePool>(std::move(_db));
-            return _pool;
+        fleece::Ref<DatabasePool> makePool() {
+            if ( !_pool ) _pool = fleece::make_retained<DatabasePool>(std::move(_db).asRef());
+            return _pool.asRef();
         }
 
         inline BorrowedDatabase borrow() const;
