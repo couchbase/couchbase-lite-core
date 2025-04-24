@@ -461,6 +461,18 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
         compileSelect("SELECT META().id FROM _ WHERE MATCH(byStreet, 'Hwy')", kC4N1QLQuery);
     }
 
+
+    bool useJSON = GENERATE(true, false);
+    if ( useJSON ) {
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"),
+                                   kC4JSONQuery, kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+        compile(json5("['MATCH()', 'byStreet', 'Hwy']"));
+    } else {
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("contact.address.street"), kC4N1QLQuery,
+                                   kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+        compileSelect("SELECT META().id FROM _ WHERE MATCH(byStreet, 'Hwy')", kC4N1QLQuery);
+    }
+
     auto results = runFTS();
     CHECK(results
           == (vector<vector<C4FullTextMatch>>{{{13, 0, 0, 10, 3}},
@@ -473,6 +485,57 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     REQUIRE(matched.buf != nullptr);
     CHECK(toString(matched) == "7 Wyoming Hwy");
     c4slice_free(matched);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS (Partial)", "[Query][C][FTS]") {
+    C4Error err;
+    auto    defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
+    // c.f. above test, "C4Query FTS". The query is the same.
+    // W/o "where" in options, there are five contacts whose street addresses contain "Hwy".
+
+    bool useJSON = GENERATE(false, true);
+
+    C4IndexOptions options{};
+    // With the following "where" option, the query picks 2 Californians.
+    if ( useJSON ) {
+        options.where = R"(["=", [".contact.address.state"], "CA"])";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"),
+                                   kC4JSONQuery, kC4FullTextIndex, &options, WITH_ERROR(&err)));
+        compile(json5("['MATCH()', 'byStreet', 'Hwy']"));
+    } else {
+        options.where = "contact.address.state = 'CA'";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("contact.address.street"), kC4N1QLQuery,
+                                   kC4FullTextIndex, &options, WITH_ERROR(&err)));
+        compileSelect("SELECT META().id FROM _ WHERE MATCH(byStreet, 'Hwy')", kC4N1QLQuery);
+    }
+
+    auto results = runFTS();
+    CHECK(results == (vector<vector<C4FullTextMatch>>{{{15, 0, 0, 11, 3}}, {{43, 0, 0, 12, 3}}}));
+
+    {
+        // Check we can get the where clause back via c4index_getOptions
+        auto           index = REQUIRED(c4coll_getIndex(defaultColl, C4STR("byStreet"), nullptr));
+        C4IndexOptions outOptions;
+        REQUIRE(c4index_getOptions(index, &outOptions));
+        CHECK(string(outOptions.where) == options.where);
+        c4index_release(index);
+    }
+
+    // By creating the index with different options.where, the original index will be deleted,
+    // and the index table will be based soly on the new where clause. We get one Texan.
+    if ( useJSON ) {
+        options.where = R"(["=", [".contact.address.state"], "TX"])";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"),
+                                   kC4JSONQuery, kC4FullTextIndex, &options, WITH_ERROR(&err)));
+    } else {
+        options.where = "contact.address.state = 'TX'";
+        REQUIRE(c4coll_createIndex(defaultColl, C4STR("byStreet"), C4STR("contact.address.street"), kC4N1QLQuery,
+                                   kC4FullTextIndex, &options, WITH_ERROR(&err)));
+    }
+
+    results = runFTS();
+    CHECK(results == (vector<vector<C4FullTextMatch>>{{{44, 0, 0, 12, 3}}}));
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS (Partial)", "[Query][C][FTS]") {

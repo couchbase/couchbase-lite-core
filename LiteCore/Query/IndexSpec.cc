@@ -106,6 +106,7 @@ namespace litecore {
                         } else {
                             // n1ql parser won't compile empty string to empty array. Do it manually.
                             json = "[]";  // empty WHAT cannot be followed by WHERE clause.
+                            json = "[]";  // empty WHAT cannot be followed by WHERE clause.
                         }
                         _doc = Doc::fromJSON(json).detach();
                     } catch ( const std::runtime_error& exc ) {

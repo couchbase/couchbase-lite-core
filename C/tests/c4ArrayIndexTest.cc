@@ -365,11 +365,30 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Shared Path", "[C][Arra
     REQUIRE(deleted);
 
     // cityQuery is not affected by the deletion of index "phones"
+    // cityQuery is not affected by the deletion of index "phones"
     queryenum = REQUIRED(c4query_run(cityQuery, nullslice, nullptr));
     validateQuery(queryenum, {
                                      R"(["p-0001", "San Pedro", "CA"])",
                                      R"(["p-0001", "San Pedro", "CA"])",
                              });
+
+    // phoneQuery is affected by the deletion of index "phones"
+    // Following error will be logged,
+    // 2024-10-29T21:14:28.226339 DB ERROR SQLite error (code 1): no such table: 152b9815998e188eb99eb1612aafbb3ee6031535 in "SELECT fl_result(fl_value(prof.body, 'pid')), fl_result(fl_unnested_value(c.body, 'address.city')), fl_result(fl_unnested_value(c.body, 'address.state')), fl_result(fl_unnested_value(p.body, 'type')), fl_result(fl_unnested_value(p.body, 'numbers')) FROM "kv_.profiles" AS prof JOIN bc89db8a20fe759bf161b84adf2294d9bfe0c88d AS c ON c.docid=prof.rowid JOIN "152b9815998e188eb99eb1612aafbb3ee6031535" AS p ON p.docid=c.rowid WHERE fl_unnested_value(p.body, 'type') = 'mobile'". This table is referenced by an array index, which may have been deleted.
+    C4Error error;
+    queryenum = c4query_run(phoneQuery, nullslice, &error);
+    CHECK(!queryenum);  // This query relies on the index that has been deleted.
+    CHECK((error.domain == SQLiteDomain && error.code == 1));
+
+    // Recompile the query
+    phoneQuery = c4query_new2(
+            db, kC4N1QLQuery,
+            R"(SELECT prof.pid, c.address.city, c.address.state, p.type, p.numbers FROM profiles AS prof UNNEST prof.contacts AS c UNNEST c.phones AS p WHERE p.type = "mobile")"_sl,
+            nullptr, ERROR_INFO());
+    REQUIRE(phoneQuery);
+    queryenum = c4query_run(phoneQuery, nullslice, &error);
+    CHECK(queryenum);
+
 
     // phoneQuery is affected by the deletion of index "phones"
     // Following error will be logged,

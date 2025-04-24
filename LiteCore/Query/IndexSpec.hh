@@ -39,6 +39,10 @@ namespace litecore {
 
         bool canPartialIndex() const { return canPartialIndex(type); }
 
+        static bool canPartialIndex(Type type_) { return type_ == kValue || type_ == kFullText; }
+
+        bool canPartialIndex() const { return canPartialIndex(type); }
+
         /// Options for a full-text index.
         struct FTSOptions {
             const char* language{};          ///< NULL or an ISO language code ("en", etc)

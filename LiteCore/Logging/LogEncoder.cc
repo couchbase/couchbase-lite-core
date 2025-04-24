@@ -66,6 +66,15 @@ namespace litecore {
         return _out.tellp();
     }
 
+    bool LogEncoder::isNewObject(ObjectRef object) const {
+        lock_guard<mutex> lock(_mutex);
+        return _isNewObject(object);
+    }
+
+    bool LogEncoder::_isNewObject(ObjectRef object) const {
+        return object != ObjectRef::None && _seenObjects.find(object) == _seenObjects.end();
+    }
+
 #pragma mark - LOGGING:
 
     void LogEncoder::log(const char* domain, ObjectRef object, std::string_view objPath, const char* format, ...) {
@@ -101,7 +110,7 @@ namespace litecore {
         // Write object path
         const auto objRef = (unsigned)object;
         _writeUVarInt(objRef);
-        if ( object != ObjectRef::None && !_seenObjects.contains(objRef) ) {
+        if ( _isNewObject(object) ) {
             _seenObjects.insert(objRef);
             if ( objPath.empty() ) {
                 _writer.write({"?\0", 2});

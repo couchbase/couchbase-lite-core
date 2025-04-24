@@ -61,9 +61,12 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
             ptrdiff_t ptrdiff = 1234567890;
             logger.log(nullptr, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c", 1234567890 * sgn,
                        234567890L * sgn, 123456789123456789LL * sgn, ptrdiff * sgn, '@');
+            logger.log(nullptr, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c", 1234567890 * sgn,
+                       234567890L * sgn, 123456789123456789LL * sgn, ptrdiff * sgn, '@');
         }
         const char* str = "C string";
         slice       buf("hello");
+        logger.log(nullptr, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
         logger.log(nullptr, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
     }
     string encoded = out.str();

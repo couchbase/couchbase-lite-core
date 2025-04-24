@@ -14,6 +14,7 @@
 #include "WebSocketInterface.hh"
 #include "Logging.hh"
 #include "Stopwatch.hh"
+#include "c4Certificate.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include <atomic>
 #include <chrono>
@@ -45,6 +46,9 @@ namespace litecore::websocket {
             int                 heartbeatSecs;       ///< WebSocket heartbeat interval in seconds (default if 0)
             fleece::alloc_slice networkInterface;    ///< Network interface
             fleece::AllocedDict options;             ///< Other options
+#ifdef COUCHBASE_ENTERPRISE
+            Retained<C4KeyPair> externalKey;  ///< Client cert uses external key..
+#endif
         };
 
         WebSocketImpl(const URL& url, Role role, bool framing, Parameters);
