@@ -9,6 +9,7 @@
 #include <cstring>  // for memcpy
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
