@@ -20,7 +20,7 @@ namespace litecore {
     UUID UUID::generateRandom() {
         // https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
         UUID uuid;
-        SecureRandomize(mutable_slice(slice(uuid)));
+        SecureRandomize({uuid._bytes.data(), uuid._bytes.size()});
         uuid.stampVersion(4);
         return uuid;
     }
