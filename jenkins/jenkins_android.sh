@@ -69,6 +69,7 @@ ${CMAKE} \
     -DANDROID_PLATFORM=22 \
     -DANDROID_ABI=armeabi-v7a \
     -DBUILD_ENTERPRISE=ON \
+    -DEMBEDDED_MDNS=ON \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DCMAKE_MAKE_PROGRAM="$NINJA" \
     ../../..
@@ -84,6 +85,7 @@ ${CMAKE} \
     -DANDROID_PLATFORM=22 \
     -DANDROID_ABI=arm64-v8a \
     -DBUILD_ENTERPRISE=ON \
+    -DEMBEDDED_MDNS=ON \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DCMAKE_MAKE_PROGRAM="$NINJA" \
     ../../..
