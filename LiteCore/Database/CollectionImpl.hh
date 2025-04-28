@@ -380,191 +380,189 @@ namespace litecore {
             if ( !_housekeeper && isValid() ) {
                 auto flags = _database->getConfiguration().flags;
                 if ( (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) == 0 ) {
-                    auto flags = _database->getConfiguration().flags;
-                    if ( (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) == 0 ) {
-                        _housekeeper = new Housekeeper(this);
-                        _housekeeper->setParentObjectRef(getObjectRef());
-                        _housekeeper->start();
-                    }
+                    _housekeeper = new Housekeeper(this);
+                    _housekeeper->setParentObjectRef(getObjectRef());
+                    _housekeeper->start();
                 }
             }
+        }
 
-            bool stopHousekeeping() {
-                if ( !_housekeeper ) return false;
-                _housekeeper->stop();
-                _housekeeper = nullptr;
-                return true;
-            }
+        bool stopHousekeeping() {
+            if ( !_housekeeper ) return false;
+            _housekeeper->stop();
+            _housekeeper = nullptr;
+            return true;
+        }
 
 #pragma mark - INDEXES:
 
-            bool createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
-                             const C4IndexOptions* indexOptions = nullptr) override {
-                IndexSpec::Options options;
-                switch ( indexType ) {
-                    case kC4ValueIndex:
-                        break;
-                    case kC4ArrayIndex:
-                        if ( indexOptions ) { options.emplace<IndexSpec::ArrayOptions>(indexOptions->unnestPath); }
-                        break;
-                    case kC4FullTextIndex:
-                        if ( indexOptions ) {
-                            auto& ftsOpt            = options.emplace<IndexSpec::FTSOptions>();
-                            ftsOpt.language         = indexOptions->language;
-                            ftsOpt.ignoreDiacritics = indexOptions->ignoreDiacritics;
-                            ftsOpt.disableStemming  = indexOptions->disableStemming;
-                            ftsOpt.stopWords        = indexOptions->stopWords;
-                        }
-                        break;
-#ifdef COUCHBASE_ENTERPRISE
-                    case kC4PredictiveIndex:
-                        break;
-                    case kC4VectorIndex:
-                        if ( indexOptions ) {
-                            auto& c4Opt       = indexOptions->vector;
-                            auto& vecOpt      = options.emplace<IndexSpec::VectorOptions>();
-                            vecOpt.dimensions = c4Opt.dimensions;
-                            switch ( c4Opt.metric ) {
-                                case kC4VectorMetricEuclidean1:
-                                    vecOpt.metric = vectorsearch::Metric::Euclidean;
-                                    break;
-                                case kC4VectorMetricEuclidean2:
-                                    vecOpt.metric = vectorsearch::Metric::Euclidean2;
-                                    break;
-                                case kC4VectorMetricCosine:
-                                    vecOpt.metric = vectorsearch::Metric::CosineDistance;
-                                    break;
-                                case kC4VectorMetricDot:
-                                    vecOpt.metric = vectorsearch::Metric::DotProductDistance;
-                                    break;
-                                case kC4VectorMetricDefault:
-                                    break;
-                                default:
-                                    error::_throw(error::InvalidParameter, "Invalid C4VectorMetricType");
-                            }
-                            switch ( c4Opt.clustering.type ) {
-                                case kC4VectorClusteringFlat:
-                                    vecOpt.clustering = vectorsearch::FlatClustering{c4Opt.clustering.flat_centroids};
-                                    break;
-                                case kC4VectorClusteringMulti:
-                                    vecOpt.clustering = vectorsearch::MultiIndexClustering{
-                                            c4Opt.clustering.multi_subquantizers, c4Opt.clustering.multi_bits};
-                                    break;
-                                default:
-                                    error::_throw(error::InvalidParameter, "Invalid C4VectorClusteringType");
-                            }
-                            switch ( c4Opt.encoding.type ) {
-                                case kC4VectorEncodingNone:
-                                    vecOpt.encoding = vectorsearch::NoEncoding{};
-                                    break;
-                                case kC4VectorEncodingPQ:
-                                    vecOpt.encoding = vectorsearch::PQEncoding{c4Opt.encoding.pq_subquantizers,
-                                                                               c4Opt.encoding.bits};
-                                    break;
-                                case kC4VectorEncodingSQ:
-                                    vecOpt.encoding = vectorsearch::SQEncoding{c4Opt.encoding.bits};
-                                    break;
-                                case kC4VectorEncodingDefault:
-                                    break;
-                                default:
-                                    error::_throw(error::InvalidParameter, "Invalid C4VectorEncodingType");
-                            }
-                            vecOpt.minTrainingCount = c4Opt.minTrainingSize;
-                            vecOpt.maxTrainingCount = c4Opt.maxTrainingSize;
-                            if ( c4Opt.numProbes > 0 ) vecOpt.probeCount = c4Opt.numProbes;
-                            vecOpt.lazyEmbedding = c4Opt.lazy;
-                            vecOpt.validate();
-                        } else {
-                            error::_throw(error::InvalidParameter, "Vector index requires options");
-                        }
-                        break;
-#endif
-                    default:
-                        error::_throw(error::InvalidParameter, "Invalid index type");
-                        break;
-                }
-                if ( indexOptions ) {
-                    constexpr const char* indexTypeNames[] = {"Value", "FullText", "Array", "Predictive", "Vector"};
-                    if ( indexOptions->where && !IndexSpec::canPartialIndex((IndexSpec::Type)indexType) )
-                        error::_throw(error::InvalidParameter, "%s index does support partial index.",
-                                      indexTypeNames[indexType]);
-                }
-
-                return keyStore().createIndex({indexName.asString(), (IndexSpec::Type)indexType, indexSpec,
-                                               slice{indexOptions ? indexOptions->where : nullptr},
-                                               (QueryLanguage)indexLanguage, options});
-            }
-
-            Retained<C4Index> getIndex(slice name) override { return C4Index::getIndex(this, name); }
-
-            void deleteIndex(slice indexName) override { keyStore().deleteIndex(indexName); }
-
-            alloc_slice getIndexesInfo(bool fullInfo = true) const override {
-                FLEncoder enc = FLEncoder_New();
-                FLEncoder_BeginArray(enc, 2);
-                for ( const auto& spec : keyStore().getIndexes() ) {
-                    if ( fullInfo ) {
-                        FLEncoder_BeginDict(enc, 5);
-                        FLEncoder_WriteKey(enc, slice("name"));
-                        FLEncoder_WriteString(enc, slice(spec.name));
-                        FLEncoder_WriteKey(enc, slice("type"));
-                        FLEncoder_WriteInt(enc, spec.type);
-                        FLEncoder_WriteKey(enc, slice("expr"));
-                        FLEncoder_WriteString(enc, slice(spec.expression));
-                        FLEncoder_WriteKey(enc, slice("lang"));
-                        switch ( spec.queryLanguage ) {
-                            case QueryLanguage::kJSON:
-                                FLEncoder_WriteString(enc, slice("json"));
-                                break;
-                            case QueryLanguage::kN1QL:
-                                FLEncoder_WriteString(enc, slice("n1ql"));
-                                break;
-                        }
-                        if ( auto vecOpts = spec.vectorOptions() ) {
-                            FLEncoder_WriteKey(enc, "vector_options"_sl);
-                            FLEncoder_WriteString(enc, slice(vecOpts->createArgs()));
-                        }
-                        FLEncoder_EndDict(enc);
-                    } else {
-                        FLEncoder_WriteString(enc, slice(spec.name));
+        bool createIndex(slice indexName, slice indexSpec, C4QueryLanguage indexLanguage, C4IndexType indexType,
+                         const C4IndexOptions* indexOptions = nullptr) override {
+            IndexSpec::Options options;
+            switch ( indexType ) {
+                case kC4ValueIndex:
+                    break;
+                case kC4ArrayIndex:
+                    if ( indexOptions ) { options.emplace<IndexSpec::ArrayOptions>(indexOptions->unnestPath); }
+                    break;
+                case kC4FullTextIndex:
+                    if ( indexOptions ) {
+                        auto& ftsOpt            = options.emplace<IndexSpec::FTSOptions>();
+                        ftsOpt.language         = indexOptions->language;
+                        ftsOpt.ignoreDiacritics = indexOptions->ignoreDiacritics;
+                        ftsOpt.disableStemming  = indexOptions->disableStemming;
+                        ftsOpt.stopWords        = indexOptions->stopWords;
                     }
+                    break;
+#ifdef COUCHBASE_ENTERPRISE
+                case kC4PredictiveIndex:
+                    break;
+                case kC4VectorIndex:
+                    if ( indexOptions ) {
+                        auto& c4Opt       = indexOptions->vector;
+                        auto& vecOpt      = options.emplace<IndexSpec::VectorOptions>();
+                        vecOpt.dimensions = c4Opt.dimensions;
+                        switch ( c4Opt.metric ) {
+                            case kC4VectorMetricEuclidean1:
+                                vecOpt.metric = vectorsearch::Metric::Euclidean;
+                                break;
+                            case kC4VectorMetricEuclidean2:
+                                vecOpt.metric = vectorsearch::Metric::Euclidean2;
+                                break;
+                            case kC4VectorMetricCosine:
+                                vecOpt.metric = vectorsearch::Metric::CosineDistance;
+                                break;
+                            case kC4VectorMetricDot:
+                                vecOpt.metric = vectorsearch::Metric::DotProductDistance;
+                                break;
+                            case kC4VectorMetricDefault:
+                                break;
+                            default:
+                                error::_throw(error::InvalidParameter, "Invalid C4VectorMetricType");
+                        }
+                        switch ( c4Opt.clustering.type ) {
+                            case kC4VectorClusteringFlat:
+                                vecOpt.clustering = vectorsearch::FlatClustering{c4Opt.clustering.flat_centroids};
+                                break;
+                            case kC4VectorClusteringMulti:
+                                vecOpt.clustering = vectorsearch::MultiIndexClustering{
+                                        c4Opt.clustering.multi_subquantizers, c4Opt.clustering.multi_bits};
+                                break;
+                            default:
+                                error::_throw(error::InvalidParameter, "Invalid C4VectorClusteringType");
+                        }
+                        switch ( c4Opt.encoding.type ) {
+                            case kC4VectorEncodingNone:
+                                vecOpt.encoding = vectorsearch::NoEncoding{};
+                                break;
+                            case kC4VectorEncodingPQ:
+                                vecOpt.encoding =
+                                        vectorsearch::PQEncoding{c4Opt.encoding.pq_subquantizers, c4Opt.encoding.bits};
+                                break;
+                            case kC4VectorEncodingSQ:
+                                vecOpt.encoding = vectorsearch::SQEncoding{c4Opt.encoding.bits};
+                                break;
+                            case kC4VectorEncodingDefault:
+                                break;
+                            default:
+                                error::_throw(error::InvalidParameter, "Invalid C4VectorEncodingType");
+                        }
+                        vecOpt.minTrainingCount = c4Opt.minTrainingSize;
+                        vecOpt.maxTrainingCount = c4Opt.maxTrainingSize;
+                        if ( c4Opt.numProbes > 0 ) vecOpt.probeCount = c4Opt.numProbes;
+                        vecOpt.lazyEmbedding = c4Opt.lazy;
+                        vecOpt.validate();
+                    } else {
+                        error::_throw(error::InvalidParameter, "Vector index requires options");
+                    }
+                    break;
+#endif
+                default:
+                    error::_throw(error::InvalidParameter, "Invalid index type");
+                    break;
+            }
+            if ( indexOptions ) {
+                constexpr const char* indexTypeNames[] = {"Value", "FullText", "Array", "Predictive", "Vector"};
+                if ( indexOptions->where && !IndexSpec::canPartialIndex((IndexSpec::Type)indexType) )
+                    error::_throw(error::InvalidParameter, "%s index does support partial index.",
+                                  indexTypeNames[indexType]);
+            }
+
+            return keyStore().createIndex({indexName.asString(), (IndexSpec::Type)indexType, indexSpec,
+                                           slice{indexOptions ? indexOptions->where : nullptr},
+                                           (QueryLanguage)indexLanguage, options});
+        }
+
+        Retained<C4Index> getIndex(slice name) override { return C4Index::getIndex(this, name); }
+
+        void deleteIndex(slice indexName) override { keyStore().deleteIndex(indexName); }
+
+        alloc_slice getIndexesInfo(bool fullInfo = true) const override {
+            FLEncoder enc = FLEncoder_New();
+            FLEncoder_BeginArray(enc, 2);
+            for ( const auto& spec : keyStore().getIndexes() ) {
+                if ( fullInfo ) {
+                    FLEncoder_BeginDict(enc, 5);
+                    FLEncoder_WriteKey(enc, slice("name"));
+                    FLEncoder_WriteString(enc, slice(spec.name));
+                    FLEncoder_WriteKey(enc, slice("type"));
+                    FLEncoder_WriteInt(enc, spec.type);
+                    FLEncoder_WriteKey(enc, slice("expr"));
+                    FLEncoder_WriteString(enc, slice(spec.expression));
+                    FLEncoder_WriteKey(enc, slice("lang"));
+                    switch ( spec.queryLanguage ) {
+                        case QueryLanguage::kJSON:
+                            FLEncoder_WriteString(enc, slice("json"));
+                            break;
+                        case QueryLanguage::kN1QL:
+                            FLEncoder_WriteString(enc, slice("n1ql"));
+                            break;
+                    }
+                    if ( auto vecOpts = spec.vectorOptions() ) {
+                        FLEncoder_WriteKey(enc, "vector_options"_sl);
+                        FLEncoder_WriteString(enc, slice(vecOpts->createArgs()));
+                    }
+                    FLEncoder_EndDict(enc);
+                } else {
+                    FLEncoder_WriteString(enc, slice(spec.name));
                 }
-                FLEncoder_EndArray(enc);
-                alloc_slice ret{FLEncoder_Finish(enc, nullptr)};
-                FLEncoder_Free(enc);
-                return ret;
             }
+            FLEncoder_EndArray(enc);
+            alloc_slice ret{FLEncoder_Finish(enc, nullptr)};
+            FLEncoder_Free(enc);
+            return ret;
+        }
 
-            alloc_slice getIndexRows(slice indexName) const override {
-                auto        dataFile = (SQLiteDataFile*)dbImpl()->dataFile();
-                int64_t     rowCount;
-                alloc_slice rows;
-                dataFile->inspectIndex(indexName, rowCount, &rows);
-                return rows;
-            }
+        alloc_slice getIndexRows(slice indexName) const override {
+            auto        dataFile = (SQLiteDataFile*)dbImpl()->dataFile();
+            int64_t     rowCount;
+            alloc_slice rows;
+            dataFile->inspectIndex(indexName, rowCount, &rows);
+            return rows;
+        }
 
-            bool isIndexTrained(slice indexName) const override { return keyStore().isIndexTrained(indexName); }
+        bool isIndexTrained(slice indexName) const override { return keyStore().isIndexTrained(indexName); }
 
 #pragma mark - OBSERVERS:
 
-            std::unique_ptr<C4CollectionObserver> observe(CollectionObserverCallback cb) override {
-                return C4CollectionObserver::create(this, cb);
-            }
+        std::unique_ptr<C4CollectionObserver> observe(CollectionObserverCallback cb) override {
+            return C4CollectionObserver::create(this, cb);
+        }
 
-            std::unique_ptr<C4DocumentObserver> observeDocument(slice docID, DocumentObserverCallback cb) override {
-                return C4DocumentObserver::create(this, docID, cb);
-            }
+        std::unique_ptr<C4DocumentObserver> observeDocument(slice docID, DocumentObserverCallback cb) override {
+            return C4DocumentObserver::create(this, docID, cb);
+        }
 
 
-          private:
-            KeyStore*                                _keyStore;         // The actual DB table
-            unique_ptr<DocumentFactory>              _documentFactory;  // creates C4Document instances
-            unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
-            Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
-        };
+      private:
+        KeyStore*                                _keyStore;         // The actual DB table
+        unique_ptr<DocumentFactory>              _documentFactory;  // creates C4Document instances
+        unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
+        Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
+    };
 
-        inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }
+    inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }
 
-        inline const CollectionImpl* asInternal(const C4Collection* coll) { return (const CollectionImpl*)coll; }
+    inline const CollectionImpl* asInternal(const C4Collection* coll) { return (const CollectionImpl*)coll; }
 
-    }  // namespace litecore
+}  // namespace litecore

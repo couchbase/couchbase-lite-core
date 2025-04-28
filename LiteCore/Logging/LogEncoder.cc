@@ -278,11 +278,6 @@ namespace litecore {
         }
     }
 
-    bool LogEncoder::isNewObject(ObjectRef obj) const {
-        lock_guard<mutex> lock(_mutex);
-        return !_seenObjects.contains(obj);
-    }
-
 #pragma mark - FLUSHING:
 
     void LogEncoder::flush() {
