@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "272910552DBC59C900F92B04"
-               BuildableName = "LiteCore EE framework.framework"
+               BuildableName = "LiteCore.framework"
                BlueprintName = "LiteCore EE framework"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
@@ -51,7 +51,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "272910552DBC59C900F92B04"
-            BuildableName = "LiteCore EE framework.framework"
+            BuildableName = "LiteCore.framework"
             BlueprintName = "LiteCore EE framework"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
