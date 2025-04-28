@@ -20,10 +20,12 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE_ENABLED=ON ../..
 core_count=`getconf _NPROCESSORS_ONLN`
 make -j `expr $core_count + 1`
 
+# Run C++ tests
 pushd LiteCore/tests
 ./CppTests -r quiet
 popd
 
+# Run C tests
 pushd C/tests
 ./C4Tests -r quiet
 popd
