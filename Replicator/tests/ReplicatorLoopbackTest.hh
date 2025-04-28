@@ -432,7 +432,7 @@ class ReplicatorLoopbackTest
         auto& conflictHandlerRunning = _conflictHandlerRunning;
         _conflictHandler             = [resolvDB, &conflictHandlerRunning](ReplicatedRev* rev) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-            Log("Resolving conflict in '%.*s' ...", SPLAT(rev->docID));
+            Log("Resolving conflict in '%.*s' %.*s ...", SPLAT(rev->docID), SPLAT(rev->revID));
 
             conflictHandlerRunning = true;
             TransactionHelper t(resolvDB);
@@ -443,6 +443,12 @@ class ReplicatorLoopbackTest
             if ( !doc ) {
                 WarnError("conflictHandler: Couldn't read doc '%.*s'", SPLAT(rev->docID));
                 Require(doc);
+            }
+            if ( !(doc->flags & kDocConflicted) ) {
+                Log("conflictHandler: Doc '%.*s' not conflicted anymore (at %.*s)", SPLAT(rev->docID),
+                                SPLAT(doc->revID));
+                conflictHandlerRunning = false;
+                return;
             }
             alloc_slice     localRevID = doc->selectedRev.revID;
             C4RevisionFlags localFlags = doc->selectedRev.flags;
@@ -524,7 +530,9 @@ class ReplicatorLoopbackTest
                 string json = stringprintf(R"({"db":"%p","i":%d})", db, revNo);
                 revID       = createFleeceRev(collection, docID, nullslice, slice(json));
             }
-            Log("-------- %s %d: Created rev '%.*s' #%s --------", logName, revNo, SPLAT(docID), revID.c_str());
+            unsigned long long sequence = collection->getLastSequence();
+            Log("-------- %s %d: Created rev '%.*s' %s (seq #%llu) --------", logName, revNo, SPLAT(docID),
+                revID.c_str(), sequence);
         }
         Log("-------- %s: Done creating revs --------", logName);
     }

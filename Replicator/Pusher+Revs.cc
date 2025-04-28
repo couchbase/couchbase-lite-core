@@ -290,7 +290,7 @@ namespace litecore::repl {
         }
     }
 
-    // If sending a rev that's been obsoleted by a newer one, mark the sequence as complete and send
+    // This RevToSend has been obsoleted by a newer one; mark the sequence as complete and set `*c4Err` to
     // a 410 Gone error. (Common subroutine of sendRevision & shouldRetryConflictWithNewerAncestor.)
     void Pusher::revToSendIsObsolete(const RevToSend& request, C4Error* c4err) {
         logInfo("Revision '%.*s' #%.*s is obsolete; not sending it", SPLAT(request.docID), SPLAT(request.revID));
@@ -376,7 +376,6 @@ namespace litecore::repl {
     // `synced` - whether the revision was successfully stored on the peer
     void Pusher::doneWithRev(RevToSend* rev, bool completed, bool synced) {
         if ( !passive() ) {
-            logDebug("** doneWithRev %.*s #%.*s", SPLAT(rev->docID), SPLAT(rev->revID));  //TEMP
             addProgress({rev->bodySize, 0});
             if ( completed ) {
                 _checkpointer.completedSequence(rev->sequence);
