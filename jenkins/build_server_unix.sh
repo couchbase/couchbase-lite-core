@@ -126,7 +126,7 @@ build_binaries () {
     make install
     if [[ ${OS} == 'macosx' ]]; then
         # package up the strip symbols
-        cp -rp ${project_dir}/libLiteCore.dylib.dSYM  ./install/lib
+        cp -rp libLiteCore.dylib.dSYM  ./install/lib
     else
         cxx=${CXX:-g++}
         cc=${CC:-gcc}
