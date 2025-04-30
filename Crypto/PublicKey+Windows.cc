@@ -371,8 +371,8 @@ namespace litecore::crypto {
         NCryptFreeObject(hProvider);
         if ( retVal == nullptr ) {
             if ( result == NTE_NO_MORE_ITEMS ) {
-                LogError(TLSLogDomain, "Unable to find matching private key!");
-                error::_throw(error::CryptoError, "Unable to find matching private key!");
+                LogWarn(TLSLogDomain, "Unable to find matching private key!");
+                return nullptr;
             }
 
             throwSecurityStatus(result, "NCryptEnumKeys", "Couldn't enumerate keys in storage");

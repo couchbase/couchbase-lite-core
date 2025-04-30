@@ -55,7 +55,7 @@ std::string stringWithFormat(const char* format, ...) __printflike(1, 2);
  */
 template <size_t numDigits>
 static std::string randomDigitString() {
-    static_assert(1 < numDigits <= 64);
+    static_assert(1 < numDigits && numDigits <= 64);
     static_assert(numDigits % 2 == 0);
     auto appendEightDigits = [](std::stringstream& sstr) {
         auto now     = std::chrono::high_resolution_clock::now();
