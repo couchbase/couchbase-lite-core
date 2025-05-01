@@ -311,10 +311,12 @@ namespace litecore::websocket {
 
     void WebSocketImpl::startResponseTimer(chrono::seconds timeoutSecs) {
         _curTimeout = timeoutSecs;
-        if ( _responseTimer ) _responseTimer->fireAfter(timeoutSecs);
+        _responseTimer->fireAfter(timeoutSecs);
     }
 
     void WebSocketImpl::timedOut() {
+        if ( _timerDisabled ) return;
+
         logError("No response received after %lld sec -- disconnecting", (long long)_curTimeout.count());
         _timedOut = true;
         switch ( _socketLCState.load() ) {
@@ -452,8 +454,7 @@ namespace litecore::websocket {
             _msgToSend = message;
             _opToSend  = CLOSE;
         }
-        _pingTimer.reset();
-        _responseTimer.reset();
+        _timerDisabled = true;
         return true;
     }
 
@@ -498,16 +499,10 @@ namespace litecore::websocket {
         {
             lock_guard<mutex> lock(_mutex);
 
-            _pingTimer.reset();
-
-            if ( !_timedOut ) {
-                // CBL-2410: If _timedOut is true then we are almost
-                // certainly in this method synchronously from the _responseTimer
-                // callback which means resetting here would cause a hang.  Since
-                // _timedOut is true, this timer has already fired anyway so there
-                // is no pressing need for a tear down here, it can wait until later.
-                _responseTimer.reset();
-            }
+            // CBL-6799. We try to avoid deleting the timer objects, _pingTimer and _responseTimer, because it's hard
+            // to synchronize their uses and deletions. Instead, We disable them, which makes the callback function
+            // a no-op function. The timers will be deleted with "this" object.
+            _timerDisabled = true;
 
             if ( status.reason == kWebSocketClose ) {
                 if ( _timedOut ) status = {kNetworkError, kNetErrTimeout, nullslice};
