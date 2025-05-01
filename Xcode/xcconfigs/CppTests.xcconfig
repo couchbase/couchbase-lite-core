@@ -26,6 +26,4 @@ OTHER_LDFLAGS                = $(OTHER_LDFLAGS) -lmbedtls -lmbedcrypto -lmbedx50
 
 LLVM_LTO                    = NO    // LTO makes tests very slow to link and confuses Instruments
 
-// Without code signing, the OS will pop up an "Allow this app to access Bluetooth?" security alert,
-// which you must OK to continue, on every. single. run.
-CODE_SIGNING_ALLOWED = YES
+CODE_SIGNING_ALLOWED = NO

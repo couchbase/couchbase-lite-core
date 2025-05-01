@@ -44,6 +44,7 @@ jobs:
         destination: platform=macOS
         configuration: $CONFIGURATION_CPP
         action: build
+        output-formatter: ""   # Experimental
 
     - name: "Build C4Tests"
       uses: sersoft-gmbh/xcodebuild-action@v3.2.0
