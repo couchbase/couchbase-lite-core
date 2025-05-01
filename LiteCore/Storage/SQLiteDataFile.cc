@@ -238,6 +238,7 @@ namespace litecore {
 #endif
 
         if ( !extension::check_extension_version(pluginPath, extensionEntry->second) ) {
+            sExtensionPath.clear();
             error::_throw(error::UnsupportedOperation,
                           "Extension '%s' is not found or not compatible with this version of Couchbase Lite",
                           name.c_str());

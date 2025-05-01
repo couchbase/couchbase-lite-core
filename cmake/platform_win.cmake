@@ -64,7 +64,7 @@ function(setup_litecore_build_win)
         )
 
         target_include_directories(
-            ${liteCoreVariant} PRIVATE
+            ${liteCoreVariant} PUBLIC
             MSVC
             vendor/fleece/MSVC
         )
@@ -132,11 +132,6 @@ function(setup_litecore_build_win)
     if(LITECORE_BUILD_SHARED)
         install(FILES $<TARGET_PDB_FILE:LiteCore> DESTINATION bin OPTIONAL)
     endif()
-endfunction()
-
-function(setup_support_build)
-    target_include_directories(Support PRIVATE MSVC)
-    target_include_directories(Support PRIVATE vendor/fleece/MSVC)
 endfunction()
 
 function(setup_rest_build)

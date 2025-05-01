@@ -107,7 +107,7 @@ namespace litecore {
                         same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
                         if ( spec.type == IndexSpec::kFullText ) {
                             if ( same ) {
-                                FLValue whatA = FLValue(spec.what()), whatB = FLValue(existingSpec->what());
+                                auto whatA = FLValue(spec.what()), whatB = FLValue(existingSpec->what());
                                 same = whatA ? FLValue_IsEqual(whatA, whatB) : !whatB;
                             }
                             if ( same ) {
@@ -331,7 +331,8 @@ namespace litecore {
             if ( pos != string::npos )
                 path = string_view{indexTableName.data() + pos + KeyStore::kUnnestSeparator.size,
                                    indexTableName.length() - pos - KeyStore::kUnnestSeparator.size};
-            options.emplace<IndexSpec::ArrayOptions>(IndexSpec::ArrayOptions{path});
+            std::string unescapedPath = SQLiteKeyStore::transformCollectionName(string(path), false);
+            options.emplace<IndexSpec::ArrayOptions>(IndexSpec::ArrayOptions{unescapedPath});
         }
 
         SQLiteIndexSpec spec{name, type, expression, queryLanguage, options, keyStoreName, indexTableName};

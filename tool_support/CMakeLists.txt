@@ -12,11 +12,11 @@ add_library( tool_support STATIC
 target_include_directories( tool_support PUBLIC
     .
     ../vendor/linenoise-mob/
-
     ../C/
     ../C/include/
     ../C/Cpp_include/
     ../LiteCore/Support/
+    ../LiteCore/Logging/
     ../vendor/fleece/API/
     ../vendor/fleece/Fleece/Support/ # PlatformCompat.hh
 )
@@ -24,6 +24,13 @@ target_include_directories( tool_support PUBLIC
 target_compile_definitions(tool_support PRIVATE
     -DCMAKE
 )
+
+if(MSVC)
+    target_compile_definitions(tool_support PRIVATE
+        /wd4068 # unknown pragma
+    )
+endif()
+
 if(BUILD_ENTERPRISE)
     target_compile_definitions(tool_support PRIVATE
         -DCOUCHBASE_ENTERPRISE

@@ -109,7 +109,7 @@ namespace litecore::repl {
         : Worker(&parent->connection(), parent, parent->_options, parent->_db, namePrefix, coll) {}
 
     Worker::~Worker() {
-        if ( _importance ) logStats();
+        //if ( _importance ) logStats();   // It is not currently safe to log in a Logging destructor
         logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
     }
 

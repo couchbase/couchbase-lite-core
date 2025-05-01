@@ -126,6 +126,7 @@ namespace litecore {
         void                  _flush();
         void                  _scheduleFlush();
         void                  performScheduledFlush();
+        bool                  _isNewObject(ObjectRef) const;
 
         mutable std::mutex            _mutex;           // Ensures thread-safety
         fleece::Writer                _writer;          // Lightweight output buffer

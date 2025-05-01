@@ -115,15 +115,23 @@
 #    define C4_DEPRECATED(MSG) __attribute((deprecated(MSG)))
 #endif
 
-// Export/import stuff:
+// Export/import stuff.
+// `CBL_CORE_API` goes before an `extern` declaration,
+// `CBL_CORE_API_IMPL` goes before the definition.
 #ifdef _MSC_VER
 #    ifdef LITECORE_EXPORTS
 #        define CBL_CORE_API __declspec(dllexport)
 #    else
 #        define CBL_CORE_API __declspec(dllimport)
 #    endif
+#    define CBL_CORE_API_IMPL CBL_CORE_API
 #else
 #    define CBL_CORE_API __attribute__((visibility("default")))
+#    ifdef __clang__
+#        define CBL_CORE_API_IMPL CBL_CORE_API
+#    else
+#        define CBL_CORE_API_IMPL
+#    endif
 #endif
 
 

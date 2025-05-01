@@ -231,7 +231,9 @@ namespace litecore {
                     rowCount, recording->data().size, elapsedTime * 1000);
         }
 
-        ~SQLiteQueryEnumerator() override { logInfo("Deleted"); }
+        ~SQLiteQueryEnumerator() override {
+            //logInfo("Deleted");   // It is not currently safe to log in a Logging destructor
+        }
 
         int64_t getRowCount() const override {
             return _recording->asArray()->count() / 2;  // (every other row is a column bitmap)
@@ -444,19 +446,21 @@ namespace litecore {
                     enc.writeDouble(col.getDouble());
                     break;
                 case SQLITE_BLOB:
-                    if ( i >= _query->_1stCustomResultColumn ) {
-                        slice fleeceData{col.getBlob(), (size_t)col.getBytes()};
-                        if ( fleeceData.empty() ) {
-                            enc.writeNull();
-                        } else {
-                            Scope        fleeceScope(fleeceData, _sk);
-                            const Value* value = Value::fromTrustedData(fleeceData);
-                            if ( !value )
-                                error::_throw(error::CorruptRevisionData,
-                                              "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
-                            enc.writeValue(value);
+                    {
+                        if ( i >= _query->_1stCustomResultColumn ) {
+                            slice fleeceData{col.getBlob(), (size_t)col.getBytes()};
+                            if ( fleeceData.empty() ) {
+                                enc.writeNull();
+                            } else {
+                                Scope        fleeceScope(fleeceData, _sk);
+                                const Value* value = Value::fromTrustedData(fleeceData);
+                                if ( !value )
+                                    error::_throw(error::CorruptRevisionData,
+                                                  "SQLiteQueryRunner encodeColumn parsing fleece to Value failing");
+                                enc.writeValue(value);
+                            }
+                            break;
                         }
-                        break;
                     }
                     // else fall through:
                 case SQLITE_TEXT:
