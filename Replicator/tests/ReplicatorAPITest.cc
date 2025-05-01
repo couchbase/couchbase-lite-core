@@ -330,6 +330,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[
 
     c4repl_start(repl, false);
     REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+    REQUIRE(c4repl_getStatus(repl).error == kC4NoError);
     auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
     REQUIRE(c4coll_getDocumentCount(defaultColl) == 1);
     CHECK(overall == expectedOverall);

@@ -21,6 +21,7 @@ namespace litecore::actor {
     }
 
     void Actor::waitTillCaughtUp() {
+        Assert(currentActor() != this, "Illegal call to waitTillCaughtUp from the Actor's thread");
         std::mutex              mut;
         std::condition_variable cond;
         bool                    finished = false;

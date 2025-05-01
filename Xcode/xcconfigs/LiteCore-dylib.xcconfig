@@ -12,8 +12,10 @@
 // See <https://pewpewthespells.com/blog/xcconfig_guide.html#VariableSubstitution>
 C4_EXPORT_FILENAME_Debug        = $(SRCROOT)/../C/c4.exp
 C4_EXPORT_FILENAME_Release      = $(SRCROOT)/../C/c4.exp
+C4_EXPORT_FILENAME_Test_CE      = $(SRCROOT)/../C/c4.exp
 C4_EXPORT_FILENAME_Debug_EE     = $(SRCROOT)/../C/c4_ee.exp
 C4_EXPORT_FILENAME_Release_EE   = $(SRCROOT)/../C/c4_ee.exp
+C4_EXPORT_FILENAME_Test_EE      = $(SRCROOT)/../C/c4_ee.exp
 EXPORTED_SYMBOLS_FILE           = $(C4_EXPORT_FILENAME_$(CONFIGURATION))
 
 

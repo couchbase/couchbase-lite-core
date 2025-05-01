@@ -322,17 +322,6 @@ class ReplicatorLoopbackTest
 
 #pragma mark - CALLBACKS:
 
-    void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override {
-        std::unique_lock<std::mutex> lock(_mutex);
-
-        if ( repl == _replClient ) {
-            Check(!_gotResponse);
-            _gotResponse = true;
-            Check(status == 200);
-            Check(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
-        }
-    }
-
     void replicatorGotTLSCertificate(slice certData) override {}
 
     void replicatorStatusChanged(Replicator* repl, const Replicator::Status& status) override {
@@ -340,7 +329,13 @@ class ReplicatorLoopbackTest
         std::unique_lock<std::mutex> lock(_mutex);
 
         if ( repl == _replClient ) {
-            Check(_gotResponse);
+            if ( !_gotResponse ) {
+                _gotResponse               = true;
+                auto [httpStatus, headers] = repl->httpResponse();
+                Check(httpStatus == 200);
+                Check(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
+            }
+
             ++_statusChangedCalls;
             Log(">> Replicator is %-s, progress %lu/%lu, %lu docs", kC4ReplicatorActivityLevelNames[status.level],
                 (unsigned long)status.progress.unitsCompleted, (unsigned long)status.progress.unitsTotal,
@@ -437,7 +432,7 @@ class ReplicatorLoopbackTest
         auto& conflictHandlerRunning = _conflictHandlerRunning;
         _conflictHandler             = [resolvDB, &conflictHandlerRunning](ReplicatedRev* rev) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-            Log("Resolving conflict in '%.*s' ...", SPLAT(rev->docID));
+            Log("Resolving conflict in '%.*s' %.*s ...", SPLAT(rev->docID), SPLAT(rev->revID));
 
             conflictHandlerRunning = true;
             TransactionHelper t(resolvDB);
@@ -448,6 +443,12 @@ class ReplicatorLoopbackTest
             if ( !doc ) {
                 WarnError("conflictHandler: Couldn't read doc '%.*s'", SPLAT(rev->docID));
                 Require(doc);
+            }
+            if ( !(doc->flags & kDocConflicted) ) {
+                Log("conflictHandler: Doc '%.*s' not conflicted anymore (at %.*s)", SPLAT(rev->docID),
+                                SPLAT(doc->revID));
+                conflictHandlerRunning = false;
+                return;
             }
             alloc_slice     localRevID = doc->selectedRev.revID;
             C4RevisionFlags localFlags = doc->selectedRev.flags;
@@ -529,7 +530,9 @@ class ReplicatorLoopbackTest
                 string json = stringprintf(R"({"db":"%p","i":%d})", db, revNo);
                 revID       = createFleeceRev(collection, docID, nullslice, slice(json));
             }
-            Log("-------- %s %d: Created rev '%.*s' #%s --------", logName, revNo, SPLAT(docID), revID.c_str());
+            unsigned long long sequence = collection->getLastSequence();
+            Log("-------- %s %d: Created rev '%.*s' %s (seq #%llu) --------", logName, revNo, SPLAT(docID),
+                revID.c_str(), sequence);
         }
         Log("-------- %s: Done creating revs --------", logName);
     }

@@ -73,11 +73,6 @@ namespace litecore::websocket {
         startResponseTimer(chrono::seconds(kConnectTimeoutSecs));
     }
 
-    void WebSocketImpl::gotHTTPResponse(int status, const websocket::Headers& headersFleece) {
-        logInfo("Got HTTP response (status %d)", status);
-        delegateWeak()->invoke(&Delegate::onWebSocketGotHTTPResponse, status, headersFleece);
-    }
-
     void WebSocketImpl::onConnect() {
         int expected = SOCKET_OPENING;
         if ( !atomic_compare_exchange_strong(&_socketLCState, &expected, (int)SOCKET_OPENED) ) {

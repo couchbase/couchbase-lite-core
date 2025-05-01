@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
                BuildableName = "libLiteCore.dylib"
-               BlueprintName = "LiteCore dylib"
+               BlueprintName = "LiteCore CE dylib"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,7 +45,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
             BuildableName = "libLiteCore.dylib"
-            BlueprintName = "LiteCore dylib"
+            BlueprintName = "LiteCore CE dylib"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -61,7 +61,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
             BuildableName = "libLiteCore.dylib"
-            BlueprintName = "LiteCore dylib"
+            BlueprintName = "LiteCore CE dylib"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
