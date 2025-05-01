@@ -18,8 +18,8 @@ OTHER_LDFLAGS                               = -all_load // Prevents dead-strippi
 CLANG_ANALYZER_SECURITY_INSECUREAPI_RAND    = NO
 
 // configs including this still need to define CODE_SIGNING_ALLOWED=YES to actually sign.
-CODE_SIGN_IDENTITY = Apple Development
-CODE_SIGN_IDENTITY[sdk=macosx*] = Mac Developer
-CODE_SIGN_STYLE = Manual
-DEVELOPMENT_TEAM = N2Q372V7W2                           // Couchbase
-PROVISIONING_PROFILE_SPECIFIER =
+//CODE_SIGN_IDENTITY = Apple Development
+//CODE_SIGN_IDENTITY[sdk=macosx*] = Mac Developer
+//CODE_SIGN_STYLE = Manual
+//DEVELOPMENT_TEAM = N2Q372V7W2                           // Couchbase
+//PROVISIONING_PROFILE_SPECIFIER =
