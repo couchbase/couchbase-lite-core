@@ -100,15 +100,8 @@ bool C4Listener::shareDB(slice name, C4Database* db, C4ListenerDatabaseConfig co
     if ( name.buf ) nameStr = name;
     // `registerDatabase` now takes over that C4Database for the use of the listener.
     // That isn't how this API is defined, so to stay compatible, open a new connection to register:
-    auto dbCopy = db->openAgain();
-    try {
-        if ( _impl->registerDatabase(db, nameStr, dbConfig) ) return true;
-        dbCopy->close();
-        return false;
-    } catch ( ... ) {
-        dbCopy->close();
-        throw;
-    }
+    Retained<C4Database> dbCopy = db->openAgain();
+    return _impl->registerDatabase(dbCopy, nameStr, dbConfig);
 }
 
 bool C4Listener::unshareDB(C4Database* db) { return _impl->unregisterDatabase(db); }
