@@ -95,7 +95,10 @@ namespace litecore::websocket {
         Retained<BuiltInWebSocket> temporarySelfRetain = this;
         setThreadName();
 
-        if ( !_socket ) {
+        if ( _socket ) {
+            if ( string certData = _socket->peerTLSCertificateData(); !certData.empty() )
+                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
+        } else {
             try {
                 // Connect:
                 auto socket = _connectLoop();
