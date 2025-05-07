@@ -147,6 +147,10 @@ class C4PeerDiscovery {
     /// After this method returns, no more calls will be made to the observer and it can safely be destructed.
     void removeObserver(Observer*);
 
+    /// Shuts down providers in an orderly fashion, not returning until complete.
+    /// @note  It's not required to call this yourself; the destructor will call it.
+    void shutdown();
+
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
     static constexpr int kAPIVersion = 8;
 
