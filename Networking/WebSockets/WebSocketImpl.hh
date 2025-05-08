@@ -124,6 +124,7 @@ namespace litecore::websocket {
         fleece::alloc_slice             _closeMessage;                             // The encoded close request message
         std::unique_ptr<actor::Timer>   _pingTimer;
         std::unique_ptr<actor::Timer>   _responseTimer;
+        std::atomic<bool>               _timerDisabled{false};
         std::chrono::seconds            _curTimeout{};
         bool                            _timedOut{false};
         alloc_slice                     _protocolError;
