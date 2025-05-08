@@ -88,6 +88,11 @@ class C4PeerDiscovery {
     /// The `C4PeerDiscoveryProvider`s in use.
     std::vector<ProviderRef> const& providers() const { return _providers; }
 
+    /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
+    /// This factory is expected to handle normal IP-based WebSocket connections.
+    /// @warning  Should be called at most once, and before `startPublishing`.
+    void setDefaultSocketFactory(C4SocketFactory const&);
+
     /// Tells providers to start looking for peers.
     void startBrowsing();
 
@@ -152,7 +157,7 @@ class C4PeerDiscovery {
     void shutdown();
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 8;
+    static constexpr int kAPIVersion = 9;
 
   protected:
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
@@ -191,6 +196,7 @@ class C4PeerDiscovery {
     std::unordered_map<std::string, fleece::Ref<C4Peer>> _peers;
     std::vector<fleece::Ref<C4Peer>>                     _peersComing, _peersGoing;
     litecore::ObserverList<Observer>                     _observers;
+    std::unique_ptr<C4SocketFactory>                     _defaultSocketFactory;
 };
 
 #    pragma mark - PEER:
@@ -337,7 +343,7 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     virtual void cancelResolveURL(C4Peer*) {}
 
     /// Returns the custom socket factory to use to connect to a peer URL, or nullopt if no special factory is needed.
-    /// Default implementation returns `nullopt`.
+    /// Default implementation returns the C4PeerDiscovery's defaultSocketFactory or `nullopt`.
     virtual std::optional<C4SocketFactory> getSocketFactory() const;
 
     /// Publishes/advertises a service so other devices can discover this one as a peer and connect to it.
