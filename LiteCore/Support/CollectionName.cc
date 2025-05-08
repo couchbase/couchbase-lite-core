@@ -64,6 +64,11 @@ namespace litecore {
         return *this;
     }
 
+    bool CollectionName::operator==(C4CollectionSpec const& other) const {
+        slice otherScope = other.scope.buf ? other.scope : kC4DefaultScopeID;
+        return _spec.name == other.name && _spec.scope == otherScope;
+    }
+
     bool operator<(const CollectionName& spec1, const CollectionName& spec2) noexcept {
         if ( spec1.scope() == spec2.scope() ) {
             if ( spec1.name() == kC4DefaultCollectionName )  // `_default` sorts before anything else

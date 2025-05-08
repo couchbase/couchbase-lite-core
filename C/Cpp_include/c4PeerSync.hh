@@ -65,15 +65,15 @@ struct C4PeerSync
 
     /** Configuration of a C4PeerSync. */
     struct Parameters {
-        std::string_view                   peerGroupID;        ///< App identifier for peer discovery
-        std::span<const std::string_view>  protocols;          ///< Which protocols to use (empty = all)
-        C4Cert*                            tlsCert;            ///< My TLS certificate (server+client)
-        C4KeyPair*                         tlsKeyPair;         ///< Certificate's key-pair
-        C4Database*                        database;           ///< Database to sync
-        std::span<C4ReplicationCollection> collections;        ///< Collections to sync
-        slice                              optionsDictFleece;  ///< Replicator options
-        C4ReplicatorProgressLevel          progressLevel;      ///< Level of progress notifications
-        Delegate*                          delegate;           ///< Your object that receives notifications
+        std::string_view                  peerGroupID;        ///< App identifier for peer discovery
+        std::span<const std::string_view> protocols;          ///< Which protocols to use (empty = all)
+        C4Cert*                           tlsCert;            ///< My TLS certificate (server+client)
+        C4KeyPair*                        tlsKeyPair;         ///< Certificate's key-pair
+        C4Database*                       database;           ///< Database to sync
+        std::span<C4PeerSyncCollection>   collections;        ///< Collections to sync
+        slice                             optionsDictFleece;  ///< Replicator options
+        C4ReplicatorProgressLevel         progressLevel;      ///< Level of progress notifications
+        Delegate*                         delegate;           ///< Your object that receives notifications
     };
 
     explicit C4PeerSync(Parameters const&);
@@ -117,7 +117,7 @@ struct C4PeerSync
     PeerInfo getPeerInfo(C4PeerID const&);
 
     // Version number of c4PeerSync.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 2;
+    static constexpr int kAPIVersion = 3;
 
   private:
     class Impl;
