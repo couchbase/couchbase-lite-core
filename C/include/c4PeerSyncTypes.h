@@ -80,21 +80,46 @@ typedef struct C4PeerSyncCallbacks {
     void* C4NULLABLE                                  context;  ///< Value to be passed to the callbacks.
 } C4PeerSyncCallbacks;
 
+/** Replicator callback, an extended version of \ref C4ReplicatorValidationFunction. */
+typedef bool (*C4PeerSync_ValidationFunction)(C4PeerSync*,                ///< Sender
+                                              const C4PeerID*,            ///< Peer's UUID
+                                              C4CollectionSpec,           ///< Collection
+                                              C4String docID,             ///< Document ID
+                                              C4String revID,             ///< Revision ID
+                                              C4RevisionFlags,            ///< Revision flags
+                                              FLDict           body,      ///< Document body
+                                              void* C4NULLABLE context);  ///< Callback context
+
+/** Per-collection options for C4PeerSync. */
+typedef struct C4PeerSyncCollection {
+    C4CollectionSpec collection;
+
+    bool pushEnabled;  ///< Send documents to peers (i.e. allow read access)
+    bool pullEnabled;  ///< Receive documents from peers (i.e. allow write access)
+
+    // Following options should be encoded into the optionsDictFleece per-collection
+    // #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
+    // #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
+    C4Slice optionsDictFleece;
+
+    C4PeerSync_ValidationFunction C4NULLABLE pushFilter;       ///< Callback that can reject outgoing revisions
+    C4PeerSync_ValidationFunction C4NULLABLE pullFilter;       ///< Callback that can reject incoming revisions
+    void* C4NULLABLE                         callbackContext;  ///< Value to be passed to the callbacks.
+} C4PeerSyncCollection;
+
 /** Configuration for creating a C4PeerSync object. */
 typedef struct C4PeerSyncParameters {
-    C4String                   peerGroupID;     ///< App identifier for peer discovery
-    C4String const* C4NULLABLE protocols;       ///< Array of protocols to use (empty means all)
-    size_t                     protocolsCount;  ///< Size of protocols array
-    C4Cert*                    tlsCert;         ///< My TLS certificate (server+client)
-    C4KeyPair*                 tlsKeyPair;      ///< Certificate's key-pair
-
-    C4Database*              database;           ///< Database to sync
-    C4ReplicationCollection* collections;        ///< Collections to sync
-    size_t                   collectionCount;    ///< Size of collections[]
-    C4Slice                  optionsDictFleece;  ///< Optional Fleece-encoded dictionary of replicator options
-
-    C4ReplicatorProgressLevel progressLevel;  ///< Level of detail in callbacks
-    C4PeerSyncCallbacks       callbacks;
+    C4String                   peerGroupID;        ///< App identifier for peer discovery
+    C4String const* C4NULLABLE protocols;          ///< Array of protocols to use (empty means all)
+    size_t                     protocolsCount;     ///< Size of protocols array
+    C4Cert*                    tlsCert;            ///< My TLS certificate (server+client)
+    C4KeyPair*                 tlsKeyPair;         ///< Certificate's key-pair
+    C4Database*                database;           ///< Database to sync
+    C4PeerSyncCollection*      collections;        ///< Collections to sync
+    size_t                     collectionCount;    ///< Size of collections[]
+    C4Slice                    optionsDictFleece;  ///< Optional Fleece-encoded dictionary of replicator options
+    C4ReplicatorProgressLevel  progressLevel;      ///< Level of detail in replicator callbacks
+    C4PeerSyncCallbacks        callbacks;          ///< Client callbacks
 } C4PeerSyncParameters;
 
 CBL_CORE_API extern const C4String kPeerSyncProtocol_DNS_SD;       ///< DNS-SD ("Bonjour") protocol over IP.

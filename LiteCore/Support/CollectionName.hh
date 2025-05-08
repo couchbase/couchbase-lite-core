@@ -44,6 +44,8 @@ namespace litecore {
 
         friend bool operator<(const CollectionName&, const CollectionName&) noexcept;
 
+        bool operator==(C4CollectionSpec const&) const;
+
       private:
         std::string      _keyspace;
         C4CollectionSpec _spec;
