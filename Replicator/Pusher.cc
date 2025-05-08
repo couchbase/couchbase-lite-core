@@ -125,10 +125,11 @@ namespace litecore::repl {
                 ++iChange;
             } else {
                 // This doc already has a revision being sent; wait till that one is done
-                logVerbose("Holding off on change '%.*s' %.*s till earlier rev %.*s is done", SPLAT(rev->docID),
-                           SPLAT(rev->revID), SPLAT(iDoc->second->revID));
-                iDoc->second->nextRev = rev;
-                if ( !passive() ) _checkpointer.addPendingSequence(rev->sequence);
+                logInfo("Holding off on change '%.*s' %.*s till earlier rev %.*s is done", SPLAT(rev->docID),
+                        SPLAT(rev->revID), SPLAT(iDoc->second->revID));
+                auto& nextRev = iDoc->second->nextRev;
+                if ( nextRev && !passive() ) revToSendIsObsolete(*nextRev, nullptr);
+                nextRev = std::move(rev);
                 iChange = changes.revs.erase(iChange);  // remove from `changes`
             }
         }
@@ -377,15 +378,18 @@ namespace litecore::repl {
             }
 
             if ( shouldRetryConflictWithNewerAncestor(change, serverRevID) ) {
-                // I have a newer revision to send in its place:
+                // Retry this revision with its updated remoteAncestorRevID:
                 RevToSendList changes = {change};
                 sendChanges(changes);
-                return true;
+                return true;  // return early, w/o caling doneWithRev()
             } else if ( _options->pull(collectionIndex()) <= kC4Passive ) {
+                // I'm not pulling, so there's no way to get the server revision. Give up.
                 C4Error error = C4Error::make(WebSocketDomain, 409, "conflicts with newer server revision"_sl);
                 finishedDocumentWithError(change, error, false);
             } else {
-                completed = false;
+                // The current server rev will be pulled soon, either updating the doc or creating
+                // a conflict that the app will merge (creating a new rev.)
+                // Either way, this rev is done, so leave `completed` true.
             }
         } else {
             // Other error:
@@ -447,9 +451,17 @@ namespace litecore::repl {
                         return true;
                     }
                 } else {
-                    // No change to remote ancestor, but try again later if it changes:
+                    // No change to remote ancestor, but try again later if it changes.
+                    // (if an earlier rev of the doc was in this state, overwrite it & mark its seq complete.)
                     logInfo("Will try again if remote rev of '%.*s' is updated", SPLAT(rev->docID));
-                    _conflictsIMightRetry.emplace(rev->docID, rev);
+                    if ( auto i = _conflictsIMightRetry.find(rev->docID); i != _conflictsIMightRetry.end() ) {
+                        if ( i->second->sequence < rev->sequence ) {
+                            revToSendIsObsolete(*i->second);
+                            i->second = rev;
+                        }
+                    } else {
+                        _conflictsIMightRetry.emplace(rev->docID, rev);
+                    }
                 }
             } else {
                 // Doc has changed, so this rev is obsolete
@@ -478,6 +490,7 @@ namespace litecore::repl {
                            "but local doc has changed",
                            SPLAT(docID), SPLAT(collectionSpec().scope), SPLAT(collectionSpec().name),
                            SPLAT(foreignAncestor));
+                revToSendIsObsolete(*rev, nullptr);
             } else if ( doc->selectRevision(foreignAncestor, false) && !(doc->selectedRev().flags & kRevIsConflict) ) {
                 // The remote rev is an ancestor of my revision, so retry it:
                 doc->selectCurrentRevision();
