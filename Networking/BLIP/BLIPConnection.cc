@@ -162,7 +162,6 @@ namespace litecore::blip {
 
       protected:
         ~BLIPIO() override {
-#if 0  // It is not currently safe to log in a Logging destructor
             double outboxDepth =
                     (_countOutboxDepth != 0)
                             ? (static_cast<double>(_totalOutboxDepth) / static_cast<double>(_countOutboxDepth))
@@ -173,7 +172,6 @@ namespace litecore::blip {
                   _countOutboxDepth, _totalBytesWritten, _numRequestsReceived, _totalBytesRead, _timeOpen.elapsed(),
                   _maxOutboxDepth, outboxDepth);
             logStats();
-#endif
         }
 
         void onWebSocketGotHTTPResponse(int status, const websocket::Headers& headers) override {

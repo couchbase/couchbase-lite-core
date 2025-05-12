@@ -161,9 +161,7 @@ namespace litecore {
 
         for ( auto& i : _keyStores ) { i.second->close(); }
         _close(forDelete);
-        if ( _shared->removeDataFile(this) ) {
-            //logInfo("Closing database");   // It is not currently safe to log in a Logging destructor
-        }
+        if ( _shared->removeDataFile(this) ) { logInfo("Closing database"); }
     }
 
     void DataFile::reopen() {
