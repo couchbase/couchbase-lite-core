@@ -81,9 +81,7 @@ namespace litecore {
 
 }  // namespace litecore
 
-static inline LogDomain* toInternal(C4LogDomain d) { return reinterpret_cast<LogDomain*>(d); }
-
-static inline C4LogDomain toExternal(LogDomain* d) { return reinterpret_cast<C4LogDomain>(d); }
+static inline C4LogDomain asExternal(LogDomain* d) { return reinterpret_cast<C4LogDomain>(d); }
 
 #pragma mark - LOG OBSERVER:
 
@@ -105,7 +103,7 @@ static vector<pair<LogDomain&, LogLevel>> convertDomains(C4LogObserverConfig con
         for ( size_t j = 0; j < i; j++ ) {
             if ( config.domains[j].domain == domain ) error::_throw(error::InvalidParameter, "duplicate log domain");
         }
-        domains.emplace_back(*toInternal(domain), LogLevel(level));
+        domains.emplace_back(asInternal(domain), LogLevel(level));
     }
     return domains;
 }
@@ -165,7 +163,7 @@ C4LogObserver* c4log_replaceObserver(C4LogObserver* oldObs, C4LogObserverConfig 
 
 void c4log_consoleObserverCallback(const C4LogEntry* entry, void* context) noexcept {
     LogFunction::logToConsole(
-            LogEntry(uint64_t(entry->timestamp), *toInternal(entry->domain), LogLevel(entry->level), entry->message));
+            LogEntry(uint64_t(entry->timestamp), asInternal(entry->domain), LogLevel(entry->level), entry->message));
 }
 
 void c4logobserver_flush(C4LogObserver* obs) C4API {
@@ -213,7 +211,7 @@ void c4log_setCallbackLevel(C4LogLevel level) noexcept {
 
 void c4log_initConsole(C4LogLevel level) noexcept {
     auto defaultCallback = [](C4LogDomain domain, C4LogLevel level, const char* message, va_list) {
-        LogFunction::logToConsole(LogEntry(uint64_t(c4_now()), *toInternal(domain), LogLevel(level), message));
+        LogFunction::logToConsole(LogEntry(uint64_t(c4_now()), asInternal(domain), LogLevel(level), message));
     };
     c4log_writeToCallback(level, defaultCallback, true);
 }
@@ -292,33 +290,23 @@ C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     auto domain = LogDomain::named(name);
     // LogDomain instances are never deleted, so it's fine to use `new` and `strdup`.
     if ( !domain && create ) domain = new LogDomain(strdup(name));
-    return toExternal(domain);
+    return asExternal(domain);
 }
 
-const char* c4log_getDomainName(C4LogDomain c4Domain) noexcept {
-    auto domain = toInternal(c4Domain);
-    return domain->name();
-}
+const char* c4log_getDomainName(C4LogDomain c4Domain) noexcept { return asInternal(c4Domain).name(); }
 
-C4LogDomain c4log_nextDomain(C4LogDomain domain) noexcept {
-    if ( domain ) return toExternal(toInternal(domain)->next());
+C4LogDomain c4log_nextDomain(C4LogDomain c4Domain) noexcept {
+    if ( c4Domain ) return asExternal(asInternal(c4Domain).next());
     else
-        return toExternal(LogDomain::first());
+        return asExternal(LogDomain::first());
 }
 
-C4LogLevel c4log_getLevel(C4LogDomain c4Domain) noexcept {
-    auto domain = toInternal(c4Domain);
-    return (C4LogLevel)domain->effectiveLevel();
-}
+C4LogLevel c4log_getLevel(C4LogDomain c4Domain) noexcept { return C4LogLevel(asInternal(c4Domain).effectiveLevel()); }
 
-void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept {
-    auto domain = (LogDomain*)c4Domain;
-    domain->setLevel((LogLevel)level);
-}
+void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept { asInternal(c4Domain).setLevel(LogLevel(level)); }
 
 bool c4log_willLog(C4LogDomain c4Domain, C4LogLevel level) C4API {
-    auto domain = toInternal(c4Domain);
-    return domain->willLog((LogLevel)level);
+    return asInternal(c4Domain).willLog((LogLevel)level);
 }
 
 void c4log_warnOnErrors(bool warn) noexcept { error::sWarnOnError = warn; }
@@ -347,7 +335,7 @@ void c4log(C4LogDomain c4Domain, C4LogLevel level, const char* fmt, ...) noexcep
 
 void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char* fmt, va_list args) noexcept {
     try {
-        toInternal(c4Domain)->vlog((LogLevel)level, fmt, args);
+        asInternal(c4Domain).vlog((LogLevel)level, fmt, args);
     } catch ( ... ) {}
 }
 
@@ -356,7 +344,7 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
     if ( msg.buf == nullptr ) { return; }
 
     try {
-        toInternal(c4Domain)->logNoCallback((LogLevel)level, "%.*s", FMTSLICE(msg));
+        asInternal(c4Domain).logNoCallback((LogLevel)level, "%.*s", FMTSLICE(msg));
     } catch ( ... ) {}
 }
 

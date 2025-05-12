@@ -43,6 +43,8 @@
     Note: Logging is still present in release/nondebug builds. I've found this to be very useful in tracking down problems in the field, since I can tell a user how to turn on logging, and then get detailed logs back. To disable logging code from being compiled at all, define the preprocessor symbol _DISABLE_LOGGING (in your prefix header or target build settings.)
 */
 
+struct c4LogDomain;  // C4LogDomain is a typedef of c4LogDomain*
+
 namespace litecore {
 
     enum class LogLevel : int8_t { Uninitialized = -1, Debug, Verbose, Info, Warning, Error, None };
@@ -115,6 +117,11 @@ namespace litecore {
     extern "C" CBL_CORE_API LogDomain kC4Cpp_DefaultLog;
     extern LogDomain                  BlobLog, DBLog, QueryLog, SyncLog, &ActorLog;
 
+    /// Converts a C4LogDomain* to a LogDomain&.
+    inline LogDomain& asInternal(c4LogDomain* domain) { return *reinterpret_cast<LogDomain*>(domain); }
+
+    /// Converts a LogDomain& to a C4LogDomain*.
+    inline c4LogDomain* asExternal(LogDomain& domain) { return reinterpret_cast<c4LogDomain*>(&domain); }
 
 #define LogToAt(DOMAIN, LEVEL, FMT, ...)                                                                               \
     do {                                                                                                               \
