@@ -60,12 +60,14 @@ namespace litecore::websocket {
     // client constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL& url, const Parameters& parameters, shared_ptr<DBAccess> database)
         : BuiltInWebSocket(url, Role::Client, parameters) {
+        AssertArg(database);
         _database = std::move(database);
     }
 
     // server constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL& url, unique_ptr<net::ResponderSocket> socket)
         : BuiltInWebSocket(url, Role::Server, Parameters()) {
+        AssertArg(socket);
         _socket = std::move(socket);
     }
 
