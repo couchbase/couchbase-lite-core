@@ -90,8 +90,8 @@ class C4PeerDiscovery {
 
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
     /// This factory is expected to handle normal IP-based WebSocket connections.
-    /// @warning  Should be called at most once, and before `startPublishing`.
-    void setDefaultSocketFactory(C4SocketFactory const&);
+    /// @warning  Do not call this after there have been any calls to `startPublishing`.
+    static void setDefaultSocketFactory(C4SocketFactory const&);
 
     /// Tells providers to start looking for peers.
     void startBrowsing();
@@ -157,7 +157,7 @@ class C4PeerDiscovery {
     void shutdown();
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 9;
+    static constexpr int kAPIVersion = 10;
 
   protected:
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
@@ -196,7 +196,6 @@ class C4PeerDiscovery {
     std::unordered_map<std::string, fleece::Ref<C4Peer>> _peers;
     std::vector<fleece::Ref<C4Peer>>                     _peersComing, _peersGoing;
     litecore::ObserverList<Observer>                     _observers;
-    std::unique_ptr<C4SocketFactory>                     _defaultSocketFactory;
 };
 
 #    pragma mark - PEER:
