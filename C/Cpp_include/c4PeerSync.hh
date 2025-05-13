@@ -52,6 +52,7 @@ struct C4PeerSync
         virtual void peerNeighborsChanged(C4PeerID const&, size_t count) {}
 
         /// A replication with a peer has changed status.
+        /// The `incoming` flag is true if this connection was made by the other peer.
         virtual void peerReplicationStatus(C4PeerID const&, C4ReplicatorStatus const&, bool incoming) {}
 
         /// A replication with a peer has transferred documents.
@@ -82,8 +83,8 @@ struct C4PeerSync
     /** @note  It is guaranteed that the delegate will not be called after the destructor returns. */
     ~C4PeerSync() noexcept override;
 
-    /// Returns this instance's peer UUID, as visible to other peers.
-    /// (The UUID is derived from the C4Cert given in the parameters.)
+    /// Returns this instance's peer ID, as visible to other peers.
+    /// (The ID is derived via \ref c4peerid_fromCert from the C4Cert given in the parameters.)
     /// @note  This function is thread-safe.
     C4PeerID myPeerID() const noexcept;
 
@@ -126,7 +127,14 @@ struct C4PeerSync
     std::unique_ptr<Impl> _impl;
 };
 
+// Equality operator for C4PeerIDs.
 inline bool operator==(C4PeerID const& a, C4PeerID const& b) { return memcmp(a.bytes, b.bytes, sizeof(a.bytes)) == 0; }
+
+// Hash code for C4PeerIDs, making them useable as std::unordered_map keys.
+template <>
+struct std::hash<C4PeerID> {
+    std::size_t operator()(C4PeerID const&) const noexcept;
+};
 
 C4_ASSUME_NONNULL_END
 #endif  // COUCHBASE_ENTERPRISE
