@@ -50,6 +50,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		1B47AB512DD2B55400A9E3D0 /* MeshManager.hh in Headers */ = {isa = PBXBuildFile; fileRef = 1B47AB502DD2B55400A9E3D0 /* MeshManager.hh */; };
+		1B47AB532DD2B57300A9E3D0 /* MeshManager.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B47AB522DD2B57300A9E3D0 /* MeshManager.cc */; };
 		2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
 		2700BB75217905FE00797537 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		2700BB76217906D200797537 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
@@ -523,7 +525,6 @@
 		27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72772D833D4800CC48BF /* ReplicateTask.cc */; };
 		27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72792D833D4800CC48BF /* SyncListener.cc */; };
 		27FD72C42D833F6100CC48BF /* PropertyEncryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD728C2D833D4800CC48BF /* PropertyEncryption.cc */; };
-		27FD72C92D833F8E00CC48BF /* P2PSyncManager.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72892D833D4800CC48BF /* P2PSyncManager.cc */; };
 		27FD72CC2D83413E00CC48BF /* UUID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72CB2D83413E00CC48BF /* UUID.cc */; };
 		27FD72D32D8346D000CC48BF /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
 		27FD72DC2D83475100CC48BF /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
@@ -1101,6 +1102,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1B47AB502DD2B55400A9E3D0 /* MeshManager.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MeshManager.hh; sourceTree = "<group>"; };
+		1B47AB522DD2B57300A9E3D0 /* MeshManager.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MeshManager.cc; sourceTree = "<group>"; };
 		2700BB4D216FF2DA00797537 /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
 		2700BB59217005A900797537 /* CoreMLPredictiveModel.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoreMLPredictiveModel.hh; sourceTree = "<group>"; };
 		2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CoreMLPredictiveModel.mm; sourceTree = "<group>"; };
@@ -1840,8 +1843,6 @@
 		27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBTSocketFactory.mm; sourceTree = "<group>"; };
 		27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PeerDiscoveryTest.cc; sourceTree = "<group>"; };
 		27FD72852D833D4800CC48BF /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
-		27FD72882D833D4800CC48BF /* P2PSyncManager.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = P2PSyncManager.hh; sourceTree = "<group>"; };
-		27FD72892D833D4800CC48BF /* P2PSyncManager.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = P2PSyncManager.cc; sourceTree = "<group>"; };
 		27FD728B2D833D4800CC48BF /* c4LocalReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4LocalReplicator.hh; sourceTree = "<group>"; };
 		27FD728C2D833D4800CC48BF /* PropertyEncryption.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryption.cc; sourceTree = "<group>"; };
 		27FD728E2D833D4800CC48BF /* LiteCoreREST_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreREST_EE.xcconfig; sourceTree = "<group>"; };
@@ -3577,10 +3578,10 @@
 				2787D93E2DB2FCDA004F7D9B /* ExamplePeerDiscoveryProvider.cc */,
 				2787D93F2DB2FCDA004F7D9B /* Mesh.hh */,
 				2787D9402DB2FCDA004F7D9B /* Mesh.cc */,
+				1B47AB502DD2B55400A9E3D0 /* MeshManager.hh */,
+				1B47AB522DD2B57300A9E3D0 /* MeshManager.cc */,
 				2787D9412DB2FCDA004F7D9B /* MultiPeer.hh */,
 				2787D9422DB2FCDA004F7D9B /* MultiPeer.cc */,
-				27FD72882D833D4800CC48BF /* P2PSyncManager.hh */,
-				27FD72892D833D4800CC48BF /* P2PSyncManager.cc */,
 				2787D9432DB2FCDA004F7D9B /* P2PTuning.hh */,
 				2787D9442DB2FCDA004F7D9B /* PeerID.hh */,
 				2787D9452DB2FCDA004F7D9B /* PeerID.cc */,
@@ -3721,6 +3722,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B47AB512DD2B55400A9E3D0 /* MeshManager.hh in Headers */,
 				27115C952D83682D004FCC12 /* ListenerHarness.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -5018,11 +5020,11 @@
 				2787D95F2DB30173004F7D9B /* BonjourPeer.cc in Sources */,
 				2787D9602DB30173004F7D9B /* c4PeerDiscovery.cc in Sources */,
 				2787D9612DB30173004F7D9B /* MultiPeer.cc in Sources */,
+				1B47AB532DD2B57300A9E3D0 /* MeshManager.cc in Sources */,
 				27115C972D83682D004FCC12 /* HTTPListener.cc in Sources */,
 				27115C982D83682D004FCC12 /* Server.cc in Sources */,
 				27115C992D83682D004FCC12 /* DatabaseRegistry.cc in Sources */,
 				27115C9B2D83682D004FCC12 /* c4Listener_CAPI.cc in Sources */,
-				27FD72C92D833F8E00CC48BF /* P2PSyncManager.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
