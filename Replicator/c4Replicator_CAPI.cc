@@ -10,6 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
+#include "c4Base.h"
 #include "c4Replicator.hh"
 #include "c4Database.hh"
 #include "c4Socket.hh"

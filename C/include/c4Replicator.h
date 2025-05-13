@@ -165,7 +165,7 @@ NODISCARD CBL_CORE_API bool c4repl_isDocumentPending(C4Replicator* repl, C4Strin
                                                      C4Error* C4NULLABLE outErr) C4API;
 
 
-/** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) 
+/** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket)
     \note This function is thread-safe. */
 NODISCARD CBL_CORE_API C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* C4NULLABLE outErr) C4API;
 
@@ -205,11 +205,11 @@ NODISCARD CBL_CORE_API bool c4db_setCookie(C4Database* db, C4String setCookieHea
                                            C4Error* C4NULLABLE outError) C4API;
 
 /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string
-        that can be used as the value of a "Cookie:" header. 
+        that can be used as the value of a "Cookie:" header.
         \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API C4StringResult c4db_getCookies(C4Database* db, C4Address request, C4Error* C4NULLABLE error) C4API;
 
-/** Removes all cookies from the database's cookie store. 
+/** Removes all cookies from the database's cookie store.
         \note The caller must use a lock for Database when this function is called. */
 CBL_CORE_API void c4db_clearCookies(C4Database* db) C4API;
 
