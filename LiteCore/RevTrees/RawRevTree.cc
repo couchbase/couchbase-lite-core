@@ -136,7 +136,7 @@ namespace litecore {
         // c.f. RawRevision::decodeTree
         if ( count > UINT16_MAX )
             error::_throw(error::UnexpectedError,
-                          "RawRevision::encodeTree: too many revs in the revision tree. The limit is %u", UINT16_MAX);
+                          "RawRevision::encodeTree: too many revs in the revision tree. The limit is %d", UINT16_MAX);
 
         return result;
     }

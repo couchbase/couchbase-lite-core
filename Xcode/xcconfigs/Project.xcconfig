@@ -20,6 +20,7 @@ GCC_WARN_ABOUT_MISSING_NEWLINE = NO
 GCC_WARN_SIGN_COMPARE = NO
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
 CLANG_STATIC_ANALYZER_MODE = shallow
+CLANG_WARN_DOCUMENTATION_COMMENTS = NO // Workaround for Xcode 16.3 false @documentation warnings; remove when fixed
 
 LITECORE_VERSION_STRING                            = 3.2.2
 LITECORE_BUILD_NUMBER                              = 0
