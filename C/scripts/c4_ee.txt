@@ -47,6 +47,8 @@ c4db_URINameFromPath
 
 kDefaultCertIssuerParameters
 
+c4cert_isSignedBy
+
 c4keypair_fromExternal
 c4keypair_fromPrivateKeyData
 c4keypair_fromPublicKeyData
@@ -76,3 +78,5 @@ c4peersync_getOnlinePeers
 c4peersync_getPeerInfo
 kPeerSyncProtocol_DNS_SD
 kPeerSyncProtocol_BluetoothLE
+
+c4socket_fromNative2

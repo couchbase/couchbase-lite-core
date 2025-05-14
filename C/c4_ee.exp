@@ -467,6 +467,8 @@ _c4db_URINameFromPath
 
 _kDefaultCertIssuerParameters
 
+_c4cert_isSignedBy
+
 _c4keypair_fromExternal
 _c4keypair_fromPrivateKeyData
 _c4keypair_fromPublicKeyData
@@ -496,6 +498,8 @@ _c4peersync_getOnlinePeers
 _c4peersync_getPeerInfo
 _kPeerSyncProtocol_DNS_SD
 _kPeerSyncProtocol_BluetoothLE
+
+_c4socket_fromNative2
 
 # Apple specific
 _FLEncoder_WriteNSObject
