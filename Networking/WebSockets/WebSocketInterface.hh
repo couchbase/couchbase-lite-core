@@ -132,6 +132,16 @@ namespace litecore::websocket {
             return std::string(role() == Role::Server ? "<-" : "->") + (std::string)url();
         }
 
+        using PeerCertValidator = std::function<bool(slice certData, std::string_view hostname)>;
+
+        void setPeerCertValidator(PeerCertValidator cv) { _peerCertValidator = std::move(cv); }
+
+        bool hasPeerCertValidator() const { return _peerCertValidator != nullptr; }
+
+        /** The HTTP response status and headers.
+            Available after a client socket connects. Otherwise zero status and empty headers. */
+        virtual std::pair<int, Headers> httpResponse() const = 0;
+
         /** Assigns the Delegate and opens the WebSocket. */
         void connect(Retained<WeakHolder<Delegate>>);
 
@@ -147,6 +157,10 @@ namespace litecore::websocket {
         WebSocket(URL url, Role role);
         ~WebSocket() override;
 
+        bool validatePeerCert(slice certData, std::string_view hostname) {
+            return !_peerCertValidator || _peerCertValidator(certData, hostname);
+        }
+
         /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
         virtual void connect() = 0;
 
@@ -155,6 +169,7 @@ namespace litecore::websocket {
         const URL                      _url;
         const Role                     _role;
         Retained<WeakHolder<Delegate>> _delegateWeakHolder;
+        PeerCertValidator              _peerCertValidator;
     };
 
     class Message : public RefCounted {
@@ -174,11 +189,10 @@ namespace litecore::websocket {
       public:
         virtual ~Delegate() = default;
 
-        virtual void onWebSocketGotHTTPResponse(int status, const Headers& headers) {}
-
         virtual void onWebSocketGotTLSCertificate(slice certData) = 0;
-        virtual void onWebSocketConnect()                         = 0;
-        virtual void onWebSocketClose(CloseStatus)                = 0;
+
+        virtual void onWebSocketConnect()          = 0;
+        virtual void onWebSocketClose(CloseStatus) = 0;
 
         /** A message has arrived. */
         virtual void onWebSocketMessage(Message*) = 0;

@@ -34,14 +34,43 @@ namespace litecore {
         return uniform(e);
     }
 
-    void GenerateUUID(fleece::mutable_slice s) {
-        // https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
-        Assert(s.size == SizeOfUUID);
-        SecureRandomize(s);
-        auto bytes = (uint8_t*)s.buf;
-        bytes[6]   = (bytes[6] & ~0xF0) | 0x40;  // Set upper 4 bits to 0100
-        bytes[8]   = (bytes[8] & ~0xC0) | 0x80;  // Set upper 2 bits to 10
+#pragma mark - RANDOM NUMBER GENERATOR:
+
+    RandomNumberGenerator& RandomNumberGenerator::defaultInstance() {
+        static RandomNumberGenerator* sRNG = new RandomNumberGenerator;
+        return *sRNG;
     }
+
+    uint32_t RandomNumberGenerator::randomNumber(uint32_t upperBound) {
+        std::uniform_int_distribution<uint32_t> uniform(0, upperBound - 1);
+        return uniform(*this);
+    }
+
+    double RandomNumberGenerator::randomDouble(double lowerBound, double upperBound) {
+        std::uniform_real_distribution<double> uniform(lowerBound, upperBound);
+        return uniform(*this);
+    }
+
+    double RandomNumberGenerator::randomNormalDouble(double mean, double stdDev) {
+        std::normal_distribution norm(mean, stdDev);
+        return norm(*this);
+    }
+
+    class RepeatableRandomNumberGenerator : public RandomNumberGenerator {
+      public:
+        explicit RepeatableRandomNumberGenerator(uint32_t seed) : _rng(seed) {}
+
+        result_type operator()() override { return _rng(); };
+
+      private:
+        std::mt19937 _rng;
+    };
+
+    std::unique_ptr<RandomNumberGenerator> RandomNumberGenerator::newRepeatable(uint32_t seed) {
+        return std::make_unique<RepeatableRandomNumberGenerator>(seed);
+    }
+
+#pragma mark - SECURE RANDOMIZE:
 
     void SecureRandomize(fleece::mutable_slice s) {
 #ifdef __APPLE__

@@ -322,17 +322,6 @@ class ReplicatorLoopbackTest
 
 #pragma mark - CALLBACKS:
 
-    void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override {
-        std::unique_lock<std::mutex> lock(_mutex);
-
-        if ( repl == _replClient ) {
-            Check(!_gotResponse);
-            _gotResponse = true;
-            Check(status == 200);
-            Check(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
-        }
-    }
-
     void replicatorGotTLSCertificate(slice certData) override {}
 
     void replicatorStatusChanged(Replicator* repl, const Replicator::Status& status) override {
@@ -340,7 +329,13 @@ class ReplicatorLoopbackTest
         std::unique_lock<std::mutex> lock(_mutex);
 
         if ( repl == _replClient ) {
-            Check(_gotResponse);
+            if ( !_gotResponse ) {
+                _gotResponse               = true;
+                auto [httpStatus, headers] = repl->httpResponse();
+                Check(httpStatus == 200);
+                Check(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
+            }
+
             ++_statusChangedCalls;
             Log(">> Replicator is %-s, progress %lu/%lu, %lu docs", kC4ReplicatorActivityLevelNames[status.level],
                 (unsigned long)status.progress.unitsCompleted, (unsigned long)status.progress.unitsTotal,

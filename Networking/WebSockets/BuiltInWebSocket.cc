@@ -17,6 +17,7 @@
 #include "CookieStore.hh"
 #include "DBAccess.hh"
 #include "c4Database.hh"
+#include "c4ExceptionUtils.hh"
 #include "c4ReplicatorTypes.h"
 #include "c4Socket+Internal.hh"
 #include "Error.hh"
@@ -59,12 +60,14 @@ namespace litecore::websocket {
     // client constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL& url, const Parameters& parameters, shared_ptr<DBAccess> database)
         : BuiltInWebSocket(url, Role::Client, parameters) {
+        AssertArg(database);
         _database = std::move(database);
     }
 
     // server constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL& url, unique_ptr<net::ResponderSocket> socket)
         : BuiltInWebSocket(url, Role::Server, Parameters()) {
+        AssertArg(socket);
         _socket = std::move(socket);
     }
 
@@ -77,6 +80,8 @@ namespace litecore::websocket {
         _connectThread = thread([this] { _bgConnect(); });
         _connectThread.detach();
     }
+
+    std::pair<int, Headers> BuiltInWebSocket::httpResponse() const { return {_responseStatus, _responseHeaders}; }
 
     void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
@@ -92,7 +97,10 @@ namespace litecore::websocket {
         Retained<BuiltInWebSocket> temporarySelfRetain = this;
         setThreadName();
 
-        if ( !_socket ) {
+        if ( _socket ) {
+            if ( string certData = _socket->peerTLSCertificateData(); !certData.empty() )
+                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
+        } else {
             try {
                 // Connect:
                 auto socket = _connectLoop();
@@ -129,14 +137,17 @@ namespace litecore::websocket {
     }
 
     unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
-        Dict  authDict = options()[kC4ReplicatorOptionAuthentication].asDict();
-        slice authType = authDict[kC4ReplicatorAuthType].asString();
+        Dict   authDict = options()[kC4ReplicatorOptionAuthentication].asDict();
+        slice  authType = authDict[kC4ReplicatorAuthType].asString();
+        string curHostname;
 
         // Custom TLS context:
-        slice rootCerts      = options()[kC4ReplicatorOptionRootCerts].asData();
-        slice pinnedCert     = options()[kC4ReplicatorOptionPinnedServerCert].asData();
-        bool  selfSignedOnly = options()[kC4ReplicatorOptionOnlySelfSignedServerCert].asBool();
-        if ( rootCerts || pinnedCert || selfSignedOnly || authType == slice(kC4AuthTypeClientCert) ) {
+        slice rootCerts            = options()[kC4ReplicatorOptionRootCerts].asData();
+        slice pinnedCert           = options()[kC4ReplicatorOptionPinnedServerCert].asData();
+        bool  selfSignedOnly       = options()[kC4ReplicatorOptionOnlySelfSignedServerCert].asBool();
+        bool  customValidate       = hasPeerCertValidator();
+        bool  customValidateCalled = false;
+        if ( rootCerts || pinnedCert || selfSignedOnly || customValidate || authType == slice(kC4AuthTypeClientCert) ) {
             if ( selfSignedOnly && rootCerts ) {
                 closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
                                             "Cannot specify root certs in self signed mode"_sl));
@@ -147,6 +158,15 @@ namespace litecore::websocket {
             _tlsContext->allowOnlySelfSigned(selfSignedOnly);
             if ( rootCerts ) _tlsContext->setRootCerts(rootCerts);
             if ( pinnedCert ) _tlsContext->allowOnlyCert(pinnedCert);
+            if ( customValidate ) {
+                _tlsContext->setCertAuthCallback([&](slice certData) {
+                    customValidateCalled = true;
+                    try {
+                        return this->validatePeerCert(certData, curHostname);
+                    }
+                    catchAndWarn() return false;
+                });
+            }
             if ( authType == slice(kC4AuthTypeClientCert) ) {
                 if ( !configureClientCert(authDict) ) return nullptr;
             }
@@ -194,13 +214,15 @@ namespace litecore::websocket {
         C4Error                  error = {};
         bool                     done  = false;
         do {
+            curHostname          = string(logic.directAddress().hostname());
+            customValidateCalled = false;
             if ( lastDisposition != HTTPLogic::kContinue ) {
                 socket = make_unique<ClientSocket>(_tlsContext);
                 socket->setTimeout(kConnectTimeoutSecs);
                 socket->setNetworkInterface(parameters().networkInterface);
             }
 
-            lastDisposition = logic.sendNextRequest(*socket);
+            lastDisposition = logic.sendNextRequest(*socket);  // Make the connection!
             certData        = socket->peerTLSCertificateData();
 
             switch ( lastDisposition ) {
@@ -235,9 +257,22 @@ namespace litecore::websocket {
             }
         } while ( !done );
 
-        // Tell the delegate what happened:
+        if ( lastDisposition == HTTPLogic::kSuccess && customValidate && !customValidateCalled ) {
+            // If the validate callback wasn't called during the TLS handshake, call it now:
+            if ( !this->validatePeerCert(certData, curHostname) ) {
+                closeWithError(C4Error::make(NetworkDomain, kC4NetErrTLSCertUntrusted,
+                                             "custom callback rejected peer's certificate"));
+                return nullptr;
+            }
+        }
+
         if ( !certData.empty() ) delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
-        if ( logic.status() != HTTPStatus::undefined ) gotHTTPResponse(int(logic.status()), logic.responseHeaders());
+
+        if ( logic.status() != HTTPStatus::undefined ) {
+            _responseStatus  = int(logic.status());
+            _responseHeaders = logic.responseHeaders();
+        }
+
         if ( lastDisposition == HTTPLogic::kSuccess ) {
             return socket;
         } else {

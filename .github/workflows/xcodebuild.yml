@@ -37,16 +37,17 @@ jobs:
 #### BUILD
 
     - name: "Build C++ Tests"
-      uses: sersoft-gmbh/xcodebuild-action@v1
+      uses: sersoft-gmbh/xcodebuild-action@v3.2.0
       with:
         project: Xcode/LiteCore.xcodeproj
         scheme: LiteCore C++ Tests
         destination: platform=macOS
         configuration: $CONFIGURATION_CPP
         action: build
+        output-formatter: ""   # Experimental
 
     - name: "Build C4Tests"
-      uses: sersoft-gmbh/xcodebuild-action@v1
+      uses: sersoft-gmbh/xcodebuild-action@v3.2.0
       with:
         project: Xcode/LiteCore.xcodeproj
         scheme: LiteCore C Tests

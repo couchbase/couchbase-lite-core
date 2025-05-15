@@ -40,6 +40,8 @@ namespace litecore::actor {
 
         static Actor* currentActor();
 
+        dispatch_queue_t dispatchQueue() const noexcept { return _queue; }
+
         static void runAsyncTask(void (*task)(void*), void* context);
 
       private:

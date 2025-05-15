@@ -163,8 +163,13 @@ void c4socket_registerFactory(C4SocketFactory factory) noexcept {
 }
 
 C4Socket* c4socket_fromNative(C4SocketFactory factory, void* nativeHandle, const C4Address* address) noexcept {
+    return c4socket_fromNative2(factory, nativeHandle, address, true);
+}
+
+C4Socket* c4socket_fromNative2(C4SocketFactory factory, void* nativeHandle, const C4Address* address,
+                               bool incoming) noexcept {
     return tryCatch<C4Socket*>(nullptr, [&] {
-        auto ret = C4Socket::fromNative(factory, nativeHandle, *address);
+        auto ret = C4Socket::fromNative(factory, nativeHandle, *address, incoming);
         return ret;
     });
 }
@@ -173,14 +178,18 @@ void c4Socket_setNativeHandle(C4Socket* socket, void* handle) noexcept { socket-
 
 void* C4NULLABLE c4Socket_getNativeHandle(C4Socket* socket) noexcept { return socket->getNativeHandle(); }
 
-inline repl::C4SocketImpl* internal(C4Socket* s) { return (repl::C4SocketImpl*)s; }
+static repl::C4SocketImpl* internal(C4Socket* s) { return (repl::C4SocketImpl*)s; }
 
 C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API {
-    retain(internal(socket));
+    retain((RefCounted*)internal(socket));
     return socket;
 }
 
-void c4socket_release(C4Socket* C4NULLABLE socket) C4API { release(internal(socket)); }
+void c4socket_release(C4Socket* C4NULLABLE socket) C4API { release((RefCounted*)internal(socket)); }
+
+bool c4socket_gotPeerCertificate(C4Socket* socket, C4Slice certData, C4String hostname) C4API {
+    return socket->gotPeerCertificate(certData, slice(hostname));
+}
 
 void c4socket_gotHTTPResponse(C4Socket* socket, int status, C4Slice responseHeadersFleece) noexcept {
     socket->gotHTTPResponse(status, responseHeadersFleece);

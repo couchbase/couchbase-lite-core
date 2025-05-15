@@ -40,7 +40,7 @@ namespace litecore {
         _dbConfig.parentDirectory = _dbDir;
     }
 
-    DatabasePool::DatabasePool(C4Database* main) : DatabasePool(main->getName(), main->getConfiguration()) {
+    DatabasePool::DatabasePool(Ref<C4Database>&& main) : DatabasePool(main->getName(), main->getConfiguration()) {
         logInfo("initial database is %s", nameOf(main).c_str());
         _dbTag              = _c4db_getDatabaseTag(main);
         Cache& cache        = writeable() ? _readWrite : _readOnly;
@@ -91,7 +91,7 @@ namespace litecore {
         // Toss out any excess available RO databases:
         for ( auto& entry : _readOnly.entries ) {
             if ( _readOnly.created > _readOnly.capacity && entry.db && entry.borrowCount == 0 ) {
-                closeDB(std::move(entry.db));
+                closeDB(std::move(entry.db).asRef());
                 --_readOnly.available;
                 --_readOnly.created;
             }
@@ -132,7 +132,7 @@ namespace litecore {
     void DatabasePool::_closeUnused(Cache& cache) {
         for ( auto& entry : cache.entries ) {
             if ( entry.borrowCount == 0 && entry.db ) {
-                closeDB(std::move(entry.db));
+                closeDB(std::move(entry.db).asRef());
                 --cache.created;
                 --cache.available;
             }
@@ -140,10 +140,10 @@ namespace litecore {
     }
 
     // Allocates and opens a new C4Database instance.
-    Retained<C4Database> DatabasePool::newDB(Cache& cache) {
-        auto config             = _dbConfig;
-        config.flags            = cache.flags;
-        Retained<C4Database> db = C4Database::openNamed(_dbName, config);
+    Ref<C4Database> DatabasePool::newDB(Cache& cache) {
+        auto config        = _dbConfig;
+        config.flags       = cache.flags;
+        Ref<C4Database> db = C4Database::openNamed(_dbName, config).asRef();
         if ( _dbTag >= 0 ) _c4db_setDatabaseTag(db, C4DatabaseTag(_dbTag));
         if ( _initializer ) {
             try {
@@ -157,7 +157,7 @@ namespace litecore {
         return db;
     }
 
-    void DatabasePool::closeDB(Retained<C4Database> db) noexcept {
+    void DatabasePool::closeDB(Ref<C4Database> db) noexcept {
         logInfo("closing %s", nameOf(db).c_str());
         try {
             db->close();
@@ -247,8 +247,8 @@ namespace litecore {
     BorrowedDatabase DatabasePool::tryBorrowWriteable() { return borrow(_readWrite, false); }
 
     // Called by BorrowedDatabase's destructor and its reset method.
-    void DatabasePool::returnDatabase(fleece::Retained<C4Database> db) {
-        Assert(db && !db->isInTransaction());
+    void DatabasePool::returnDatabase(Ref<C4Database> db) {
+        DebugAssert(db);
         unique_lock lock(_mutex);
 
         Cache& cache = (db->getConfiguration().flags & kC4DB_ReadOnly) ? _readOnly : _readWrite;
@@ -260,6 +260,7 @@ namespace litecore {
                 if ( entry.borrower != tid )
                     Warn("DatabasePool::returnDatabase: Calling thread is not the same that borrowed db");
                 Assert(entry.borrowCount > 0);
+                Assert(entry.borrowCount > 1 || !db->isInTransaction(), "Returning db while in transaction");
                 if ( --entry.borrowCount == 0 ) {
                     entry.borrower = {};
                     if ( cache.created > cache.capacity || _closed ) {
@@ -312,7 +313,7 @@ namespace litecore {
     }
 
     void BorrowedDatabase::_return() {
-        if ( _db && _pool ) _pool->returnDatabase(std::move(_db));
+        if ( _db && _pool ) _pool->returnDatabase(std::move(_db).asRef());
     }
 
     BorrowedCollection::BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec)

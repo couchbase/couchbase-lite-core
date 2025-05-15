@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
 #include "c4DocumentTypes.h"
 #include "fleece/Fleece.h"
@@ -115,6 +116,19 @@ typedef struct {
     void*            collectionContext;
 } C4DocumentEnded;
 
+typedef const C4DocumentEnded* C4NONNULL* C4NONNULL C4DocumentEndedList;
+
+/** Information about a blob being pushed or pulled. */
+typedef struct C4BlobProgress {
+    C4CollectionSpec collectionSpec;
+    C4String         docID;
+    C4String         docProperty;
+    C4BlobKey        blobKey;
+    uint64_t         bytesComplete;
+    uint64_t         bytesTotal;
+    C4Error          error;
+} C4BlobProgress;
+
 // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
 /** Callback a client can register, to get progress information.
@@ -126,14 +140,14 @@ typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator*, C4ReplicatorSta
         To also receive callbacks for successfully completed documents, set the
         kC4ReplicatorOptionProgressLevel option to a value greater than zero. */
 typedef void (*C4ReplicatorDocumentsEndedCallback)(C4Replicator*, bool pushing, size_t numDocs,
-                                                   const C4DocumentEnded* C4NONNULL docs[C4NONNULL],
-                                                   void* C4NULLABLE                 context);
+                                                   C4DocumentEndedList docs, void* C4NULLABLE context);
 
 /** Callback a client can register, to hear about the status of blobs. */
 typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator*, bool pushing, C4CollectionSpec collectionSpec,
                                                  C4String docID, C4String docProperty, C4BlobKey blobKey,
                                                  uint64_t bytesComplete, uint64_t bytesTotal, C4Error error,
                                                  void* C4NULLABLE context);
+//TODO: Change this to take a C4BlobProgress* instead
 
 /** Callback that can choose to reject an incoming pulled revision, or stop a local
         revision from being pushed, by returning false.
@@ -185,7 +199,7 @@ typedef struct C4ReplicationCollection {
     C4Slice optionsDictFleece;
 
     C4ReplicatorValidationFunction C4NULLABLE pushFilter;       ///< Callback that can reject outgoing revisions
-    C4ReplicatorValidationFunction C4NULLABLE pullFilter;       ///< Callback that can reject outgoing revisions
+    C4ReplicatorValidationFunction C4NULLABLE pullFilter;       ///< Callback that can reject incoming revisions
     void* C4NULLABLE                          callbackContext;  ///< Value to be passed to the callbacks.
 } C4ReplicationCollection;
 
@@ -236,7 +250,8 @@ typedef struct C4ReplicatorParameters {
 #define kC4ReplicatorOptionRootCerts        "rootCerts"   ///< Trusted root certs (data)
 #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
 #define kC4ReplicatorOptionOnlySelfSignedServerCert                                                                    \
-    "onlySelfSignedServer"  ///< Only accept self signed server certs (for P2P, bool)
+    "onlySelfSignedServer"                                  ///< Only accept self signed server certs (for P2P, bool)
+#define kC4ReplicatorOptionAcceptAllCerts "acceptAllCerts"  ///< Disable cert validation (bool)
 
 // HTTP options:
 #define kC4ReplicatorOptionExtraHeaders   "headers"  ///< Extra HTTP headers (Dict)

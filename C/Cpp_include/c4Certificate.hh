@@ -57,6 +57,8 @@ struct C4Cert final
 
     bool isSelfSigned();
 
+    bool isSignedBy(C4Cert* issuer);
+
     Retained<C4KeyPair> getPublicKey();
 
     Retained<C4KeyPair> loadPersistentPrivateKey();
