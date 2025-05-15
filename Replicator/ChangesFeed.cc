@@ -206,8 +206,8 @@ namespace litecore::repl {
                     (_docIDs != nullptr && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) ) {
             return nullptr;
         } else {
-            auto rev = make_retained<RevToSend>(info, _checkpointer->collectionSpec(),
-                                                _options->collectionCallbackContext(_collectionIndex));
+            Retained<RevToSend> rev = make_retained<RevToSend>(info, _checkpointer->collectionSpec(),
+                                                               _options->collectionCallbackContext(_collectionIndex));
             return shouldPushRev(rev, e) ? rev : nullptr;
         }
     }
