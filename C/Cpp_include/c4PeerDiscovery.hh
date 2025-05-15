@@ -66,14 +66,14 @@ class C4PeerDiscovery {
     /// Constructor. Uses all registered providers.
     /// @param peerGroupID  An app-specific unique identifier. Will discover other devices that use this identifier.
     ///                   It must be 63 characters or less and may not contain `.`, `,` or `\\`.
-    /// @param myPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
-    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& myPeerID);
+    /// @param thisPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
+    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID);
 
     /// Constructor. Uses the named provider classes.
     /// @param peerGroupID  An app-specific unique identifier.
-    /// @param myPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
+    /// @param thisPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
     /// @param providerNames  A list of names of registered C4PeerDiscoveryProviders.
-    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& myPeerID,
+    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID,
                              std::span<const std::string_view> providerNames);
 
     /// The destructor shuts everything down in an orderly fashion, not returning until complete.

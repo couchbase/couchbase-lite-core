@@ -41,13 +41,17 @@ CBL_CORE_API void c4Socket_setNativeHandle(C4Socket*, void* C4NULLABLE) C4API;
 CBL_CORE_API void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
 
 /** Notifies LiteCore that a socket is making a TLS connection and has received the peer's (usually
-    server's) certificate.
-    If the function returns false, the certificate is rejected and you should close the socket
-    immediately with error `kC4NetErrTLSCertUntrusted`.
+    server's) certificate, so that it knows the cert and can call any custom auth callbacks.
+    This function MUST be called if there is a valid peer cert.
 
-    This should be called only after any other TLS validation options have been handled
-    (`kC4ReplicatorOptionRootCerts`, `kC4ReplicatorOptionPinnedServerCert`,
-    `kC4ReplicatorOptionOnlySelfSignedServerCert`).
+    You should first perform other TLS validation, both platform-specific and as specified by
+    the options `kC4ReplicatorOptionRootCerts`, `kC4ReplicatorOptionPinnedServerCert`,
+    `kC4ReplicatorOptionOnlySelfSignedServerCert`. If any of those fail, close the socket.
+
+    After other validation succeeds, call this function. If it returns true, proceed.
+    If it returns false, the certificate is rejected and you should close the socket immediately
+    with error `kC4NetErrTLSCertUntrusted`.
+
     \note The caller must use a lock for Socket when this function is called.
     @param socket  The socket being opened.
     @param certData  The DER-encoded data of the peer's TLS certificate.

@@ -86,7 +86,7 @@ struct C4PeerSync
     /// Returns this instance's peer ID, as visible to other peers.
     /// (The ID is derived via \ref c4peerid_fromCert from the C4Cert given in the parameters.)
     /// @note  This function is thread-safe.
-    C4PeerID myPeerID() const noexcept;
+    C4PeerID thisPeerID() const noexcept;
 
     /// Starts a C4PeerSync, beginning peer discovery and replication.
     /// This call is asynchronous and returns immediately.
@@ -108,7 +108,7 @@ struct C4PeerSync
         bool                  online = false;      ///< True if it's currently online/visible
     };
 
-    /// Returns a list of all peers currently online, including yourself.
+    /// Returns a list of all peers currently online, including this one.
     /// @note  This function is thread-safe.
     std::vector<C4PeerID> onlinePeers();
 
@@ -118,7 +118,7 @@ struct C4PeerSync
     PeerInfo getPeerInfo(C4PeerID const&);
 
     // Version number of c4PeerSync.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 3;
+    static constexpr int kAPIVersion = 4;
 
   private:
     class Impl;
