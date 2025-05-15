@@ -164,6 +164,9 @@ namespace litecore { namespace crypto {
             CFRelease(_publicKeyRef);
             CFRelease(_privateKeyRef);
         }
+        
+        
+        virtual bool isPrivateKeyDataAvailable() override { return false; }
 
 
         virtual alloc_slice publicKeyRawData() override {
