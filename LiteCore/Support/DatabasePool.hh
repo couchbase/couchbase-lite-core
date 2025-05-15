@@ -210,11 +210,11 @@ namespace litecore {
 
         DatabaseOrPool(DatabasePool* pool) : _pool(pool) {}
 
-        C4Database* C4NULLABLE database() const { return _db; }
+        C4Database* C4NULLABLE database() const LIFETIMEBOUND { return _db; }
 
-        DatabasePool* C4NULLABLE pool() const { return _pool; }
+        DatabasePool* C4NULLABLE pool() const LIFETIMEBOUND { return _pool; }
 
-        fleece::Ref<DatabasePool> makePool() {
+        fleece::Ref<DatabasePool> makePool() const {
             if ( !_pool ) _pool = fleece::make_retained<DatabasePool>(std::move(_db).asRef());
             return _pool.asRef();
         }
@@ -228,8 +228,8 @@ namespace litecore {
         bool operator==(DatabaseOrPool const&) const = default;
 
       private:
-        fleece::Retained<C4Database>   _db;
-        fleece::Retained<DatabasePool> _pool;
+        fleece::Retained<C4Database>           _db;
+        mutable fleece::Retained<DatabasePool> _pool;
     };
 
     /** An RAII wrapper around a C4Database "borrowed" from a DatabasePool.
