@@ -47,6 +47,7 @@ CBL_CORE_API void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
     You should first perform other TLS validation, both platform-specific and as specified by
     the options `kC4ReplicatorOptionRootCerts`, `kC4ReplicatorOptionPinnedServerCert`,
     `kC4ReplicatorOptionOnlySelfSignedServerCert`. If any of those fail, close the socket.
+    (But if `kC4ReplicatorOptionAcceptAllCerts` is set, none of the above checks are done.)
 
     After other validation succeeds, call this function. If it returns true, proceed.
     If it returns false, the certificate is rejected and you should close the socket immediately

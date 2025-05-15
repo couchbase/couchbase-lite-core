@@ -251,6 +251,7 @@ typedef struct C4ReplicatorParameters {
 #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
 #define kC4ReplicatorOptionOnlySelfSignedServerCert                                                                    \
     "onlySelfSignedServer"  ///< Only accept self signed server certs (for P2P, bool)
+#define kC4ReplicatorOptionAcceptAllCerts "acceptAllCerts"  ///< Disable cert validation (bool)
 
 // HTTP options:
 #define kC4ReplicatorOptionExtraHeaders   "headers"  ///< Extra HTTP headers (Dict)
