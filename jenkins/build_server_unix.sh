@@ -31,9 +31,11 @@ case "${OSTYPE}" in
                   if [[ ${EDITION} == 'enterprise' ]]; then
                       release_config="Release_EE"
                       debug_config="Debug_EE"
+                      SCHEME_NAME="LiteCore EE framework"
                   else
                       release_config="Release"
                       debug_config="Debug"
+                      SCHEME_NAME="LiteCore framework"
                   fi
               fi;;
     linux*)   OS="linux"
@@ -81,7 +83,7 @@ xcarchive()
   ARCHIVE_PATH=$PWD/$(echo ${DESTINATION} | sed 's/ /_/g' | sed 's/\//\_/g')
   xcodebuild archive \
     -project "$WORKSPACE/$ios_xcode_proj" \
-    -scheme "LiteCore EE framework" \
+    -scheme "${SCHEME_NAME}" \
     -configuration "${CONFIGURATION}" \
     -destination "${DESTINATION}" \
     -archivePath "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive" \
