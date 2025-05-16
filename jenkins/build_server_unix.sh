@@ -81,7 +81,7 @@ xcarchive()
   ARCHIVE_PATH=$PWD/$(echo ${DESTINATION} | sed 's/ /_/g' | sed 's/\//\_/g')
   xcodebuild archive \
     -project "$WORKSPACE/$ios_xcode_proj" \
-    -scheme "LiteCore framework" \
+    -scheme "LiteCore EE framework" \
     -configuration "${CONFIGURATION}" \
     -destination "${DESTINATION}" \
     -archivePath "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive" \
