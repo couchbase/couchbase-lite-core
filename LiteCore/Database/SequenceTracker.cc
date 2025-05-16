@@ -462,7 +462,7 @@ namespace litecore {
     }
 
     CollectionChangeNotifier::~CollectionChangeNotifier() {
-        //if ( callback ) logInfo("Deleting");   // It is not currently safe to log in a Logging destructor
+        if ( callback ) logInfo("Deleting");
 
         if ( tracker ) { tracker->removePlaceholder(_placeholder); }
     }
