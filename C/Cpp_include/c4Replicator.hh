@@ -91,6 +91,8 @@ struct C4Replicator
         C4ReplicationCollection& addCollection(C4CollectionSpec const&, C4ReplicatorMode pushMode,
                                                C4ReplicatorMode pullMode);
 
+        bool removeCollection(C4CollectionSpec const&);
+
         fleece::MutableDict copyOptions() const;       ///< Returns copy of options (never null)
         void                setOptions(fleece::Dict);  ///< Updates options Dict
         void                updateOptions(std::function<void(fleece::MutableDict)> const& callback);
