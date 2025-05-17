@@ -202,6 +202,18 @@ C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4ReplicationCo
     return copiedSpec;
 }
 
+bool C4Replicator::Parameters::removeCollection(C4CollectionSpec const& spec) {
+    for ( auto i = _collections.begin(); i != _collections.end(); ++i ) {
+        if ( i->collection == spec ) {
+            _collections.erase(i);
+            this->C4ReplicatorParameters::collections = _collections.data();
+            collectionCount                           = _collections.size();
+            return true;
+        }
+    }
+    return false;
+}
+
 MutableDict C4Replicator::Parameters::copyOptions() const {
     if ( _options ) return Doc{_options}.asDict().mutableCopy();
     else
