@@ -467,6 +467,8 @@ _c4db_URINameFromPath
 
 _kDefaultCertIssuerParameters
 
+_c4cert_isSignedBy
+
 _c4keypair_fromExternal
 _c4keypair_fromPrivateKeyData
 _c4keypair_fromPublicKeyData
@@ -484,6 +486,20 @@ _c4indexupdater_valueAt
 _c4indexupdater_setVectorAt
 _c4indexupdater_skipVectorAt
 _c4indexupdater_finish
+
+_c4peerid_fromCert
+_c4peerid_fromCertData
+_c4peerinfo_free
+_c4peersync_new
+_c4peersync_getMyID
+_c4peersync_start
+_c4peersync_stop
+_c4peersync_getOnlinePeers
+_c4peersync_getPeerInfo
+_kPeerSyncProtocol_DNS_SD
+_kPeerSyncProtocol_BluetoothLE
+
+_c4socket_fromNative2
 
 # Apple specific
 _FLEncoder_WriteNSObject

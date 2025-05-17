@@ -120,6 +120,12 @@ bool C4Cert::isSelfSigned() {
     return signedCert && signedCert->isSelfSigned();
 }
 
+bool C4Cert::isSignedBy(C4Cert* issuer) {
+    Cert* signedCert   = asSignedCert();
+    Cert* signedIssuer = issuer->asSignedCert();
+    return signedCert && signedIssuer && signedCert->isSignedBy(signedIssuer);
+}
+
 Retained<C4KeyPair> C4Cert::getPublicKey() {
     if ( auto signedCert = asSignedCert(); signedCert ) return new C4KeyPair(signedCert->subjectPublicKey().get());
     return nullptr;

@@ -13,6 +13,10 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4ReplicatorTypes.h"
+#include <functional>
+#include <memory>
+#include <span>
+#include <vector>
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -22,6 +26,10 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
+namespace fleece {
+    class Dict;
+    class MutableDict;
+}  // namespace fleece
 
 struct C4Replicator
     : public fleece::RefCounted
@@ -52,8 +60,48 @@ struct C4Replicator
     bool        isDocumentPending(slice docID, C4CollectionSpec) const;
 
 #ifdef COUCHBASE_ENTERPRISE
-    virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const;
+    using PeerTLSCertificateValidator = std::function<bool(slice certData, std::string_view hostname)>;
+
+    /// Registers a callback that can accept or reject a peer's certificate during the TLS handshake.
+    virtual void setPeerTLSCertificateValidator(PeerTLSCertificateValidator) = 0;
+
+    virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const = 0;
 #endif
+
+    /** Extended, memory-safe version of `C4ReplicatorParameters`.
+     *  The constructor copies all the pointed-to data into internal storage:
+     *  - `optionsDictFleece`
+     *  - `collections`
+     *  - each collection's `name`, `scope` and `optionsDictFleece` */
+    struct Parameters : C4ReplicatorParameters {
+        Parameters();
+        explicit Parameters(C4ReplicatorParameters const&);
+
+        Parameters(Parameters const& params) : Parameters((C4ReplicatorParameters const&)params) {}
+
+        std::span<C4ReplicationCollection> collections() noexcept { return _collections; }
+
+        std::span<const C4ReplicationCollection> collections() const noexcept { return _collections; }
+
+        /// The highest push and pull modes of any collections.
+        std::pair<C4ReplicatorMode, C4ReplicatorMode> maxModes() const;
+
+        C4ReplicationCollection& addCollection(C4ReplicationCollection const&);
+
+        C4ReplicationCollection& addCollection(C4CollectionSpec const&, C4ReplicatorMode pushMode,
+                                               C4ReplicatorMode pullMode);
+
+        fleece::MutableDict copyOptions() const;       ///< Returns copy of options (never null)
+        void                setOptions(fleece::Dict);  ///< Updates options Dict
+        void                updateOptions(std::function<void(fleece::MutableDict)> const& callback);
+
+      private:
+        void makeAllocated(C4ReplicationCollection&);
+
+        alloc_slice                          _options;
+        std::vector<C4ReplicationCollection> _collections;
+        std::vector<alloc_slice>             _slices;
+    };
 };
 
 C4_ASSUME_NONNULL_END

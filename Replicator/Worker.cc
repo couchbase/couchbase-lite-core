@@ -218,7 +218,8 @@ namespace litecore::repl {
 
     void Worker::finishedDocument(ReplicatedRev* rev) {
         if ( rev->error.code == 0 ) addProgress({0, 0, 1});
-        if ( rev->error.code || rev->isWarning || progressNotificationLevel() >= 1 ) replicator()->endedDocument(rev);
+        if ( rev->error.code || rev->isWarning || (!rev->alreadyExisted && progressNotificationLevel() >= 1) )
+            replicator()->endedDocument(rev);
     }
 
 #pragma mark - ACTIVITY / PROGRESS:

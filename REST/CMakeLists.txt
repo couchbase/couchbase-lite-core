@@ -1,8 +1,5 @@
 #[[
 LiteCore REST library CMake project
-
-This project builds a simple REST API for LiteCore to use in conjunction with the shared
-library tests.  It is *not* meant to be used anywhere else, so don't do it!
 ]]#
 
 cmake_minimum_required (VERSION 3.9)
@@ -18,26 +15,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
-### SOURCES:
+### STATIC LIBRARY:
 
-set(
-    ALL_SRC_FILES
-    c4Listener.cc
-    c4Listener_CAPI.cc
+add_library(LiteCoreREST_Objects OBJECT
     CertRequest.cc
-    DatabaseRegistry.cc
-    HTTPListener.cc
     netUtils.cc
     Request.cc
     Response.cc
-    Server.cc
-    EE/RESTSyncListener_stub.cc
 )
-
-### STATIC LIBRARY:
-
-add_library(LiteCoreREST_Objects OBJECT ${ALL_SRC_FILES})
-add_library(LiteCoreREST_Static STATIC $<TARGET_OBJECTS:LiteCoreREST_Objects>)
 target_include_directories(
     LiteCoreREST_Objects PRIVATE
     .
@@ -58,12 +43,6 @@ target_include_directories(
     ../vendor/sockpp/include
     ../vendor/fleece/vendor/date/include
 )
-if(BUILD_ENTERPRISE)
-    target_include_directories(
-        LiteCoreREST_Objects PRIVATE
-        ../../vendor/couchbase-lite-core-EE/Listener
-    )
-endif()
 
 target_compile_definitions(
     LiteCoreREST_Objects PRIVATE
@@ -76,6 +55,20 @@ target_link_libraries(
     LiteCoreObjects
 )
 
+add_library(LiteCoreREST_Static STATIC $<TARGET_OBJECTS:LiteCoreREST_Objects>)
+
+
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
 setup_rest_build()
+
+if (APPLE)
+    target_link_libraries(
+            LiteCoreREST_Objects INTERFACE
+            "-framework Network"
+    )
+    target_link_libraries(
+            LiteCoreREST_Static INTERFACE
+            "-framework Network"
+    )
+endif()

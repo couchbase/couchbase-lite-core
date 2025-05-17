@@ -58,7 +58,6 @@ namespace litecore::websocket {
         void close(int status = kCodeNormal, fleece::slice message = fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
-        void gotHTTPResponse(int status, const Headers& headers);
         void onConnect();
         void onCloseRequested(int status, fleece::slice message);
         void onClose(int posixErrno);
@@ -124,6 +123,7 @@ namespace litecore::websocket {
         fleece::alloc_slice             _closeMessage;                             // The encoded close request message
         std::unique_ptr<actor::Timer>   _pingTimer;
         std::unique_ptr<actor::Timer>   _responseTimer;
+        std::atomic<bool>               _timerDisabled{false};
         std::chrono::seconds            _curTimeout{};
         bool                            _timedOut{false};
         alloc_slice                     _protocolError;

@@ -16,6 +16,7 @@
 #include "c4Database.hh"
 #include "c4Internal.hh"
 #include "c4Private.h"
+#include "DatabasePool.hh"
 #include "Replicator.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
@@ -25,12 +26,14 @@
 #include <vector>
 
 namespace litecore {
-    class DatabasePool;
-    class BorrowedDatabase;
-
     using namespace fleece;
     using namespace litecore;
     using namespace litecore::repl;
+
+    namespace blip {
+        class MessageBuilder;
+        class MessageIn;
+    }  // namespace blip
 
     /** Abstract subclass of the public C4Replicator that implements common functionality. */
     struct C4ReplicatorImpl
@@ -42,8 +45,6 @@ namespace litecore {
         // Subclass c4LocalReplicator is in the couchbase-lite-core-EE repo, which doesn not have a
         // submodule relationship to this one, so it's possible for it to get out of sync.
         static constexpr int API_VERSION = 5;
-
-        using DatabaseOrPool = std::variant<Retained<C4Database>, Retained<DatabasePool>>;
 
         void start(bool reset = false) noexcept override;
 
@@ -72,12 +73,22 @@ namespace litecore {
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override;
 
 #ifdef COUCHBASE_ENTERPRISE
+        void    setPeerTLSCertificateValidator(PeerTLSCertificateValidator) override;
         C4Cert* getPeerTLSCertificate() const override;
+
+        struct BLIPHandlerSpec {
+            std::string                           profile;
+            bool                                  atBeginning;
+            std::function<void(blip::MessageIn*)> handler;
+        };
+
+        using BLIPHandlerSpecs = std::vector<BLIPHandlerSpec>;
+
+        void registerBLIPHandlers(BLIPHandlerSpecs const&);
+        void sendBLIPRequest(blip::MessageBuilder&);
 #endif
 
       protected:
-        static BorrowedDatabase borrow(DatabaseOrPool const& dbp);
-
         /// Base constructor. For `db` you can pass either a `Retained<C4Database>` or a
         /// `Retained<DatabasePool>`.
         C4ReplicatorImpl(DatabaseOrPool db, const C4ReplicatorParameters& params);
@@ -115,8 +126,6 @@ namespace litecore {
 
         // ---- ReplicatorDelegate API:
 
-        // Replicator::Delegate method, notifying that the WebSocket has connected.
-        void replicatorGotHTTPResponse(Replicator* repl, int status, const websocket::Headers& headers) override;
         void replicatorGotTLSCertificate(slice certData) override;
         // Replicator::Delegate method, notifying that the status level or progress have changed.
         void replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) override;
@@ -146,8 +155,16 @@ namespace litecore {
         C4ReplicatorStatus            _status{kC4Stopped};
         bool                          _activeWhenSuspended{false};
         bool                          _cancelStop{false};
+#ifdef COUCHBASE_ENTERPRISE
+        PeerTLSCertificateValidator _peerTLSCertificateValidator;
+        BLIPHandlerSpecs            _pendingHandlers;
+#endif
 
       private:
+#ifdef COUCHBASE_ENTERPRISE
+        void _registerBLIPHandlersNow(BLIPHandlerSpecs);
+#endif
+
         class PendingDocuments;
 
         std::string _loggingName;
@@ -161,5 +178,8 @@ namespace litecore {
         std::atomic<C4ReplicatorDocumentsEndedCallback> _onDocumentsEnded;
         std::atomic<C4ReplicatorBlobProgressCallback>   _onBlobProgress;
     };
+
+    // All instances are subclasses of C4ReplicatorImpl.
+    inline C4ReplicatorImpl* asInternal(const C4Replicator* repl) { return (C4ReplicatorImpl*)repl; }
 
 }  // namespace litecore

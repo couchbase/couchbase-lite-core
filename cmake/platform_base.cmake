@@ -33,6 +33,7 @@ function(set_litecore_source_base)
         Crypto/PublicKey.cc
         Crypto/SecureDigest.cc
         Crypto/SecureSymmetricCrypto.cc
+        Crypto/UUID.cc
         LiteCore/BlobStore/BlobStreams.cc
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
@@ -118,6 +119,7 @@ function(set_litecore_source_base)
         Replicator/IncomingRev+Blobs.cc
         Replicator/Inserter.cc
         Replicator/PropertyEncryption_stub.cc
+        $<$<BOOL:${BUILD_ENTERPRISE}>:../couchbase-lite-core-EE/Replicator/PropertyEncryption.cc>
         Replicator/Puller.cc
         Replicator/Pusher.cc
         Replicator/Pusher+Attachments.cc
@@ -128,11 +130,13 @@ function(set_litecore_source_base)
         Replicator/URLTransformer.cc
         Replicator/Worker.cc
         LiteCore/Support/Arena.cc
+        LiteCore/Support/CollectionName.cc
         LiteCore/Support/DatabasePool.cc
         LiteCore/Support/Error.cc
         LiteCore/Support/EncryptedStream.cc
         LiteCore/Support/FilePath.cc
         LiteCore/Support/HybridClock.cc
+        LiteCore/Support/ObserverList.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/SequenceSet.cc
         LiteCore/Support/StringUtil.cc

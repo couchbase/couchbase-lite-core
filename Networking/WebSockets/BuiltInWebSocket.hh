@@ -44,9 +44,6 @@ namespace litecore::websocket {
         : public WebSocketImpl
         , public net::HTTPLogic::CookieProvider {
       public:
-        /** This must be called once, for c4Replicator to use BuiltInWebSocket by default. */
-        static void registerWithReplicator();
-
         /** Client-side constructor. Call \ref connect() afterwards. */
         BuiltInWebSocket(const URL& url, const Parameters&, std::shared_ptr<repl::DBAccess> database);
 
@@ -56,6 +53,8 @@ namespace litecore::websocket {
 
         /** Starts the TCP connection for a client socket. */
         void connect() override;
+
+        std::pair<int, Headers> httpResponse() const override;
 
       protected:
         ~BuiltInWebSocket() override;
@@ -99,6 +98,9 @@ namespace litecore::websocket {
         Retained<BuiltInWebSocket>      _selfRetain;     // Keeps me alive while connected
         Retained<net::TLSContext>       _tlsContext;     // TLS settings
         std::thread                     _connectThread;  // Thread that opens the connection
+
+        int     _responseStatus = 0;
+        Headers _responseHeaders;
 
         std::vector<fleece::slice>       _outbox;         // Byte ranges to be sent by writer
         std::vector<fleece::alloc_slice> _outboxAlloced;  // Same, but retains the heap data

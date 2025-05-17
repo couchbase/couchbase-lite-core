@@ -31,9 +31,11 @@ case "${OSTYPE}" in
                   if [[ ${EDITION} == 'enterprise' ]]; then
                       release_config="Release_EE"
                       debug_config="Debug_EE"
+                      SCHEME_NAME="LiteCore EE framework"
                   else
                       release_config="Release"
                       debug_config="Debug"
+                      SCHEME_NAME="LiteCore framework"
                   fi
               fi;;
     linux*)   OS="linux"
@@ -81,7 +83,7 @@ xcarchive()
   ARCHIVE_PATH=$PWD/$(echo ${DESTINATION} | sed 's/ /_/g' | sed 's/\//\_/g')
   xcodebuild archive \
     -project "$WORKSPACE/$ios_xcode_proj" \
-    -scheme "LiteCore framework" \
+    -scheme "${SCHEME_NAME}" \
     -configuration "${CONFIGURATION}" \
     -destination "${DESTINATION}" \
     -archivePath "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive" \
@@ -115,7 +117,11 @@ build_binaries () {
     CMAKE_BUILD_TYPE_NAME="cmake_build_type_${FLAVOR}"
     mkdir -p ${WORKSPACE}/build_${FLAVOR}
     pushd ${WORKSPACE}/build_${FLAVOR}
-    cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+    if [[ ${OS} == 'linux' ]]; then
+      cmake -DBUILD_ENTERPRISE=$build_enterprise -DEMBEDDED_MDNS=ON -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+    else
+      cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+    fi
     make -j8
     if [[ ${OS} == 'linux' ]]; then
         ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh $PWD

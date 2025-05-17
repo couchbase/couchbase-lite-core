@@ -375,8 +375,11 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "CRUD Array Index Shared Path", "[C][Arra
     // Following error will be logged,
     // 2024-10-29T21:14:28.226339 DB ERROR SQLite error (code 1): no such table: 152b9815998e188eb99eb1612aafbb3ee6031535 in "SELECT fl_result(fl_value(prof.body, 'pid')), fl_result(fl_unnested_value(c.body, 'address.city')), fl_result(fl_unnested_value(c.body, 'address.state')), fl_result(fl_unnested_value(p.body, 'type')), fl_result(fl_unnested_value(p.body, 'numbers')) FROM "kv_.profiles" AS prof JOIN bc89db8a20fe759bf161b84adf2294d9bfe0c88d AS c ON c.docid=prof.rowid JOIN "152b9815998e188eb99eb1612aafbb3ee6031535" AS p ON p.docid=c.rowid WHERE fl_unnested_value(p.body, 'type') = 'mobile'". This table is referenced by an array index, which may have been deleted.
     C4Error error;
-    queryenum = c4query_run(phoneQuery, nullslice, &error);
-    CHECK(!queryenum);  // This query relies on the index that has been deleted.
+    {
+        ExpectingExceptions x;
+        queryenum = c4query_run(phoneQuery, nullslice, &error);
+        CHECK(!queryenum);  // This query relies on the index that has been deleted.
+    }
     CHECK((error.domain == SQLiteDomain && error.code == 1));
 
     // Recompile the query
@@ -677,17 +680,20 @@ N_WAY_TEST_CASE_METHOD(ArrayIndexTest, "Unnest Array Literal Not Supported", "[C
     importTestData(coll);
 
     C4Error err{};
-    c4::ref query = c4query_new2(
-            db, kC4N1QLQuery,
-            R"(SELECT p.pid, c.address.city, c.address.state FROM profiles AS p UNNEST ["a", "b", "c"])"_sl, nullptr,
-            &err);
-    REQUIRE(!query);
-    CHECK(err.code == kC4ErrorInvalidQuery);
+    {
+        ExpectingExceptions x;
+        c4::ref             query = c4query_new2(
+                db, kC4N1QLQuery,
+                R"(SELECT p.pid, c.address.city, c.address.state FROM profiles AS p UNNEST ["a", "b", "c"])"_sl,
+                nullptr, &err);
+        REQUIRE(!query);
+        CHECK(err.code == kC4ErrorInvalidQuery);
 
-    query = c4query_new2(
-            db, kC4N1QLQuery,
-            R"(SELECT p.pid, c.address.city, c.address.state, ph.type, ph.preferred, ph.numbers FROM profiles AS p UNNEST p.contacts AS c UNNEST ["a", "b", "c"] AS ph)"_sl,
-            nullptr, &err);
-    REQUIRE(!query);
-    CHECK(err.code == kC4ErrorInvalidQuery);
+        query = c4query_new2(
+                db, kC4N1QLQuery,
+                R"(SELECT p.pid, c.address.city, c.address.state, ph.type, ph.preferred, ph.numbers FROM profiles AS p UNNEST p.contacts AS c UNNEST ["a", "b", "c"] AS ph)"_sl,
+                nullptr, &err);
+        REQUIRE(!query);
+        CHECK(err.code == kC4ErrorInvalidQuery);
+    }
 }

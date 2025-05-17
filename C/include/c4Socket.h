@@ -40,6 +40,27 @@ CBL_CORE_API void c4Socket_setNativeHandle(C4Socket*, void* C4NULLABLE) C4API;
         \note The caller must use a lock for Socket when this function is called. */
 CBL_CORE_API void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
 
+/** Notifies LiteCore that a socket is making a TLS connection and has received the peer's (usually
+    server's) certificate, so that it knows the cert and can call any custom auth callbacks.
+    This function MUST be called if there is a valid peer cert.
+
+    You should first perform other TLS validation, both platform-specific and as specified by
+    the options `kC4ReplicatorOptionRootCerts`, `kC4ReplicatorOptionPinnedServerCert`,
+    `kC4ReplicatorOptionOnlySelfSignedServerCert`. If any of those fail, close the socket.
+    (But if `kC4ReplicatorOptionAcceptAllCerts` is set, none of the above checks are done.)
+
+    After other validation succeeds, call this function. If it returns true, proceed.
+    If it returns false, the certificate is rejected and you should close the socket immediately
+    with error `kC4NetErrTLSCertUntrusted`.
+
+    \note The caller must use a lock for Socket when this function is called.
+    @param socket  The socket being opened.
+    @param certData  The DER-encoded data of the peer's TLS certificate.
+    @param hostname  The DNS hostname of the peer. (This may be different from the original
+                     Address given, if there were HTTP redirects.)
+    @returns  True to proceed, false to abort the connection. */
+CBL_CORE_API bool c4socket_gotPeerCertificate(C4Socket* socket, C4Slice certData, C4String hostname) C4API;
+
 /** Notification that a socket has received an HTTP response, with the given headers (encoded
         as a Fleece dictionary.) This should be called just before c4socket_opened or
         c4socket_closed.
@@ -99,21 +120,21 @@ CBL_CORE_API void c4socket_completedWrite(C4Socket* socket, size_t byteCount) C4
 CBL_CORE_API void c4socket_received(C4Socket* socket, C4Slice data) C4API;
 
 
-/** Constructs a C4Socket from a "native handle", whose interpretation is up to the
-        C4SocketFactory.  This is used by listeners to handle an incoming replication connection.
-        \note This function is thread-safe.
-        @warning  You MUST immediately call `c4socket_retain` on this pointer (and the usual
-                  `c4socket_release` when done.) This is inconsistent with the general ref-counting
-                  convention, but fixing this function to return a retained value would cause all
-                  existing platforms to leak C4Sockets, so we're leaving it alone.
-        @param factory  The C4SocketFactory that will manage the socket.
-        @param nativeHandle  A value known to the factory that represents the underlying socket,
-            such as a file descriptor or a native object pointer.
-        @param address  The address of the remote peer making the connection.
-        @return  A new C4Socket initialized with the `nativeHandle`. */
 NODISCARD CBL_CORE_API C4Socket* c4socket_fromNative(C4SocketFactory factory, void* nativeHandle,
                                                      const C4Address* address) C4API;
 
+/** Constructs a C4Socket from a "native handle", whose interpretation is up to the C4SocketFactory.
+        \note This function is thread-safe.
+        @note Unlike `c4socket_fromNative`, this returns a retained C4Socket you are responsible for releasing.
+
+        @param factory  The C4SocketFactory that will manage the socket.
+        @param nativeHandle  A value known to the factory that represents the underlying socket,
+            such as a file descriptor or a native object pointer.
+        @param address  The address of the remote peer.
+        @param incoming  True if this is an incoming (server) connection, false if outgoing (client).
+        @return  A new C4Socket initialized with the `nativeHandle`. */
+NODISCARD CBL_CORE_API C4Socket* c4socket_fromNative2(C4SocketFactory factory, void* nativeHandle,
+                                                      const C4Address* address, bool incoming) C4API;
 
 /** @} */
 

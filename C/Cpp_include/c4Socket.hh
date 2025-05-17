@@ -48,11 +48,22 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
         @param factory  The C4SocketFactory that will manage the socket.
         @param nativeHandle  A value known to the factory that represents the underlying socket,
             such as a file descriptor or a native object pointer.
-        @param address  The address of the remote peer making the connection.
+        @param address  The address of the remote peer.
+        @param incoming  True if this is an incoming (server) connection, false for outgoing (client).
         @return  A new C4Socket initialized with the `nativeHandle`. */
-    static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle,
-                                const C4Address& address);
+    static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle, const C4Address& address,
+                                bool incoming = true);
 
+    /** Notification that a socket is making a TLS connection and has received the peer's (usually
+        server's) certificate.
+        This notification occurs only after any other TLS validation options have passed
+        (`kC4ReplicatorOptionRootCerts`, `kC4ReplicatorOptionPinnedServerCert`,
+        `kC4ReplicatorOptionOnlySelfSignedServerCert`).
+        @param certData  The DER-encoded form of the peer's TLS certificate.
+        @param hostname  The DNS hostname of the peer. (This may be different from the original
+                         Address given, if there were HTTP redirects.)
+        @returns  True to proceed, false to abort the connection. */
+    virtual bool gotPeerCertificate(slice certData, std::string_view hostname) = 0;
 
     /** Notification that a socket has received an HTTP response, with the given headers (encoded
         as a Fleece dictionary.) This should be called just before \ref opened() or \ref closed().
@@ -113,6 +124,11 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
 
     void* C4NULLABLE nativeHandle;  ///< for client's use
 };
+
+// Glue to make Retained<C4Socket> work:
+inline C4Socket* retain(C4Socket* socket) { return c4socket_retain(socket); }
+
+inline void release(C4Socket* socket) { c4socket_release(socket); }
 
 /** @} */
 

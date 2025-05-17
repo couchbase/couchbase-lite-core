@@ -16,6 +16,7 @@
 #include "c4Document.hh"
 #include "Batcher.hh"
 #include "DatabasePool.hh"
+#include "EchoCanceler.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "Timer.hh"
@@ -98,6 +99,9 @@ namespace litecore::repl {
         /** Synchronously fulfills all markRevSynced requests. */
         void markRevsSyncedNow();
         void markRevsSyncedNow(C4Database* db);
+
+        /** Prevents the ChangesFeed from "echoing" revisions just added by the Inserter. */
+        EchoCanceler echoCanceler;
 
         //////// DELTAS:
 
