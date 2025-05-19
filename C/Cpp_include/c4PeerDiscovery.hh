@@ -164,31 +164,21 @@ class C4PeerDiscovery {
     friend class C4Peer;
     friend class C4PeerDiscoveryProvider;
 
-    /// Reports that browsing has started, stopped or failed.
-    /// If `state` is false, this method will call `removePeer` on all online peers.
     void browseStateChanged(C4PeerDiscoveryProvider*, bool state, C4Error = {});
 
-    /// Reports that publishing has started, stopped or failed.
     void publishStateChanged(C4PeerDiscoveryProvider*, bool state, C4Error = {});
 
-    /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
-    /// If there is already a peer with this id, returns the existing one instead of registering the new one.
-    /// (If you want to avoid creating a redundant peer, you can call \ref C4PeerDiscovery::peerWithID to check.)
     fleece::Ref<C4Peer> addPeer(C4Peer*, bool moreComing);
 
-    /// Unregisters the peer with this ID.
     bool removePeer(std::string_view id, bool moreComing);
 
-    /// Notifies observers about an incoming connection from a peer.
-    /// @note  If the connection is not accepted, caller must close the C4Socket.
-    /// @returns  true if the connection was accepted, false if not.
+    void noMorePeersComing();
+
     bool notifyIncomingConnection(C4Peer*, C4Socket*);
 
     void notifyMetadataChanged(C4Peer*);
 
   private:
-    void notifyPeerChanges();
-
     std::mutex                                           _mutex;
     std::string const                                    _peerGroupID;
     C4PeerID const                                       _peerID;
@@ -401,6 +391,8 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     ///                    the last one. This tells C4PeerDiscovery it can batch them all together
     ///                    into one `addedPeers` notification.
     bool removePeer(std::string_view id, bool moreComing) { return _discovery.removePeer(id, moreComing); }
+
+    void noMorePeersComing() { _discovery.noMorePeersComing(); }
 
     /// Notifies observers about an incoming connection from a peer.
     /// @note  If the connection is not accepted, caller must close the C4Socket.
