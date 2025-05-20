@@ -206,10 +206,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][
         // Query numbers in descending order of square-ness:
         std::stringstream sstr;
         sstr << "{'WHAT': [['.num'], " << square << "],"
+             << " 'FROM': [{'COLLECTION': '" + collectionName + "'}],"
              << " 'WHERE': ['AND', ['>=', " << square + ", 1], ['>=', " << even << ", 1]],"
              << " 'ORDER_BY': [['DESC', ['.num']]] }";
 
-        Retained<Query> query{store->compileQuery(json5(sstr.str()))};
+        Retained<Query> query{db->compileQuery(json5(sstr.str()))};
         string          explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
 
