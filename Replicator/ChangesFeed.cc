@@ -224,7 +224,7 @@ namespace litecore::repl {
     bool ChangesFeed::shouldPushRev(RevToSend* rev, C4DocEnumerator* e) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID && _isCheckpointValid;
         if ( needRemoteRevID || _options->pushFilter(_collectionIndex) ) {
-            C4Error              error;
+            C4Error              error{};
             Retained<C4Document> doc;
             try {
                 _db.useLocked([&](C4Database* db) {
