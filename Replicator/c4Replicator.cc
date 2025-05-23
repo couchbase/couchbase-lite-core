@@ -139,8 +139,8 @@ bool C4Replicator::isValidDatabaseName(slice dbName) noexcept {
 bool C4Address::isValidRemote(slice dbName, C4Error* outError) const noexcept {
     slice message;
     if ( !isValidReplicatorScheme(scheme) ) message = "Invalid replication URL scheme (use ws: or wss:)"_sl;
-    else if ( !C4Replicator::isValidDatabaseName(dbName) )
-        message = "Invalid or missing remote database name"_sl;
+    else if ( dbName.empty() )
+        message = "Missing remote database name"_sl;
     else if ( hostname.size == 0 || port == 0 )
         message = "Invalid replication URL (bad hostname or port)"_sl;
 
@@ -286,7 +286,7 @@ bool C4Address::fromURL(slice url, C4Address* address, slice* dbName) {
 
         address->path = slice(pathStart, str.buf);
         *dbName       = str;
-        return C4Replicator::isValidDatabaseName(str);
+        return !str.empty();
     } else {
         address->path = slice(pathStart, str.end());
         return true;
