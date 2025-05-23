@@ -102,7 +102,8 @@ TEST_CASE("URL Parsing", "[C][Replicator]") {
     REQUIRE(c4address_fromURL("wss://localhost/p/d/"_sl, &address, &dbName));
     REQUIRE(c4address_fromURL("wss://localhost//p//d/"_sl, &address, &dbName));
 
-    REQUIRE(!c4address_fromURL("ws://example.com/db@name"_sl, &address, &dbName));
+    // We don't check the validity of the database name.
+    REQUIRE(c4address_fromURL("ws://example.com/db@name"_sl, &address, &dbName));
     CHECK(dbName == "db@name"_sl);
 
     // The following URLs should all be rejected:
@@ -121,7 +122,10 @@ TEST_CASE("URL Parsing", "[C][Replicator]") {
     CHECK(!c4address_fromURL("ws://localhost:/foo"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("ws://localhost"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("ws://localhost/"_sl, &address, &dbName));
-    CHECK(!c4address_fromURL("ws://localhost/B^dn^m*"_sl, &address, &dbName));
+
+    // We don't check the validity of the database name.
+    CHECK(c4address_fromURL("ws://localhost/B^dn^m*"_sl, &address, &dbName));
+    CHECK(dbName == "B^dn^m*"_sl);
 
     CHECK(!c4address_fromURL("ws://snej@example.com/db"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("ws://snej@example.com:8080/db"_sl, &address, &dbName));
@@ -157,24 +161,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") 
     ExpectingExceptions x;
     _sg.address.scheme = "http"_sl;
     C4Error err;
-    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
-    REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
-    CHECK(err.domain == NetworkDomain);
-    CHECK(err.code == kC4NetErrInvalidURL);
-}
-
-// Test missing or invalid database name:
-TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
-    ExpectingExceptions x;
-    _sg.remoteDBName = ""_sl;
-    C4Error err;
-    CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
-    REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
-    CHECK(err.domain == NetworkDomain);
-    CHECK(err.code == kC4NetErrInvalidURL);
-
-    _sg.remoteDBName = "Invalid Name"_sl;
-    err              = {};
     CHECK(!c4repl_isValidRemote(_sg.address, _sg.remoteDBName, nullptr));
     REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
     CHECK(err.domain == NetworkDomain);

@@ -241,7 +241,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     std::vector<C4CollectionSpec> collectionSpecs{collectionCount};
 
     bool    continuous = false;
-    C4Error expectedError;
+    C4Error expectedError{};
 
     SECTION("Named Collection") { collectionSpecs = {Roses}; }
 
