@@ -266,7 +266,15 @@ target_include_directories(
     ${LiteCoreObjectsIncludes}
 )
 
-add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+if(MSVC)
+    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects> MSVC/dllmain.c)
+    target_include_directories(
+        LiteCore PRIVATE
+        C/include
+    )
+else()
+    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+endif()
 
 add_library(LiteCoreStatic STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:LiteCoreObjects>)
 target_link_libraries(LiteCoreStatic PRIVATE LiteCoreObjects)
