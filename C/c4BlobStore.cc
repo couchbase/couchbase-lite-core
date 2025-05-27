@@ -31,15 +31,15 @@ namespace C4Blob {
     const slice kObjectTypeProperty = kC4ObjectTypeProperty;
 }
 
+using C4Blob::kBlobDigestStringLength;
+using C4Blob::kBlobDigestStringPrefix;
+
 #pragma mark - C4BLOBKEY:
 
 
-static constexpr slice kBlobDigestStringPrefix = "sha1-",  // prefix of ASCII form of blob key ("digest" property)
-        kBlobFilenameSuffix                    = ".blob";  // suffix of blob files in the store
+static constexpr slice kBlobFilenameSuffix = ".blob";  // suffix of blob files in the store
 
-static constexpr size_t kBlobDigestStringLength =
-                                ((sizeof(C4BlobKey::bytes) + 2) / 3) * 4,  // Length of base64 w/o prefix
-        kBlobFilenameLength = kBlobDigestStringLength + kBlobFilenameSuffix.size;
+static constexpr size_t kBlobFilenameLength = kBlobDigestStringLength + kBlobFilenameSuffix.size;
 
 static SHA1& digest(C4BlobKey& key) { return (SHA1&)key.bytes; }
 

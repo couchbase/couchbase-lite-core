@@ -654,6 +654,87 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[Push][
     checkAttachments(db2, blobKeys2b, attachments2);
 }
 
+TEST_CASE_METHOD(ReplicatorCollectionTest, "Delta Sync with Attachments", "[Push][Pull]") {
+    static constexpr slice docID("doc1");
+    auto putRevision = [](C4BlobStore* bstore, C4Collection* coll, const string& att, C4BlobKey& bkey) -> string {
+        REQUIRE(c4blob_create(bstore, fleece::slice(att), nullptr, &bkey, nullptr));
+        stringstream ss;
+        ss << "{attached: {'" << kC4ObjectTypeProperty << "': '" << kC4ObjectType_Blob << "', ";
+        ss << "digest: '" << bkey.digestString() << "', length: " << att.size() << ", content_type: 'text/plain'"
+           << "}}";
+        string json = json5(ss.str());
+
+        TransactionHelper t(coll->getDatabase());
+        return createFleeceRev(coll, docID, nullslice, slice(json));
+    };
+
+    // Add a doc with attachment A to db. The blob key is stored in blobKeyA
+
+    string    attachmentA = {"Attachment A CBL-7006"};
+    C4BlobKey blobKeyA;
+    auto      blobStore  = REQUIRED(c4db_getBlobStore(db, nullptr));
+    auto      collection = REQUIRED(c4db_getCollection(db, Roses, nullptr));
+    string    revID      = putRevision(blobStore, collection, attachmentA, blobKeyA);
+
+    // Push the doc with attachmentA from db to db2
+
+    _expectedDocumentCount = 1;
+    runPushReplication({Roses}, {Tulips, Lavenders, Roses});
+
+    // Check the doc that is pushed to db2
+
+    auto                blobStore2  = REQUIRED(c4db_getBlobStore(db2, nullptr));
+    auto                collection2 = REQUIRED(c4db_getCollection(db2, Roses, nullptr));
+    c4::ref<C4Document> doc2        = REQUIRED(c4coll_getDoc(collection2, docID, true, kDocGetAll, nullptr));
+    Dict                properties  = c4doc_getProperties(doc2);
+    slice               digest      = properties["attached"].asDict()["digest"].asString();
+    CHECK(digest == blobKeyA.digestString());
+    alloc_slice vv_doc2;
+    if ( isRevTrees() ) {
+        REQUIRE(c4rev_getGeneration(doc2->revID) == 1);
+        CHECK(revID == string(doc2->revID));
+    } else {
+        // For VV, revID returned by putRevision is "1@*", but doc2->revID is like ""1@cdS3Ap3kSH6ZJYLAod/iew".
+        // We note it down to check against the doc of db after being pulled.
+        vv_doc2 = c4doc_getRevisionHistory(doc2, 10, nullptr, 0);
+    }
+    alloc_slice blobContent = c4blob_getContents(blobStore2, blobKeyA, nullptr);
+    CHECK(blobContent == attachmentA);
+
+    // Add a new revision to db2. The only difference is the replacement of attachmentA with attachmentB.
+    // The updated blob key is stored in blobKeyB
+
+    string    attachmentB = {"Attachment B CBL-7006 is resolved."};
+    C4BlobKey blobKeyB;
+    string    revID2 = putRevision(blobStore2, collection2, attachmentB, blobKeyB);
+
+    // Sync db to db2 (pull from db2 to db)
+
+    runPushPullReplication({Roses}, {Tulips, Lavenders, Roses});
+
+    // Check the doc in db, particularly the updated attachment.
+
+    c4::ref<C4Document> doc = REQUIRED(c4coll_getDoc(collection, docID, true, kDocGetAll, nullptr));
+    properties              = c4doc_getProperties(doc);
+    slice digest2           = properties["attached"].asDict()["digest"].asString();
+    CHECK(digest2 == blobKeyB.digestString());
+    REQUIRE(digest != digest2);
+    if ( isRevTrees() ) {
+        REQUIRE(c4rev_getGeneration(doc->revID) == 2);
+        CHECK(revID2 == string(doc->revID));
+    } else {
+        // check doc of db after pulling from db2.
+        alloc_slice    vv        = c4doc_getRevisionHistory(doc, 10, nullptr, 0);
+        const uint8_t* semiColon = vv.findByte(';');
+        REQUIRE(semiColon);
+        slice parent = vv.from(semiColon + 1);
+        while ( parent.size > 0 && parent[0] == ' ' ) parent.moveStart(1);
+        REQUIRE(parent == vv_doc2);
+    }
+    alloc_slice blobContent2 = c4blob_getContents(blobStore, blobKeyB, nullptr);
+    CHECK(blobContent2 == attachmentB);
+}
+
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
     int  resolveCount = 0;
     auto resolver     = [&resolveCount](CollectionSpec spec, C4Document* localDoc, C4Document* remoteDoc) {

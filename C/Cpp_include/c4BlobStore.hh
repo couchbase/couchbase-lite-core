@@ -57,6 +57,11 @@ namespace C4Blob {
     /** Top-level document property whose value is a CBL 1.x / CouchDB attachments container. */
     static constexpr slice kLegacyAttachmentsProperty = "_attachments";
 
+    /**   // prefix of ASCII form of blob key ("digest" property). */
+    static constexpr slice kBlobDigestStringPrefix = "sha1-";
+
+    /**   // Length of base64 of the digest w/o prefix. */
+    static constexpr size_t kBlobDigestStringLength = ((sizeof(C4BlobKey::bytes) + 2) / 3) * 4;
 
     /** Returns true if the given dictionary is a [reference to a] blob.
         This tests whether it contains a "@type" property whose value is "blob". */
