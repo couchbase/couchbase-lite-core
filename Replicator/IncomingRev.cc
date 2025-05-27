@@ -158,6 +158,12 @@ namespace litecore::repl {
                         if ( C4Blob::isBlob(dict) ) {
                             // newly added blob will be found here.
                             return true;
+                        } else if ( Value valDigest = dict["digest"]; valDigest ) {
+                            slice digest = valDigest.asString();
+                            if ( digest.hasPrefix(C4Blob::kBlobDigestStringPrefix)
+                                 && digest.size
+                                            == C4Blob::kBlobDigestStringLength + C4Blob::kBlobDigestStringPrefix.size )
+                                return true;
                         }
                     }
                     // We only detect when a new blob is added. We cannot know whether a removed
