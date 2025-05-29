@@ -88,6 +88,9 @@ struct C4PeerSync
     /// @note  This function is thread-safe.
     C4PeerID thisPeerID() const noexcept;
 
+    /// Sets the level of progress notifications.
+    void setProgressLevel(C4ReplicatorProgressLevel) noexcept;
+
     /// Starts a C4PeerSync, beginning peer discovery and replication.
     /// This call is asynchronous and returns immediately.
     /// When it succeeds or fails, the delegate's \ref peerSyncStatus method will be called.
@@ -118,7 +121,7 @@ struct C4PeerSync
     PeerInfo getPeerInfo(C4PeerID const&);
 
     // Version number of c4PeerSync.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 4;
+    static constexpr int kAPIVersion = 5;
 
   private:
     class Impl;
