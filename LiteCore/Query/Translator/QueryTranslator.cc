@@ -39,11 +39,18 @@ namespace litecore {
     RootContext QueryTranslator::makeRootContext() const {
         RootContext root;
 #ifdef COUCHBASE_ENTERPRISE
-        root.hasPredictiveIndex = [&](string_view id) -> bool {
-            string indexTable = _delegate.predictiveTableName(_defaultTableName, string(id));
+        root.hasPredictiveIndex = [&](string_view id, ParseContext& ctx) -> bool {
+            string tableName  = ctx.from ? string(ctx.from->tableName()) : _defaultTableName;
+            string indexTable = _delegate.predictiveTableName(tableName, string(id));
             return _delegate.tableExists(indexTable);
         };
 #endif
+        QueryTranslator* mutableThis     = const_cast<QueryTranslator*>(this);
+        root.assignTableNameToMainSource = [mutableThis](SourceNode* source, ParseContext& ctx) -> void {
+            Assert(source->isCollection());
+            mutableThis->assignTableNameToSource(source, ctx);
+        };
+        root.translatorDefaultCollection = [&]() -> string_view { return _defaultCollectionName; };
         return root;
     }
 

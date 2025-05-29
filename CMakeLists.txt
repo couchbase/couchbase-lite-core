@@ -22,7 +22,7 @@ SQLite3_UnicodeSN - The snowball tokenizer library for SQLite
 This project is built for the following platforms at Couchbase:
 - Windows 10
 - UWP
-- macOS 12.0
+- macOS 13.0
 - CentOS 7 (gcc 7.x+)
 - Android API 22+
 
@@ -40,7 +40,7 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
 cmake_minimum_required (VERSION 3.21.0)
 
 # Mac/apple setup -- must appear before the first "project()" line"
-set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0")
 if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
     set(CMAKE_OSX_SYSROOT macosx)

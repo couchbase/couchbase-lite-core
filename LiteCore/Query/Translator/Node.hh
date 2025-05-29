@@ -29,6 +29,7 @@ namespace litecore::qt {
     class SelectNode;
     class SourceNode;
     class SQLWriter;
+    struct ParseContext;
     template <class T>
     class List;
 
@@ -74,8 +75,10 @@ namespace litecore::qt {
 
     struct ParseDelegate {
 #ifdef COUCHBASE_ENTERPRISE
-        std::function<bool(string_view id)> hasPredictiveIndex;
+        std::function<bool(string_view id, ParseContext& ctx)> hasPredictiveIndex;
 #endif
+        std::function<void(SourceNode*, ParseContext&)> assignTableNameToMainSource;
+        std::function<string_view()>                    translatorDefaultCollection;
     };
 
     /** State used during parsing, passed down through the recursive descent. */

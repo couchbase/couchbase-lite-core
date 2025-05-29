@@ -113,7 +113,10 @@ namespace litecore::qt {
         void         disambiguateColumnName(ParseContext&);
         void         writeASandON(SQLWriter& ctx) const;
 
-        void setUsesDeleted() { _usesDeleted = true; }
+        void setUsesDeleted() {
+            _usesDeleted = true;  // It will turn kv_.xyz to all_.xyz
+            _tableName   = string_view{};
+        }
 
       private:
         string_view          _scope;                  // Scope name, or empty for default
