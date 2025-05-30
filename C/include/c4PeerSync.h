@@ -27,6 +27,9 @@ CBL_CORE_API C4PeerSync* C4NULLABLE c4peersync_new(const C4PeerSyncParameters*, 
     @note  This function is thread-safe. */
 CBL_CORE_API C4PeerID c4peersync_getMyID(C4PeerSync*) C4API;
 
+/** Sets a C4PeerSync's progress-notification level. */
+CBL_CORE_API void c4peersync_setProgressLevel(C4PeerSync*, C4ReplicatorProgressLevel) C4API;
+
 /** Starts a C4PeerSync, beginning peer discovery and replication.
     This call is **asynchronous** and returns immediately. When it succeeds or fails, the
     `C4PeerSync_StatusCallback` will be called.
