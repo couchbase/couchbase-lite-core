@@ -87,7 +87,7 @@ namespace litecore {
             if ( o == obs ) return false;
         auto i = _observers.begin();
         while ( i != _observers.end() && i->second < level ) ++i;
-        _observers.insert(i, {obs, level}) + 1;
+        _observers.insert(i, {obs, level});
         return true;
     }
 

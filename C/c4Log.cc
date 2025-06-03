@@ -220,8 +220,10 @@ void c4log_initConsole(C4LogLevel level) noexcept {
 
 #pragma mark - FILE LOGGING:
 
-static C4LogObserver* sDefaultLogFiles;
-static C4LogLevel     sDefaultLogFilesLevel = kC4LogNone;
+static C4LogObserver*                                           sDefaultLogFiles;
+static C4LogLevel                                               sDefaultLogFilesLevel = kC4LogNone;
+static std::unique_ptr<C4LogObserver, void (*)(C4LogObserver*)> stagedDefaultLogFiles{
+        nullptr, [](C4LogObserver* p) { c4logobserver_release(p); }};
 
 static void endFileLogging() {
     if ( sDefaultLogFiles ) {
@@ -229,20 +231,38 @@ static void endFileLogging() {
         c4logobserver_release(sDefaultLogFiles);
         sDefaultLogFiles = nullptr;
     }
+    // Also clear the stagedDefaultLogFiles
+    stagedDefaultLogFiles = nullptr;
 }
 
 bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* outError) noexcept {
-    if ( options.base_path.empty() || options.log_level == kC4LogNone ) {
+    if ( options.log_level == kC4LogNone ) {
         // Disabling file logging:
         endFileLogging();
         sDefaultLogFilesLevel = kC4LogNone;
+
+        if ( !options.base_path.empty() ) {
+            auto obs = make_retained<LogFiles>(convertFileOptions(options));
+            stagedDefaultLogFiles.reset(toExternal(std::move(obs)));
+        }
+
+        return true;
+    }  // Post-conditions: options.log_level != kC4LogNone
+
+    if ( options.base_path.empty() ) {
+        // treat it as setLevel
+        c4log_setBinaryFileLevel(options.log_level);
     } else {
+        // options.log_level != kC4LogNone && !options.base_path.empty()
         C4LogObserverConfig config{.defaultLevel = options.log_level, .fileOptions = &options};
         auto                newObs = c4log_replaceObserver(sDefaultLogFiles, config, outError);
         if ( !newObs ) return false;
         c4logobserver_release(sDefaultLogFiles);
         sDefaultLogFiles      = newObs;
         sDefaultLogFilesLevel = options.log_level;
+
+        // Clear the stagedDefaultLogFiles
+        stagedDefaultLogFiles.reset(nullptr);
 
         static once_flag sOnce;
         call_once(sOnce, []() {
@@ -261,6 +281,7 @@ bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* outError) noexce
 C4LogLevel c4log_binaryFileLevel() noexcept { return sDefaultLogFilesLevel; }
 
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {
+    if ( !sDefaultLogFiles && level != kC4LogNone ) { sDefaultLogFiles = stagedDefaultLogFiles.release(); }
     if ( sDefaultLogFiles && level != sDefaultLogFilesLevel ) {
         if ( level == kC4LogNone ) {
             endFileLogging();

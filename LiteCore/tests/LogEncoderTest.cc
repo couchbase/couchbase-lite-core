@@ -446,6 +446,42 @@ TEST_CASE_METHOD(LogFileTest, "Logging throw in c4", "[Log]") {
     CHECK(string(c4error_getDescription(error)).find(errMsg) == 0);
 }
 
+TEST_CASE_METHOD(LogFileTest, "c4log writeToBinary", "[Log]") {
+    auto logDir = GetTempDirectory()["binaryLogs/"];
+    (void)logDir.mkdir();  // it's OK if it already exists
+    string path = logDir.path();
+    CHECK(c4log_writeToBinaryFile({kC4LogNone, slice(path), 16 * 1024, 1, false}, nullptr));
+    CHECK(c4log_binaryFileLevel() == kC4LogNone);
+
+    alloc_slice binaryFilePath = c4log_binaryFilePath();
+    // The file path is not exposed the until the log file is active (level != None)
+    CHECK(binaryFilePath.empty());
+
+    int section = 0;
+    SECTION("setBinaryFileLevel") {
+        section = 1;
+        c4log_setBinaryFileLevel(kC4LogVerbose);
+    }
+
+    SECTION("writeToBinaryFile with null path") {
+        section = 2;
+        REQUIRE(c4log_writeToBinaryFile({kC4LogVerbose, nullslice}, nullptr));
+    }
+
+    CHECK(c4log_binaryFileLevel() == kC4LogVerbose);
+    binaryFilePath = c4log_binaryFilePath();
+    CHECK(binaryFilePath == path);
+
+    // Reset the log level to None.
+    if ( section == 1 ) c4log_setBinaryFileLevel(kC4LogNone);
+    else
+        REQUIRE(c4log_writeToBinaryFile({kC4LogNone, slice(path), 16 * 1024, 1, false}, nullptr));
+
+    CHECK(c4log_binaryFileLevel() == kC4LogNone);
+    binaryFilePath = c4log_binaryFilePath();
+    CHECK(binaryFilePath.empty());
+}
+
 TEST_CASE_METHOD(LogFileTest, "Logging plaintext", "[Log]") {
     tmpLogDir.mkdir();
 
