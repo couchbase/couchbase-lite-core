@@ -447,39 +447,124 @@ TEST_CASE_METHOD(LogFileTest, "Logging throw in c4", "[Log]") {
 }
 
 TEST_CASE_METHOD(LogFileTest, "c4log writeToBinary", "[Log]") {
-    auto logDir = GetTempDirectory()["binaryLogs/"];
+    auto logDir = GetTempDirectory()["writeToBinaryTest/"];
     (void)logDir.mkdir();  // it's OK if it already exists
     string path = logDir.path();
+
+    auto getFileCount = [](FilePath& dir) -> int {
+        int ret = 0;
+        dir.forEachFile([&](const FilePath&) { ++ret; });
+        return ret;
+    };
+
+    // Check effective level of each domain
+    auto checkDomainEffectiveLevels = [](C4LogLevel level) -> bool {
+        bool ret = true;
+        for ( auto domain = LogDomain::first(); domain; domain = domain->next() ) {
+            if ( !ret ) break;
+            ret = ret && (C4LogLevel)domain->effectiveLevel() == level;
+        }
+        return ret;
+    };
+
+    // Create a new domain with initial level set to Debug.
+    // This test will create 2 new domains that are not published.
+    auto newDomain = [](const char* name) -> C4LogDomain {
+        C4LogDomain ret = REQUIRED(c4log_getDomain(name, true));
+        c4log_setLevel(ret, kC4LogDebug);
+        return ret;
+    };
+
+    // We remove the callback observer from LogObservers to isolate the test on LogFile observer.
+    struct SetUpAndRestore {
+        C4LogLevel                              callbackLevel, fileLevel;
+        vector<std::pair<LogDomain*, LogLevel>> domainLevels;
+
+        SetUpAndRestore() {
+            callbackLevel = c4log_callbackLevel();
+            c4log_setCallbackLevel(kC4LogNone);
+            fileLevel = c4log_binaryFileLevel();
+            c4log_setBinaryFileLevel(kC4LogNone);
+
+            // Setting levels of all domains to minimum to avoid their impact on effectiveLevels
+            // At the Debug level the domain will emit all logs to the observers.
+            // c.f. LogDomain::setLevel, _effectiveLevel = max(_level.load(), _observers->lowestLevel())
+            for ( auto domain = LogDomain::first(); domain; domain = domain->next() ) {
+                domainLevels.emplace_back(domain, domain->level());
+                domain->setLevel(LogLevel::Debug);
+            }
+        }
+
+        ~SetUpAndRestore() {
+            for ( auto& dl : domainLevels ) dl.first->setLevel(dl.second);
+            c4log_setCallbackLevel(callbackLevel);
+            c4log_setBinaryFileLevel(fileLevel);
+        }
+    } setUpAndRestore;
+
+    // file count at the start
+    int fileCount = getFileCount(logDir);
+
+    // Error: the log_level must be LogNone when the base_path is empty
+    C4Error outError{};
+    CHECK(!c4log_writeToBinaryFile({kC4LogInfo, nullslice /*base_path*/, 16 * 1024, 1, false}, &outError));
+    CHECK(outError.code == kC4ErrorInvalidParameter);
+
+    // Log level of LogNone may go with valid base_path. In this case, the log files will be created in the
+    // log directory but not registered.
+
     CHECK(c4log_writeToBinaryFile({kC4LogNone, slice(path), 16 * 1024, 1, false}, nullptr));
     CHECK(c4log_binaryFileLevel() == kC4LogNone);
-
     alloc_slice binaryFilePath = c4log_binaryFilePath();
-    // The file path is not exposed the until the log file is active (level != None)
-    CHECK(binaryFilePath.empty());
-
-    int section = 0;
-    SECTION("setBinaryFileLevel") {
-        section = 1;
-        c4log_setBinaryFileLevel(kC4LogVerbose);
-    }
-
-    SECTION("writeToBinaryFile with null path") {
-        section = 2;
-        REQUIRE(c4log_writeToBinaryFile({kC4LogVerbose, nullslice}, nullptr));
-    }
-
-    CHECK(c4log_binaryFileLevel() == kC4LogVerbose);
-    binaryFilePath = c4log_binaryFilePath();
     CHECK(binaryFilePath == path);
+    int currFileCount = fileCount;
+    fileCount         = getFileCount(logDir);
+    CHECK(fileCount - currFileCount == 5);  // There are 5 valid levels.
 
-    // Reset the log level to None.
-    if ( section == 1 ) c4log_setBinaryFileLevel(kC4LogNone);
-    else
-        REQUIRE(c4log_writeToBinaryFile({kC4LogNone, slice(path), 16 * 1024, 1, false}, nullptr));
+    // That is, no logs will be observed.
+    CHECK(checkDomainEffectiveLevels(kC4LogNone));
 
+    // Add a new domain and check again.
+    (void)newDomain("newDomain1");
+    CHECK(checkDomainEffectiveLevels(kC4LogNone));
+
+    // To complete the set-up of file logs, call c4log_setBinaryFileLevel.
+
+    c4log_setBinaryFileLevel(kC4LogVerbose);
+    CHECK(c4log_binaryFileLevel() == kC4LogVerbose);
+    CHECK(checkDomainEffectiveLevels(kC4LogVerbose));
+
+    // Add a new domain and check again. DomainlessObservers is inherited by the new domain.
+    (void)newDomain("newDomain2");
+    CHECK(checkDomainEffectiveLevels(kC4LogVerbose));
+
+    // Calling WriteToBinaryFile with valid path and level will update LogFiles observer.
+
+    CHECK(c4log_writeToBinaryFile({kC4LogDebug, slice(path), 16 * 1024, 1, false}, nullptr));
+    CHECK(c4log_binaryFileLevel() == kC4LogDebug);
+    CHECK(checkDomainEffectiveLevels(kC4LogDebug));
+
+    // Setting the level to None will delete the DefaultLogFiles, and log files of all levels are closed.
+    c4log_setBinaryFileLevel(kC4LogNone);
     CHECK(c4log_binaryFileLevel() == kC4LogNone);
-    binaryFilePath = c4log_binaryFilePath();
-    CHECK(binaryFilePath.empty());
+    CHECK(checkDomainEffectiveLevels(kC4LogNone));
+
+    // This case is tricky. At this time, there is no LogFiles observer. Calling setBinaryFileLevel
+    // won't create the LogFiles observer, only set the binaryFileLevel
+
+    c4log_setBinaryFileLevel(kC4LogInfo);
+    CHECK(c4log_binaryFileLevel() == kC4LogInfo);
+    // The effectiveLevels are still None.
+    CHECK(checkDomainEffectiveLevels(kC4LogNone));
+
+    // Restart the DefaultLogFiles. This will open 5 new log files.
+
+    CHECK(c4log_writeToBinaryFile({kC4LogInfo, slice(path), 16 * 1024, 1, false}, nullptr));
+    CHECK(c4log_binaryFileLevel() == kC4LogInfo);
+    CHECK(checkDomainEffectiveLevels(kC4LogInfo));
+    currFileCount = fileCount;
+    fileCount     = getFileCount(logDir);
+    CHECK(fileCount - currFileCount == 5);  // There are 5 valid levels.
 }
 
 TEST_CASE_METHOD(LogFileTest, "Logging plaintext", "[Log]") {

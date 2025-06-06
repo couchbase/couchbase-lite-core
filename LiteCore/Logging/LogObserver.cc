@@ -161,6 +161,16 @@ namespace litecore {
                 error::_throw(error::InvalidParameter, "LogObserver is already registered");
             for ( auto domain = LogDomain::first(); domain; domain = domain->next() )
                 (void)observer->_addTo(*domain, defaultLevel);
+        } else {
+            // We don't add the observer to sDomainlessObservers but invalidate the domains
+            // which are not in the domain list that are assigned designated levels.
+            for ( auto domain = LogDomain::first(); domain; domain = domain->next() ) {
+                if ( levels.end() == std::find_if(levels.begin(), levels.end(), [domain](const auto& dl) {
+                         return domain == &dl.first;
+                     }) ) {
+                    domain->invalidateLevel();
+                }
+            }
         }
     }
 
