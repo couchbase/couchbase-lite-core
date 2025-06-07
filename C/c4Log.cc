@@ -232,7 +232,15 @@ static void endFileLogging() {
 }
 
 bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* outError) noexcept {
-    if ( options.base_path.empty() || options.log_level == kC4LogNone ) {
+    if ( options.base_path.empty() ) {
+        if ( options.log_level != kC4LogNone ) {
+            if ( outError ) {
+                *outError = C4Error::make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                          "C4LogFileOptions::base_path cannot be empty if log_level !=  kC4LogNone");
+            }
+            return false;
+        }
+
         // Disabling file logging:
         endFileLogging();
         sDefaultLogFilesLevel = kC4LogNone;
