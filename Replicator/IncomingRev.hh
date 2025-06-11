@@ -49,6 +49,8 @@ namespace litecore::repl {
         std::string loggingClassName() const override { return "IncomingRev"; }
 
         ActivityLevel computeActivityLevel(std::string* reason) const override;
+        
+        void afterEvent() override;
 
       private:
         void        reinitialize();
@@ -81,6 +83,7 @@ namespace litecore::repl {
         RemoteSequence            _remoteSequence;
         uint32_t                  _serialNumber{0};
         std::atomic<bool>         _provisionallyInserted{false};
+        std::atomic<bool>         _handlingRev{false}; // Determines whether this IncomingRev is currently in use by the Puller.
         // blob stuff:
         std::vector<PendingBlob>                 _pendingBlobs;
         std::vector<PendingBlob>::const_iterator _blob;

@@ -45,6 +45,9 @@ namespace litecore::repl {
         Signpost::begin(Signpost::handlingRev, _serialNumber);
         _parent                = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
+        // As this is called on the Puller's thread, we must track atomically that we have been initialized,
+        // in case of status calculations which occur on IncomingRev's thread.
+        _handlingRev = true;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
         _blob = _pendingBlobs.end();
     }
@@ -457,18 +460,29 @@ namespace litecore::repl {
         _puller->revWasHandled(this);
     }
 
+    // Run on the parent (Puller) thread.
     void IncomingRev::reset() {
+        // Before we reset, manually call `Worker::afterEvent` to trigger
+        // status calculations and updating parent (Puller) progress.
+        Worker::afterEvent();
         _rev            = nullptr;
         _parent         = nullptr;
+        _handlingRev = false;
         _remoteSequence = {};
         _bodySize       = 0;
     }
+
+    // Override for Worker::afterEvent() which skips calculating status.
+    // We will calculate status on the Puller's thread.
+    // This is because the start (`handleRev`) and end (`reset`) of the IncomingRev lifecycle
+    // is all already done on the Puller's thread.
+    void IncomingRev::afterEvent() { }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
         std::string           parentReason;
         Worker::ActivityLevel workerLevel = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
         Worker::ActivityLevel level;
-        if ( workerLevel == kC4Busy || _pendingCallbacks > 0 || (_blob != _pendingBlobs.end()) ) {
+        if ( workerLevel == kC4Busy || _handlingRev || _pendingCallbacks > 0 || (_blob != _pendingBlobs.end()) ) {
             level = kC4Busy;
         } else {
             level = kC4Stopped;
