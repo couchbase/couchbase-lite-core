@@ -467,7 +467,7 @@ namespace litecore::repl {
         Worker::afterEvent();
         _rev            = nullptr;
         _parent         = nullptr;
-        _handlingRev = false;
+        _handlingRev    = false;
         _remoteSequence = {};
         _bodySize       = 0;
     }
@@ -476,7 +476,7 @@ namespace litecore::repl {
     // We will calculate status on the Puller's thread.
     // This is because the start (`handleRev`) and end (`reset`) of the IncomingRev lifecycle
     // is all already done on the Puller's thread.
-    void IncomingRev::afterEvent() { }
+    void IncomingRev::afterEvent() {}
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
         std::string           parentReason;
