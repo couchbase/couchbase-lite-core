@@ -513,7 +513,7 @@ TEST_CASE_METHOD(LogFileTest, "c4log writeToBinary", "[Log]") {
     // Log level of LogNone may go with valid base_path. In this case, the log files will be created in the
     // log directory but not registered.
 
-    CHECK(c4log_writeToBinaryFile({kC4LogNone, slice(path), 16 * 1024, 1, false}, nullptr));
+    CHECK(c4log_writeToBinaryFile({kC4LogNone, slice(path), 16 * 1024, 10, false}, nullptr));
     CHECK(c4log_binaryFileLevel() == kC4LogNone);
     alloc_slice binaryFilePath = c4log_binaryFilePath();
     CHECK(binaryFilePath == path);
@@ -540,31 +540,42 @@ TEST_CASE_METHOD(LogFileTest, "c4log writeToBinary", "[Log]") {
 
     // Calling WriteToBinaryFile with valid path and level will update LogFiles observer.
 
-    CHECK(c4log_writeToBinaryFile({kC4LogDebug, slice(path), 16 * 1024, 1, false}, nullptr));
+    CHECK(c4log_writeToBinaryFile({kC4LogDebug, slice(path), 16 * 1024, 10, false}, nullptr));
     CHECK(c4log_binaryFileLevel() == kC4LogDebug);
     CHECK(checkDomainEffectiveLevels(kC4LogDebug));
 
-    // Setting the level to None will delete the DefaultLogFiles, and log files of all levels are closed.
+    // Setting the level to None will unwire the DefaultLogFiles from all domains, but
+    // We keep the DefaultLogFiles as unwired.
+
     c4log_setBinaryFileLevel(kC4LogNone);
     CHECK(c4log_binaryFileLevel() == kC4LogNone);
     CHECK(checkDomainEffectiveLevels(kC4LogNone));
 
-    // This case is tricky. At this time, there is no LogFiles observer. Calling setBinaryFileLevel
-    // won't create the LogFiles observer, only set the binaryFileLevel
+    // Rewire the DefaultLogFiles to the Info level at all domains.
 
     c4log_setBinaryFileLevel(kC4LogInfo);
     CHECK(c4log_binaryFileLevel() == kC4LogInfo);
-    // The effectiveLevels are still None.
-    CHECK(checkDomainEffectiveLevels(kC4LogNone));
+    CHECK(checkDomainEffectiveLevels(kC4LogInfo));
 
-    // Restart the DefaultLogFiles. This will open 5 new log files.
+    // writeToBinaryFile will try to keep the existing log files if path and use_plaintext are
+    // the same.
 
-    CHECK(c4log_writeToBinaryFile({kC4LogInfo, slice(path), 16 * 1024, 1, false}, nullptr));
+    CHECK(c4log_writeToBinaryFile({kC4LogInfo, slice(path), 10 * 1024, 11, false}, nullptr));
     CHECK(c4log_binaryFileLevel() == kC4LogInfo);
     CHECK(checkDomainEffectiveLevels(kC4LogInfo));
     currFileCount = fileCount;
     fileCount     = getFileCount(logDir);
-    CHECK(fileCount - currFileCount == 5);  // There are 5 valid levels.
+    CHECK(fileCount - currFileCount == 0);  // No new files are created.
+
+    // New log files will be created if use_plaintext is changed.
+
+    this_thread::sleep_for(10ms);  // avoid file names conflict.
+    CHECK(c4log_writeToBinaryFile({kC4LogVerbose, slice(path), 10 * 1024, 10, true}, nullptr));
+    CHECK(c4log_binaryFileLevel() == kC4LogVerbose);
+    CHECK(checkDomainEffectiveLevels(kC4LogVerbose));
+    currFileCount = fileCount;
+    fileCount     = getFileCount(logDir);
+    CHECK(fileCount - currFileCount == 5);  // 5 new files are created.
 }
 
 TEST_CASE_METHOD(LogFileTest, "Logging plaintext", "[Log]") {
