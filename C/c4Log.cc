@@ -271,7 +271,7 @@ C4LogLevel c4log_binaryFileLevel() noexcept { return sDefaultLogFilesLevel; }
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {
     if ( sDefaultLogFiles && level != sDefaultLogFilesLevel ) {
         if ( level == kC4LogNone ) {
-            endFileLogging();
+            if ( sDefaultLogFiles ) { c4log_removeObserver(sDefaultLogFiles); }
         } else {
             auto logFiles = dynamic_cast<LogFiles*>(toInternal(sDefaultLogFiles));
             LogObserver::remove(logFiles);
