@@ -457,14 +457,15 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        _puller->revWasHandled(this);
+        // If IncomingRev is not the active Actor, this was called on the Puller's thread, so we can notify the
+        // Puller straight away.
+        // Otherwise, we will call `revWasHandled` later, in `Worker::afterEvent`.
+        if (Actor::currentActor() != this)
+            _puller->revWasHandled(this);
     }
 
     // Run on the parent (Puller) thread.
     void IncomingRev::reset() {
-        // Before we reset, manually call `Worker::afterEvent` to trigger
-        // status calculations and updating parent (Puller) progress.
-        Worker::afterEvent();
         _rev            = nullptr;
         _parent         = nullptr;
         _handlingRev    = false;
@@ -472,11 +473,12 @@ namespace litecore::repl {
         _bodySize       = 0;
     }
 
-    // Override for Worker::afterEvent() which skips calculating status.
-    // We will calculate status on the Puller's thread.
-    // This is because the start (`handleRev`) and end (`reset`) of the IncomingRev lifecycle
-    // is all already done on the Puller's thread.
-    void IncomingRev::afterEvent() {}
+    // Call Worker::afterEvent to calculate status and progress, then notify
+    // Puller we are done.
+    void IncomingRev::afterEvent() {
+        Worker::afterEvent();
+        _puller->revWasHandled(this);
+    }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
         std::string           parentReason;
