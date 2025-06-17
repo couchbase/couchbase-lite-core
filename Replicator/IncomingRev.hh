@@ -85,6 +85,7 @@ namespace litecore::repl {
         std::atomic<bool>         _provisionallyInserted{false};
         // Determines whether this IncomingRev is currently in use by the Puller.
         std::atomic<bool> _handlingRev{false};
+        std::atomic<bool> _shouldNotifyPuller{false};
         // blob stuff:
         std::vector<PendingBlob>                 _pendingBlobs;
         std::vector<PendingBlob>::const_iterator _blob;
