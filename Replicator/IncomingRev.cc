@@ -458,15 +458,12 @@ namespace litecore::repl {
         _pendingBlobs.clear();
         _blob = _pendingBlobs.end();
         _rev->trim();
-        
+
         // If IncomingRev is not the active Actor, this was called on the Puller's thread, so we can notify the
         // Puller straight away.
         // Otherwise, we will call `revWasHandled` later, in `Worker::afterEvent`.
-        if (Actor::currentActor() != this)
-            _puller->revWasHandled(this);
-        else {
-            _shouldNotifyPuller = true;
-        }
+        if ( Actor::currentActor() != this ) _puller->revWasHandled(this);
+        else { _shouldNotifyPuller = true; }
     }
 
     // Run on the parent (Puller) thread.
@@ -482,9 +479,7 @@ namespace litecore::repl {
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-        if (_shouldNotifyPuller) {
-            _puller->revWasHandled(this);
-        }
+        if ( _shouldNotifyPuller ) { _puller->revWasHandled(this); }
         _shouldNotifyPuller = false;
     }
 
