@@ -45,7 +45,12 @@ namespace litecore::repl {
         Signpost::begin(Signpost::handlingRev, _serialNumber);
         _parent                = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
+        // As this is called on the Puller's thread, we must track atomically that we have been initialized,
+        // in case of status calculations which occur on IncomingRev's thread.
+        _handlingRev = true;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
+        // Puller should have already been notified last time we finished, and flag cleared
+        DebugAssert(!_shouldNotifyPuller);
         _blob = _pendingBlobs.end();
     }
 
@@ -454,21 +459,35 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        _puller->revWasHandled(this);
+        // If IncomingRev is not the active Actor, this was called on the Puller's thread, so we can notify the
+        // Puller straight away.
+        // Otherwise, we will call `revWasHandled` later, in `Worker::afterEvent`.
+        if ( Actor::currentActor() != this ) _puller->revWasHandled(this);
+        else { _shouldNotifyPuller = true; }
     }
 
+    // Run on the parent (Puller) thread.
     void IncomingRev::reset() {
         _rev            = nullptr;
         _parent         = nullptr;
+        _handlingRev    = false;
         _remoteSequence = {};
         _bodySize       = 0;
+    }
+
+    // Call Worker::afterEvent to calculate status and progress, then notify
+    // Puller we are done.
+    void IncomingRev::afterEvent() {
+        Worker::afterEvent();
+        if ( _shouldNotifyPuller ) { _puller->revWasHandled(this); }
+        _shouldNotifyPuller = false;
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
         std::string           parentReason;
         Worker::ActivityLevel workerLevel = Worker::computeActivityLevel(reason ? &parentReason : nullptr);
         Worker::ActivityLevel level;
-        if ( workerLevel == kC4Busy || _pendingCallbacks > 0 || (_blob != _pendingBlobs.end()) ) {
+        if ( workerLevel == kC4Busy || _handlingRev || _pendingCallbacks > 0 || (_blob != _pendingBlobs.end()) ) {
             level = kC4Busy;
         } else {
             level = kC4Stopped;
