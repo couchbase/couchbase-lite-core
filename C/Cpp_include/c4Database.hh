@@ -272,6 +272,10 @@ struct C4Database
     C4DatabaseConfig2                _config;    // Configuration
     C4DatabaseConfig                 _configV1;  // TODO: DEPRECATED
     mutable C4Collection* C4NULLABLE _defaultCollection = nullptr;
+
+  private:
+    // static
+    static bool isValidDbName(slice dbName);
 };
 
 // This stuff allows CollectionSpec to be used as a key in an unordered_map or unordered_set:
