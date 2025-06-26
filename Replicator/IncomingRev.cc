@@ -188,10 +188,13 @@ namespace litecore::repl {
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
-             || _mayContainEncryptedProperties )
+             || _mayContainEncryptedProperties ) {
+            _insertWasEnqueued = true;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
-        else
+        } else {
+            _insertWasEnqueued = false;
             parseAndInsert(std::move(jsonBody));
+        }
     }
 
     // We've lost access to this doc on the server; it should be purged.
@@ -459,11 +462,11 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // If IncomingRev is not the active Actor, this was called on the Puller's thread, so we can notify the
-        // Puller straight away.
-        // Otherwise, we will call `revWasHandled` later, in `Worker::afterEvent`.
-        if ( Actor::currentActor() != this ) _puller->revWasHandled(this);
-        else { _shouldNotifyPuller = true; }
+        // If insert was enqueued, the last code to fire will be in `afterEvent`, so delay return to
+        // Puller until `afterEvent`. Otherwise, notify Puller now so this IncomingRev can be recycled.
+        if ( _insertWasEnqueued.exchange(false) ) _shouldNotifyPuller = true;
+        else
+            _puller->revWasHandled(this);
     }
 
     // Run on the parent (Puller) thread.
@@ -479,8 +482,11 @@ namespace litecore::repl {
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-        if ( _shouldNotifyPuller ) { _puller->revWasHandled(this); }
-        _shouldNotifyPuller = false;
+        if ( _shouldNotifyPuller.exchange(false) ) {
+            _puller->revWasHandled(this);
+        } else {
+            _insertWasEnqueued = false;
+        }
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
