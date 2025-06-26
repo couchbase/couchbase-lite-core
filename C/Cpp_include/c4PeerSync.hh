@@ -77,6 +77,7 @@ struct C4PeerSync
         Delegate*                         delegate;           ///< Your object that receives notifications
     };
 
+    /** @note The database passed in the parameters is only used in the constructor to obtain a new database object via openAgain. */
     explicit C4PeerSync(Parameters const&);
     explicit C4PeerSync(C4PeerSyncParameters const*);
 
