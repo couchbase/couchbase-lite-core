@@ -29,7 +29,13 @@ namespace litecore {
       public:
         Observer() = default;
 
-        Observer(const Observer&) {}
+        Observer(const Observer&) {}  // deliberately avoids setting _list
+
+        /// Removes this observer from any ObserverList it was added to.
+        /// @warning Any subclass that implements observer methods **must** call this (from its
+        /// destructor or earlier) if has been added to an ObserverList. Otherwise its notification
+        /// methods could be called after it's been destructed, causing crashes or worse.
+        void removeFromObserverList();
 
       protected:
         virtual ~Observer();
