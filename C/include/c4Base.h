@@ -259,7 +259,7 @@ CBL_CORE_API void c4enum_free(C4DocEnumerator* C4NULLABLE) C4API;
 /** Closes and disposes a listener. */
 CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE) C4API;
 /** Disposes a C4PeerSync. */
-void c4peersync_free(C4PeerSync* C4NULLABLE) C4API;
+CBL_CORE_API void c4peersync_free(C4PeerSync* C4NULLABLE) C4API;
 /** \note This function is thread-safe. */
 CBL_CORE_API void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
 /** Frees the storage occupied by a raw document. */
