@@ -17,10 +17,10 @@
 
 namespace litecore {
 
-    Observer::~Observer() {
+    Observer::~Observer() { Assert(!_list, "An Observer subclass forgot to call removeObserver()"); }
+
+    void Observer::removeFromObserverList() {
         if ( auto list = _list.load() ) list->remove(this);
-        /* TODO: There are still race conditions possible when an Observer and its list are
-           concurrently destructed on different threads. */
     }
 
     size_t ObserverListBase::size() const {
