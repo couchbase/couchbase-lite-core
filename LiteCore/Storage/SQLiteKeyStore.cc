@@ -533,7 +533,7 @@ namespace litecore {
         stmt.bindNoCopy(2, (const char*)key.buf, (int)key.size);
         bool ok = stmt.exec() > 0;
         if ( ok )
-            db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %" PRId64, _name.c_str(), SPLAT(key),
+            db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %" PRIu64, _name.c_str(), SPLAT(key),
                              (uint64_t)expTime);
         return ok;
     }

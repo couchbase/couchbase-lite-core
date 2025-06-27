@@ -247,7 +247,7 @@ namespace litecore::repl {
 
         if ( reason ) {
             if ( level == kC4Busy ) {
-                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%d", eventCount());
+                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%u", eventCount());
                 else
                     *reason = stringprintf("pendingResponse/%d", _pendingResponseCount);
             } else {

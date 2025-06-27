@@ -481,7 +481,7 @@ namespace litecore::websocket {
             }
 
             // Notify that data's been written:
-            logDebug("Wrote %zu bytes to socket, in %zu (of %zu) messages", n, nRemoved,
+            logDebug("Wrote %zd bytes to socket, in %zu (of %zu) messages", n, nRemoved,
                      outboxSnapshot.size() + nRemoved);
             if ( moreToWrite ) awaitWriteable();
             onWriteComplete(n);
