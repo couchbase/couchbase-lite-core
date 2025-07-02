@@ -90,7 +90,7 @@ class C4PeerDiscovery {
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
     /// This factory is expected to handle normal IP-based WebSocket connections.
     /// @warning  Do not call this after there have been any calls to `startPublishing`.
-    static void setDefaultSocketFactory(C4SocketFactory const&);
+    CBL_CORE_API static void setDefaultSocketFactory(C4SocketFactory const&);
 
     /// Tells providers to start looking for peers.
     void startBrowsing();
