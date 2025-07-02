@@ -936,7 +936,12 @@ C4QueryObserver* c4queryobs_create(C4Query* query, C4QueryObserverCallback cb, v
     });
 }
 
-void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) noexcept { obs->setEnabled(enabled); }
+void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) noexcept {
+    try {
+        obs->setEnabled(enabled);
+    }
+    catchAndWarn();
+}
 
 void c4queryobs_free(C4QueryObserver* obs) noexcept {
     if ( obs ) {
