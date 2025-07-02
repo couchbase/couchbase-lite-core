@@ -12,10 +12,9 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4DatabaseTypes.h"
 #include "c4PeerSyncTypes.h"  // for C4PeerID
 #include "c4Error.h"
-#include "ObserverList.hh"
+#include "Observer.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
 #include <functional>
@@ -80,13 +79,13 @@ class C4PeerDiscovery {
     ~C4PeerDiscovery();
 
     /// The peer group ID.
-    std::string const& peerGroupID() const { return _peerGroupID; }
+    std::string const& peerGroupID() const;
 
     /// This device's peer ID.
-    C4PeerID const& peerID() const { return _peerID; }
+    C4PeerID const& peerID() const;
 
     /// The `C4PeerDiscoveryProvider`s in use.
-    std::vector<ProviderRef> const& providers() const { return _providers; }
+    std::vector<ProviderRef> const& providers() const;
 
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
     /// This factory is expected to handle normal IP-based WebSocket connections.
@@ -181,13 +180,8 @@ class C4PeerDiscovery {
     void notifyMetadataChanged(C4Peer*);
 
   private:
-    std::mutex                                           _mutex;
-    std::string const                                    _peerGroupID;
-    C4PeerID const                                       _peerID;
-    std::vector<ProviderRef>                             _providers;  // List of providers. Never changes.
-    std::unordered_map<std::string, fleece::Ref<C4Peer>> _peers;
-    std::vector<fleece::Ref<C4Peer>>                     _peersComing, _peersGoing;
-    litecore::ObserverList<Observer>                     _observers;
+    struct Impl;
+    std::unique_ptr<Impl> _impl;
 };
 
 #    pragma mark - PEER:
