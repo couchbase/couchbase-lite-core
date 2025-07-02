@@ -184,17 +184,17 @@ static bool           sDefaultLogCallbackPreformatted;
 
 // LCOV_EXCL_START
 void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) noexcept {
-    if ( !callback ) level = kC4LogNone;
+    if ( !callback ) return;
+
     if ( sDefaultLogCallback ) {
         c4log_removeObserver(sDefaultLogCallback);
         c4logobserver_release(sDefaultLogCallback);
         sDefaultLogCallback = nullptr;
     }
-    if ( level != kC4LogNone ) {
-        auto obs = make_retained<LogCallback>(callback, preformatted);
-        LogObserver::add(obs, LogLevel(level));
-        sDefaultLogCallback = toExternal(std::move(obs));
-    }
+    auto obs = make_retained<LogCallback>(callback, preformatted);
+    LogObserver::add(obs, LogLevel(level));
+    sDefaultLogCallback = toExternal(std::move(obs));
+
     sDefaultLogCallbackLevel        = level;
     sDefaultLogCallbackPreformatted = preformatted;
 }
@@ -204,8 +204,14 @@ C4LogCallback c4log_getCallback() noexcept { return sDefaultLogCallbackFn; }
 C4LogLevel c4log_callbackLevel() noexcept { return sDefaultLogCallbackLevel; }  // LCOV_EXCL_LINE
 
 void c4log_setCallbackLevel(C4LogLevel level) noexcept {
-    if ( level != sDefaultLogCallbackLevel && sDefaultLogCallback )
-        c4log_writeToCallback(level, sDefaultLogCallbackFn, sDefaultLogCallbackPreformatted);
+    if ( level != sDefaultLogCallbackLevel && sDefaultLogCallback ) {
+        if ( level == kC4LogNone ) c4log_removeObserver(sDefaultLogCallback);
+        else {
+            auto logCallback = toInternal(sDefaultLogCallback);
+            LogObserver::remove(logCallback);
+            LogObserver::add(logCallback, LogLevel(level));
+        }
+    }
     sDefaultLogCallbackLevel = level;
 }
 
@@ -270,10 +276,9 @@ C4LogLevel c4log_binaryFileLevel() noexcept { return sDefaultLogFilesLevel; }
 
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {
     if ( sDefaultLogFiles && level != sDefaultLogFilesLevel ) {
-        if ( level == kC4LogNone ) {
-            if ( sDefaultLogFiles ) { c4log_removeObserver(sDefaultLogFiles); }
-        } else {
-            auto logFiles = dynamic_cast<LogFiles*>(toInternal(sDefaultLogFiles));
+        if ( level == kC4LogNone ) c4log_removeObserver(sDefaultLogFiles);
+        else {
+            auto logFiles = toInternal(sDefaultLogFiles);
             LogObserver::remove(logFiles);
             LogObserver::add(logFiles, LogLevel(level));
         }
