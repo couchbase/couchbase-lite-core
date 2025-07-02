@@ -607,8 +607,6 @@ namespace litecore::repl {
     }
 
     void Replicator::_onConnect() {
-        logInfo("Connected!");
-
         // onConnect may come after the replicator is asked to stop. This situation is
         // guarded against in WebSocketImpl::onConnect. However, LoopbackWebSocket does
         // not go throuth WebSocketImpl. We catch the case here.
@@ -616,6 +614,8 @@ namespace litecore::repl {
             logInfo("Replicator not in connecting state (connectionState=%d); ignoring onConnect.", _connectionState);
             return;
         }
+
+        logInfo("Connected!");
 
         if ( auto socket = connection().webSocket(); socket->role() == websocket::Role::Client ) {
             auto [status, headers] = socket->httpResponse();
