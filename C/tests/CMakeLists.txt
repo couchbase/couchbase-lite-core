@@ -131,7 +131,6 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/SQLiteCpp/include
-    ${TOP}vendor/mbedtls/crypto/include
     ${TOP}vendor/fleece/vendor/date/include
     ${TOP}vendor/fleece/vendor/libb64
 )

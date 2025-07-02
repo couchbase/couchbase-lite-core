@@ -427,7 +427,7 @@ namespace litecore::repl {
             *reason = reasonTable[rc] ? reasonTable[rc] : parentReason;
             for ( const auto& counter : counters ) {
                 if ( counter.first == rc ) {
-                    *reason = stringprintf("%s/%d", reason->c_str(), counter.second);
+                    *reason = stringprintf("%s/%u", reason->c_str(), counter.second);
                     break;
                 }
             }

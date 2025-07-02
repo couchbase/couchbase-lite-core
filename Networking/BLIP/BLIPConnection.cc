@@ -558,13 +558,13 @@ namespace litecore::blip {
         }
 
         void cancelAll(MessageQueue& queue) {  // either _outbox or _icebox
-            if ( !queue.empty() ) logInfo("Notifying %zd outgoing messages they're canceled", queue.size());
+            if ( !queue.empty() ) logInfo("Notifying %zu outgoing messages they're canceled", queue.size());
             for ( auto& msg : queue ) msg->disconnected();
             queue.clear();
         }
 
         void cancelAll(MessageMap& pending) {  // either _pendingResponses or _pendingRequests
-            if ( !pending.empty() ) logInfo("Notifying %zd incoming messages they're canceled", pending.size());
+            if ( !pending.empty() ) logInfo("Notifying %zu incoming messages they're canceled", pending.size());
             for ( auto& item : pending ) item.second->disconnected();
             pending.clear();
         }

@@ -122,7 +122,9 @@ class C4PeerDiscovery {
     /** API for receiving notifications from C4PeerDiscovery.
      *  @note Methods are called on arbitrary threads and may be called concurrently.
      *        They should return as soon as possible.
-     *        It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`. */
+     *        It is OK for them to call back into `C4PeerDiscovery` or `C4Peer`.
+     *  @warning Subclasses **must** call `removeFromObserverList()` in their destructor or earlier,
+     *           to prevent receiving notifications after the observer is destructed! */
     class Observer : public litecore::Observer {
       public:
         /// Notification that a provider has started/stopped browsing for peers.

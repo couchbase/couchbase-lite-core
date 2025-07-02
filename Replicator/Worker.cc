@@ -94,7 +94,7 @@ namespace litecore::repl {
         , _db(std::move(dbAccess))
         , _loggingID(parent ? parent->replicator()->loggingName() : connection->name())
         , _connection(connection)
-        , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
+        , _status{(connection->state() >= Connection::kConnected) ? kC4Busy : kC4Connecting}
         , _collectionSpec(coll != kNotCollectionIndex ? replicator()->collectionSpec(coll) : C4CollectionSpec{})
         , _collectionIndex(coll) {
         static std::once_flag f_once;
@@ -247,7 +247,7 @@ namespace litecore::repl {
 
         if ( reason ) {
             if ( level == kC4Busy ) {
-                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%d", eventCount());
+                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%u", eventCount());
                 else
                     *reason = stringprintf("pendingResponse/%d", _pendingResponseCount);
             } else {

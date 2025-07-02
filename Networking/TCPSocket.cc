@@ -623,7 +623,7 @@ namespace litecore::net {
         for ( int i = 0; kMbedToNetErr[i].mbed0 != 0; ++i ) {
             if ( kMbedToNetErr[i].mbed0 <= err && err <= kMbedToNetErr[i].mbed1 ) return kMbedToNetErr[i].net;
         }
-        Warn("No mapping for mbedTLS error -0x%04X", -err);
+        Warn("No mapping for mbedTLS error -0x%04X", unsigned(-err));
         return kNetErrUnknown;
     }
 
@@ -651,7 +651,7 @@ namespace litecore::net {
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
             LogWarn(WSLog, "%s got mbedTLS error -0x%04X \"%s\"", (_isClient ? "ClientSocket" : "ResponderSocket"),
-                    -err, msgbuf);
+                    unsigned(-err), msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
     }

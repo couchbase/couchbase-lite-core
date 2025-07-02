@@ -43,11 +43,11 @@ namespace litecore::repl {
 
 // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
 // pass the collectionIndex manually for log calls
-#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
-#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
-#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
 #if DEBUG
-#    define cLogDebug(IDX, FMT, ...) _lotAt(Debug, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#    define cLogDebug(IDX, FMT, ...) _logAt(Debug, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
 #else
 #    define cLogDebug(IDX, FMT, ...)
 #endif
@@ -607,6 +607,14 @@ namespace litecore::repl {
     }
 
     void Replicator::_onConnect() {
+        // onConnect may come after the replicator is asked to stop. This situation is
+        // guarded against in WebSocketImpl::onConnect. However, LoopbackWebSocket does
+        // not go throuth WebSocketImpl. We catch the case here.
+        if ( _connectionState != Connection::kConnecting ) {
+            logInfo("Replicator not in connecting state (connectionState=%d); ignoring onConnect.", _connectionState);
+            return;
+        }
+
         logInfo("Connected!");
 
         if ( auto socket = connection().webSocket(); socket->role() == websocket::Role::Client ) {

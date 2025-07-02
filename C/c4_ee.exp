@@ -496,6 +496,7 @@ _c4peersync_start
 _c4peersync_stop
 _c4peersync_getOnlinePeers
 _c4peersync_getPeerInfo
+_c4peersync_free
 _kPeerSyncProtocol_DNS_SD
 _kPeerSyncProtocol_BluetoothLE
 

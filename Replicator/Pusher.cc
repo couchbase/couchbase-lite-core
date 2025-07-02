@@ -547,11 +547,11 @@ namespace litecore::repl {
             else if ( _started && (!_caughtUp || !_continuousCaughtUp) )
                 *reason = "notCaughtUp";
             else if ( _changeListsInFlight > 0 )
-                *reason = stringprintf("changeListsInFlight/%d", _changeListsInFlight);
+                *reason = stringprintf("changeListsInFlight/%u", _changeListsInFlight);
             else if ( _revisionsInFlight > 0 )
-                *reason = stringprintf("revisionsInFlight/%d", _revisionsInFlight);
+                *reason = stringprintf("revisionsInFlight/%u", _revisionsInFlight);
             else if ( _blobsInFlight > 0 )
-                *reason = stringprintf("blobsInFlight/%d", _blobsInFlight);
+                *reason = stringprintf("blobsInFlight/%u", _blobsInFlight);
             else if ( !_revQueue.empty() )
                 *reason = stringprintf("revQueue/%zu", _revQueue.size());
             else if ( !_pushingDocs.empty() )

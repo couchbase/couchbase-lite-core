@@ -274,7 +274,6 @@ set(
     vendor/SQLiteCpp/sqlite3/ext
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
     vendor/sockpp/include
     vendor/vector_search
 )
@@ -308,7 +307,16 @@ if(BUILD_ENTERPRISE)
 endif()
 
 if(LITECORE_BUILD_SHARED)
-    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+    if(MSVC)
+        add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects> MSVC/dllmain.c)
+        target_include_directories(
+            LiteCore PRIVATE
+            C/include
+        )
+    else()
+        add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+    endif()
+
     target_include_directories(
         LiteCore INTERFACE
         C/include
@@ -407,7 +415,6 @@ target_include_directories(
     vendor/fleece/API
     vendor/sockpp/include
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
 )
 
 target_link_libraries(

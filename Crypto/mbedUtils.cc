@@ -33,7 +33,7 @@ namespace litecore::crypto {
     [[noreturn]] void throwMbedTLSError(int err) {
         char description[100];
         mbedtls_strerror(err, description, sizeof(description));
-        WarnError("mbedTLS error %s0x%x: %s", (err < 0 ? "-" : ""), abs(err), description);
+        WarnError("mbedTLS error %s0x%x: %s", (err < 0 ? "-" : ""), unsigned(abs(err)), description);
         error::_throw(error::MbedTLS, err);
     }
 

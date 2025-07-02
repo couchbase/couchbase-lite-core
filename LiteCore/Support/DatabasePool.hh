@@ -293,7 +293,7 @@ namespace litecore {
         BorrowedCollection() noexcept;
 
         /// Constructor.
-        /// @throws `error::NotFound` if there is a database but no such collection in it.
+        /// @throws error `NotFound` if there is a database but no such collection in it.
         BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec);
 
         BorrowedCollection(BorrowedCollection&& b) noexcept            = default;
