@@ -613,8 +613,7 @@ namespace litecore::repl {
         // guarded against in WebSocketImpl::onConnect. However, LoopbackWebSocket does
         // not go throuth WebSocketImpl. We catch the case here.
         if ( _connectionState != Connection::kConnecting ) {
-            logInfo("Method=_onConnect connectionState=%d Replicator is not in Connecting state, ignoring _onConnect",
-                    _connectionState);
+            logInfo("Replicator not in connecting state (connectionState=%d); ignoring onConnect.", _connectionState);
             return;
         }
 
