@@ -23,6 +23,7 @@
 #include <span>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 #ifdef COUCHBASE_ENTERPRISE
 C4_ASSUME_NONNULL_BEGIN
