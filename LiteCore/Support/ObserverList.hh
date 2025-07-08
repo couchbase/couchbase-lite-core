@@ -11,42 +11,16 @@
 //
 
 #pragma once
-#include "c4Compat.h"
+#include "Observer.hh"
 #include "SmallVector.hh"
 #include "fleece/function_ref.hh"
 #include "fleece/PlatformCompat.hh"  // for ssize_t
-#include <atomic>
 #include <concepts>
 #include <mutex>
 
 C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore {
-    class ObserverListBase;
-
-    /** Base class of observer interfaces used by ObserverList<>. */
-    class Observer {
-      public:
-        Observer() = default;
-
-        Observer(const Observer&) {}  // deliberately avoids setting _list
-
-        /// Removes this observer from any ObserverList it was added to.
-        /// @warning Any subclass that implements observer methods **must** call this (from its
-        /// destructor or earlier) if has been added to an ObserverList. Otherwise its notification
-        /// methods could be called after it's been destructed, causing crashes or worse.
-        void removeFromObserverList();
-
-      protected:
-        virtual ~Observer();
-
-      private:
-        friend class ObserverListBase;
-        Observer& operator=(const Observer&) = delete;
-        Observer(Observer&&)                 = delete;
-
-        std::atomic<ObserverListBase*> _list = nullptr;  // The ObserverList I belong to
-    };
 
     // Abstract superclass of ObserverList<>.
     class ObserverListBase {
