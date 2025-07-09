@@ -34,6 +34,8 @@
 #include "fleece/slice.hh"
 #include <Security/Security.h>
 
+#define kSharedCertLabel @"com.couchbase.lite.cert"     ///< label set to non-leaf certs when saving the cert chain
+
 namespace litecore { namespace crypto {
     using namespace std;
     using namespace net;
@@ -102,6 +104,23 @@ namespace litecore { namespace crypto {
         return result;
     }
 
+    [[maybe_unused]] static bool isSameCert(SecCertificateRef cert1, SecCertificateRef cert2) {
+        if (cert1 == cert2) {
+            return YES;
+        }
+        
+        if (!cert1 || !cert2) {
+            return NO;
+        }
+
+        CFDataRef data1 = SecCertificateCopyData(cert1);
+        CFDataRef data2 = SecCertificateCopyData(cert2);
+        bool isEqual = CFEqual(data1, data2);
+        CFRelease(data1);
+        CFRelease(data2);
+        return isEqual;
+    }
+
 
     [[maybe_unused]] static unsigned long getChildCertCount(SecCertificateRef parentCertRef) {
         NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
@@ -119,7 +138,15 @@ namespace litecore { namespace crypto {
             (id)kSecAttrIssuer:         subject,
             (id)kSecMatchLimit:         (id)kSecMatchLimitAll
         }));
-        return children.count;
+        
+        NSUInteger count = 0;
+        for (id cert in children) {
+            // Filter out the self-signed parent cert:
+            if (!isSameCert((__bridge SecCertificateRef)cert, parentCertRef)) {
+                count++;
+            }
+        }
+        return count;
     }
 
 
@@ -338,16 +365,7 @@ namespace litecore { namespace crypto {
             SecPolicyRef policyRef = SecPolicyCreateBasicX509();
             checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
                           "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
-            SecKeyRef publicKeyRef = NULL;
-            if (@available(macOS 11.0, iOS 14.0, *)) {
-                publicKeyRef = SecTrustCopyKey(trustRef);
-            } else {
-                // Workaround: Suppress the deprecation error because it's invalid due to the if(@avaiable)
-                #pragma clang diagnostic push
-                #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-                publicKeyRef = SecTrustCopyPublicKey(trustRef);
-                #pragma clang diagnostic pop
-            }
+            SecKeyRef publicKeyRef = SecTrustCopyKey(trustRef);
             CFRelease(policyRef);
             CFRelease(trustRef);
             
@@ -420,13 +438,14 @@ namespace litecore { namespace crypto {
 
 #pragma mark - CERT:
 
-
     // Save the certificate chain into the Keychain.
-    // 1. The persistentID will be assigned as a label to the leaf cert.
-    // 2. Do not allow to save the cert chain with duplicate persistentID.
-    // 3. [Apple Specific] Do not allow to save the duplicate leaf cert (even using a different persistentID)
+    // 1. The persistentID will be assigned as a label (kSecAttrLabel) to the leaf cert.
+    // 2. The kSharedCertLabel is assigned as the label (kSecAttrLabel) for non-leaf certificates.
+    //    This allows LiteCore to identify and avoid deleting non-leaf certificates that it did not save.
+    // 3. Do not allow to save the cert chain with duplicate persistentID.
+    // 4. [Apple Specific] Do not allow to save the duplicate leaf cert (even using a different persistentID)
     //    as the Keychain doesn't allow the duplicate certs (same serial and issuer).
-    // 4. [Apple Specific] Ignore the Keychain's duplicate error for non-leaf certs to allow to save
+    // 5. [Apple Specific] Ignore the Keychain's duplicate error for non-leaf certs to allow to save
     //    the cert chains that share some intermediate certs.
     void Cert::save(const std::string &persistentID, bool entireChain) {
         @autoreleasepool {
@@ -455,10 +474,10 @@ namespace litecore { namespace crypto {
                     (id)kSecReturnRef:          @YES
                 }];
                 
-                if (cert == this) {
-                    // Set the label to the leaf cert:
-                    params[id(kSecAttrLabel)] = label;
-                }
+                // Set the persistent label to the leaf cert and the shared label to
+                // the intermediate/root certs:
+                NSString* certLabel = (cert == this) ? label : kSharedCertLabel;
+                params[id(kSecAttrLabel)] = certLabel;
                 
                 CFTypeRef result;
                 OSStatus status = SecItemAdd((CFDictionaryRef)params, &result);
@@ -468,40 +487,39 @@ namespace litecore { namespace crypto {
                     LogTo(TLSLogDomain, "Ignore adding the certificate to the Keychain for '%.*s' as duplicated",
                         SPLAT(cert->subjectName()));
                     continue;
-                } else
+                } else {
                     checkOSStatus(status, "SecItemAdd", "Couldn't add a certificate to the Keychain");
+                }
                 
                 CFAutorelease(result);
 
             #if TARGET_OS_OSX
                 // Workaround for macOS that the label is not set as specified
                 // when adding the certificate to the Keychain.
+                // As of macOS 15.4 (07/08/2025), this workaround is still nedded.
                 NSArray* items = (__bridge NSArray*)result;
                 Assert(items.count > 0);
-                if (cert == this) {
-                    NSDictionary* certQuery = @{
-                        (id)kSecClass:              (id)kSecClassCertificate,
-                        (id)kSecValueRef:           items[0]
-                    };
-                    
-                    NSDictionary* updatedAttrs = @{
-                        (id)kSecClass:              (id)kSecClassCertificate,
-                        (id)kSecValueRef:           items[0],
-                        (id)kSecAttrLabel:          label
-                    };
-                    
-                    status = SecItemUpdate((CFDictionaryRef)certQuery, (CFDictionaryRef)updatedAttrs);
-                    if (status != errSecSuccess) {
-                        // Rollback by deleteing the added certificate:
-                        OSStatus deleteStatus = SecItemDelete((CFDictionaryRef)certQuery);
-                        if (deleteStatus != errSecSuccess) {
-                            warnOSStatusError(deleteStatus, "SecItemDelete",
-                                              "Couldn't delete certificate that was failed to update the label.");
-                        }
+                NSDictionary* certQuery = @{
+                    (id)kSecClass:              (id)kSecClassCertificate,
+                    (id)kSecValueRef:           items[0]
+                };
+                
+                NSDictionary* updatedAttrs = @{
+                    (id)kSecClass:              (id)kSecClassCertificate,
+                    (id)kSecValueRef:           items[0],
+                    (id)kSecAttrLabel:          certLabel
+                };
+                
+                status = SecItemUpdate((CFDictionaryRef)certQuery, (CFDictionaryRef)updatedAttrs);
+                if (status != errSecSuccess) {
+                    // Rollback by deleteing the added certificate:
+                    OSStatus deleteStatus = SecItemDelete((CFDictionaryRef)certQuery);
+                    if (deleteStatus != errSecSuccess) {
+                        warnOSStatusError(deleteStatus, "SecItemDelete",
+                                          "Couldn't delete certificate that was failed to update the label.");
                     }
-                    checkOSStatus(status, "SecItemUpdate",
-                                  "Couldn't update the label to a certificate in Keychain");
                 }
+                checkOSStatus(status, "SecItemUpdate", "Couldn't set the label to a certificate in Keychain");
             #endif
                 
                 if (!entireChain)
@@ -545,43 +563,29 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-                CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
-                    auto error = (__bridge NSError*)cferr;
-                    LogVerbose(TLSLogDomain, "SecTrustEvaluateWithError failed: %s", error.description.UTF8String);
-                }
-                err = SecTrustGetTrustResult(trustRef, &result);
+            CFErrorRef cferr;
+            if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
+                auto error = (__bridge NSError*)cferr;
+                LogVerbose(TLSLogDomain, "SecTrustEvaluateWithError failed: %s", error.description.UTF8String);
+            }
+            err = SecTrustGetTrustResult(trustRef, &result);
             checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
 
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
-            if (@available(macOS 12.0, iOS 15.0, *)) {
-                CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
-                for (CFIndex i = 1; i < count; i++) {
-                    SecCertificateRef ref = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
-                    NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
-                    cert->append(new Cert(slice(data)));
-                }
-                CFRelease(certs);
-            } else
-#endif
-            {
-                for (CFIndex i = 1; i < count; i++) {
-                    // Workaround: Suppress the deprecation error because it's invalid due to the if(@avaiable)
-                    #pragma clang diagnostic push
-                    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-                    SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
-                    #pragma clang diagnostic pop
-                    NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
-                    cert->append(new Cert(slice(data)));
-                }
+            CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
+            for (CFIndex i = 1; i < count; i++) {
+                SecCertificateRef ref = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
+                cert->append(new Cert(slice(data)));
             }
+            CFRelease(certs);
             
             return cert;
         }
     }
+
 
     bool Cert::exists(const std::string &persistentID) {
         @autoreleasepool {
@@ -615,11 +619,13 @@ namespace litecore { namespace crypto {
                 (id)kSecAttrLabel:          label,
                 (id)kSecReturnRef:          @YES
             });
-            if (!certRef)
+            if (!certRef) {
+                LogTo(TLSLogDomain, "Skip deletion: cert with label '%s' not found", persistentID.c_str());
                 return;
+            }
             CFAutorelease(certRef);
             
-            // Create and evaluate trust to get certificate chain:
+            // Create and evaluate trust to get certificate chain by using SecTrust APIs:
             SecPolicyRef policyRef = SecPolicyCreateBasicX509();
             CFAutorelease(policyRef);
             
@@ -629,96 +635,82 @@ namespace litecore { namespace crypto {
                           "Couldn't create a trust to get certificate chain");
             CFAutorelease(trustRef);
             
-            SecTrustResultType result; // Result will be ignored.
-            OSStatus err;
-            if (@available(iOS 12.0, *)) {
-                CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
-                    auto error = (__bridge NSError*)cferr;
-                    LogVerbose(TLSLogDomain, "SecTrustEvaluateWithError failed: %s", error.description.UTF8String);
-                }
-                err = SecTrustGetTrustResult(trustRef, &result);
-            } else {
-#if TARGET_OS_MACCATALYST
-                LogError(TLSLogDomain, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14 and iOS < 12");
-                error::_throw(error::UnsupportedOperation, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14 and iOS < 12");
-#else
-                // Workaround: Suppress the deprecation error because it's invalid due to the if(@avaiable)
-                #pragma clang diagnostic push
-                #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-                err = SecTrustEvaluate(trustRef, &result);
-                #pragma clang diagnostic pop
-#endif
+            CFErrorRef cferr;
+            if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
+                LogDebug(TLSLogDomain, "SecTrustEvaluateWithError failed: %s",
+                         ((__bridge NSError*)cferr).description.UTF8String);
             }
-
-            checkOSStatus(err, "SecTrustEvaluate",
-                          "Couldn't evaluate the trust to get certificate chain");
             
+            SecTrustResultType result; // Result will be ignored.
+            OSStatus err = SecTrustGetTrustResult(trustRef, &result);
+            checkOSStatus(err, "SecTrustEvaluate", "Couldn't evaluate the trust to get certificate chain");
+            
+            // Delete certificates in the chain from root to leaf:
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
-            if (count == 1) {
-                NSDictionary* params = @{
+            CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
+            for (CFIndex i = count - 1; i >= 0; i--) {
+                SecCertificateRef copiedRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                
+                // Skip deletion if the cert is an issuer of other certs:
+                auto childCount = getChildCertCount(copiedRef);
+                if (childCount > 1) {
+                    continue;
+                }
+                    
+                // Cert copied cannot be used directly to delete, so we will use the primary key:
+                // issuer + serial-num + cert-type. The label is added to ensure that we
+                // delete the cert that was saved by the library.
+                NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
                     (id)kSecClass:              (id)kSecClassCertificate,
-                    (id)kSecValueRef:           (__bridge id)certRef
+                    (id)kSecValueRef:           (__bridge id)copiedRef,
+                    (id)kSecReturnAttributes:   @YES
+                }));
+                
+                NSString* issuer = [attrs objectForKey: (id)kSecAttrIssuer];
+                NSString* serialNum = [attrs objectForKey: (id)kSecAttrSerialNumber];
+                NSNumber* certType = [attrs objectForKey: (id)kSecAttrCertificateType];
+                
+                NSDictionary* params = @{
+                    (id)kSecClass:                  (__bridge id)kSecClassCertificate,
+                    (id)kSecAttrCertificateType:    certType,
+                    (id)kSecAttrIssuer:             issuer,
+                    (id)kSecAttrSerialNumber:       serialNum,
                 };
-                checkOSStatus(SecItemDelete((CFDictionaryRef)params),
-                              "SecItemDelete",
-                              "Couldn't delete a certificate from the Keychain");
-                return;
-            }
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
-            if (@available(macOS 12.0, iOS 15.0, *)) {
-                CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
-                for (CFIndex i = count - 1; i >= 0; i--) {
-                    SecCertificateRef copiedRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
-                    if (getChildCertCount(copiedRef) < 2) {
-                        // Cert copied cannot be used directly to delete, so we will use the primary
-                        // key: issuer + serial-num + cert-type
-                        NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
-                            (id)kSecClass:              (id)kSecClassCertificate,
-                            (id)kSecValueRef:           (__bridge id)copiedRef,
-                            (id)kSecReturnAttributes:   @YES
-                        }));
-                        NSString* issuer = [attrs objectForKey: (id)kSecAttrIssuer];
-                        Assert(issuer);
-                        NSString* serialNum = [attrs objectForKey: (id)kSecAttrSerialNumber];
-                        Assert(serialNum);
-                        NSNumber* certType = [attrs objectForKey: (id)kSecAttrCertificateType];
-                        Assert(certType != nil);
-
-                        NSDictionary* params = @{
-                            (id)kSecClass:                  (__bridge id)kSecClassCertificate,
-                            (id)kSecAttrCertificateType:    certType,
-                            (id)kSecAttrIssuer:             issuer,
-                            (id)kSecAttrSerialNumber:       serialNum,
-                        };
-                        checkOSStatus(SecItemDelete((CFDictionaryRef)params),
-                                      "SecItemDelete",
-                                      "Couldn't delete a certificate from the Keychain");
-                    }
+                
+                // Note: Why don't we just check the label getting from attrs?
+                // That is because, on macOS, the returned label of the cert getting
+                // from SecTrust is the cert's common name (not the actual one from the keychain)
+                NSMutableDictionary* query = [params mutableCopy];
+                query[(id)kSecReturnAttributes] = @YES;
+                attrs = CFBridgingRelease(findInKeychain(query));
+                if (!attrs) {
+                    LogTo(TLSLogDomain,
+                          "Skip deletion: cert at index %ld with label '%s' not found",
+                          i, persistentID.c_str());
+                    continue;
                 }
-                CFRelease(certs);
-            } else
-#endif
-            {
-                for (CFIndex i = count - 1; i >= 0; i--) {
-                    // Workaround: Suppress the deprecation error because it's invalid due to the if(@avaiable)
-                    #pragma clang diagnostic push
-                    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-                    SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
-                    #pragma clang diagnostic pop
-                    if (getChildCertCount(ref) < 2) {
-                        NSDictionary* params = @{
-                            (id)kSecClass:              (id)kSecClassCertificate,
-                            (id)kSecValueRef:           (__bridge id)ref
-                        };
-                        checkOSStatus(SecItemDelete((CFDictionaryRef)params),
-                                      "SecItemDelete",
-                                      "Couldn't delete a certificate from the Keychain");
-                    }
+                
+                // Verify the certificate’s label and skip deletion if it doesn’t match,
+                // indicating that the certificate was not saved by LiteCore:
+                NSString* expectedLabel = (i == 0) ? label : kSharedCertLabel;
+                NSString* certLabel = [attrs objectForKey: (id)kSecAttrLabel] ?: @"";
+                if (![certLabel isEqualToString: expectedLabel]) {
+                    LogTo(TLSLogDomain,
+                          "Skip deletion: cert at index %ld has label mismatch (expected: '%s', actual: '%s')",
+                          i, [expectedLabel UTF8String], [certLabel UTF8String]);
+                    continue;
                 }
-
+                
+                // Delete:
+                err = SecItemDelete((CFDictionaryRef)params);
+                
+                // Check the error:
+                NSString* errMesg = [NSString stringWithFormat:
+                                     @"Failed to delete cert at index %ld with label '%@'", i, label];
+                checkOSStatus(err, "SecItemDelete", [errMesg UTF8String]);
             }
+            CFRelease(certs);
         }
     }
 
@@ -780,40 +772,19 @@ namespace litecore { namespace crypto {
             
             Retained<Cert> root;
             CFIndex certCount = SecTrustGetCertificateCount(trust);
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
-            if (@available(macOS 12.0, iOS 15.0, *)) {
-                CFArrayRef certs = SecTrustCopyCertificateChain(trust);
-                for (CFIndex i = 1; i < certCount; ++i) {
-                    SecCertificateRef certRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
-                    LogTo(TLSLogDomain, "    ... root %s", describe(certRef).c_str());
-                    CFDataRef dataRef = SecCertificateCopyData(certRef);
-                    CFAutorelease(dataRef);
-                    Retained<Cert> cert = new Cert(slice(dataRef));
-                    if (root == nil)
-                        root = cert;
-                    else
-                        root->append(cert);
-                }
-                CFRelease(certs);
-            } else
-#endif
-            {
-                for (CFIndex i = 1; i < certCount; ++i) {
-                    // Workaround: Suppress the deprecation error because it's invalid due to the if(@avaiable)
-                    #pragma clang diagnostic push
-                    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-                    auto certRef = SecTrustGetCertificateAtIndex(trust, i);
-                    #pragma clang diagnostic pop
-                    LogTo(TLSLogDomain, "    ... root %s", describe(certRef).c_str());
-                    CFDataRef dataRef = SecCertificateCopyData(certRef);
-                    CFAutorelease(dataRef);
-                    Retained<Cert> cert = new Cert(slice(dataRef));
-                    if (root == nil)
-                        root = cert;
-                    else
-                        root->append(cert);
-                }
+            CFArrayRef certs = SecTrustCopyCertificateChain(trust);
+            for (CFIndex i = 1; i < certCount; ++i) {
+                SecCertificateRef certRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                LogTo(TLSLogDomain, "    ... root %s", describe(certRef).c_str());
+                CFDataRef dataRef = SecCertificateCopyData(certRef);
+                CFAutorelease(dataRef);
+                Retained<Cert> cert = new Cert(slice(dataRef));
+                if (root == nil)
+                    root = cert;
+                else
+                    root->append(cert);
             }
+            CFRelease(certs);
             return root;
         }
     }
