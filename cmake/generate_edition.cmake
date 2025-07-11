@@ -1,13 +1,21 @@
 macro(generate_edition)
+    if(NOT DEFINED VERSION)
+        message(
+            FATAL_ERROR
+            "No version information passed (use -DVERSION=X.Y.Z)"
+        )
+    endif()
+
+    if(NOT DEFINED BLD_NUM)
+        message(
+            FATAL_ERROR
+            "No build number information passed (use -DBLD_NUM=###)"
+        )
+    endif()
+
     if(CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
         # Script mode, use passed values
         set(CBLITE_CE_DIR "${CMAKE_CURRENT_LIST_DIR}/..")
-        if(NOT DEFINED VERSION)
-            message(
-                FATAL_ERROR 
-                "No version information passed (use -DVERSION=X.Y.Z)"
-            )
-        endif()
         set(CBL_LITECORE_BUILDID ${VERSION})
 
         if(NOT DEFINED OUTPUT_DIR)
@@ -17,12 +25,6 @@ macro(generate_edition)
             )
         endif()
 
-        if(NOT DEFINED BLD_NUM)
-            message(
-                FATAL_ERROR 
-                "No build number information passed (use -DBLD_NUM=###)"
-            )
-        endif()
         set(CBL_LITECORE_BUILDNUM ${BLD_NUM})
         set(CBL_LITECORE_OFFICIAL true)
     else()
@@ -31,22 +33,23 @@ macro(generate_edition)
         set(OUTPUT_DIR ${GENERATED_HEADERS_DIR})
         set(CBL_LITECORE_OFFICIAL true)
 
-        if(DEFINED ENV{VERSION})
-            message(VERBOSE "Using VERSION:$ENV{VERSION} from environment variable")
-            set(CBL_LITECORE_BUILDID $ENV{VERSION})
-        else()
+        if(VERSION STREQUAL "0.0.0")
             message(WARNING "No VERSION set, defaulting to 0.0.0...")
             set(CBL_LITECORE_BUILDID "0.0.0")
             set(CBL_LITECORE_OFFICIAL false)
+        else()
+            message(VERBOSE "Using VERSION:${VERSION}")
+            set(CBL_LITECORE_BUILDID ${VERSION})
         endif()
 
-        if(DEFINED ENV{BLD_NUM})
-            message(VERBOSE "Using BLD_NUM:$ENV{BLD_NUM} from environment variable")
-            set(CBL_LITECORE_BUILDNUM $ENV{BLD_NUM})
-        else()
+        if(BLD_NUM EQUAL 0)
             message(WARNING "No BLD_NUM set...")
             set(CBL_LITECORE_OFFICIAL false)
+        else()
+            message(VERBOSE "Using BLD_NUM:${BLD_NUM}")
+            set(CBL_LITECORE_BUILDNUM ${BLD_NUM})
         endif()
+
     endif()
 
     if(DEFINED ENV{LITECORE_VERSION_STRING})
@@ -119,7 +122,7 @@ macro(generate_edition)
         set(CBL_GIT_COMMIT "<unknown commit>")
         set(CBL_GIT_BRANCH "<unknown branch>")
     endif()
-    
+
     configure_file(
         "${CBLITE_CE_DIR}/cmake/repo_version.h.in"
         "${OUTPUT_DIR}/repo_version.h"
