@@ -51,6 +51,8 @@ namespace litecore::repl {
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
         // Puller should have already been notified last time we finished, and flag cleared
         DebugAssert(!_shouldNotifyPuller);
+        // Flag should be cleared
+        DebugAssert(!_insertWasEnqueued);
         _blob = _pendingBlobs.end();
     }
 
