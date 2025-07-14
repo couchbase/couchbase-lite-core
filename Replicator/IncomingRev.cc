@@ -49,10 +49,6 @@ namespace litecore::repl {
         // in case of status calculations which occur on IncomingRev's thread.
         _handlingRev = true;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
-        // Puller should have already been notified last time we finished, and flag cleared
-        DebugAssert(!_shouldNotifyPuller);
-        // Flag should be cleared
-        DebugAssert(!_insertWasEnqueued);
         _blob = _pendingBlobs.end();
     }
 
@@ -478,6 +474,9 @@ namespace litecore::repl {
         _handlingRev    = false;
         _remoteSequence = {};
         _bodySize       = 0;
+        // Both of these flags should be false, otherwise there is a problem with the logic that notifies Puller that 'revWasHandled'.
+        DebugAssert(!_insertWasEnqueued);
+        DebugAssert(!_shouldNotifyPuller);
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
