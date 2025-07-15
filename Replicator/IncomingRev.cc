@@ -187,10 +187,8 @@ namespace litecore::repl {
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
              || _mayContainEncryptedProperties ) {
-            _insertWasEnqueued = true;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
         } else {
-            _insertWasEnqueued = false;
             parseAndInsert(std::move(jsonBody));
         }
     }
@@ -460,11 +458,9 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // If insert was enqueued, the last code to fire will be in `afterEvent`, so delay return to
-        // Puller until `afterEvent`. Otherwise, notify Puller now so this IncomingRev can be recycled.
-        if ( _insertWasEnqueued.exchange(false) ) _shouldNotifyPuller = true;
-        else
-            _puller->revWasHandled(this);
+        // If the _finishState was `AfterEvent`, afterEvent() has already been called, so this is the last code to execute in this cycle
+        // of IncomingRev, and we should notify Puller now that we are done.
+        if ( _finishState.exchange(FinishState::Finish) == FinishState::AfterEvent ) _puller->revWasHandled(this);
     }
 
     // Run on the parent (Puller) thread.
@@ -474,20 +470,16 @@ namespace litecore::repl {
         _handlingRev    = false;
         _remoteSequence = {};
         _bodySize       = 0;
-        // Both of these flags should be false, otherwise there is a problem with the logic that notifies Puller that 'revWasHandled'.
-        DebugAssert(!_insertWasEnqueued);
-        DebugAssert(!_shouldNotifyPuller);
+        _finishState    = FinishState::None;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-        if ( _shouldNotifyPuller.exchange(false) ) {
-            _puller->revWasHandled(this);
-        } else {
-            _insertWasEnqueued = false;
-        }
+        // If the _finishState was `Finish`, finish() has already been called, so this is the last code to execute in this cycle
+        // of IncomingRev, and we should notify Puller now that we are done.
+        if ( _finishState.exchange(FinishState::AfterEvent) == FinishState::Finish ) _puller->revWasHandled(this);
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
