@@ -187,8 +187,10 @@ namespace litecore::repl {
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
              || _mayContainEncryptedProperties ) {
+            _finishState = FinishState::Enqueued;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
         } else {
+            _finishState = FinishState::NotEnqueued;
             parseAndInsert(std::move(jsonBody));
         }
     }
@@ -460,7 +462,9 @@ namespace litecore::repl {
 
         // If the _finishState was `AfterEvent`, afterEvent() has already been called, so this is the last code to execute in this cycle
         // of IncomingRev, and we should notify Puller now that we are done.
-        if ( _finishState.exchange(FinishState::Finish) == FinishState::AfterEvent ) _puller->revWasHandled(this);
+        FinishState finishState = _finishState.exchange(FinishState::Finish);
+        if ( finishState == FinishState::AfterEvent || finishState == FinishState::NotEnqueued )
+            _puller->revWasHandled(this);
     }
 
     // Run on the parent (Puller) thread.
@@ -470,7 +474,7 @@ namespace litecore::repl {
         _handlingRev    = false;
         _remoteSequence = {};
         _bodySize       = 0;
-        _finishState    = FinishState::None;
+        _finishState    = FinishState::NotEnqueued;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify

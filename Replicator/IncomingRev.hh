@@ -53,7 +53,7 @@ namespace litecore::repl {
         void afterEvent() override;
 
       private:
-        enum class FinishState : uint8_t { None, Finish, AfterEvent };
+        enum class FinishState : uint8_t { NotEnqueued, Enqueued, Finish, AfterEvent };
 
         void        reinitialize();
         void        parseAndInsert(alloc_slice jsonBody);
