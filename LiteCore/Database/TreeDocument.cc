@@ -612,7 +612,11 @@ namespace litecore {
                 mutable_slice mslice(digest.asSlice());
                 SecureRandomize(mslice);
             } else {
-                SHA1 tmp = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << body).finish();
+                Scope        scope(body, _collection->dbImpl()->dataFile()->documentKeys());
+                const Value* bodyNoSK = Value::fromTrustedData(body);
+                SHA1         tmp =
+                        (SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << bodyNoSK->toJSON(true))
+                                .finish();
                 digest.setDigest(tmp.asSlice());
             }
             // Derive new rev's generation #:
