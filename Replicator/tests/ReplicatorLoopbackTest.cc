@@ -2210,3 +2210,72 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete
     }
 }
 #endif
+
+// "CBL-7161"
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Documents Differ a Key", "[Pull]") {
+    string rev1, rev2;
+    // bodyA and bodyB differ by the key in the JSON
+    slice bodyA = R"({"name":"obo"})"_sl;
+    slice bodyB = R"({"eman":"obo"})"_sl;
+    slice docID = "doc1"_sl;
+
+    bool sameKey = false;
+    SECTION("Same Keys") {
+        // db/doc/body = bodyA
+        sameKey = true;
+    }
+    SECTION("Distinct Keys") {
+        // db/doc/body = bodyB
+        sameKey = false;
+    }
+    // db2/doc/body = bodyA
+
+    {
+        TransactionHelper t(db);
+        C4Error           c4err;
+        alloc_slice       body;
+        // "name" vs "emna"
+        if ( sameKey ) body = c4db_encodeJSON(db, bodyA, &c4err);
+        else
+            body = c4db_encodeJSON(db, bodyB, &c4err);
+        REQUIRE(body.buf);
+        rev1 = createNewRev(_collDB1, docID, body);
+    }
+
+    {
+        TransactionHelper t(db2);
+        C4Error           c4err;
+        alloc_slice       body = c4db_encodeJSON(db2, bodyA, &c4err);
+        REQUIRE(body.buf);
+        rev2 = createNewRev(_collDB2, docID, body);
+    }
+
+    // Before CBL-7161 is fixed, the doc from db and db2 share the same revID in the
+    // case of RevTrees when the docs of db and db2 differ by only a key. This is
+    // because the revID is generated from the digest of the doc's body that is
+    // encoded with the SharedKeys. We fixed it by applying the SharedKeys before the
+    // digest is computed.
+
+    if ( isRevTrees() ) {
+        if ( sameKey ) {
+            CHECK(rev1 == rev2);
+            // No doc is pulled to the client because of same rev IDs
+            _expectedDocumentCount = 0;
+        } else {
+            CHECK(rev1 != rev2);
+            // The doc is pulled with conflict.
+            _expectedDocumentCount = 1;
+            _expectedDocPullErrors = {"doc1"};  // due to conflict
+        }
+    } else {
+        // VVs are always different from separate DBs
+        auto vv1 = db->getRevIDGlobalForm(rev1);
+        auto vv2 = db2->getRevIDGlobalForm(rev2);
+        CHECK(vv1 != vv2);                  // regardless of sameKey or not.
+        _expectedDocPullErrors = {"doc1"};  // due to conflict
+        _expectedDocumentCount = 1;
+    }
+
+    // Pull db into db2:
+    runPullReplication();
+}
