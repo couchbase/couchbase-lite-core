@@ -201,12 +201,18 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
     c4doc_release(updatedDocRefreshed);
 }
 
-static alloc_slice digest(slice body, slice parentRevID, bool deleted) {
+static alloc_slice digest(slice body, slice parentRevID, bool deleted, C4Database* db) {
     // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
-    uint8_t        revLen  = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
-    uint8_t        delByte = deleted;
+    uint8_t revLen  = (uint8_t)std::min((unsigned long)parentRevID.size, 255ul);
+    uint8_t delByte = deleted;
+
+    alloc_slice allocBody{body};
+    Doc         doc  = FLDoc_FromResultData((FLSliceResult)allocBody, kFLTrusted, c4db_getFLSharedKeys(db), nullslice);
+    Value       root = FLDoc_GetRoot(doc);
+    alloc_slice bodyNoSK = root.toJSON(false, true);
+
     litecore::SHA1 sha1 =
-            (litecore::SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << body).finish();
+            (litecore::SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << bodyNoSK).finish();
     alloc_slice d = slice_ostream::alloced(100, [&sha1](slice_ostream& out) { return out.writeHex(sha1.asSlice()); });
     return d;
 }
@@ -234,7 +240,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Random RevID", "[Document][C]") {
     std::string rid = C4Test::createFleeceRev(db, C4STR("doc"), nullslice, json, 0);
     // rid == "1-<digest>"
     rid              = rid.substr(2);
-    alloc_slice sha1 = digest(fleeceBody, nullslice, false);
+    alloc_slice sha1 = digest(fleeceBody, nullslice, false, db);
     if ( clear ) {
         REQUIRE(sha1.asString() == rid);
     } else {
