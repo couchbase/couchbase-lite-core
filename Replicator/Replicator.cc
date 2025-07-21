@@ -1047,6 +1047,8 @@ namespace litecore::repl {
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
         setMsgHandlerFor3_0_Client(request);
+        // The above method may already responded with error.
+        if ( request->responded() ) return;
 
         slice checkpointID = getPeerCheckpointDocID(request, "get");
         if ( !checkpointID ) return;
@@ -1085,6 +1087,8 @@ namespace litecore::repl {
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
     void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
         setMsgHandlerFor3_0_Client(request);
+        // The above method may already responded with error.
+        if ( request->responded() ) return;
 
         slice checkpointID = getPeerCheckpointDocID(request, "set");
         if ( !checkpointID ) return;
