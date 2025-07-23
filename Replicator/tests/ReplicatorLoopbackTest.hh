@@ -173,7 +173,7 @@ class ReplicatorLoopbackTest
         CHECK((createReplicatorThrew || _gotResponse));
         CHECK((createReplicatorThrew || _statusChangedCalls > 0));
         CHECK(_statusReceived.level == kC4Stopped);
-        CHECK(_statusReceived.error == _expectedError);
+        CHECK((_statusReceived.error == _expectedError || _ignoreStatusError));
         if ( !(_ignoreLackOfDocErrors && _docPullErrors.empty()) )
             CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
         if ( !(_ignoreLackOfDocErrors && _docPushErrors.empty()) )
@@ -711,6 +711,7 @@ class ReplicatorLoopbackTest
     std::set<std::string>               _expectedDocPushErrors, _expectedDocPullErrors;
     bool                                _ignoreLackOfDocErrors = false;
     bool                                _ignoreTransientErrors = false;
+    bool                                _ignoreStatusError     = false;
     bool                                _checkDocsFinished{true};
     std::multiset<std::string>          _docsFinished, _expectedDocsFinished;
     unsigned                            _blobPushProgressCallbacks{0}, _blobPullProgressCallbacks{0};
