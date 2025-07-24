@@ -291,7 +291,7 @@ namespace litecore::websocket {
             }
 
             schedulePing();
-            startResponseTimer(kPongTimeout);
+            startResponseTimer(min(kPongTimeout, chrono::seconds(heartbeatInterval() - 1)));
             // exit scope to release the lock -- this is needed before calling sendOp,
             // which acquires the lock itself
         }
