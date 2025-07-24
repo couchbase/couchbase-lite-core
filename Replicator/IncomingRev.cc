@@ -49,8 +49,6 @@ namespace litecore::repl {
         // in case of status calculations which occur on IncomingRev's thread.
         _handlingRev = true;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
-        // Puller should have already been notified last time we finished, and flag cleared
-        DebugAssert(!_shouldNotifyPuller);
         _blob = _pendingBlobs.end();
     }
 
@@ -188,10 +186,13 @@ namespace litecore::repl {
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
-             || _mayContainEncryptedProperties )
+             || _mayContainEncryptedProperties ) {
+            _finishState = FinishState::Enqueued;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
-        else
+        } else {
+            _finishState = FinishState::NotEnqueued;
             parseAndInsert(std::move(jsonBody));
+        }
     }
 
     // We've lost access to this doc on the server; it should be purged.
@@ -459,11 +460,11 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // If IncomingRev is not the active Actor, this was called on the Puller's thread, so we can notify the
-        // Puller straight away.
-        // Otherwise, we will call `revWasHandled` later, in `Worker::afterEvent`.
-        if ( Actor::currentActor() != this ) _puller->revWasHandled(this);
-        else { _shouldNotifyPuller = true; }
+        // If the _finishState was `AfterEvent`, afterEvent() has already been called, so this is the last code to execute in this cycle
+        // of IncomingRev, and we should notify Puller now that we are done.
+        FinishState finishState = _finishState.exchange(FinishState::Finish);
+        if ( finishState == FinishState::AfterEvent || finishState == FinishState::NotEnqueued )
+            _puller->revWasHandled(this);
     }
 
     // Run on the parent (Puller) thread.
@@ -473,14 +474,16 @@ namespace litecore::repl {
         _handlingRev    = false;
         _remoteSequence = {};
         _bodySize       = 0;
+        _finishState    = FinishState::NotEnqueued;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-        if ( _shouldNotifyPuller ) { _puller->revWasHandled(this); }
-        _shouldNotifyPuller = false;
+        // If the _finishState was `Finish`, finish() has already been called, so this is the last code to execute in this cycle
+        // of IncomingRev, and we should notify Puller now that we are done.
+        if ( _finishState.exchange(FinishState::AfterEvent) == FinishState::Finish ) _puller->revWasHandled(this);
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
