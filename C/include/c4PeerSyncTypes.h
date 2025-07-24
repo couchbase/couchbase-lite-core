@@ -129,11 +129,11 @@ typedef struct C4PeerSyncParameters {
 /** Information about a peer, returned from \ref c4peersync_getPeerInfo.
     @note  References must be freed by calling \ref c4peerinfo_free. */
 typedef struct C4PeerInfo {
-    C4Cert* C4NULLABLE   certificate;
-    C4PeerID* C4NULLABLE neighbors;
-    size_t               neighborCount;
-    C4ReplicatorStatus   replicatorStatus;
-    bool                 online;
+    C4Cert* C4NULLABLE   certificate;       ///< Peer cert; NULL if no TLS connection has been made
+    C4PeerID* C4NULLABLE neighbors;         ///< IDs of peers this one's currently connected with
+    size_t               neighborCount;     ///< Size of `neighbors` array
+    C4ReplicatorStatus   replicatorStatus;  ///< Current replication status; 'stopped' if none.
+    bool                 online;            ///< True if peer is currently connected or discoverable
 } C4PeerInfo;
 
 C4API_END_DECLS
