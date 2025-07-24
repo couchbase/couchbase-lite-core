@@ -241,6 +241,8 @@ class C4Peer
     /// @note  If the URL is already known, the callback will be invoked synchronously during this method.
     void resolveURL(ResolveURLCallback);
 
+    void clearCachedURL();
+
     //---- Record-keeping, for use by SyncManager:
 
     std::atomic<C4Timestamp> lastConnectionAttempt{};  ///< Last time a connection was attempted
@@ -327,6 +329,9 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// Cancels any in-progress resolveURL calls.
     /// Default implementation does nothing.
     virtual void cancelResolveURL(C4Peer*) {}
+
+    /// Invalidates any cached URL, so next call to resolveURL will start from scratch.
+    virtual void clearCachedURL(C4Peer*) {}
 
     /// Returns the custom socket factory to use to connect to a peer URL, or nullopt if no special factory is needed.
     /// Default implementation returns the C4PeerDiscovery's defaultSocketFactory or `nullopt`.
