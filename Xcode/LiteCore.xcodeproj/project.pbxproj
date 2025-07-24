@@ -50,6 +50,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		1B8C29482E32C7840007A132 /* MultipeerTest_C.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8C29472E32C7840007A132 /* MultipeerTest_C.cc */; };
 		1BC685522E2EC10C00A5AEC1 /* MultipeerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1BC685512E2EC10C00A5AEC1 /* MultipeerTest.cc */; };
 		2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
 		2700BB75217905FE00797537 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -1102,6 +1103,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1B8C29472E32C7840007A132 /* MultipeerTest_C.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MultipeerTest_C.cc; sourceTree = "<group>"; };
 		1BC685512E2EC10C00A5AEC1 /* MultipeerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MultipeerTest.cc; sourceTree = "<group>"; };
 		2700BB4D216FF2DA00797537 /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
 		2700BB59217005A900797537 /* CoreMLPredictiveModel.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CoreMLPredictiveModel.hh; sourceTree = "<group>"; };
@@ -3562,6 +3564,7 @@
 		27FD72842D833D4800CC48BF /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				1B8C29472E32C7840007A132 /* MultipeerTest_C.cc */,
 				1BC685512E2EC10C00A5AEC1 /* MultipeerTest.cc */,
 				278B97882D8C868500383915 /* PeerDiscoveryTest.hh */,
 				27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */,
@@ -5103,6 +5106,7 @@
 				27FD73692D834B7A00CC48BF /* LazyVectorQueryTest.cc in Sources */,
 				27FD736A2D834B7A00CC48BF /* c4IndexUpdaterTest.cc in Sources */,
 				27FD736B2D834B7A00CC48BF /* PropertyEncryptionTests.cc in Sources */,
+				1B8C29482E32C7840007A132 /* MultipeerTest_C.cc in Sources */,
 				27FD736C2D834B7A00CC48BF /* UpgraderTest.cc in Sources */,
 				27FD736D2D834B7A00CC48BF /* CookieStoreTest.cc in Sources */,
 				27FD736E2D834B7A00CC48BF /* CertificateTest.cc in Sources */,
