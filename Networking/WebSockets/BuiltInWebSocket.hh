@@ -49,7 +49,7 @@ namespace litecore::websocket {
 
         /** Server-side constructor; takes an already-connected socket that's been through the
             HTTP WebSocket handshake and is ready to send/receive frames. */
-        BuiltInWebSocket(const URL& url, std::unique_ptr<net::ResponderSocket>);
+        BuiltInWebSocket(const URL& url, const Parameters&, std::unique_ptr<net::ResponderSocket>);
 
         /** Starts the TCP connection for a client socket. */
         void connect() override;
