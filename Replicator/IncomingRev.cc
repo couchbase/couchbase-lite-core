@@ -176,10 +176,13 @@ namespace litecore::repl {
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
-             || _mayContainEncryptedProperties )
+             || _mayContainEncryptedProperties ) {
+            _finishState = FinishState::Enqueued;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
-        else
+        } else {
+            _finishState = FinishState::NotEnqueued;
             parseAndInsert(std::move(jsonBody));
+        }
     }
 
     // We've lost access to this doc on the server; it should be purged.
@@ -447,7 +450,11 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        _puller->revWasHandled(this);
+        // If the _finishState was `AfterEvent`, afterEvent() has already been called, so this is the last code to execute in this cycle
+        // of IncomingRev, and we should notify Puller now that we are done.
+        FinishState finishState = _finishState.exchange(FinishState::Finish);
+        if ( finishState == FinishState::AfterEvent || finishState == FinishState::NotEnqueued )
+            _puller->revWasHandled(this);
     }
 
     void IncomingRev::reset() {
@@ -455,6 +462,16 @@ namespace litecore::repl {
         _parent         = nullptr;
         _remoteSequence = {};
         _bodySize       = 0;
+        _finishState    = FinishState::NotEnqueued;
+    }
+
+    // Call Worker::afterEvent to calculate status and progress, then notify
+    // Puller we are done.
+    void IncomingRev::afterEvent() {
+        Worker::afterEvent();
+        // If the _finishState was `Finish`, finish() has already been called, so this is the last code to execute in this cycle
+        // of IncomingRev, and we should notify Puller now that we are done.
+        if ( _finishState.exchange(FinishState::AfterEvent) == FinishState::Finish ) _puller->revWasHandled(this);
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
