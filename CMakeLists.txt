@@ -37,7 +37,7 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
         - platform_win_desktop
 ]]#
 
-cmake_minimum_required (VERSION 3.21.0)
+cmake_minimum_required (VERSION 3.21...4.0)
 
 # Mac/apple setup -- must appear before the first "project()" line"
 set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0")

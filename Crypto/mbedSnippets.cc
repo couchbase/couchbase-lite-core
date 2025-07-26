@@ -108,7 +108,7 @@ namespace litecore::crypto {
             if ( x509_string_cmp(&a->val, &b->val) != 0 ) return (-1);
 
             /* structure of the list of sets */
-            if ( a->next_merged != b->next_merged ) return (-1);
+            if ( a->private_next_merged != b->private_next_merged ) return (-1);
 
             a = a->next;
             b = b->next;
@@ -127,7 +127,7 @@ namespace litecore::crypto {
         size_t        hash_len;
 #if !defined(MBEDTLS_USE_PSA_CRYPTO)
         const mbedtls_md_info_t* md_info;
-        md_info  = mbedtls_md_info_from_type(child->sig_md);
+        md_info  = mbedtls_md_info_from_type(child->private_sig_md);
         hash_len = mbedtls_md_get_size(md_info);
 
         /* Note: hash errors can happen only after an internal error */
@@ -143,7 +143,7 @@ namespace litecore::crypto {
         if ( psa_hash_finish(&hash_operation, hash, sizeof(hash), &hash_len) != PSA_SUCCESS ) { return (-1); }
 #endif /* MBEDTLS_USE_PSA_CRYPTO */
         /* Skip expensive computation on obvious mismatch */
-        if ( !mbedtls_pk_can_do(&parent->pk, child->sig_pk) ) return (-1);
+        if ( !mbedtls_pk_can_do(&parent->pk, child->private_sig_pk) ) return (-1);
 
 #if defined(MBEDTLS_ECDSA_C) && defined(MBEDTLS_ECP_RESTARTABLE)
         if ( rs_ctx != NULL && child->sig_pk == MBEDTLS_PK_ECDSA ) {
@@ -154,8 +154,9 @@ namespace litecore::crypto {
         (void)rs_ctx;
 #endif
 
-        return (mbedtls_pk_verify_ext(child->sig_pk, child->sig_opts, &parent->pk, child->sig_md, hash, hash_len,
-                                      child->sig.p, child->sig.len));
+        return (mbedtls_pk_verify_ext(child->private_sig_pk, child->private_sig_opts, &parent->pk,
+                                      child->private_sig_md, hash, hash_len, child->private_sig.p,
+                                      child->private_sig.len));
     }
 
 }  // namespace litecore::crypto

@@ -11,6 +11,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#include <unordered_map>
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "TLSContext.hh"
@@ -315,20 +316,19 @@ namespace litecore { namespace crypto {
             LogTo(TLSLogDomain, "Signing using Keychain private key");
             @autoreleasepool {
                 // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
-                static const SecKeyAlgorithm kDigestAlgorithmMap[9] = {
-                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw,
-                    NULL,
-                    NULL,
-                    NULL,
-                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1,
-                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224,
-                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256,
-                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384,
-                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512,
+                static const unordered_map<int, SecKeyAlgorithm> kDigestAlgorithmMap{
+                    {MBEDTLS_MD_NONE, kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw},
+                    {MBEDTLS_MD_SHA1, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1},
+                    {MBEDTLS_MD_SHA224, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224},
+                    {MBEDTLS_MD_SHA256, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256},
+                    {MBEDTLS_MD_SHA384, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384},
+                    {MBEDTLS_MD_SHA512, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512},
                 };
+                
                 SecKeyAlgorithm digestAlgorithm = nullptr;
-                if (mbedDigestAlgorithm >= 0 && mbedDigestAlgorithm < 9)
-                    digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
+                if ( kDigestAlgorithmMap.contains(mbedDigestAlgorithm) )
+                    digestAlgorithm = kDigestAlgorithmMap.at(mbedDigestAlgorithm);
+
                 if (!digestAlgorithm) {
                     LogWarn(TLSLogDomain, "Keychain private key: unsupported mbedTLS digest algorithm %d",
                          mbedDigestAlgorithm);

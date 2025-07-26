@@ -16,7 +16,7 @@ The test runner depends on multiple other libraries from multiple git repositori
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
-cmake_minimum_required (VERSION 3.9)
+cmake_minimum_required (VERSION 3.9...4.0)
 project (CppTests)
 
 if(ANDROID OR WINDOWS_STORE)
