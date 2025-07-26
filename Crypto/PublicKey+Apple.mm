@@ -316,7 +316,7 @@ namespace litecore { namespace crypto {
             LogTo(TLSLogDomain, "Signing using Keychain private key");
             @autoreleasepool {
                 // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
-                static const unordered_map<int, LPCWSTR> kDigestAlgorithmMap{
+                static const unordered_map<int, SecKeyAlgorithm> kDigestAlgorithmMap{
                     {MBEDTLS_MD_NONE, kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw},
                     {MBEDTLS_MD_SHA1, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1},
                     {MBEDTLS_MD_SHA224, kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224},
