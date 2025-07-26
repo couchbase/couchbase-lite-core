@@ -14,11 +14,12 @@
 
 #    include "c4Certificate.h"
 #    include "CertHelper.hh"
-#ifdef WIN32
-#    include "Winsock2.h"
-#else
-#    include <arpa/inet.h>
-#endif
+#    ifdef WIN32
+#        include "Winsock2.h"
+#        define in_addr_t unsigned long
+#    else
+#        include <arpa/inet.h>
+#    endif
 
 using namespace std;
 
@@ -40,8 +41,8 @@ TEST_CASE("C4Certificate smoke test", "[Certs][C]") {
 }
 
 TEST_CASE("C4Certificate Subject Name", "[Certs][C]") {
-    auto ipAddr = htonl(inet_addr("127.0.0.1"));
-    fleece::slice ipAddrSlice((void *)&ipAddr, sizeof(in_addr_t));
+    auto                ipAddr = htonl(inet_addr("127.0.0.1"));
+    fleece::slice       ipAddrSlice((void*)&ipAddr, sizeof(in_addr_t));
     C4CertNameComponent nameComponents[] = {{kC4Cert_CommonName, "CommonName"_sl},
                                             {kC4Cert_Pseudonym, "Pseudonym"_sl},
                                             {kC4Cert_GivenName, "GivenName"_sl},
