@@ -270,7 +270,7 @@ namespace litecore::crypto {
             LPCWSTR digestAlgorithm = nullptr;
             if ( kDigestAlgorithmMap.contains(mbedDigestAlgorithm) )
                 digestAlgorithm = kDigestAlgorithmMap.at(mbedDigestAlgorithm);
-            
+
             // 0 here is a special case (MBED_MD_NONE) which means "no digest algorithm"
             // This is not in the Windows documentation, but passing in a null digest algo
             // seems to do the trick.  Otherwise, null is considered an unsupported algorithm

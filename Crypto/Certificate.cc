@@ -235,7 +235,8 @@ namespace litecore::crypto {
             alloc_slice         issuerKeyData = issuerKeyPair->publicKeyData();
             Retained<PublicKey> issuerPublicKey;
             if ( issuerCert ) {
-                if ( !issuerCert->_cert->private_ca_istrue ) error::_throw(error::InvalidParameter, "Issuer cert must be a CA");
+                if ( !issuerCert->_cert->private_ca_istrue )
+                    error::_throw(error::InvalidParameter, "Issuer cert must be a CA");
                 issuerPublicKey = issuerCert->subjectPublicKey();
             } else {
                 issuerPublicKey = subjectKey;
@@ -293,7 +294,7 @@ namespace litecore::crypto {
             Retained<PublicKey> tempKey;
             if ( mbedtls_pk_get_type(issuerKeyPair->context()) == MBEDTLS_PK_RSA_ALT ) {
                 // Workaround for https://github.com/ARMmbed/mbedtls/issues/2768
-                tempKey        = issuerKeyPair->publicKey();
+                tempKey                = issuerKeyPair->publicKey();
                 crt.private_issuer_key = tempKey->context();
             }
             TRY(mbedtls_x509write_crt_set_authority_key_identifier(&crt));
@@ -471,8 +472,8 @@ namespace litecore::crypto {
             // Subject Alternative Name -- mbedTLS doesn't have high-level APIs for this
             alloc_slice ext = params.subjectAltNames.encode();
             TRY(mbedtls_x509write_csr_set_extension(&csr, MBEDTLS_OID_SUBJECT_ALT_NAME,
-                                                    MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME),
-                                                    0, (const uint8_t*)ext.buf, ext.size));
+                                                    MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME), 0,
+                                                    (const uint8_t*)ext.buf, ext.size));
         }
 
         auto key_usage = params.keyUsage;
@@ -524,8 +525,8 @@ namespace litecore::crypto {
 
     Identity::Identity(Cert* cert_, PrivateKey* key_) : cert(cert_), privateKey(key_) {
         // Make sure the private and public keys match:
-        if ( int err = mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context(), 
-                                             mbedtls_ctr_drbg_random, RandomNumberContext())) {
+        if ( int err = mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context(),
+                                             mbedtls_ctr_drbg_random, RandomNumberContext()) ) {
             throwMbedTLSError(err);
         }
     }

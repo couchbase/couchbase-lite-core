@@ -154,8 +154,9 @@ namespace litecore::crypto {
         (void)rs_ctx;
 #endif
 
-        return (mbedtls_pk_verify_ext(child->private_sig_pk, child->private_sig_opts, &parent->pk, child->private_sig_md, hash, hash_len,
-                                      child->private_sig.p, child->private_sig.len));
+        return (mbedtls_pk_verify_ext(child->private_sig_pk, child->private_sig_opts, &parent->pk,
+                                      child->private_sig_md, hash, hash_len, child->private_sig.p,
+                                      child->private_sig.len));
     }
 
 }  // namespace litecore::crypto
