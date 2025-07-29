@@ -65,8 +65,9 @@ namespace litecore::websocket {
     }
 
     // server constructor
-    BuiltInWebSocket::BuiltInWebSocket(const URL& url, unique_ptr<net::ResponderSocket> socket)
-        : BuiltInWebSocket(url, Role::Server, Parameters()) {
+    BuiltInWebSocket::BuiltInWebSocket(const URL& url, const Parameters& parameters,
+                                       unique_ptr<net::ResponderSocket> socket)
+        : BuiltInWebSocket(url, Role::Server, parameters) {
         AssertArg(socket);
         _socket = std::move(socket);
     }
