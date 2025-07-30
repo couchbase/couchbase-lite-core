@@ -218,6 +218,8 @@ namespace litecore::qt {
 
     // clang-format off
 
+    // 127 is the limit that SQLite has on the number of arguments a function may take.
+
     constexpr FunctionSpec kFunctionList[] = {
         // Array:
         {"array_agg",           1, 1, {},           kOpAggregate},
@@ -228,17 +230,17 @@ namespace litecore::qt {
         {"array_length",        1, 1, {},           kOpNumberResult},
         {"array_max",           1, 1, {},           kOpNumberResult},
         {"array_min",           1, 1, {},           kOpNumberResult},
-        {"array_of",            0, 9},
+        {"array_of",            0, 127},
         {"array_sum",           1, 1, {},           kOpNumberResult},
 
         // Comparison:  (SQLite min and max are used in non-aggregate form here)
-        {"greatest",            2, 9, "max"},
-        {"least",               2, 9, "min"},
+        {"greatest",            2, 127, "max"},
+        {"least",               2, 127, "min"},
 
         // Conditional (unknowns):
-        {"ifmissing",           2, 9, "coalesce"},
-        {"ifnull",              2, 9, "N1QL_ifnull"},
-        {"ifmissingornull",     2, 9},
+        {"ifmissing",           2, 127, "coalesce"},
+        {"ifnull",              2, 127, "N1QL_ifnull"},
+        {"ifmissingornull",     2, 127},
         {"missingif",           2, 2},
         {"nullif",              2, 2, "N1QL_nullif"},
 
@@ -285,11 +287,11 @@ namespace litecore::qt {
         {"regexp_contains",     2, 2, {},           kOpBoolResult},
         {"regexp_like",         2, 2, {},           kOpBoolResult},
         {"regexp_position",     2, 2, {},           kOpNumberResult},
-        {"regexp_replace",      3, 9},
+        {"regexp_replace",      3, 127},
         {"fl_like",             2, 2, {},           OpFlags(kOpBoolResult | kOpWantsCollation)},
 
         // Strings:
-        {"concat",              2, 9, {},           kOpStringResult},
+        {"concat",              2, 127, {},           kOpStringResult},
         {"contains",            2, 2, {},           OpFlags(kOpBoolResult | kOpWantsCollation)},
         {"length",              1, 1, "N1QL_length",kOpNumberResult},
         {"lower",               1, 1, "N1QL_lower", kOpNumberResult},
@@ -346,7 +348,7 @@ namespace litecore::qt {
     };
 
 
-    constexpr FunctionSpec kDictOfFunctionSpec      {"dict_of",         0, 9, "dict_of"};
+    constexpr FunctionSpec kDictOfFunctionSpec      {"dict_of",         0, 127, "dict_of"};
     constexpr FunctionSpec kNestedValueFunctionSpec {"fl_nested_value", 2, 2, "fl_nested_value"};
 
     // clang-format on
