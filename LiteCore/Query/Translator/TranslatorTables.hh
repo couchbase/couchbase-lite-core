@@ -211,7 +211,7 @@ namespace litecore::qt {
 
     struct FunctionSpec {          // NOLINT(cppcoreguidelines-pro-type-member-init)
         slice   name;              // Name (without the parens)
-        int     minArgs, maxArgs;  // Min/max number of args; max 9 means "unlimited"
+        int     minArgs, maxArgs;  // Min/max number of args
         slice   sqlite_name;       // Name to use in SQL; defaults to `name`
         OpFlags flags;             // Flags, mostly about the result type
     };
