@@ -133,6 +133,7 @@ function(setup_litecore_build_unix)
                 -Wno-ctad-maybe-unsupported # "'...' may not intend to support class template argument deduction"
                 -Wno-date-time # "expansion of date or time macro is not reproducible"
                 -Wno-deprecated-copy-with-user-provided-dtor # "definition of implicit copy constructor is deprecated because it has a user-provided destructor"
+                -Wno-documentation-pedantic
                 -Wno-direct-ivar-access # Obj-C: "instance variable is being directly accessed"
                 -Wno-exit-time-destructors # "declaration requires an exit-time destructor"
                 -Wno-extra-semi # "extra ';' after member function definition"

@@ -35,6 +35,8 @@
 #include "fleece/slice.hh"
 #include <Security/Security.h>
 
+#pragma clang diagnostic ignored "-Wgnu-conditional-omitted-operand"
+
 #define kSharedCertLabel @"com.couchbase.lite.cert"     ///< label set to non-leaf certs when saving the cert chain
 
 namespace litecore { namespace crypto {
