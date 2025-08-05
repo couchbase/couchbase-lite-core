@@ -39,7 +39,7 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
     srcPath = str(component["src-path"])
     submoduleBase = branch
     if "parent-repo" in component:
-        git = subprocess.check_output(["git", "diff", branch, component["parent-repo"]]).decode("ascii")
+        git = subprocess.check_output(["git", "diff", branch, component["parent-repo"]]).decode("utf-8")
         submoduleBase = get_submodule_base(git)
         if not submoduleBase:
             if expectChange:
@@ -53,7 +53,7 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
         os.chdir(component["parent-repo"])
         srcPath = srcPath.replace(component["parent-repo"], "").lstrip("/")
 
-    git = subprocess.check_output(["git", "diff", submoduleBase, srcPath]).decode("ascii")
+    git = subprocess.check_output(["git", "diff", submoduleBase, srcPath]).decode("utf-8")
     os.chdir(cwd)
     if expectChange and not is_changed(git):
         print("! No source change to accompany change in blackduck manifest")
@@ -74,7 +74,7 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
 
             cwd = os.getcwd()
             os.chdir(srcPath)
-            git = subprocess.check_output(["git", "diff", submoduleBase]).decode("ascii")
+            git = subprocess.check_output(["git", "diff", submoduleBase]).decode("utf-8")
             os.chdir(cwd)
 
             # collect the headers of every different files.
@@ -93,7 +93,7 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
     return True
 
 def main(manifest_path: Path, branch: str) -> int:
-    git = subprocess.check_output(["git", "log", '--pretty="format:%B"', f"origin/{branch}..HEAD"]).decode("ascii")
+    git = subprocess.check_output(["git", "log", '--pretty=%B', f"origin/{branch}..HEAD"]).decode('utf-8')
     for line in git.splitlines():
         if line.lstrip().startswith("!NO_BD_GITHUB"):
             print("Scan disabled by commit message, skipping...")
