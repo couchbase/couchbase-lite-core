@@ -18,7 +18,7 @@
 #include "SecureDigest.hh"
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include "mbedtls/asn1.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/pk.h"

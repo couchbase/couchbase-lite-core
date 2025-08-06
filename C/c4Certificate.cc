@@ -28,7 +28,7 @@
 #endif
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include "mbedtls/pk.h"  // IWYU pragma: keep
 #pragma clang diagnostic pop
 

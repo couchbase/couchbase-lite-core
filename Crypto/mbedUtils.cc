@@ -16,7 +16,7 @@
 #include "StringUtil.hh"
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/error.h"
