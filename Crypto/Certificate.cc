@@ -23,6 +23,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
 #include "mbedtls/asn1write.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/md.h"
@@ -43,7 +44,6 @@ namespace litecore::crypto {
     using namespace std::chrono;
     using namespace std::chrono_literals;
     using namespace fleece;
-    using namespace date;
 
 
 #pragma mark - DISTINGUISHED NAME
@@ -235,7 +235,8 @@ namespace litecore::crypto {
             alloc_slice         issuerKeyData = issuerKeyPair->publicKeyData();
             Retained<PublicKey> issuerPublicKey;
             if ( issuerCert ) {
-                if ( !issuerCert->_cert->ca_istrue ) error::_throw(error::InvalidParameter, "Issuer cert must be a CA");
+                if ( !issuerCert->_cert->private_ca_istrue )
+                    error::_throw(error::InvalidParameter, "Issuer cert must be a CA");
                 issuerPublicKey = issuerCert->subjectPublicKey();
             } else {
                 issuerPublicKey = subjectKey;
@@ -289,15 +290,15 @@ namespace litecore::crypto {
             TRY(mbedtls_x509write_crt_set_basic_constraints(&crt, issuerParams.is_ca, issuerParams.max_pathlen));
         if ( issuerParams.add_subject_identifier ) TRY(mbedtls_x509write_crt_set_subject_key_identifier(&crt));
         if ( issuerParams.add_authority_identifier ) {
-            auto                originalIssuer = crt.issuer_key;
+            auto                originalIssuer = crt.private_issuer_key;
             Retained<PublicKey> tempKey;
             if ( mbedtls_pk_get_type(issuerKeyPair->context()) == MBEDTLS_PK_RSA_ALT ) {
                 // Workaround for https://github.com/ARMmbed/mbedtls/issues/2768
-                tempKey        = issuerKeyPair->publicKey();
-                crt.issuer_key = tempKey->context();
+                tempKey                = issuerKeyPair->publicKey();
+                crt.private_issuer_key = tempKey->context();
             }
             TRY(mbedtls_x509write_crt_set_authority_key_identifier(&crt));
-            crt.issuer_key = originalIssuer;
+            crt.private_issuer_key = originalIssuer;
         }
 
         unsigned key_usage = subjectParams.keyUsage;
@@ -320,9 +321,9 @@ namespace litecore::crypto {
 
     DistinguishedName Cert::subjectName() { return DistinguishedName(getX509Name(&_cert->subject)); }
 
-    unsigned Cert::keyUsage() { return _cert->key_usage; }
+    unsigned Cert::keyUsage() { return _cert->private_key_usage; }
 
-    NSCertType Cert::nsCertType() { return NSCertType(_cert->ns_cert_type); }
+    NSCertType Cert::nsCertType() { return NSCertType(_cert->private_ns_cert_type); }
 
     SubjectAltNames Cert::subjectAltNames() { return SubjectAltNames(&_cert->subject_alt_names); }
 
@@ -344,8 +345,8 @@ namespace litecore::crypto {
     }
 
     static time_t x509_to_time_t(const mbedtls_x509_time& xtime) {
-        sys_days    date     = year{xtime.year} / xtime.mon / xtime.day;
-        sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
+        date::sys_days    date     = date::year{xtime.year} / xtime.mon / xtime.day;
+        date::sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
 
         // The limit of 32-bit time_t is approaching...
         auto result = datetime.time_since_epoch().count();
@@ -471,7 +472,7 @@ namespace litecore::crypto {
             // Subject Alternative Name -- mbedTLS doesn't have high-level APIs for this
             alloc_slice ext = params.subjectAltNames.encode();
             TRY(mbedtls_x509write_csr_set_extension(&csr, MBEDTLS_OID_SUBJECT_ALT_NAME,
-                                                    MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME),
+                                                    MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME), 0,
                                                     (const uint8_t*)ext.buf, ext.size));
         }
 
@@ -524,7 +525,10 @@ namespace litecore::crypto {
 
     Identity::Identity(Cert* cert_, PrivateKey* key_) : cert(cert_), privateKey(key_) {
         // Make sure the private and public keys match:
-        Assert(mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context()) == 0);
+        if ( int err = mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context(),
+                                             mbedtls_ctr_drbg_random, RandomNumberContext()) ) {
+            throwMbedTLSError(err);
+        }
     }
 
 }  // namespace litecore::crypto
