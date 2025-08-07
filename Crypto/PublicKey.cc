@@ -43,7 +43,7 @@ namespace litecore::crypto {
     }
 
     string Key::description() {
-        return format("%zd-bit %s %s key", mbedtls_pk_get_bitlen(_pk), mbedtls_pk_get_name(_pk),
+        return format("%zu-bit %s %s key", mbedtls_pk_get_bitlen(_pk), mbedtls_pk_get_name(_pk),
                       (isPrivate() ? "private" : "public"));
     }
 
@@ -84,7 +84,8 @@ namespace litecore::crypto {
     PrivateKey::PrivateKey(slice data, slice password) {
         if ( password.size == 0 ) password = nullslice;  // interpret empty password as 'no password'
         parsePEMorDER(data, "private key", [&](const uint8_t* bytes, size_t size) {
-            return mbedtls_pk_parse_key(context(), bytes, size, (const uint8_t*)password.buf, password.size);
+            return mbedtls_pk_parse_key(context(), bytes, size, (const uint8_t*)password.buf, password.size,
+                                        mbedtls_ctr_drbg_random, RandomNumberContext());
         });
     }
 
@@ -125,12 +126,12 @@ namespace litecore::crypto {
         // _decrypt, _sign, and publicKeyRawData methods, all of which are implemented by the
         // platform-specific subclass.
 
-        auto decryptFunc = [](void* ctx, int mode, size_t* olen, const unsigned char* input, unsigned char* output,
+        auto decryptFunc = [](void* ctx, size_t* olen, const unsigned char* input, unsigned char* output,
                               size_t output_max_len) -> int {
             return ((ExternalPrivateKey*)ctx)->_decrypt(input, output, output_max_len, olen);
         };
 
-        auto signFunc = [](void* ctx, int (*f_rng)(void*, unsigned char*, size_t), void* p_rng, int mode,
+        auto signFunc = [](void* ctx, int (*f_rng)(void*, unsigned char*, size_t), void* p_rng,
                            mbedtls_md_type_t md_alg, unsigned int hashlen, const unsigned char* hash,
                            unsigned char* sig) -> int {
             return ((ExternalPrivateKey*)ctx)->_sign(md_alg, slice(hash, hashlen), sig);

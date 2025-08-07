@@ -23,7 +23,7 @@ components:
     parent-repo: vendor/sqlite3-unicodesn
   mbedtls:
     bd-id: 98e2dba0-77c4-402f-96f3-ceb702a6e6e7
-    versions: [ 2.28.8 ]
+    versions: [ 3.6.3 ]
     src-path: vendor/mbedtls
   # sockpp has no KB entry
   sqlite:

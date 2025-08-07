@@ -241,7 +241,7 @@ TEST_CASE_METHOD(C4RESTTest, "Listener URLs", "[Listener][C]") {
     }
 }
 
-TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
+TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[.Listener][C]") {
     optional<Interface> intf;
     string              intfAddress;
     SECTION("All interfaces") {
