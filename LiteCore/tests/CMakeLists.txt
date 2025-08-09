@@ -76,6 +76,7 @@ add_executable(
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTClientTest.cc
     ${TOP}vendor/fleece/Tests/API_ValueTests.cc
+    ${TOP}vendor/fleece/Tests/BuilderTests.cc
     ${TOP}vendor/fleece/Tests/DeltaTests.cc
     ${TOP}vendor/fleece/Tests/EncoderTests.cc
     ${TOP}vendor/fleece/Tests/FleeceTests.cc
