@@ -38,11 +38,12 @@ class RESTClientTest : public ReplicatorAPITest {
     }
 };
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTPS Request to public host") {
-    REQUIRE(c4address_fromURL("https://www.couchbase.com/"_sl, &(_sg.address), nullptr));
-    _sg.remoteDBName   = ""_sl;
-    alloc_slice result = _sg.sendRemoteRequest("GET", "");
-}
+// Flaky and little relevant
+//N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTPS Request to public host") {
+//    REQUIRE(c4address_fromURL("https://www.couchbase.com/"_sl, &(_sg.address), nullptr));
+//    _sg.remoteDBName   = ""_sl;
+//    alloc_slice result = _sg.sendRemoteRequest("GET", "");
+//}
 
 /* REAL REST CLIENT TESTS
 
