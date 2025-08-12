@@ -250,6 +250,32 @@ TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[Push][
     runPushPullReplication({Roses, Lavenders}, {Tulips, Lavenders});
 }
 
+// CBL-7181.
+// The problem scenario:
+// 1. active replicator has the default collection as the only one in its collection set
+// 2. passive replicator does not have the default collection in its collection set
+// In this case, the active replicator will use 3.0 protocol in order to connect to 3.0 server, as well
+// as 3.1 server (passive replicator).
+TEST_CASE_METHOD(ReplicatorCollectionTest, "3.0 Active vs 3.1 Passive", "[Push][Pull]") {
+    // When the collection set of the active replicator has only one default collection,
+    // it will act like a 3.0 client (3.0 protocols)
+
+    SECTION("Passive replicator has default collection") {
+        runPushPullReplication({Default}, {Tulips, Lavenders, Default});
+    }
+
+    SECTION("Passive replicator does not have default collection") {
+        // Before the CBL ticket is resolved, the following test
+        // would hit an assertion.
+        // Several different errors can be triggered by this protocol mismatch concurrently,
+        // and actual error before Stop is somewhat random. We check the error manually at
+        // the end.
+        _ignoreStatusError = true;
+        runPushPullReplication({Default}, {Tulips, Lavenders});
+        CHECK(_statusReceived.error.code);
+    }
+}
+
 TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]") {
     ExpectingExceptions x;
     _expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
