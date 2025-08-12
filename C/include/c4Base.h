@@ -13,7 +13,6 @@
 #pragma once
 #include "c4Compat.h"
 #include "c4Error.h"
-#include "c4Log.h"
 #include "fleece/FLSlice.h"
 #ifdef __cplusplus
 #    include <cstdarg>
@@ -156,6 +155,12 @@ typedef struct C4KeyPair C4KeyPair;
 /** A LiteCore network listener -- supports the REST API, replication, or both. */
 typedef struct C4Listener C4Listener;
 
+/** Opaque handle to a registered logging observer. */
+typedef struct C4LogObserver C4LogObserver;
+
+/** A peer-to-peer sync session. */
+typedef struct C4PeerSync C4PeerSync;
+
 /** Opaque handle to a compiled query. */
 typedef struct C4Query C4Query;
 
@@ -208,6 +213,10 @@ inline C4IndexUpdater* C4NULLABLE c4indexupdater_retain(C4IndexUpdater* C4NULLAB
 
 inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API { return (C4KeyPair*)c4base_retain(r); }
 
+inline C4LogObserver* C4NULLABLE c4logobserver_retain(C4LogObserver* C4NULLABLE r) C4API {
+    return (C4LogObserver*)c4base_retain(r);
+}
+
 inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API { return (C4Query*)c4base_retain(r); }
 
 CBL_CORE_API C4Document* C4NULLABLE        c4doc_retain(C4Document* C4NULLABLE) C4API;
@@ -229,6 +238,9 @@ inline void c4indexupdater_release(C4IndexUpdater* C4NULLABLE u) C4API { c4base_
 inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API { c4base_release(r); }
 
 /** \note This function is thread-safe. */
+inline void c4logobserver_release(C4LogObserver* C4NULLABLE r) C4API { c4base_release(r); }
+
+/** \note This function is thread-safe. */
 inline void c4query_release(C4Query* C4NULLABLE r) C4API { c4base_release(r); }
 
 /** \note This function is thread-safe. */
@@ -246,6 +258,8 @@ CBL_CORE_API void c4docobs_free(C4DocumentObserver* C4NULLABLE) C4API;
 CBL_CORE_API void c4enum_free(C4DocEnumerator* C4NULLABLE) C4API;
 /** Closes and disposes a listener. */
 CBL_CORE_API void c4listener_free(C4Listener* C4NULLABLE) C4API;
+/** Disposes a C4PeerSync. */
+CBL_CORE_API void c4peersync_free(C4PeerSync* C4NULLABLE) C4API;
 /** \note This function is thread-safe. */
 CBL_CORE_API void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
 /** Frees the storage occupied by a raw document. */

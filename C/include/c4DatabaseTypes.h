@@ -73,7 +73,7 @@ typedef struct C4DatabaseConfig2 {
 CBL_CORE_API extern const char* const kC4DatabaseFilenameExtension;
 
 /** @} */
-/** \name Accessors
+/** \name C4UUID
     @{ */
 
 

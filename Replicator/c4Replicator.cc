@@ -17,6 +17,7 @@
 #include "c4Database.hh"
 #include "c4ExceptionUtils.hh"
 #include "StringUtil.hh"
+#include "fleece/Mutable.hh"
 #include <cerrno>
 
 using namespace litecore::net;  // work around missing 'using' in c4LocalReplicator.hh in EE repo
@@ -27,12 +28,7 @@ using namespace litecore::net;  // work around missing 'using' in c4LocalReplica
 using namespace std;
 using namespace litecore;
 
-using DatabaseOrPool = C4ReplicatorImpl::DatabaseOrPool;
-
 #pragma mark - C4DATABASE METHODS:
-
-// All instances are subclasses of C4ReplicatorImpl.
-static C4ReplicatorImpl* asInternal(const C4Replicator* repl) { return (C4ReplicatorImpl*)repl; }
 
 static Retained<C4Replicator> newRemoteReplicator(DatabaseOrPool db, C4Address serverAddress, slice remoteDatabaseName,
                                                   const C4ReplicatorParameters& params, slice logPrefix) {
@@ -143,8 +139,8 @@ bool C4Replicator::isValidDatabaseName(slice dbName) noexcept {
 bool C4Address::isValidRemote(slice dbName, C4Error* outError) const noexcept {
     slice message;
     if ( !isValidReplicatorScheme(scheme) ) message = "Invalid replication URL scheme (use ws: or wss:)"_sl;
-    else if ( !C4Replicator::isValidDatabaseName(dbName) )
-        message = "Invalid or missing remote database name"_sl;
+    else if ( dbName.empty() )
+        message = "Missing remote database name"_sl;
     else if ( hostname.size == 0 || port == 0 )
         message = "Invalid replication URL (bad hostname or port)"_sl;
 
@@ -159,6 +155,84 @@ void C4Replicator::validateRemote(const C4Address& addr, slice dbName) {
     C4Error error;
     if ( !addr.isValidRemote(dbName, &error) ) C4Error::raise(error);
 }
+
+#pragma mark - C4REPLICATOR PARAMETERS:
+
+C4Replicator::Parameters::Parameters() : C4ReplicatorParameters{} {}
+
+C4Replicator::Parameters::Parameters(C4ReplicatorParameters const& params)
+    : C4ReplicatorParameters(params), _collections(params.collections, params.collections + collectionCount) {
+    // `collections` is declared non-null, but `_collections.data()` returns nullptr if empty...
+    this->C4ReplicatorParameters::collections =
+            collectionCount ? _collections.data() : reinterpret_cast<C4ReplicationCollection*>(this);
+    optionsDictFleece = _options = alloc_slice(optionsDictFleece);
+    for ( auto& c : collections() ) makeAllocated(c);
+}
+
+inline void C4Replicator::Parameters::makeAllocated(C4ReplicationCollection& c) {
+    auto makeAllocated = [this](auto& s) { s = _slices.emplace_back(s); };
+    makeAllocated(c.collection.name);
+    makeAllocated(c.collection.scope);
+    makeAllocated(c.optionsDictFleece);
+}
+
+C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4CollectionSpec const& spec,
+                                                                 C4ReplicatorMode pushMode, C4ReplicatorMode pullMode) {
+    auto& coll = addCollection({.collection = spec});
+    coll.push  = pushMode;
+    coll.pull  = pullMode;
+    return coll;
+}
+
+pair<C4ReplicatorMode, C4ReplicatorMode> C4Replicator::Parameters::maxModes() const {
+    C4ReplicatorMode push = kC4Disabled, pull = kC4Disabled;
+    for ( auto coll : collections() ) {
+        push = std::max(push, coll.push);
+        pull = std::max(pull, coll.pull);
+    }
+    return {push, pull};
+}
+
+C4ReplicationCollection& C4Replicator::Parameters::addCollection(C4ReplicationCollection const& spec) {
+    _collections.push_back(spec);
+    C4ReplicationCollection& copiedSpec = _collections.back();
+    makeAllocated(copiedSpec);
+    this->C4ReplicatorParameters::collections = _collections.data();
+    collectionCount                           = _collections.size();
+    return copiedSpec;
+}
+
+bool C4Replicator::Parameters::removeCollection(C4CollectionSpec const& spec) {
+    for ( auto i = _collections.begin(); i != _collections.end(); ++i ) {
+        if ( i->collection == spec ) {
+            _collections.erase(i);
+            this->C4ReplicatorParameters::collections = _collections.data();
+            collectionCount                           = _collections.size();
+            return true;
+        }
+    }
+    return false;
+}
+
+MutableDict C4Replicator::Parameters::copyOptions() const {
+    if ( _options ) return Doc{_options}.asDict().mutableCopy();
+    else
+        return MutableDict::newDict();
+}
+
+void C4Replicator::Parameters::setOptions(fleece::Dict options) {
+    Encoder enc;
+    enc.writeValue(options);
+    optionsDictFleece = _options = enc.finish();
+}
+
+void C4Replicator::Parameters::updateOptions(function<void(MutableDict)> const& callback) {
+    MutableDict options = copyOptions();
+    callback(options);
+    setOptions(options);
+}
+
+#pragma mark - C4ADDRESS:
 
 bool C4Address::fromURL(slice url, C4Address* address, slice* dbName) {
     slice str = url;
@@ -212,7 +286,7 @@ bool C4Address::fromURL(slice url, C4Address* address, slice* dbName) {
 
         address->path = slice(pathStart, str.buf);
         *dbName       = str;
-        return C4Replicator::isValidDatabaseName(str);
+        return !str.empty();
     } else {
         address->path = slice(pathStart, str.end());
         return true;

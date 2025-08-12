@@ -64,7 +64,7 @@ namespace litecore {
         /// Constructs a pool that will manage multiple instances of the given database file.
         /// If this database was opened read-only, then no writeable instances will be provided.
         /// @warning  The C4Database is now owned by the pool and shouldn't be used directly.
-        explicit DatabasePool(C4Database*);
+        explicit DatabasePool(fleece::Ref<C4Database>&&);
 
         /// Closes all databases, waiting until all borrowed ones have been returned.
         /// No more databases can be borrowed after this method begins.
@@ -75,7 +75,7 @@ namespace litecore {
         void closeUnused();
 
         /// The database configuration.
-        C4DatabaseConfig2 const& getConfiguration() const { return _dbConfig; }
+        C4DatabaseConfig2 const& getConfiguration() const LIFETIMEBOUND { return _dbConfig; }
 
         /// The filesystem path of the database.
         FilePath databasePath() const;
@@ -160,9 +160,9 @@ namespace litecore {
             Cache(C4DatabaseFlags, unsigned capacity);
 
             struct Entry {
-                Retained<C4Database> db;               ///< Database (may be nullptr)
-                unsigned             borrowCount = 0;  ///< Number of borrows
-                std::thread::id      borrower;         ///< Thread that borrowed it, if any
+                fleece::Retained<C4Database> db;               ///< Database (may be nullptr)
+                unsigned                     borrowCount = 0;  ///< Number of borrows
+                std::thread::id              borrower;         ///< Thread that borrowed it, if any
             };
 
             C4DatabaseFlags const           flags;          ///< Flags for opening dbs
@@ -181,11 +181,11 @@ namespace litecore {
         BorrowedDatabase  borrow(Cache& cache, bool orWait);
         [[noreturn]] void borrowFailed(Cache&);
 
-        fleece::Retained<C4Database> newDB(Cache&);
-        void                         closeDB(Retained<C4Database>) noexcept;
-        void                         returnDatabase(fleece::Retained<C4Database>);
-        void                         _closeUnused(Cache&);
-        void                         _closeAll(Cache&);
+        fleece::Ref<C4Database> newDB(Cache&);
+        void                    closeDB(fleece::Ref<C4Database>) noexcept;
+        void                    returnDatabase(fleece::Ref<C4Database>);
+        void                    _closeUnused(Cache&);
+        void                    _closeAll(Cache&);
 
         std::string const                _dbName;          // Name of database
         C4DatabaseConfig2                _dbConfig;        // Database config
@@ -197,6 +197,39 @@ namespace litecore {
         Cache                            _readWrite;       // Manages writeable databases
         int                              _dbTag  = -1;     // C4DatabaseTag
         bool                             _closed = false;  // Set by `close`
+    };
+
+    /** A helper type that's a reference to either a C4Database or a DatabasePool. */
+    class DatabaseOrPool {
+      public:
+        DatabaseOrPool(fleece::Ref<C4Database> db) : _db(std::move(db)) {}
+
+        DatabaseOrPool(fleece::Ref<DatabasePool> pool) : _pool(std::move(pool)) {}
+
+        DatabaseOrPool(C4Database* db) : _db(db) {}
+
+        DatabaseOrPool(DatabasePool* pool) : _pool(pool) {}
+
+        C4Database* C4NULLABLE database() const LIFETIMEBOUND { return _db; }
+
+        DatabasePool* C4NULLABLE pool() const LIFETIMEBOUND { return _pool; }
+
+        fleece::Ref<DatabasePool> makePool() const {
+            if ( !_pool ) _pool = fleece::make_retained<DatabasePool>(std::move(_db).asRef());
+            return _pool.asRef();
+        }
+
+        inline BorrowedDatabase borrow() const;
+
+        C4DatabaseConfig2 const& getConfiguration() const LIFETIMEBOUND {
+            return _db ? _db->getConfiguration() : _pool->getConfiguration();
+        }
+
+        bool operator==(DatabaseOrPool const&) const = default;
+
+      private:
+        fleece::Retained<C4Database>           _db;
+        mutable fleece::Retained<DatabasePool> _pool;
     };
 
     /** An RAII wrapper around a C4Database "borrowed" from a DatabasePool.
@@ -260,7 +293,7 @@ namespace litecore {
         BorrowedCollection() noexcept;
 
         /// Constructor.
-        /// @throws `error::NotFound` if there is a database but no such collection in it.
+        /// @throws error `NotFound` if there is a database but no such collection in it.
         BorrowedCollection(BorrowedDatabase&& bdb, C4CollectionSpec const& spec);
 
         BorrowedCollection(BorrowedCollection&& b) noexcept            = default;
@@ -280,8 +313,8 @@ namespace litecore {
         operator C4Collection* C4NONNULL() const noexcept LIFETIMEBOUND { return get(); }
 
       private:
-        BorrowedDatabase       _bdb;
-        Retained<C4Collection> _collection{};
+        BorrowedDatabase               _bdb;
+        fleece::Retained<C4Collection> _collection{};
     };
 
     /** Subclass of C4Database::Transaction : a transaction on a borrowed (writeable) database.
@@ -297,6 +330,8 @@ namespace litecore {
 
         C4Database* db() const noexcept LIFETIMEBOUND { return get(); }
     };
+
+    BorrowedDatabase DatabaseOrPool::borrow() const { return _pool ? _pool->borrow() : BorrowedDatabase(_db); }
 
     inline DatabasePool::Transaction DatabasePool::transaction() { return Transaction(*this); }
 

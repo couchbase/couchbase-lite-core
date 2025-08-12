@@ -8,17 +8,34 @@
 # will be governed by the Apache License, Version 2.0, included in the file
 # licenses/APL2.txt.
 
-SCRIPT_DIR=`dirname $0`
-pushd $SCRIPT_DIR/..
-pushd ..
-git submodule update --recursive --init
-popd
+set -e
+shopt -s extglob dotglob
 
-mkdir -p macos
-pushd macos
-cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE_ENABLED=ON ../..
+SCRIPT_DIR=`dirname $0`
+pushd $SCRIPT_DIR/../..
+
+mkdir "couchbase-lite-core"
+git submodule update --recursive --init
+mv !(couchbase-lite-core) couchbase-lite-core
+
+# Sometimes a PR depends on a PR in the EE repo as well.  This needs to be convention based, so if there is a branch with the name PR-###
+# (with the GH PR number) in the EE repo then use that, otherwise use the name of the target branch (master, release/XXX etc)
+git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH_NAME --recursive --depth 1 couchbase-lite-core-EE || \
+    git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $CHANGE_TARGET --recursive --depth 1 couchbase-lite-core-EE
+
+ulimit -c unlimited # Enable crash dumps
+mkdir -p "couchbase-lite-core/build_cmake/macos"
+pushd "couchbase-lite-core/build_cmake/macos"
+
+cmake -DBUILD_ENTERPRISE=ON -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE_ENABLED=ON ../..
 core_count=`getconf _NPROCESSORS_ONLN`
 make -j `expr $core_count + 1`
+
+# Note only for macOS
+export MallocScribble=1
+export MallocDebugReport=stderr
+
+export LiteCoreTestsQuiet=1
 
 pushd LiteCore/tests
 ./CppTests -r quiet

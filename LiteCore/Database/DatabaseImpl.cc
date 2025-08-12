@@ -25,6 +25,7 @@
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
+#include "UUID.hh"
 #include "Version.hh"
 #include <functional>
 #include <memory>
@@ -401,7 +402,7 @@ namespace litecore {
         C4UUID uuid;
         if ( overwrite || !getUUIDIfExists(key, uuid) ) {
             mutable_slice uuidSlice{&uuid, sizeof(uuid)};
-            GenerateUUID(uuidSlice);
+            uuid = UUID::generateRandom();
             setInfo(key, uuidSlice);
         }
         return uuid;

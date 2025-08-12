@@ -22,7 +22,8 @@ namespace litecore::repl {
     // Main factory function to create a WebSocket.
     fleece::Retained<websocket::WebSocket> CreateWebSocket(const websocket::URL&, const fleece::alloc_slice& options,
                                                            std::shared_ptr<DBAccess>, const C4SocketFactory*,
-                                                           void* nativeHandle = nullptr);
+                                                           void*      nativeHandle = nullptr,
+                                                           C4KeyPair* externalKey  = nullptr);
 
     // Returns the WebSocket object associated with a C4Socket
     websocket::WebSocket* WebSocketFrom(C4Socket* c4sock);
@@ -34,11 +35,11 @@ namespace litecore::repl {
       public:
         static const C4SocketFactory& registeredFactory();
 
-        using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL, fleece::alloc_slice options,
-                                                              std::shared_ptr<DBAccess>);
+        using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL, fleece::alloc_slice   options,
+                                                              std::shared_ptr<DBAccess>, C4KeyPair* externalKey);
         static void registerInternalFactory(InternalFactory);
 
-        static Parameters convertParams(fleece::slice c4SocketOptions);
+        static Parameters convertParams(fleece::slice c4SocketOptions, C4KeyPair* externalKey = nullptr);
 
         C4SocketImpl(const websocket::URL&, websocket::Role, const fleece::alloc_slice& options, const C4SocketFactory*,
                      void* nativeHandle = nullptr);
@@ -47,10 +48,13 @@ namespace litecore::repl {
 
         void closeWithException();
 
-        // WebSocket publiv API:
+        // WebSocket public API:
         void connect() override;
 
+        std::pair<int, websocket::Headers> httpResponse() const override;
+
         // C4Socket API:
+        bool gotPeerCertificate(slice certData, std::string_view hostname) override;
         void gotHTTPResponse(int httpStatus, slice responseHeadersFleece) override;
         void opened() override;
         void closed(C4Error errorIfAny) override;
@@ -69,5 +73,9 @@ namespace litecore::repl {
 
       private:
         C4SocketFactory const _factory;
+        mutable std::mutex    _mutex;
+        int                   _responseStatus = 0;
+        alloc_slice           _responseHeadersFleece;
+        alloc_slice           _peerCertData;
     };
 }  // namespace litecore::repl

@@ -16,7 +16,7 @@ The test runner depends on multiple other libraries from multiple git repositori
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
-cmake_minimum_required (VERSION 3.9)
+cmake_minimum_required (VERSION 3.9...4.0)
 project (CppTests)
 
 if(ANDROID OR WINDOWS_STORE)
@@ -57,6 +57,7 @@ add_executable(
     DocumentKeysTest.cc
     LiteCoreTest.cc
     LogEncoderTest.cc
+    LogObserverTest.cc
     N1QLParserTest.cc
     QueryTranslatorTest.cc
     QueryTest.cc
@@ -74,7 +75,6 @@ add_executable(
     LazyVectorQueryTest.cc
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTClientTest.cc
-    ${TOP}REST/tests/SyncListenerTest.cc
     ${TOP}vendor/fleece/Tests/API_ValueTests.cc
     ${TOP}vendor/fleece/Tests/DeltaTests.cc
     ${TOP}vendor/fleece/Tests/EncoderTests.cc
@@ -100,11 +100,29 @@ add_executable(
     ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}Crypto/CertificateTest.cc
-    ${TOP}LiteCore/Support/TestsCommon.cc
 
+    ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
     ${TOP}vendor/fleece/vendor/catch/CaseListReporter.cc
 )
+
+if (BUILD_ENTERPRISE)
+    set(EE_SRC ../../../couchbase-lite-core-EE)
+    target_sources(
+        CppTests PRIVATE
+        ${EE_SRC}/Listener/tests/SyncListenerTest.cc
+        ${EE_SRC}/P2P/tests/PeerDiscoveryTest.cc
+        ${EE_SRC}/P2P/tests/PeerMeshTest.cc
+        ${EE_SRC}/P2P/tests/MultipeerTest.cc
+        ${EE_SRC}/P2P/tests/MultipeerTest_C.cc
+    )
+    target_include_directories(
+        CppTests PRIVATE
+        ${EE_SRC}/Listener
+        ${EE_SRC}/P2P
+        ${EE_SRC}/P2P/Apple
+    )
+endif()
 
 get_directory_property(this_targets DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} BUILDSYSTEM_TARGETS)
 set(LITECORE_TARGETS ${LITECORE_TARGETS} ${this_targets} PARENT_SCOPE)
@@ -138,9 +156,11 @@ target_include_directories(
     ${TOP}Networking
     ${TOP}Networking/BLIP
     ${TOP}Networking/HTTP
+    ${TOP}Networking/P2P
     ${TOP}Networking/WebSockets
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
+    ${TOP}LiteCore/Logging
     ${TOP}LiteCore/RevTrees
     ${TOP}LiteCore/Storage
     ${TOP}LiteCore/Support
@@ -162,6 +182,8 @@ target_link_libraries(
     LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
-    LiteCoreREST_Static
+    LiteCoreREST_Objects
+    $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreP2P>
+    $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreListener_Static>
     LiteCoreWebSocket
 )

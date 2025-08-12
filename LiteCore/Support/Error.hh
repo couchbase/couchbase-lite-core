@@ -136,6 +136,8 @@ namespace litecore {
         /** Throws an assertion failure exception. Called by the Assert() macro. */
         [[noreturn]] static void assertionFailed(const char* func, const char* file, unsigned line, const char* expr,
                                                  const char* message = nullptr, ...) __printflike(5, 6);
+        [[noreturn]] static void assertArgFailed(const char* expr, const char* message = nullptr, ...)
+                __printflike(2, 3);
 
         static void setNotableExceptionHook(std::function<void()> hook);
 
@@ -149,7 +151,8 @@ namespace litecore {
         return a.domain == error::LiteCore && a.code == code;
     }
 
-// Like C assert() but throws an exception instead of aborting
+// Like C assert() but throws a `AssertionFailed` exception instead of aborting.
+// Optionally you can add a custom message argument, which can be a printf-style format string.
 #ifdef __FILE_NAME__
 #    define Assert(e, ...)                                                                                             \
         (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE_NAME__, __LINE__, #e, ##__VA_ARGS__)  \
@@ -169,9 +172,10 @@ namespace litecore {
 #    define DebugAssert(e, ...) Assert(e, ##__VA_ARGS__)
 #endif
 
-// Checks the value of a function argument.
+// Checks the value of a function argument. Similar to Assert but throws `InvalidArgument`.
 // `e` is a predicate like `i > 0`. It will be included in the exception message.
-#define AssertArg(e)                                                                                                   \
-    (_usuallyFalse(!(e)) ? litecore::error::_throw(litecore::error::InvalidParameter, "Requires " #e) : (void)0)
+// optionally you can add a custom message argument, which can be a printf-style format string.
+#define AssertArg(e, ...)                                                                                              \
+    (_usuallyFalse(!(e)) ? litecore::error::assertArgFailed("Requires " #e, ##__VA_ARGS__) : (void)0)
 
 }  // namespace litecore

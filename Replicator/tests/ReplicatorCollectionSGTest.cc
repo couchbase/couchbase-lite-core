@@ -241,7 +241,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Sync with Single Collection SG", "
     std::vector<C4CollectionSpec> collectionSpecs{collectionCount};
 
     bool    continuous = false;
-    C4Error expectedError;
+    C4Error expectedError{};
 
     SECTION("Named Collection") { collectionSpecs = {Roses}; }
 
@@ -2244,8 +2244,6 @@ static C4Database* copy_and_open(C4Database* db, const string& idPrefix) {
 
 struct ReplicatorTestDelegate : Replicator::Delegate {
     ~ReplicatorTestDelegate() override = default;
-
-    void replicatorGotHTTPResponse(Replicator* NONNULL, int status, const websocket::Headers& headers) override {}
 
     void replicatorGotTLSCertificate(slice certData) override{};
     void replicatorStatusChanged(Replicator* NONNULL, const Replicator::Status&) override{};

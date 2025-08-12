@@ -14,6 +14,7 @@
 #include "WebSocketInterface.hh"
 #include "Logging.hh"
 #include "Stopwatch.hh"
+#include "c4Certificate.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include <atomic>
 #include <chrono>
@@ -45,6 +46,9 @@ namespace litecore::websocket {
             int                 heartbeatSecs;       ///< WebSocket heartbeat interval in seconds (default if 0)
             fleece::alloc_slice networkInterface;    ///< Network interface
             fleece::AllocedDict options;             ///< Other options
+#ifdef COUCHBASE_ENTERPRISE
+            Retained<C4KeyPair> externalKey;  ///< Client cert uses external key..
+#endif
         };
 
         WebSocketImpl(const URL& url, Role role, bool framing, Parameters);
@@ -54,7 +58,6 @@ namespace litecore::websocket {
         void close(int status = kCodeNormal, fleece::slice message = fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
-        void gotHTTPResponse(int status, const Headers& headers);
         void onConnect();
         void onCloseRequested(int status, fleece::slice message);
         void onClose(int posixErrno);
@@ -120,6 +123,7 @@ namespace litecore::websocket {
         fleece::alloc_slice             _closeMessage;                             // The encoded close request message
         std::unique_ptr<actor::Timer>   _pingTimer;
         std::unique_ptr<actor::Timer>   _responseTimer;
+        std::atomic<bool>               _timerDisabled{false};
         std::chrono::seconds            _curTimeout{};
         bool                            _timedOut{false};
         alloc_slice                     _protocolError;

@@ -128,6 +128,18 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C
     REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, WITH_ERROR()));
 }
 
+namespace testDbName {
+    string receivedWarning;
+
+    static C4LogObserver* addLogObserver() {
+        C4LogObserverConfig config{
+                kC4LogWarning, nullptr, 0,
+                [](const C4LogEntry* entry, void* context) { *(string*)context = string(entry->message); },
+                &receivedWarning};
+        return c4log_newObserver(config, nullptr);
+    }
+}  // namespace testDbName
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!throws]") {
     auto config = *c4db_getConfig2(db);
 
@@ -141,7 +153,29 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
         CHECK(error == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
     }
 
+    {
+        // Check invalid name warning. c.f. C4Database::isValidDbName
+        slice dbNameWithDot = "cbl_core.test"_sl;
+        if ( !c4db_deleteNamed(dbNameWithDot, config.parentDirectory, &error) ) REQUIRE(error.code == 0);
+
+        C4LogObserver* logObserver = testDbName::addLogObserver();
+
+        // We still allow the db to be created, but will log a warning.
+        auto bundle = c4db_openNamed(dbNameWithDot, &config, &error);
+        CHECK(bundle);
+
+        c4log_removeObserver(logObserver);
+        c4logobserver_release(logObserver);
+
+        CHECK(testDbName::receivedWarning.find("\""s + dbNameWithDot.asString() + "\" is not a valid database name.")
+              == 0);
+
+        REQUIRE(c4db_close(bundle, WITH_ERROR()));
+        c4db_release(bundle);
+    }
+
     if ( !c4db_deleteNamed(kTestBundleName, config.parentDirectory, &error) ) REQUIRE(error.code == 0);
+
     auto bundle = c4db_openNamed(kTestBundleName, &config, ERROR_INFO());
     REQUIRE(bundle);
     CHECK(c4db_getName(bundle) == kTestBundleName);

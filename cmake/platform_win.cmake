@@ -26,8 +26,10 @@ function(set_litecore_source)
 endfunction()
 
 function(setup_globals)
-    set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
+    add_compile_options(/MP)
+    add_link_options(/CGTHREADS:8)
+    set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
     set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
     set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
     set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
@@ -64,7 +66,7 @@ function(setup_litecore_build_win)
         )
 
         target_include_directories(
-            ${liteCoreVariant} PRIVATE
+            ${liteCoreVariant} PUBLIC
             MSVC
             vendor/fleece/MSVC
         )
@@ -132,11 +134,6 @@ function(setup_litecore_build_win)
     if(LITECORE_BUILD_SHARED)
         install(FILES $<TARGET_PDB_FILE:LiteCore> DESTINATION bin OPTIONAL)
     endif()
-endfunction()
-
-function(setup_support_build)
-    target_include_directories(Support PRIVATE MSVC)
-    target_include_directories(Support PRIVATE vendor/fleece/MSVC)
 endfunction()
 
 function(setup_rest_build)

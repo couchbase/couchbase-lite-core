@@ -13,8 +13,7 @@ vendor/zlib folder (the target will be automatically added on those platforms, b
 must link with it via target_link_libraries)
 ]]#
 
-cmake_minimum_required (VERSION 3.9)
-cmake_policy(VERSION 3.9)
+cmake_minimum_required (VERSION 3.9...4.0)
 project (BLIP_Cpp)
 
 set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
@@ -31,6 +30,7 @@ set(BLIP_LOCATION       ${CMAKE_CURRENT_LIST_DIR})
 set(WEBSOCKETS_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../WebSockets)
 set(HTTP_LOCATION       ${CMAKE_CURRENT_LIST_DIR}/../HTTP)
 set(LITECORE_LOCATION   ${CMAKE_CURRENT_LIST_DIR}/../..)
+set(LOGGING_LOCATION    ${LITECORE_LOCATION}/LiteCore/Logging)
 set(SUPPORT_LOCATION    ${LITECORE_LOCATION}/LiteCore/Support)
 set(FLEECE_LOCATION     ${LITECORE_LOCATION}/vendor/fleece)
 
@@ -57,6 +57,7 @@ target_include_directories(
     BLIPObjects PRIVATE
     ${BLIP_LOCATION}
     ${WEBSOCKETS_LOCATION}
+    ${LOGGING_LOCATION}
     ${SUPPORT_LOCATION}
     ${FLEECE_LOCATION}/API
     ${FLEECE_LOCATION}/Fleece/Support

@@ -25,6 +25,7 @@
 #include "Delimiter.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
+#include "c4Log.h"
 #include "c4SocketTypes.h"  // for error codes
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -42,11 +43,11 @@ namespace litecore::repl {
 
 // Replicator owns multiple subRepls, so it doesn't use _collectionIndex, and therefore we must
 // pass the collectionIndex manually for log calls
-#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
-#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
-#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#define cWarn(IDX, FMT, ...)       _logAt(Warning, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
+#define cLogInfo(IDX, FMT, ...)    _logAt(Info, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
+#define cLogVerbose(IDX, FMT, ...) _logAt(Verbose, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
 #if DEBUG
-#    define cLogDebug(IDX, FMT, ...) _lotAt(Debug, "Coll=%i " FMT, (IDX), ##__VA_ARGS__)
+#    define cLogDebug(IDX, FMT, ...) _logAt(Debug, "Coll=%u " FMT, CollectionIndex(IDX), ##__VA_ARGS__)
 #else
 #    define cLogDebug(IDX, FMT, ...)
 #endif
@@ -63,7 +64,8 @@ namespace litecore::repl {
             {{WebSocketDomain, 400, 0}, true, "Unrecognized collection"_sl},
             {{WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
             {{WebSocketDomain, 503, 0}, false, "The server is over capacity"_sl},
-            {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl}};
+            {{LiteCoreDomain, kC4ErrorRemoteError, 0}, true, "Unexpected error from remote"_sl},
+            {{POSIXDomain, 28, 0}, true, "No space left on device"_sl}};
 
     string toString(ProtocolVersion version) {
         return stringprintf("%s+CBMobile_%d", blip::Connection::kWSProtocolName, int(version));
@@ -131,11 +133,16 @@ namespace litecore::repl {
             // Following messages are handled by appropriate workers.
             // Replicator receives all the messages. Based on collectionIndex,
             // it dispatches the message to appropriate workers.
+            Connection::RequestHandler handler = [this](MessageIn* req) {
+                this->delegateCollectionSpecificMessageToWorker(req);
+            };
             for ( auto profile : {
                           "subChanges", "getAttachment", "proveAttachment",  // passive pushers
                           "changes", "proposeChanges", "rev", "norev"        // passive pullers
                   } ) {
-                registerHandler(profile, &Replicator::delegateCollectionSpecificMessageToWorker);
+                // Not using `registerHandler` because these handlers shouldn't run on Replicator's queue;
+                // for performance they're dispatched directly to the workers' queues:
+                connection().setRequestHandler(profile, false, handler);
             }
 
             registerHandler("getCheckpoint", &Replicator::handleGetCheckpoint);
@@ -167,6 +174,7 @@ namespace litecore::repl {
 
             if ( !_options->isActive() ) { return; }
 
+            _setMsgHandlerFor3_0_ClientDone = true;  // only needed for passive replicators
             _findExistingConflicts();
 
             bool goOn = true;
@@ -235,7 +243,7 @@ namespace litecore::repl {
                 sub.pusher = nullptr;
                 sub.puller = nullptr;
             });
-            _workerHandlers.clear();
+            _workerHandlers.useLocked()->clear();
         }
 
         // CBL-1061: This used to be inside the connected(), but static analysis shows
@@ -259,6 +267,8 @@ namespace litecore::repl {
         if ( _options->pull(coll) > kC4Passive )
             _subRepls[coll].puller->start(_subRepls[coll].checkpointer->remoteMinSequence());
     }
+
+    pair<int, websocket::Headers> Replicator::httpResponse() const { return webSocket()->httpResponse(); }
 
     void Replicator::docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex coll) {
         Retained<Pusher> pusher = _subRepls[coll].pusher;
@@ -539,7 +549,7 @@ namespace litecore::repl {
                 sub.pusher = nullptr;
                 sub.puller = nullptr;
             });
-            _workerHandlers.clear();
+            _workerHandlers.useLocked()->clear();
             _db->close();
             Signpost::end(Signpost::replication, uintptr_t(this));
         }
@@ -596,25 +606,30 @@ namespace litecore::repl {
         if ( _delegate ) _delegate->replicatorGotTLSCertificate(certData);
     }
 
-    void Replicator::onHTTPResponse(int status, const websocket::Headers& headers) {
-        enqueue(FUNCTION_TO_QUEUE(Replicator::_onHTTPResponse), status, headers);
-    }
-
-    void Replicator::_onHTTPResponse(int status, websocket::Headers headers) {
-        if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
-            gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
-                                   "Incompatible replication protocol "
-                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
-        }
-        if ( _delegate ) _delegate->replicatorGotHTTPResponse(this, status, headers);
-        if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
-            _correlationID = x_corr;
-            logInfo("Received X-Correlation-Id");
-        }
-    }
-
     void Replicator::_onConnect() {
+        // onConnect may come after the replicator is asked to stop. This situation is
+        // guarded against in WebSocketImpl::onConnect. However, LoopbackWebSocket does
+        // not go throuth WebSocketImpl. We catch the case here.
+        if ( _connectionState != Connection::kConnecting ) {
+            logInfo("Replicator not in connecting state (connectionState=%d); ignoring onConnect.", _connectionState);
+            return;
+        }
+
         logInfo("Connected!");
+
+        if ( auto socket = connection().webSocket(); socket->role() == websocket::Role::Client ) {
+            auto [status, headers] = socket->httpResponse();
+            if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
+                gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
+                                       "Incompatible replication protocol "
+                                       "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
+            }
+            if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
+                _correlationID = x_corr;
+                logInfo("Received X-Correlation-Id");
+            }
+        }
+
         Signpost::mark(Signpost::replicatorConnect, uintptr_t(this));
         if ( _connectionState != Connection::kClosing ) {
             // skip this if stop() already called
@@ -1032,6 +1047,8 @@ namespace litecore::repl {
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
         setMsgHandlerFor3_0_Client(request);
+        // The above method may already responded with error.
+        if ( request->responded() ) return;
 
         slice checkpointID = getPeerCheckpointDocID(request, "get");
         if ( !checkpointID ) return;
@@ -1070,6 +1087,8 @@ namespace litecore::repl {
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
     void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
         setMsgHandlerFor3_0_Client(request);
+        // The above method may already responded with error.
+        if ( request->responded() ) return;
 
         slice checkpointID = getPeerCheckpointDocID(request, "set");
         if ( !checkpointID ) return;
@@ -1282,7 +1301,11 @@ namespace litecore::repl {
     }
 
     void Replicator::delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn> request) {
-        setMsgHandlerFor3_0_Client(request);
+        // This method is NOT called on the Replicator's queue/thread! It must be thread-safe.
+        if ( !_setMsgHandlerFor3_0_ClientDone ) {
+            enqueue(FUNCTION_TO_QUEUE(Replicator::setMsgHandlerFor3_0_Client), request);
+            waitTillCaughtUp();
+        }
 
         slice profile = request->property("Profile"_sl);
         Assert(profile);
@@ -1295,16 +1318,24 @@ namespace litecore::repl {
             }
         }
 
+        WorkerHandler handler = _workerHandlers.useLocked<WorkerHandler>([&](WorkerHandlers& handlers) {
+            if ( auto it = handlers.find({profile.asString(), i}); it != handlers.end() ) {
+                return it->second;
+            } else {
+                return WorkerHandler{};
+            }
+        });
+        if ( handler ) {
 #ifdef LITECORE_CPPTEST
-        if ( _delayChangesResponse && (profile == "changes"_sl || profile == "proposeChanges"_sl) ) {
-            C4Log("Delaying changes response...");
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-        }
+            if ( _delayChangesResponse && (profile == "changes"_sl || profile == "proposeChanges"_sl) ) {
+                C4Log("Delaying changes response...");
+                auto timer = new actor::Timer([=] { handler(request); });
+                timer->autoDelete();
+                timer->fireAfter(5s);
+                return;
+            }
 #endif
-
-        auto it = _workerHandlers.find({profile.asString(), i});
-        if ( it != _workerHandlers.end() ) {
-            it->second(request);
+            handler(request);
         } else {
             returnForbidden(request);
         }
@@ -1316,46 +1347,40 @@ namespace litecore::repl {
     // 1. it is working in the active mode,                             or
     // 2. the incoming meesage includes explicit "collection" property, or
     // 3. the second time and after that this method is called.
-    void Replicator::setMsgHandlerFor3_0_Client(const Retained<blip::MessageIn>& request) {
-        if ( _setMsgHandlerFor3_0_ClientDone ) {
-            return;
-        } else {
-            _setMsgHandlerFor3_0_ClientDone = true;
-        }
+    void Replicator::setMsgHandlerFor3_0_Client(Retained<blip::MessageIn> request) {
+        if ( _setMsgHandlerFor3_0_ClientDone ) { return; }
 
-        if ( _options->isActive() ) {
-            return;  // only deal with passive replicator.
-        }
+        if ( !_options->isActive()
+             && request->intProperty(kCollectionProperty, kNotCollectionIndex) == kNotCollectionIndex ) {
+            // At this point, we are dealing with a 3.0 style replicator which can only have exactly
+            // one collection, which is the default one.  If the default collection is not specified in
+            // the passive config, rearrangeCollectionsFor3_0_Client() will put a null collection path
+            // at the place of index 0, and then we return an error here.
+            // (If the collection does not exist in the database, prepareWorkers() will fail and an
+            //  error will be returned from there.)
 
-        if ( request->intProperty(kCollectionProperty, kNotCollectionIndex) != kNotCollectionIndex ) {
-            return;  // 3.0 message should not include the collection property
+            _options->rearrangeCollectionsFor3_0_Client();
+            DebugAssert(!_options->collectionAware());
+            DebugAssert(_options->workingCollectionCount() == 1);
+            if ( !_options->collectionPath(0) ) {
+                logVerbose("Client is legacy 3.0, but the default collection is not in the config of this 3.1 "
+                           "replicator.");
+                request->respondWithError({"BLIP"_sl, 400, "This server is not configured for 3.0 client support"_sl});
+            } else {
+                prepareWorkers();
+            }
         }
-
-        // At this point, we are dealing with a 3.0 style replicator which can only have exactly
-        // one collection, which is the default one.  If the default collection is not specified in
-        // the passive config, rearrangeCollectionsFor3_0_Client() will put a null collection path
-        // at the place of index 0, and then we return an error here.
-        // (If the collection does not exist in the database, prepareWorkers() will fail and an
-        //  error will be returned from there.)
-
-        _options->rearrangeCollectionsFor3_0_Client();
-        DebugAssert(!_options->collectionAware());
-        DebugAssert(_options->workingCollectionCount() == 1);
-        if ( !_options->collectionPath(0) ) {
-            logVerbose("Client is legacy 3.0, but the default collection is not in the config of this 3.1 replicator.");
-            request->respondWithError({"BLIP"_sl, 400, "This server is not configured for 3.0 client support"_sl});
-            return;
-        } else {
-            prepareWorkers();
-        }
+        _setMsgHandlerFor3_0_ClientDone = true;
     }
 
-    void Replicator::addLoggingKeyValuePairs(std::stringstream& output) const {
-        Worker::addLoggingKeyValuePairs(output);
+    string Replicator::loggingKeyValuePairs() const {
+        string kv = Worker::loggingKeyValuePairs();
         if ( _correlationID ) {
-            if ( output.tellp() > 0 ) output << " ";
-            output << "CorrID=" << _correlationID.asString();
+            if ( !kv.empty() ) kv += " ";
+            kv += "CorrID=";
+            kv += _correlationID.asString();
         }
+        return kv;
     }
 
 }  // namespace litecore::repl

@@ -425,7 +425,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
 
     // Create a document:
     C4Document* doc   = putDoc(C4STR("doc"), kC4SliceNull, C4STR("{'property':'value'}"));
-    C4Slice     revID = C4STR("1-d65a07abdb5c012a1bd37e11eef1d0aca3fa2a90");
+    C4Slice     revID = C4STR("1-3de83144ab0b66114ff350b20724e1fd48c6c57b");
     REQUIRE(doc->revID == revID);
     alloc_slice docID  = doc->docID;
     alloc_slice revID1 = doc->revID;
@@ -433,14 +433,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
 
     // Update a document
     doc   = putDoc(docID, revID1, C4STR("{'property':'newvalue'}"));
-    revID = C4STR("2-eaaa643f551df08eb0c60f87f3f011ac4355f834");
+    revID = C4STR("2-7718b0324ed598dda05874ab0afa1c826a4dc45c");
     REQUIRE(doc->revID == revID);
     alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
 
     // Delete a document
     doc   = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
-    revID = C4STR("3-3ae8fab29af3a5bfbfa5a4c5fd91c58214cb0c5a");
+    revID = C4STR("3-b5286031b23cedfe784a86c021dc15817da8ff6d");
     REQUIRE(doc->revID == revID);
     c4doc_release(doc);
 }

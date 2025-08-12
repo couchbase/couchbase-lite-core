@@ -54,6 +54,7 @@ namespace litecore::repl {
 
         bool isWarning{false};
         bool rejectedByRemote{false};
+        bool alreadyExisted{false};  // operation was a no-op (rev already in db)
 
         virtual Dir dir() const = 0;
 

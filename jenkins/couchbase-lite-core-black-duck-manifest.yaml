@@ -23,7 +23,7 @@ components:
     parent-repo: vendor/sqlite3-unicodesn
   mbedtls:
     bd-id: 98e2dba0-77c4-402f-96f3-ceb702a6e6e7
-    versions: [ 2.28.8 ]
+    versions: [ 3.6.3 ]
     src-path: vendor/mbedtls
   sockpp:
     bd-id: c5b8e378-60ad-4941-b37d-71216e7d9df4
@@ -31,7 +31,7 @@ components:
     src-path: vendor/sockpp
   sqlite:
     bd-id: 302ca56c-2cf6-4cfd-9173-94c1ee2a44f7
-    versions: [ 3.45.2 ]
+    versions: [ 3.50.3 ]
     src-path: vendor/SQLiteCpp/sqlite3
     parent-repo: vendor/SQLiteCpp
   sqlitecpp:

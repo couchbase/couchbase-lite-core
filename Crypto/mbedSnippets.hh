@@ -14,7 +14,7 @@
 #include "fleece/CompilerSupport.h"
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include "mbedtls/x509_crt.h"
 #pragma clang diagnostic pop
 

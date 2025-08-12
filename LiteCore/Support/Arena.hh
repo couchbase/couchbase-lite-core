@@ -140,8 +140,7 @@ namespace litecore {
 
         /// Allocates a block. If the current FixedArena has no room, it allocates a new one from the heap,
         /// with capacity `max(chunkSize, size)` to ensure the allocation will succeed.
-        /// If heap allocation fails, it throws (but this never happens in most "real" operating systems.)
-        /// @throws std::bad_alloc
+        /// @throws std::bad_alloc if heap allocation fails (but this never happens in most "real" operating systems.)
         void* alloc(size_t size, size_t alignment = sizeof(void*)) C4ALLOCSIZE(2) RETURNS_NONNULL;
         bool  free(void* C4NULLABLE block) noexcept;
         void  freeAll() noexcept;

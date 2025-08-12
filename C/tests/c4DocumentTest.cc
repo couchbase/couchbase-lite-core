@@ -456,7 +456,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
 
     C4Slice kExpectedRevID, kExpectedRev2ID, kConflictRevID;
     if ( isRevTrees() ) {
-        kExpectedRevID = C4STR("1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032");
+        kExpectedRevID = C4STR("1-feb9f18cfe84f614f750040e3eed3eb84a6b5332");
     } else {
         kExpectedRevID = C4STR("1@*");
     }
@@ -495,7 +495,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
         REQUIRE(doc != nullptr);
         CHECK((unsigned long)commonAncestorIndex == 0ul);
         if ( isRevTrees() ) {
-            kExpectedRev2ID = C4STR("2-201796aeeaa6ddbb746d6cab141440f23412ac51");
+            kExpectedRev2ID = C4STR("2-134f93aab57c91b159373e97764ef82a5eb058a0");
         } else {
             kExpectedRev2ID = C4STR("2@*");
         }
@@ -602,7 +602,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     C4Log("After save");
     C4Slice kExpectedRevID;
     if ( isRevTrees() ) {
-        kExpectedRevID = C4STR("1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032");
+        kExpectedRevID = C4STR("1-feb9f18cfe84f614f750040e3eed3eb84a6b5332");
     } else {
         kExpectedRevID = C4STR("1@*");
     }
@@ -632,7 +632,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     C4Log("After multiple updates");
     C4Slice kExpectedRev2ID;
     if ( isRevTrees() ) {
-        kExpectedRev2ID = C4STR("5-a452899fa8e69b06d936a5034018f6fff0a8f906");
+        kExpectedRev2ID = C4STR("5-a9732d3d5c6aa5637049721a6f21eb9c97b831d0");
     } else {
         kExpectedRev2ID = C4STR("5@*");
     }
@@ -962,9 +962,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         if ( isRevTrees() ) {
             // kRevID -- kRev2ID -- kRev3ConflictID -- [kRev4ConflictID] -- kMergedRevID
             CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
-            CHECK(doc->selectedRev.revID == "5-40c76a18ad61e00aa6372396a8d03a023c401fe3"_sl);
+            CHECK(doc->selectedRev.revID == "5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99"_sl);
             alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99, nullptr, 0));
-            CHECK(revHistory == "5-40c76a18ad61e00aa6372396a8d03a023c401fe3,4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
+            CHECK(revHistory == "5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99,4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
 
             CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev4ConflictID);
@@ -1023,7 +1023,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         CHECK(docBodyEquals(doc, mergedBody));
         if ( isRevTrees() ) {
             CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
-            CHECK(doc->selectedRev.revID == "4-41cdb6e71647962c281333ceac7b36c46b65b41f"_sl);
+            CHECK(doc->selectedRev.revID == "4-333ee0677b5f1e1e5064b050d417a31d2455dc30"_sl);
 
             CHECK(c4doc_selectParentRevision(doc));
             CHECK(doc->selectedRev.revID == kRev3ID);

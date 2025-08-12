@@ -3,8 +3,8 @@
 :toclevels: 3
 
 [[couchbase-mobile-2.0-replication-protocol]]
-Couchbase Mobile 2.0 Replication Protocol
------------------------------------------
+Couchbase Mobile Replication Protocol
+-------------------------------------
 
 Contributors: Jens Alfke, Traun Leyden, Ben Brooks, Jim Borden
 
@@ -12,30 +12,6 @@ Protocol version 3
 
 This document specifies the replication protocol in use by Couchbase Mobile
 2.0 and later. It supersedes the REST-based protocol inherited from CouchDB.
-
-Benefits of the new protocol are:
-
-* Faster and uses less bandwidth
-* Consumes fewer TCP ports on the server (a limited resource)
-* Opens a single TCP connection on the client instead of 4+ -- this
-prevents problems with the limited number of sockets the client HTTP
-library will open, which has led to deadlocks and performance problems
-* Cleaner error handling, because socket-level connectivity errors only
-happen on one socket instead of intermittently affecting some fraction
-of requests
-* Fully IANA compliant sparkly pony hooves (just checking to see if
-anyone is reading this)
-* Can be adapted to run over alternate transports like Bluetooth, or
-anything else we can send framed messages over
-* Less code (about 40% less in the iOS implementation)
-* Cleaner implementation, with the generic messaging layer separated
-from the replication-specific logic
-* Protocol is inherently symmetric between client/server, which means
-the two roles share a lot of common code
-* Supports “conflict-free” servers, which require clients to resolve
-conflicts before pushing changes.
-
-There is also a related https://blog.couchbase.com/data-replication-couchbase-mobile:[blog post] that is targeted towards end users.
 
 == Table of Contents
 
@@ -49,17 +25,17 @@ Contents
 1. Architecture
 ~~~~~~~~~~~~~~~
 
-The new replication protocol is built on the multiplexed
+The replication protocol is built on the multiplexed
 https://github.com/couchbaselabs/BLIP-Cocoa/blob/master/Docs/BLIP%20Protocol.md[BLIP
 messaging protocol], which itself is layered on WebSockets. The relevant
 aspects of the transport are:
 
-* Communication runs over a single socket.
-* Both client and server can send *messages*. The protocol is
+* Communication runs over a single TCP socket.
+* Both client and server can send *messages* at any time. The protocol is
 symmetrical.
 * Message delivery is reliable and ordered.
-* Messages are multiplexed -- any number can be in flight at once, and a
-large message does not block the ones behind it.
+* Messages are multiplexed -- messages over a certain length are split into frames. 
+Any number of messages can be in flight at once, and a large message does not block the ones behind it.
 * A message is similar to an HTTP request in that it contains an
 unlimited-size binary body plus a set of key/value properties.
 * An unsolicited message is called a *request*.
@@ -67,22 +43,31 @@ unlimited-size binary body plus a set of key/value properties.
 *response* message can contain either properties and a body, or an
 error.
 
-Other transport protocols could be used under the hood in some
-circumstances, for example Bluetooth, as long as the message semantics
-are preserved.
+BLIP is capable of running over other transport protocols, for example Bluetooth,
+as long as they support ordered delivery of framed binary messages.
 
 [[connecting]]
-2. Connecting
-~~~~~~~~~~~~~
+2. Connecting and Versioning
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The client opens a WebSocket connection to the server at path
 `/`__dbname__`/_blipsync` (where _dbname_ is the name of the database.)
-This begins as an HTTP GET request, and goes through authentication as
+This begins as an HTTP UPGRADE request, and goes through authentication as
 usual, then upgrades to WebSocket protocol.
 
 The WebSocket sub-protocol name `BLIP_3+CBMobile_3`, sent in the
 `Sec-WebSocket-Protocol` header, is used to ensure that both client and
 server understand BLIP and the replicator protocol.
+
+* `BLIP_3` refers to the version of the BLIP messaging protocol.
+This has been quite stable over time.
+* `CBMobile_3` refers to the major version of the replication protocol.
+This increments when there are incompatible changes to the protocol,
+and generally matches the major version of Couchbase Mobile itself.
+* Smaller changes in the replication protocol are handled by adding
+message properties or defining new messages. These are called out
+individually; for instance, the changes to support scopes & collections
+are marked with "[3.1+]".
 
 [[message-types]]
 3. Message Types
@@ -96,6 +81,8 @@ assigned to the message body.
 Any response properties and/or body data are listed too. However, many
 messages don't require any data in the response, just a success/failure
 indication.
+
+Message bodies are JSON by default.
 
 Most of these messages are sent by both client and server. Their usage
 in the replication algorithm is described in the *Algorithm* section
@@ -115,6 +102,7 @@ aware (i.e. each collection can have its own checkpoint).  If this message is se
 Response:
 
 `rev`: The MVCC revision ID of the checkpoint (_not_ the same as a document revID!) +
+
 Body: JSON data of the checkpoint
 
 [[getCollections]]
@@ -137,6 +125,7 @@ setCheckpoint
 `client`: Unique ID of client checkpoint to store +
 `rev`: Last known MVCC revision ID of the checkpoint _(omitted if this
 is a new checkpoint)_ +
+
 Body: JSON data of checkpoint
 
 Stores a checkpoint on the receiver. The JSON object in the request body
@@ -167,8 +156,9 @@ _(optional)_ +
 `versioning`: `rev-trees` (default) or `version-vectors` -- see the <<revIDs>> section. +
 _other properties_: Named parameters for the filter function
 _(optional)_ +
-Body: JSON dictionary _(optional)_ +
-`sendReplacementRevs`: Boolean indicating whether the passive peer (pusher) should send replacement revs rather than NoRev when the body of a requested rev is unavailable and a newer revision is available. _(optional)_
+`sendReplacementRevs`: Boolean indicating whether the passive peer (pusher) should send replacement revs rather than NoRev when the body of a requested rev is unavailable and a newer revision is available. _(optional)_ +
+
+Body: JSON dictionary _(optional)_
 
 Asks the recipient to begin sending change messages starting from the
 sequence just after the one given by the `since` property, or from the
@@ -255,6 +245,7 @@ would resolve it and push the merge.
 Response:
 
 `maxHistory`: Max length of revision history to send _(optional; not used with version vectors)_ +
+
 Body: JSON array (see below)
 
 The response message indicates which revisions the recipient wants to
@@ -335,13 +326,15 @@ replacementRev, this is the originally requested Revision ID. _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
 q.v.)_. If this is a replacementRev, this will be the sequence of the original requested rev. +
 `history`: Revision history (list of revision IDs) -- see the <<revIDs>> section. +
+`noconflicts`: true if the revision may not create a conflict _(optional; default is false)_ +
+`deltaSrc`: The revision that the body is a delta from. If not included, the body is a full revision. _(optional)_ +
+
 Body: Document JSON
-`noconflicts`: true if the revision may not create a conflict _(optional; default is false)_
 
 Sends one document revision, either meant for the specified collection or the default collection if one is not specified. The `id`, `rev`, `deleted` properties are
 optional if corresponding `_id`, `_rev`, `_deleted` properties exist in
 the JSON body (and vice versa.) The `sequence` property is optional
-unless this message was unsolicited.
+unless this message was unsolicited. If the `deltaSrc` is specified, the body is a delta from the revision specified in the `deltaSrc` property.
 
 If the `noconflicts` flag is set, or if the recipient is in conflict-free mode,
 it MUST check whether the `history` array contains the current local revision ID,
@@ -368,9 +361,11 @@ The recipient MUST send a response unless the request was sent
 added the revision to its database, or has failed to add it. On success
 the response can be empty; on failure it MUST be an error.
 
-Note: The recipient may need to send one or more `getattach` messages
+The sender may send this as `noreply` if there are no attachments or `deltaSrc` is not present.
+
+Note: The recipient may need to send one or more `getAttachment` messages
 while processing the `rev` message, in which case it MUST NOT send the
-`rev`'s response until it's received responses to the `getattach`
+``rev``'s response until it's received responses to the `getAttachment`
 message(s) and durably added the attachments, as well as the document,
 to its database.
 
@@ -384,6 +379,7 @@ norev
 `sequence`: Sequence ID, JSON-encoded _(optional)_ +
 `error`: The error number, which should correspond to HTTP Response status codes +
 `reason`: A more detailed description of the cause of the error _(optional)_
+
 Body: None
 
 In the case a rev is requested from a peer via a `changes` or `subChanges` response,
@@ -391,7 +387,7 @@ but that revision is not available, and the peer's message did not include the `
 as a placeholder to inform the `peer` that there will be no corresponding 
 `rev` message sent for the requested revision.  This prevents the peer 
 from waiting for a `rev` message that will never come, which could cause 
-the replication to get stuck.
+the replication to get stuck. This message is always sent with `noreply`.
 
 
 [[getattachment]]
@@ -433,6 +429,7 @@ proveAttachment
 `collection` [3.1+]: Indicates the index of the collection to operate on for this message, indexed by the list resolved in `getCollections`.  If legacy `getCheckpoint` is used, this property *must* be omitted +
 `digest`: Attachment digest (as found in document `_attachments`
 metadata.) +
+
 Body: A _nonce_: 16 to 255 bytes of random binary data
 
 Asks the recipient to prove that it has the body of the attachment with
@@ -532,14 +529,15 @@ it wants and which ancestors it already has
 with a BLIP/409 or HTTP/409 error, and instead accept `proposeChanges`
 messages.
 5.  For each requested revision:
-1.  Client sends document body in a `rev` message
-2.  Server looks at each newly-added attachment digest in each revision
+[arabic,start=1]
+.. Client sends document body in a `rev` message
+.. Server looks at each newly-added attachment digest in each revision
 and
-* sends a `getAttachment` for each attachment it doesn't have; client
+** sends a `getAttachment` for each attachment it doesn't have; client
 sends data
-* sends a `proveAttachment` for each attachment it already has; client
+** sends a `proveAttachment` for each attachment it already has; client
 sends proof
-3.  Server adds revision & attachments to database, and sends success
+.. Server adds revision & attachments to database, and sends success
 response to the client's `rev` message.
 6.  Client periodically sends `setCheckpoint` as progress updates
 7.  When all revisions and attachments have been sent, client either
@@ -579,17 +577,17 @@ Push interaction diagram
        │                                                                                        │        
        ├──────────────────────────────rev RQ [{docId, rev1, body}]──────────────────────────────▶        
        │                                                                                        │        
-       │                                     getAttach RQ                                       │        
+       │                                     getAttachment RQ                                   │
        ◀───────────────────────────────────────[digest]─────────────────────────────────────────┤        
        │                                                                                        │        
        │                                                                                        │        
-       ├──────────────────────────────────getAttach RSP [body]──────────────────────────────────▶        
+       ├──────────────────────────────────getAttachment RSP [body]──────────────────────────────▶
        │                                                                                        │        
        │                                                                                        │        
-       ◀──────────────────────────────────getAttach RQ [digest]─────────────────────────────────┤        
+       ◀──────────────────────────────────getAttachment RQ [digest]─────────────────────────────┤
        │                                                                                        │        
        │                                                                                        │        
-       ├───────────────────────────────────getAttach RSP [body]─────────────────────────────────▶        
+       ├───────────────────────────────────getAttachment RSP [body]─────────────────────────────▶
        │                                                                                        │        
        │                                                                                        │        
        ◀───────────────────────────────────────rev RSP []───────────────────────────────────────┤        
@@ -626,11 +624,12 @@ next message until a response is received.
 5.  Client replies to each `changes` message indicating which revisions
 it wants and which ancestors it already has
 6.  For each requested revision:
-1.  Server sends document body in a `rev` message
-2.  Client looks at each newly-added attachment digest in each revision
+[arabic,start=1]
+..  Server sends document body in a `rev` message
+..  Client looks at each newly-added attachment digest in each revision
 and sends a `getAttachment` for each attachment it doesn't have; server
 sends data
-3.  Client adds revision & attachments to database, and sends success
+..  Client adds revision & attachments to database, and sends success
 response to the server's `rev` message.
 7.  Client periodically sends `setCheckpoint` as progress updates
 8.  When there are no more changes, server sends a `changes` message
@@ -680,17 +679,17 @@ Pull interaction digram
       │                                                                                        │        
       ◀──────────────────────────────rev RQ [{docId, rev1, body}]──────────────────────────────┤        
       │                                                                                        │        
-      │                                     getAttach RQ                                       │        
+      │                                     getAttachment RQ                                   │        
       ├───────────────────────────────────────[digest]─────────────────────────────────────────▶        
       │                                                                                        │        
       │                                                                                        │        
-      ◀──────────────────────────────────getAttach RSP [body]──────────────────────────────────┤        
+      ◀──────────────────────────────────getAttachment RSP [body]──────────────────────────────┤        
       │                                                                                        │        
       │                                                                                        │        
-      ├──────────────────────────────────getAttach RQ [digest]─────────────────────────────────▶        
+      ├──────────────────────────────────getAttachment RQ [digest]─────────────────────────────▶        
       │                                                                                        │        
       │                                                                                        │        
-      ◀───────────────────────────────────getAttach RSP [body]─────────────────────────────────┤        
+      ◀───────────────────────────────────getAttachment RSP [body]─────────────────────────────┤        
       │                                                                                        │        
       │                                                                                        │        
       ├───────────────────────────────────────rev RSP []───────────────────────────────────────▶        

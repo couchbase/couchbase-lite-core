@@ -49,7 +49,7 @@ typedef C4Slice C4CertNameAttributeID;
 #    define kC4Cert_Organization     C4STR("O")              // e.g. "Example Corp."
 #    define kC4Cert_OrganizationUnit C4STR("OU")             // e.g. "Marketing"
 #    define kC4Cert_PostalAddress    C4STR("postalAddress")  // e.g. "123 Example Blvd #2A"
-#    define kC4Cert_Locality         C4STR("locality")       // e.g. "Boston"
+#    define kC4Cert_Locality         C4STR("L")              // e.g. "Boston"
 #    define kC4Cert_PostalCode       C4STR("postalCode")     // e.g. "02134"
 #    define kC4Cert_StateOrProvince  C4STR("ST")             // e.g. "Massachusetts" (or "Quebec", ...)
 #    define kC4Cert_Country          C4STR("C")              // e.g. "us" (2-letter ISO country code)

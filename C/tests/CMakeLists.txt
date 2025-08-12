@@ -14,7 +14,7 @@ The test runner depends on multiple other libraries from multiple git repositori
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
-cmake_minimum_required (VERSION 3.9)
+cmake_minimum_required (VERSION 3.9...4.0)
 project (C4Tests)
 
 if(ANDROID OR WINDOWS_STORE)
@@ -61,9 +61,9 @@ add_executable(
     c4CertificateTest.cc
     
     ${TOP}Crypto/SecureRandomize.cc
+    ${TOP}LiteCore/Logging/LogDecoder.cc
+    ${TOP}LiteCore/Logging/Logging_Stub.cc
     ${TOP}LiteCore/Support/FilePath.cc
-    ${TOP}LiteCore/Support/LogDecoder.cc
-    ${TOP}LiteCore/Support/Logging_Stub.cc
     ${TOP}LiteCore/Support/StringUtil.cc
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}LiteCore/Support/Error.cc
@@ -127,10 +127,10 @@ target_include_directories(
     ${TOP}Networking
     ${TOP}Networking/WebSockets
     ${TOP}Networking/HTTP
+    ${TOP}LiteCore/Logging
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/SQLiteCpp/include
-    ${TOP}vendor/mbedtls/crypto/include
     ${TOP}vendor/fleece/vendor/date/include
     ${TOP}vendor/fleece/vendor/libb64
 )

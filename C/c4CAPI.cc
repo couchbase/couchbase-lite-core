@@ -936,7 +936,12 @@ C4QueryObserver* c4queryobs_create(C4Query* query, C4QueryObserverCallback cb, v
     });
 }
 
-void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) noexcept { obs->setEnabled(enabled); }
+void c4queryobs_setEnabled(C4QueryObserver* obs, bool enabled) noexcept {
+    try {
+        obs->setEnabled(enabled);
+    }
+    catchAndWarn();
+}
 
 void c4queryobs_free(C4QueryObserver* obs) noexcept {
     if ( obs ) {
@@ -1043,6 +1048,8 @@ void c4cert_getValidTimespan(C4Cert* cert, C4Timestamp* outCreated, C4Timestamp*
 bool c4cert_isSigned(C4Cert* cert) noexcept { return cert->isSigned(); }
 
 bool c4cert_isSelfSigned(C4Cert* cert) noexcept { return cert->isSelfSigned(); }
+
+bool c4cert_isSignedBy(C4Cert* cert, C4Cert* issuer) noexcept { return cert->isSignedBy(issuer); }
 
 C4Cert* c4cert_signRequest(C4Cert* c4Cert, const C4CertIssuerParameters* C4NULLABLE c4Params,
                            C4KeyPair* issuerPrivateKey, C4Cert* issuerC4Cert, C4Error* outError) noexcept {

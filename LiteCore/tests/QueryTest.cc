@@ -1084,6 +1084,41 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
     CHECK(!e->next());
 }
 
+TEST_CASE_METHOD(QueryTest, "Query Function Argument Limit", "[Query]") {
+    addNumberedDocs(1, 1);
+
+    constexpr int argCountLimit = 127;
+
+    bool inLimit = GENERATE(true, false);
+
+    std::stringstream ss;
+    for ( int i = 1; i <= (inLimit ? argCountLimit : argCountLimit + 1); ++i ) {
+        if ( i > 1 ) ss << ",";
+        ss << i;
+    }
+
+    string          commaList = ss.str();
+    string          n1qlStr   = "SELECT array_count([" + commaList + "]) FROM " + collectionName;
+    Retained<Query> query;
+    if ( inLimit ) {
+        query = store->compileQuery(n1qlStr, litecore::QueryLanguage::kN1QL);
+        CHECK(query);
+    } else {
+        ExpectingExceptions x;
+        try {
+            query = store->compileQuery(n1qlStr, litecore::QueryLanguage::kN1QL);
+        } catch ( const std::exception& exc ) {
+            CHECK("Wrong number of arguments to array_of()"s == exc.what());
+            return;
+        }
+    }
+
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == argCountLimit);
+    CHECK(!e->next());
+}
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     addNumberedDocs(1, 1);
     Retained<Query> query{store->compileQuery(json5(

@@ -94,7 +94,7 @@ namespace litecore::repl {
         , _db(std::move(dbAccess))
         , _loggingID(parent ? parent->replicator()->loggingName() : connection->name())
         , _connection(connection)
-        , _status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
+        , _status{(connection->state() >= Connection::kConnected) ? kC4Busy : kC4Connecting}
         , _collectionSpec(coll != kNotCollectionIndex ? replicator()->collectionSpec(coll) : C4CollectionSpec{})
         , _collectionIndex(coll) {
         static std::once_flag f_once;
@@ -218,7 +218,8 @@ namespace litecore::repl {
 
     void Worker::finishedDocument(ReplicatedRev* rev) {
         if ( rev->error.code == 0 ) addProgress({0, 0, 1});
-        if ( rev->error.code || rev->isWarning || progressNotificationLevel() >= 1 ) replicator()->endedDocument(rev);
+        if ( rev->error.code || rev->isWarning || (!rev->alreadyExisted && progressNotificationLevel() >= 1) )
+            replicator()->endedDocument(rev);
     }
 
 #pragma mark - ACTIVITY / PROGRESS:
@@ -246,7 +247,7 @@ namespace litecore::repl {
 
         if ( reason ) {
             if ( level == kC4Busy ) {
-                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%d", eventCount());
+                if ( eventCount() > 1 ) *reason = stringprintf("pendingEvent/%u", eventCount());
                 else
                     *reason = stringprintf("pendingResponse/%d", _pendingResponseCount);
             } else {
@@ -323,12 +324,14 @@ namespace litecore::repl {
         return std::make_pair(collIn, err);
     }
 
-    void Worker::addLoggingKeyValuePairs(std::stringstream& output) const {
-        actor::Actor::addLoggingKeyValuePairs(output);
+    string Worker::loggingKeyValuePairs() const {
+        string kv = Actor::loggingKeyValuePairs();
         if ( auto collIdx = collectionIndex(); collIdx != kNotCollectionIndex ) {
-            if ( output.tellp() > 0 ) output << " ";
-            output << "Coll=" << collIdx;
+            if ( !kv.empty() ) kv += " ";
+            kv += "Coll=";
+            kv += to_string(collIdx);
         }
+        return kv;
     }
 
     const std::unordered_set<slice> Options::kWhiteListOfKeysToLog{

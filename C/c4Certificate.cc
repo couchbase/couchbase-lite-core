@@ -28,7 +28,7 @@
 #endif
 
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#pragma clang diagnostic ignored "-Wdocumentation"
 #include "mbedtls/pk.h"  // IWYU pragma: keep
 #pragma clang diagnostic pop
 
@@ -39,7 +39,7 @@ using namespace litecore::crypto;
 
 #ifdef COUCHBASE_ENTERPRISE
 
-CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
+CBL_CORE_API_IMPL const C4CertIssuerParameters kDefaultCertIssuerParameters = {
         CertSigningRequest::kOneYear, C4STR("1"), -1, false, true, true, true};
 
 
@@ -118,6 +118,12 @@ std::pair<C4Timestamp, C4Timestamp> C4Cert::getValidTimespan() {
 bool C4Cert::isSelfSigned() {
     Cert* signedCert = asSignedCert();
     return signedCert && signedCert->isSelfSigned();
+}
+
+bool C4Cert::isSignedBy(C4Cert* issuer) {
+    Cert* signedCert   = asSignedCert();
+    Cert* signedIssuer = issuer->asSignedCert();
+    return signedCert && signedIssuer && signedCert->isSignedBy(signedIssuer);
 }
 
 Retained<C4KeyPair> C4Cert::getPublicKey() {

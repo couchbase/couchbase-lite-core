@@ -40,8 +40,8 @@ NODISCARD CBL_CORE_API bool c4listener_shareDB(C4Listener* listener, C4String na
     @param outError On failure, the error info is stored here if non-NULL.
     @return  True on success, false if the name is already in use or invalid as a URI component. */
 NODISCARD CBL_CORE_API bool c4listener_shareDBWithConfig(C4Listener* listener, C4String name, C4Database* db,
-                                                         const C4ListenerDatabaseConfig* config,
-                                                         C4Error* C4NULLABLE             outError) C4API;
+                                                         const C4ListenerDatabaseConfig* C4NULLABLE config,
+                                                         C4Error* C4NULLABLE                        outError) C4API;
 
 /** Makes a previously-shared database unavailable.
     @note  `db` need not be the same instance that was registered, merely on the same file.

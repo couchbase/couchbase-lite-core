@@ -124,14 +124,17 @@ function(setup_litecore_build_unix)
                 -Wno-switch-enum # TODO: "enumeration values not explicitly handled in switch"
                 -Wno-alloca
                 -Wno-atomic-implicit-seq-cst # "implicit use of sequentially-consistent atomic may incur stronger memory barriers than necessary"
+                -Wno-c99-extensions
                 -Wno-c++98-compat
                 -Wno-c++98-compat-pedantic
                 -Wno-cast-align # "cast from X* to Y* increases required alignment"
                 -Wno-cast-function-type # "cast from X* to Y* converts to incompatible function type"
                 -Wno-covered-switch-default # "default label in switch which covers all enumeration values"
-                -Wno-c99-extensions
+                -Wno-ctad-maybe-unsupported # "'...' may not intend to support class template argument deduction"
                 -Wno-date-time # "expansion of date or time macro is not reproducible"
                 -Wno-deprecated-copy-with-user-provided-dtor # "definition of implicit copy constructor is deprecated because it has a user-provided destructor"
+                -Wno-documentation-pedantic
+                -Wno-direct-ivar-access # Obj-C: "instance variable is being directly accessed"
                 -Wno-exit-time-destructors # "declaration requires an exit-time destructor"
                 -Wno-extra-semi # "extra ';' after member function definition"
                 -Wno-float-equal
@@ -140,6 +143,7 @@ function(setup_litecore_build_unix)
                 -Wno-gnu-anonymous-struct # "anonymous structs are a GNU extension"
                 -Wno-gnu-zero-variadic-macro-arguments # "token pasting of ',' and __VA_ARGS__ is a GNU extension"
                 -Wno-inconsistent-missing-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
+                -Wno-missing-designated-field-initializers # "missing field 'x' initializer"
                 -Wno-missing-field-initializers # "missing field 'x' initializer"
                 -Wno-missing-noreturn # "function could be declared with attribute 'noreturn'"
                 -Wno-nested-anon-types # "anonymous types declared in an anonymous union are an extension"
@@ -149,7 +153,10 @@ function(setup_litecore_build_unix)
                 -Wno-shadow-field # "parameter shadows member inherited from type"
                 -Wno-shadow-uncaptured-local # "declaration [of a lambda parameter] shadows a local variable"
                 -Wno-suggest-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
+                -Wno-switch-default # "'switch' missing 'default' label"
                 -Wno-undef      # `#if X` where X isn't defined
+                -Wno-unknown-warning-option   # So Clang 17 warning flags listed here don't break Clang 16
+                -Wno-unsafe-buffer-usage-in-container # "the two-parameter std::span construction is unsafe"
                 -Wno-unused-macros
                 -Wno-unused-exception-parameter
                 -Wno-unused-parameter # Unused fn parameter
@@ -168,6 +175,16 @@ function(setup_litecore_build_unix)
             $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
         )
     endforeach()
+    if (BUILD_ENTERPRISE)
+        foreach(target  LiteCoreListener_Objects LiteCoreP2P)
+            target_compile_options(${target} PRIVATE
+                    ${LITECORE_COMPILE_OPTIONS}
+                    ${LITECORE_WARNINGS}
+                    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
+                    $<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+            )
+        endforeach ()
+    endif ()
 
     set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
     check_type_size(socklen_t SOCKLEN_T)

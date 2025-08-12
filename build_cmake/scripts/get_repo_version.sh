@@ -42,6 +42,11 @@ if [[ -z $LITECORE_VERSION_STRING ]]; then
     LITECORE_VERSION_STRING=$VERSION
 fi
 
+# LITECORE_VERSION_STRING is taken from the Project.xcconfig. This is needed for iOS as it builds LiteCore alongside itself
+if [[ "$LITECORE_VERSION_STRING" == "0.0.0" ]]; then
+    BUILD_NUM=0
+fi
+
 echo "#define GitCommit \"$GIT_COMMIT\"" $'\n'\
      "#define GitCommitEE \"$GIT_COMMIT_EE\"" $'\n'\
      "#define GitBranch \"$GIT_BRANCH\"" $'\n'\

@@ -31,9 +31,11 @@ case "${OSTYPE}" in
                   if [[ ${EDITION} == 'enterprise' ]]; then
                       release_config="Release_EE"
                       debug_config="Debug_EE"
+                      SCHEME_NAME="LiteCore EE framework"
                   else
                       release_config="Release"
                       debug_config="Debug"
+                      SCHEME_NAME="LiteCore framework"
                   fi
               fi;;
     linux*)   OS="linux"
@@ -81,7 +83,7 @@ xcarchive()
   ARCHIVE_PATH=$PWD/$(echo ${DESTINATION} | sed 's/ /_/g' | sed 's/\//\_/g')
   xcodebuild archive \
     -project "$WORKSPACE/$ios_xcode_proj" \
-    -scheme "LiteCore framework" \
+    -scheme "${SCHEME_NAME}" \
     -configuration "${CONFIGURATION}" \
     -destination "${DESTINATION}" \
     -archivePath "${ARCHIVE_PATH}/${BIN_NAME}.xcarchive" \
@@ -115,7 +117,11 @@ build_binaries () {
     CMAKE_BUILD_TYPE_NAME="cmake_build_type_${FLAVOR}"
     mkdir -p ${WORKSPACE}/build_${FLAVOR}
     pushd ${WORKSPACE}/build_${FLAVOR}
-    cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+    if [[ ${OS} == 'linux' ]]; then
+      cmake -DBUILD_ENTERPRISE=$build_enterprise -DEMBEDDED_MDNS=ON -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+    else
+      cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+    fi
     make -j8
     if [[ ${OS} == 'linux' ]]; then
         ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh $PWD
@@ -127,6 +133,19 @@ build_binaries () {
     if [[ ${OS} == 'macosx' ]]; then
         # package up the strip symbols
         cp -rp libLiteCore.dylib.dSYM  ./install/lib
+    else
+        cxx=${CXX:-g++}
+        cc=${CC:-gcc}
+        # copy C++ stdlib, etc to output
+        echo "Copying libs from compiler"
+        libstdcpp=`$cxx --print-file-name=libstdc++.so`
+        libstdcppname=`basename "$libstdcpp"`
+        libgcc_s=`$cc --print-file-name=libgcc_s.so.1`
+        libgcc_sname=`basename "$libgcc_s"`
+
+        cp -p "$libstdcpp" "./install/lib/$libstdcppname" -v
+        ln -s "./install/lib/${libstdcppname}.6" "$libstdcppname" -v
+        cp -p "${libgcc_s}" "./install/lib" -v
     fi
     if [[ -z ${SKIP_TESTS} ]] && [[ ${EDITION} == 'enterprise' ]]; then
         chmod 777 ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/test_unix.sh

@@ -33,6 +33,7 @@
 #include <atomic>
 #include <codecvt>
 #include <chrono>
+#include <unordered_map>
 
 namespace litecore::crypto {
     using namespace std;
@@ -259,25 +260,21 @@ namespace litecore::crypto {
                   void* outSignature) noexcept override {
             // No exceptions may be thrown from this function!
             LogTo(TLSLogDomain, "Signing using NCrypt private key");
-            static const LPCWSTR kDigestAlgorithmMap[9] = {
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    nullptr,
-                    BCRYPT_SHA1_ALGORITHM,
-                    nullptr,
-                    BCRYPT_SHA256_ALGORITHM,
-                    BCRYPT_SHA384_ALGORITHM,
-                    BCRYPT_SHA512_ALGORITHM,
+            static const unordered_map<int, LPCWSTR> kDigestAlgorithmMap{
+                    {MBEDTLS_MD_SHA1, BCRYPT_SHA1_ALGORITHM},
+                    {MBEDTLS_MD_SHA256, BCRYPT_SHA256_ALGORITHM},
+                    {MBEDTLS_MD_SHA384, BCRYPT_SHA384_ALGORITHM},
+                    {MBEDTLS_MD_SHA512, BCRYPT_SHA512_ALGORITHM},
             };
+
+            LPCWSTR digestAlgorithm = nullptr;
+            if ( kDigestAlgorithmMap.contains(mbedDigestAlgorithm) )
+                digestAlgorithm = kDigestAlgorithmMap.at(mbedDigestAlgorithm);
 
             // 0 here is a special case (MBED_MD_NONE) which means "no digest algorithm"
             // This is not in the Windows documentation, but passing in a null digest algo
             // seems to do the trick.  Otherwise, null is considered an unsupported algorithm
             // for one of the other choices.
-            LPCWSTR digestAlgorithm = nullptr;
-            if ( mbedDigestAlgorithm >= 1 && mbedDigestAlgorithm < 9 )
-                digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
             if ( mbedDigestAlgorithm != 0 && !digestAlgorithm ) {
                 LogWarn(TLSLogDomain, "Keychain private key: unsupported mbedTLS digest algorithm %d",
                         mbedDigestAlgorithm);
@@ -371,8 +368,8 @@ namespace litecore::crypto {
         NCryptFreeObject(hProvider);
         if ( retVal == nullptr ) {
             if ( result == NTE_NO_MORE_ITEMS ) {
-                LogError(TLSLogDomain, "Unable to find matching private key!");
-                error::_throw(error::CryptoError, "Unable to find matching private key!");
+                LogWarn(TLSLogDomain, "Unable to find matching private key!");
+                return nullptr;
             }
 
             throwSecurityStatus(result, "NCryptEnumKeys", "Couldn't enumerate keys in storage");

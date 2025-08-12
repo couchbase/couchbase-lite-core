@@ -22,7 +22,7 @@ SQLite3_UnicodeSN - The snowball tokenizer library for SQLite
 This project is built for the following platforms at Couchbase:
 - Windows 10
 - UWP
-- macOS 12.0
+- macOS 13.0
 - CentOS 7 (gcc 7.x+)
 - Android API 22+
 
@@ -37,10 +37,10 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
         - platform_win_desktop
 ]]#
 
-cmake_minimum_required (VERSION 3.21.0)
+cmake_minimum_required (VERSION 3.21...4.0)
 
 # Mac/apple setup -- must appear before the first "project()" line"
-set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0")
 if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
     set(CMAKE_OSX_SYSROOT macosx)
@@ -138,6 +138,10 @@ endif()
 
 if(MSVC)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
+
+    # CBL-6931 : Workaround to avoid crash when locking mutex on VC++ Runtime version < 14.4.
+    add_compile_definitions(_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+
     if(WINDOWS_STORE)
         message(FATAL_ERROR "UWP no longer supported")
     else()
@@ -176,6 +180,11 @@ configure_file(cmake/config_thread.h.in ${GENERATED_HEADERS_DIR}/config_thread.h
 include_directories(${GENERATED_HEADERS_DIR})
 
 add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
+
+if (BUILD_ENTERPRISE)
+    add_subdirectory(../couchbase-lite-core-EE/Listener EE_Listener EXCLUDE_FROM_ALL)
+    add_subdirectory(../couchbase-lite-core-EE/P2P      EE_P2P      EXCLUDE_FROM_ALL)
+endif()
 
 ### sqlite3 LIBRARY:
 
@@ -244,6 +253,7 @@ set(
     vendor/fleece/vendor/date/include
     LiteCore/BlobStore
     LiteCore/Database
+    LiteCore/Logging
     LiteCore/Query
     LiteCore/Query/N1QL_Parser
     LiteCore/Query/Translator
@@ -264,7 +274,6 @@ set(
     vendor/SQLiteCpp/sqlite3/ext
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
     vendor/sockpp/include
     vendor/vector_search
 )
@@ -292,11 +301,22 @@ if(BUILD_ENTERPRISE)
         ${LITECORE_LIBRARIES_PRIVATE}
         LiteCoreREST_Objects
         LiteCoreWebSocket
+        LiteCoreListener_Objects
+        LiteCoreP2P
     )
 endif()
 
 if(LITECORE_BUILD_SHARED)
-    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+    if(MSVC)
+        add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects> MSVC/dllmain.c)
+        target_include_directories(
+            LiteCore PRIVATE
+            C/include
+        )
+    else()
+        add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
+    endif()
+
     target_include_directories(
         LiteCore INTERFACE
         C/include
@@ -383,6 +403,7 @@ target_include_directories(
     C/Cpp_include
     Crypto
     LiteCore/Database
+    LiteCore/Logging
     LiteCore/Support
     Networking
     Networking/BLIP/
@@ -394,7 +415,6 @@ target_include_directories(
     vendor/fleece/API
     vendor/sockpp/include
     vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
 )
 
 target_link_libraries(

@@ -584,14 +584,15 @@ namespace litecore {
             return true;
         }
 
-        static bool hasEncryptables(slice body, SharedKeys* sk) {
+        // This function must be called in the scope of
+        // Scope(body, sharedKeys)
+        static bool hasEncryptables(slice body) {
 #ifndef COUCHBASE_ENTERPRISE
             return false;
 #else
             const Value* v = Value::fromTrustedData(body);
             if ( v == nullptr ) { return false; }
 
-            Scope scope(body, sk);
             for ( DeepIterator i(v->asDict()); i; ++i ) {
                 const Dict* dict = i.value()->asDict();
                 if ( dict ) {
@@ -608,11 +609,16 @@ namespace litecore {
             uint8_t revLen  = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
             uint8_t delByte = deleted;
             SHA1    digest;
-            if ( hasEncryptables(body, _collection->dbImpl()->dataFile()->documentKeys()) ) {
+
+            Scope scope(body, _collection->dbImpl()->dataFile()->documentKeys());
+            if ( hasEncryptables(body) ) {
                 mutable_slice mslice(digest.asSlice());
                 SecureRandomize(mslice);
             } else {
-                SHA1 tmp = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << body).finish();
+                const Value* bodyNoSK = Value::fromTrustedData(body);
+                SHA1         tmp =
+                        (SHA1Builder() << revLen << slice(parentRevID.buf, revLen) << delByte << bodyNoSK->toJSON(true))
+                                .finish();
                 digest.setDigest(tmp.asSlice());
             }
             // Derive new rev's generation #:

@@ -63,7 +63,7 @@ namespace litecore::repl {
     void Pusher::sendRevision(Retained<RevToSend> request) {
         if ( !connected() ) return;
 
-        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%d/%d]", SPLAT(request->docID), SPLAT(request->revID),
+        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%u/%u]", SPLAT(request->docID), SPLAT(request->revID),
                    (uint64_t)request->sequence, _revisionsInFlight, tuning::kMaxRevsInFlight);
 
         // Get the document & revision:
@@ -227,6 +227,7 @@ namespace litecore::repl {
                     enum { kNoRetry, kRetryLater, kRetryNow } retry = kNoRetry;
 
                     if ( synced ) {
+                        if ( progress.reply->boolProperty("noop") ) rev->alreadyExisted = true;
                         logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")", SPLAT(rev->docID), SPLAT(rev->revID),
                                    (uint64_t)rev->sequence);
                         finishedDocument(rev);
@@ -289,7 +290,7 @@ namespace litecore::repl {
         }
     }
 
-    // If sending a rev that's been obsoleted by a newer one, mark the sequence as complete and send
+    // This RevToSend has been obsoleted by a newer one; mark the sequence as complete and set `*c4Err` to
     // a 410 Gone error. (Common subroutine of sendRevision & shouldRetryConflictWithNewerAncestor.)
     void Pusher::revToSendIsObsolete(const RevToSend& request, C4Error* c4err) {
         logInfo("Revision '%.*s' #%.*s is obsolete; not sending it", SPLAT(request.docID), SPLAT(request.revID));
@@ -355,7 +356,7 @@ namespace litecore::repl {
         if ( willLog(LogLevel::Verbose) ) {
             alloc_slice old(ancestor.toJSON());
             alloc_slice nuu(root.toJSON());
-            logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
+            logVerbose("Encoded revision as delta, saving %zu bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
                        nuu.size - delta.size, SPLAT(old), SPLAT(nuu), SPLAT(delta));
         }
 #ifdef LITECORE_CPPTEST
@@ -375,7 +376,6 @@ namespace litecore::repl {
     // `synced` - whether the revision was successfully stored on the peer
     void Pusher::doneWithRev(RevToSend* rev, bool completed, bool synced) {
         if ( !passive() ) {
-            logDebug("** doneWithRev %.*s #%.*s", SPLAT(rev->docID), SPLAT(rev->revID));  //TEMP
             addProgress({rev->bodySize, 0});
             if ( completed ) {
                 _checkpointer.completedSequence(rev->sequence);

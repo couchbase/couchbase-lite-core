@@ -80,7 +80,7 @@ struct C4Database
 
     virtual alloc_slice getPath() const = 0;
 
-    const Config& getConfiguration() const noexcept FLPURE { return _config; }
+    const Config& getConfiguration() const noexcept LIFETIMEBOUND FLPURE { return _config; }
 
     virtual alloc_slice getSourceID() const    = 0;
     virtual C4UUID      getPublicUUID() const  = 0;
@@ -272,14 +272,16 @@ struct C4Database
     C4DatabaseConfig2                _config;    // Configuration
     C4DatabaseConfig                 _configV1;  // TODO: DEPRECATED
     mutable C4Collection* C4NULLABLE _defaultCollection = nullptr;
+
+  private:
+    // static
+    static bool isValidDbName(slice dbName);
 };
 
 // This stuff allows CollectionSpec to be used as a key in an unordered_map or unordered_set:
 inline bool operator==(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) {
     return a.name == b.name && a.effectiveScope() == b.effectiveScope();
 }
-
-inline bool operator!=(const C4Database::CollectionSpec& a, const C4Database::CollectionSpec& b) { return !(a == b); }
 
 template <>
 struct std::hash<C4Database::CollectionSpec> {

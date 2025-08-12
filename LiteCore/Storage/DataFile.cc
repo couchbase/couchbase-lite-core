@@ -161,7 +161,7 @@ namespace litecore {
 
         for ( auto& i : _keyStores ) { i.second->close(); }
         _close(forDelete);
-        if ( _shared->removeDataFile(this) ) logInfo("Closing database");
+        if ( _shared->removeDataFile(this) ) { logInfo("Closing database"); }
     }
 
     void DataFile::reopen() {

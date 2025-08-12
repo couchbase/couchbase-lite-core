@@ -93,7 +93,7 @@ def check_component(branch: str, title: str, component, expectChange: bool) -> b
     return True
 
 def main(manifest_path: Path, branch: str) -> int:
-    git = subprocess.check_output(["git", "log", '--pretty="format:%B"', f"origin/{branch}..HEAD"]).decode("utf-8")
+    git = subprocess.check_output(["git", "log", '--pretty=%B', f"origin/{branch}..HEAD"]).decode('utf-8')
     for line in git.splitlines():
         if line.lstrip().startswith("!NO_BD_GITHUB"):
             print("Scan disabled by commit message, skipping...")

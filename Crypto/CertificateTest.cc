@@ -195,8 +195,14 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     CHECK(!Cert::exists("Jane Doe"));
 
     // Delete the cert to cleanup:
-    Cert::deleteCert("cert1");
-    CHECK(!Cert::exists("cert1"));
+    {
+        // cannot open file at line 49450 of [1b37c146ee]
+        // os_unix.c:49450: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+        ExpectingExceptions x;
+
+        Cert::deleteCert("cert1");
+        CHECK(!Cert::exists("cert1"));
+    }
 
     // Save the cert:
     cert->save("cert1", true);
@@ -212,8 +218,14 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     CHECK(certB->data() == cert->data());
 
     // Delete the cert:
-    Cert::deleteCert("cert1");
-    CHECK(!Cert::exists("cert1"));
+    {
+        // cannot open file at line 49450 of [1b37c146ee]
+        // os_unix.c:49450: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+        ExpectingExceptions x;
+
+        Cert::deleteCert("cert1");
+        CHECK(!Cert::exists("cert1"));
+    }
 
     // Save and load again after delete:
     cert->save("cert1", true);
@@ -222,8 +234,14 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     CHECK(certA->data() == cert->data());
 
     // Delete the cert
-    Cert::deleteCert("cert1");
-    CHECK(!Cert::exists("cert1"));
+    {
+        // cannot open file at line 49450 of [1b37c146ee]
+        // os_unix.c:49450: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+        ExpectingExceptions x;
+
+        Cert::deleteCert("cert1");
+        CHECK(!Cert::exists("cert1"));
+    }
 
     // Delete the key
     key->remove();
@@ -250,8 +268,14 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     CHECK(!Cert::exists("Jane Doe"));
 
     // Delete cert1 to cleanup:
-    Cert::deleteCert("cert1");
-    CHECK(!Cert::exists("cert1"));
+    {
+        // cannot open file at line 49450 of [1b37c146ee]
+        // os_unix.c:49450: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+        ExpectingExceptions x;
+
+        Cert::deleteCert("cert1");
+        CHECK(!Cert::exists("cert1"));
+    }
 
     // Save cert1:
     cert1->save("cert1", true);
@@ -282,7 +306,13 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     Retained<Cert> cert2        = new Cert(DistinguishedName(kSubject2Name), issuerParams2, key1);
 
     // Delete cert2 to cleanup:
-    Cert::deleteCert("cert2");
+    {
+        // cannot open file at line 49450 of [1b37c146ee]
+        // os_unix.c:49450: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+        ExpectingExceptions x;
+
+        Cert::deleteCert("cert2");
+    }
 
     // Save cert2 to an existing ID:
     ExpectException(error::LiteCore, error::CryptoError, [&] { cert2->save("cert1", true); });
@@ -294,13 +324,24 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     CHECK(cert2a->data() == cert2->data());
 
     // Delete cert1:
-    Cert::deleteCert("cert1");
-    CHECK(!Cert::exists("cert1"));
+    {
+        // cannot open file at line 49450 of [1b37c146ee]
+        // os_unix.c:49450: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+        ExpectingExceptions x;
+
+        Cert::deleteCert("cert1");
+        CHECK(!Cert::exists("cert1"));
+    }
 
     // Delete cert2:
-    Cert::deleteCert("cert2");
-    CHECK(!Cert::exists("cert2"));
+    {
+        // cannot open file at line 49450 of [1b37c146ee]
+        // os_unix.c:49450: (2) open(/private/var/db/DetachedSignatures) - No such file or directory
+        ExpectingExceptions x;
 
+        Cert::deleteCert("cert2");
+        CHECK(!Cert::exists("cert2"));
+    }
     // Delete keys
     key1->remove();
     key2->remove();

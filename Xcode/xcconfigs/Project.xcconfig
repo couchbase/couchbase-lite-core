@@ -21,11 +21,11 @@ GCC_WARN_SIGN_COMPARE = NO
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
 CLANG_STATIC_ANALYZER_MODE = shallow
 
-LITECORE_VERSION_STRING                            = 4.0.0
+LITECORE_VERSION_STRING                            = 0.0.0
 LITECORE_BUILD_NUMBER                              = 0
 
-IPHONEOS_DEPLOYMENT_TARGET                         = 12.0
-MACOSX_DEPLOYMENT_TARGET                           = 12.0
+IPHONEOS_DEPLOYMENT_TARGET                         = 15.0
+MACOSX_DEPLOYMENT_TARGET                           = 13.0
 TVOS_DEPLOYMENT_TARGET                             = 12.0
 ONLY_ACTIVE_ARCH                                   = YES
 SKIP_INSTALL                                       = YES

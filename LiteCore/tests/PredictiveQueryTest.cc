@@ -160,7 +160,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]"
         if ( pass > 1 ) {
             INFO("Explanation: " << explanation);
             CHECK(explanation.find("prediction(") == string::npos);
-            CHECK(explanation.find("USING INDEX nums") != string::npos);
+            CHECK(explanation.find("USING COVERING INDEX nums") != string::npos);
         }
 
         vector<int64_t>           results;
@@ -206,16 +206,17 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][
         // Query numbers in descending order of square-ness:
         std::stringstream sstr;
         sstr << "{'WHAT': [['.num'], " << square << "],"
+             << " 'FROM': [{'COLLECTION': '" + collectionName + "'}],"
              << " 'WHERE': ['AND', ['>=', " << square + ", 1], ['>=', " << even << ", 1]],"
              << " 'ORDER_BY': [['DESC', ['.num']]] }";
 
-        Retained<Query> query{store->compileQuery(json5(sstr.str()))};
+        Retained<Query> query{db->compileQuery(json5(sstr.str()))};
         string          explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
 
         if ( pass > 1 ) {
             CHECK(explanation.find("prediction(") == string::npos);
-            CHECK(explanation.find("USING INDEX nums") != string::npos);
+            CHECK(explanation.find("USING COVERING INDEX nums") != string::npos);
         }
 
         vector<int64_t>           results;
