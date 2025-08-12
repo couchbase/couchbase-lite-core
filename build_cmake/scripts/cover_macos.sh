@@ -54,6 +54,7 @@ xcrun llvm-cov show -instr-profile=AllTests.profdata -show-line-counts-or-region
   -ignore-filename-regex="vendor/fleece/vendor/*" -ignore-filename-regex="Networking/WebSockets/*" -ignore-filename-regex="C/c4DocEnumerator.cc" \
   -ignore-filename-regex="LiteCore/Query/N1QL_Parser/*" -ignore-filename-regex="*sqlite3*c" -ignore-filename-regex="*.leg" \
   -ignore-filename-regex="vendor/mbedtls/*" -ignore-filename-regex="vendor/sqlite3-unicodesn" -ignore-filename-regex="vendor/fleece/Fleece/Integration/ObjC/*" \
+  -ignore-filename-regex="EE/Encryption/*" \
   libLiteCore.dylib
 
 if [ "$1" == "--show-results" ]; then
@@ -64,6 +65,7 @@ elif [ "$1" == "--export-results" ]; then
     -ignore-filename-regex="vendor/fleece/vendor/*" -ignore-filename-regex="Networking/WebSockets/*" -ignore-filename-regex="C/c4DocEnumerator.cc" \
     -ignore-filename-regex="LiteCore/Query/N1QL_Parser/*" -ignore-filename-regex="*sqlite3*c" -ignore-filename-regex="*.leg" \
     -ignore-filename-regex="vendor/mbedtls/*" -ignore-filename-regex="vendor/sqlite3-unicodesn" -ignore-filename-regex="vendor/fleece/Fleece/Integration/ObjC/*" \
+    -ignore-filename-regex="EE/Encryption/*" \
     libLiteCore.dylib > output.json
 
     if [[ "$2" == "--push" ]] && [[ -n "$CHANGE_ID" ]]; then
