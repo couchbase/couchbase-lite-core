@@ -50,6 +50,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		1B4CCD1D2E4D1A0800B0542C /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
 		1B8C29482E32C7840007A132 /* MultipeerTest_C.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8C29472E32C7840007A132 /* MultipeerTest_C.cc */; };
 		1BC685522E2EC10C00A5AEC1 /* MultipeerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1BC685512E2EC10C00A5AEC1 /* MultipeerTest.cc */; };
 		2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
@@ -5117,6 +5118,7 @@
 				27FD73722D834B7A00CC48BF /* ReplicatorVVUpgradeTest.cc in Sources */,
 				27FD73732D834B7A00CC48BF /* ReplicatorAPITest.cc in Sources */,
 				27FD73742D834B7A00CC48BF /* SGTestUser.cc in Sources */,
+				1B4CCD1D2E4D1A0800B0542C /* RESTClientTest.cc in Sources */,
 				27FD73752D834B7A00CC48BF /* ReplicatorSG30Test.cc in Sources */,
 				27FD73762D834B7A00CC48BF /* SG.cc in Sources */,
 				27FD73772D834B7A00CC48BF /* ReplParams.cc in Sources */,

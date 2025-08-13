@@ -40,6 +40,7 @@ std::unique_ptr<REST::Response> SG::createRequest(const std::string& method, C4C
     Encoder enc;
     enc.beginDict();
     enc["Content-Type"_sl] = "application/json";
+    enc["User-Agent"_sl]   = "couchbase-lite-core/";
     enc.endDict();
     auto headers = enc.finishDoc();
 
