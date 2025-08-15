@@ -62,7 +62,9 @@ namespace litecore::repl {
                                               _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
                                               _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
                                               collectionSpec(), _options->collectionCallbackContext(collectionIndex()));
+        logInfo("CBL-7347 inc=%p, _rev is assigned %p", this, _rev.get());
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
+        logInfo("CBL-7347 inc=%p, _rev=%p is dereferenced", this, _rev.get());
         slice sequenceStr   = _revMessage->property(slice("sequence"));
         _remoteSequence     = RemoteSequence(sequenceStr);
 
@@ -189,6 +191,7 @@ namespace litecore::repl {
     void IncomingRev::handleRevokedDoc(RevToInsert* rev) {
         reinitialize();
         _rev       = rev;
+        logInfo("CBL-7347 inc=%p, _rev is assigned to new pointer %p", this, _rev.get());
         rev->owner = this;
 
         // Do not purge if the auto-purge is not enabled:
@@ -458,6 +461,7 @@ namespace litecore::repl {
     }
 
     void IncomingRev::reset() {
+        logInfo("CBL-7347 IncomingRev::reset inc=%p, _rev=%p", this, _rev.get());
         _rev            = nullptr;
         _parent         = nullptr;
         _remoteSequence = {};

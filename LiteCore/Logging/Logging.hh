@@ -189,9 +189,9 @@ namespace litecore {
         void _logDebug(const char* format, ...) const __printflike(2, 3) { LOGBODY(Debug) }
 
         bool willLog(LogLevel level = LogLevel::Info) const { return _domain.willLog(level); }
-
+    public:
         void _log(LogLevel level, const char* format, ...) const __printflike(3, 4) { LOGBODY_(level) }
-
+    protected:
         void _logv(LogLevel level, const char* format, va_list) const __printflike(3, 0);
 
         LogDomain& _domain;

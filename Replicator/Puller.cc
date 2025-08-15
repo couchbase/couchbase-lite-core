@@ -222,9 +222,11 @@ namespace litecore::repl {
         Retained<IncomingRev> inc;
         if ( _spareIncomingRevs.empty() ) {
             inc = new IncomingRev(this);
+            inc->_log(LogLevel::Info, "CBL-7347 new IncomingRev inc=%p", inc.get());
         } else {
             inc = _spareIncomingRevs.back();
             _spareIncomingRevs.pop_back();
+            inc->_log(LogLevel::Info, "CBL-7347 spare IncomingRev inc=%p", inc.get());
         }
         return inc;
     }
@@ -280,7 +282,10 @@ namespace litecore::repl {
         for ( IncomingRev* inc : *revs ) {
             // If it was provisionally inserted, _activeIncomingRevs will have been decremented
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
+            inc->_log(LogLevel::Info, "CBL-7347 inc=%p in _revsFinished", inc);
             auto rev = inc->rev();
+            inc->_log(LogLevel::Info, "CBL-7347 rev=%p in _revsFinished", rev);
+
             if ( rev->revocationMode == RevocationMode::kNone ) {
                 if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevs);
                 decrement(_unfinishedIncomingRevs);
