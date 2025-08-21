@@ -308,12 +308,13 @@ namespace litecore::repl {
             decrement(_unfinishedIncomingRevoked, numRevoked);
             _revFinder->revokedHandled(numRevoked);
         }
-
+#if 0
+        // Disable recycling of IncomingRevs for debugging purpose, CBL-7347
         ssize_t capacity = tuning::kMaxIncomingRevs - narrow_cast<ssize_t>(_spareIncomingRevs.size());
         if ( capacity > 0 )
             _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(),
                                       revs->begin() + min(capacity, narrow_cast<ssize_t>(revs->size())));
-
+#endif
         if ( !passive() ) updateLastSequence();
 
         maybeStartIncomingRevs();
