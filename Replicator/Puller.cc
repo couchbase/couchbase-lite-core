@@ -282,17 +282,23 @@ namespace litecore::repl {
         for ( IncomingRev* inc : *revs ) {
             // If it was provisionally inserted, _activeIncomingRevs will have been decremented
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
-            inc->_log(LogLevel::Info, "CBL-7347 inc=%p in _revsFinished", inc);
+            inc->_log(LogLevel::Info, "CBL-7347 inc=%p in _revsFinished-I", inc);
             auto rev = inc->rev();
-            inc->_log(LogLevel::Info, "CBL-7347 rev=%p in _revsFinished", rev);
+            inc->_log(LogLevel::Info, "CBL-7347 rev=%p in _revsFinished-II", rev);
 
-            if ( rev->revocationMode == RevocationMode::kNone ) {
+            auto revMode = rev->revocationMode;
+            inc->_log(LogLevel::Info, "CBL-7347 rev=%p in _revsFinished-III", rev);
+
+//            if ( rev->revocationMode == RevocationMode::kNone ) {
+            if ( revMode == RevocationMode::kNone ) {
                 if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevs);
                 decrement(_unfinishedIncomingRevs);
             } else {
                 if ( !inc->wasProvisionallyInserted() ) decrement(_activeIncomingRevoked);
                 numRevoked++;
             }
+            inc->_log(LogLevel::Info, "CBL-7347 rev=%p in _revsFinished-IV", rev);
+
             if ( !passive() ) completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
             inc->reset();
@@ -303,10 +309,13 @@ namespace litecore::repl {
             _revFinder->revokedHandled(numRevoked);
         }
 
+#if 0
+        // Disable recycling of IncomingRevs for debugging purpose, CBL-7347
         ssize_t capacity = tuning::kMaxIncomingRevs - narrow_cast<ssize_t>(_spareIncomingRevs.size());
         if ( capacity > 0 )
             _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(),
                                       revs->begin() + min(capacity, narrow_cast<ssize_t>(revs->size())));
+#endif
 
         if ( !passive() ) updateLastSequence();
 
