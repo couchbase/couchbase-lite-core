@@ -177,10 +177,8 @@ namespace litecore::repl {
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
              || _mayContainEncryptedProperties ) {
-            _finishState = FinishState::Enqueued;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
         } else {
-            _finishState = FinishState::NotEnqueued;
             parseAndInsert(std::move(jsonBody));
         }
     }
@@ -450,11 +448,11 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // If the _finishState was `AfterEvent`, afterEvent() has already been called, so this is the last code to execute in this cycle
-        // of IncomingRev, and we should notify Puller now that we are done.
-        FinishState finishState = _finishState.exchange(FinishState::Finish);
-        if ( finishState == FinishState::AfterEvent || finishState == FinishState::NotEnqueued )
+        {
+            std::scoped_lock<std::recursive_mutex> lock(_finishMutex);
+            _finished = true;
             _puller->revWasHandled(this);
+        }
     }
 
     void IncomingRev::reset() {
@@ -462,17 +460,14 @@ namespace litecore::repl {
         _parent         = nullptr;
         _remoteSequence = {};
         _bodySize       = 0;
-        _finishState    = FinishState::NotEnqueued;
-        _wasHandled     = false;
+        _finished       = false;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
-        Worker::afterEvent();
-        // If the _finishState was `Finish`, finish() has already been called, so this is the last code to execute in this cycle
-        // of IncomingRev, and we should notify Puller now that we are done.
-        if ( _finishState.exchange(FinishState::AfterEvent) == FinishState::Finish ) _puller->revWasHandled(this);
+        std::scoped_lock<std::recursive_mutex> lock(_finishMutex);
+        if ( !_finished ) Worker::afterEvent();
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
