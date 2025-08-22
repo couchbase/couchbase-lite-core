@@ -45,10 +45,6 @@ namespace litecore::repl {
 
         bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
 
-        bool wasHandled() const { return _wasHandled; }
-
-        void setHandled() { _wasHandled = true; }
-
       protected:
         std::string loggingClassName() const override { return "IncomingRev"; }
 
@@ -57,8 +53,6 @@ namespace litecore::repl {
         void afterEvent() override;
 
       private:
-        enum class FinishState : uint8_t { NotEnqueued, Enqueued, Finish, AfterEvent };
-
         void        reinitialize();
         void        parseAndInsert(alloc_slice jsonBody);
         void        _handleRev(Retained<blip::MessageIn>);
@@ -90,8 +84,8 @@ namespace litecore::repl {
         uint32_t                  _serialNumber{0};
         std::atomic<bool>         _provisionallyInserted{false};
 
-        // Determines whether this IncomingRev is currently in use by the Puller.
-        std::atomic<FinishState> _finishState{FinishState::NotEnqueued};
+        std::recursive_mutex _finishMutex;
+        bool                 _finished{};
 
         // blob stuff:
         std::vector<PendingBlob>                 _pendingBlobs;
@@ -101,7 +95,6 @@ namespace litecore::repl {
         actor::Timer::time                       _lastNotifyTime;
         bool                                     _mayContainBlobChanges{};
         bool                                     _mayContainEncryptedProperties{};
-        bool                                     _wasHandled{};
         uint64_t                                 _bodySize{};
     };
 
