@@ -172,6 +172,8 @@ namespace litecore::blip {
             Message::dump(_properties, (withBody ? _body : fleece::alloc_slice()), out);
         }
 
+        bool responded() const { return _responded; }
+
       protected:
         friend class MessageOut;
         friend class BLIPIO;
