@@ -45,6 +45,10 @@ namespace litecore::repl {
 
         bool passive() const override { return _options->pull(collectionIndex()) <= kC4Passive; }
 
+        bool wasHandled() const { return _wasHandled; }
+
+        void setHandled() { _wasHandled = true; }
+
       protected:
         std::string loggingClassName() const override { return "IncomingRev"; }
 
@@ -97,6 +101,7 @@ namespace litecore::repl {
         actor::Timer::time                       _lastNotifyTime;
         bool                                     _mayContainBlobChanges{};
         bool                                     _mayContainEncryptedProperties{};
+        bool                                     _wasHandled{};
         uint64_t                                 _bodySize{};
     };
 
