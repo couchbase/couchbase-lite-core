@@ -267,6 +267,9 @@ namespace litecore::repl {
     // Called from an IncomingRev when it's finished (either added to db, or failed.)
     // The IncomingRev will be processed later by _revsFinished().
     void Puller::revWasHandled(IncomingRev* inc) {
+        if ( inc->wasHandled() ) return;
+        inc->setHandled();
+
         // CAUTION: For performance reasons this method is called directly, without going through the
         // Actor event queue, so it runs on the IncomingRev's thread, NOT the Puller's! Thus, it needs
         // to pay attention to thread-safety.

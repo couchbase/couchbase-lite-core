@@ -463,6 +463,7 @@ namespace litecore::repl {
         _remoteSequence = {};
         _bodySize       = 0;
         _finishState    = FinishState::NotEnqueued;
+        _wasHandled     = false;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
