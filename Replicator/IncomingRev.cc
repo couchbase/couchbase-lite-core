@@ -388,6 +388,9 @@ namespace litecore::repl {
         Assert(_rev->error.code == 0);
         Assert(_rev->deltaSrc || _rev->doc || _rev->revocationMode != RevocationMode::kNone);
         increment(_pendingCallbacks);
+
+        // Starting _finishState from Insert
+        if ( currentActor() == this ) _finishState = FinishState::Insert;
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
     }
@@ -420,17 +423,7 @@ namespace litecore::repl {
     }
 
     // Finish up, on success or failure.
-    // Dispatch _finish if called not from my mailbox.
-    // Otherwise, defer it to afterEvent
     void IncomingRev::finish() {
-        if ( currentActor() == this ) {
-            _finishAfterEvent = true;
-        } else {
-            enqueue(FUNCTION_TO_QUEUE(IncomingRev::_finish));
-        }
-    }
-
-    void IncomingRev::_finish() {
         if ( _rev->error.domain == LiteCoreDomain
              && (_rev->error.code == kC4ErrorDeltaBaseUnknown || _rev->error.code == kC4ErrorCorruptDelta) ) {
             // CBL-936: Make sure that the puller knows this revision is coming again
@@ -458,22 +451,33 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        _puller->revWasHandled(this);
+        // Enqueued -> Insert -> Finish
+        // If the transition is successful, we defer _revWasHandled to AfterEvent
+        // In this case, insertRevision is called in IncomingRev's thread.
+        FinishState expected = FinishState::Insert;
+        bool        succ     = _finishState.compare_exchange_strong(expected, FinishState::Finish);
+        if ( !succ ) { _puller->revWasHandled(this); }
     }
 
     void IncomingRev::reset() {
-        _rev              = nullptr;
-        _parent           = nullptr;
-        _remoteSequence   = {};
-        _bodySize         = 0;
-        _finishAfterEvent = false;
+        _rev            = nullptr;
+        _parent         = nullptr;
+        _remoteSequence = {};
+        _bodySize       = 0;
+        _finishState    = FinishState::Unknown;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-        if ( _finishAfterEvent ) _finish();
+
+        // Insert -> AfterEvent
+        // (Insert ->)Finish => revWasHandled
+        FinishState expected = FinishState::Insert;
+        _finishState.compare_exchange_strong(expected, FinishState::AfterEvent);
+        // If the transition is not successful
+        if ( expected == FinishState::Finish ) { _puller->revWasHandled(this); }
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
