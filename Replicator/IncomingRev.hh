@@ -65,6 +65,7 @@ namespace litecore::repl {
         void        failWithError(C4Error);
         void        failWithError(C4ErrorDomain, int code, slice message);
         void        finish();
+        void        _finish();
 
         // blob stuff:
         void fetchNextBlob();
@@ -83,9 +84,7 @@ namespace litecore::repl {
         RemoteSequence            _remoteSequence;
         uint32_t                  _serialNumber{0};
         std::atomic<bool>         _provisionallyInserted{false};
-
-        std::recursive_mutex _finishMutex;
-        bool                 _finished{};
+        bool                      _finishAfterEvent{};
 
         // blob stuff:
         std::vector<PendingBlob>                 _pendingBlobs;

@@ -420,7 +420,17 @@ namespace litecore::repl {
     }
 
     // Finish up, on success or failure.
+    // Dispatch _finish if called not from my mailbox.
+    // Otherwise, defer it to afterEvent
     void IncomingRev::finish() {
+        if ( currentActor() == this ) {
+            _finishAfterEvent = true;
+        } else {
+            enqueue(FUNCTION_TO_QUEUE(IncomingRev::_finish));
+        }
+    }
+
+    void IncomingRev::_finish() {
         if ( _rev->error.domain == LiteCoreDomain
              && (_rev->error.code == kC4ErrorDeltaBaseUnknown || _rev->error.code == kC4ErrorCorruptDelta) ) {
             // CBL-936: Make sure that the puller knows this revision is coming again
@@ -448,26 +458,22 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        {
-            std::scoped_lock<std::recursive_mutex> lock(_finishMutex);
-            _finished = true;
-            _puller->revWasHandled(this);
-        }
+        _puller->revWasHandled(this);
     }
 
     void IncomingRev::reset() {
-        _rev            = nullptr;
-        _parent         = nullptr;
-        _remoteSequence = {};
-        _bodySize       = 0;
-        _finished       = false;
+        _rev              = nullptr;
+        _parent           = nullptr;
+        _remoteSequence   = {};
+        _bodySize         = 0;
+        _finishAfterEvent = false;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
-        std::scoped_lock<std::recursive_mutex> lock(_finishMutex);
-        if ( !_finished ) Worker::afterEvent();
+        Worker::afterEvent();
+        if ( _finishAfterEvent ) _finish();
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
