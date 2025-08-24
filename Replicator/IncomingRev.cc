@@ -177,10 +177,8 @@ namespace litecore::repl {
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
              || _mayContainEncryptedProperties ) {
-            _finishState = FinishState::Enqueued;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
         } else {
-            _finishState = FinishState::NotEnqueued;
             parseAndInsert(std::move(jsonBody));
         }
     }
@@ -390,6 +388,9 @@ namespace litecore::repl {
         Assert(_rev->error.code == 0);
         Assert(_rev->deltaSrc || _rev->doc || _rev->revocationMode != RevocationMode::kNone);
         increment(_pendingCallbacks);
+
+        // Starting _finishState from Insert
+        if ( currentActor() == this ) _finishState = FinishState::Insert;
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
     }
@@ -450,11 +451,12 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // If the _finishState was `AfterEvent`, afterEvent() has already been called, so this is the last code to execute in this cycle
-        // of IncomingRev, and we should notify Puller now that we are done.
-        FinishState finishState = _finishState.exchange(FinishState::Finish);
-        if ( finishState == FinishState::AfterEvent || finishState == FinishState::NotEnqueued )
-            _puller->revWasHandled(this);
+        // Enqueued -> Insert -> Finish
+        // If the transition is successful, we defer _revWasHandled to AfterEvent
+        // In this case, insertRevision is called in IncomingRev's thread.
+        FinishState expected = FinishState::Insert;
+        bool        succ     = _finishState.compare_exchange_strong(expected, FinishState::Finish);
+        if ( !succ ) { _puller->revWasHandled(this); }
     }
 
     void IncomingRev::reset() {
@@ -462,16 +464,20 @@ namespace litecore::repl {
         _parent         = nullptr;
         _remoteSequence = {};
         _bodySize       = 0;
-        _finishState    = FinishState::NotEnqueued;
+        _finishState    = FinishState::Unknown;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-        // If the _finishState was `Finish`, finish() has already been called, so this is the last code to execute in this cycle
-        // of IncomingRev, and we should notify Puller now that we are done.
-        if ( _finishState.exchange(FinishState::AfterEvent) == FinishState::Finish ) _puller->revWasHandled(this);
+
+        // Insert -> AfterEvent
+        // (Insert ->)Finish => revWasHandled
+        FinishState expected = FinishState::Insert;
+        _finishState.compare_exchange_strong(expected, FinishState::AfterEvent);
+        // If the transition is not successful
+        if ( expected == FinishState::Finish ) { _puller->revWasHandled(this); }
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
