@@ -57,11 +57,11 @@ namespace litecore::repl {
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
-        _revMessage         = msg;
-        _rev                = new RevToInsert(this, _revMessage->property("id"_sl), _revMessage->property("rev"_sl),
-                                              _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
-                                              _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
-                                              collectionSpec(), _options->collectionCallbackContext(collectionIndex()));
+        _revMessage = msg;
+        _rev = new RevToInsert(this, _revMessage->property("id"_sl), _revMessage->property("rev"_sl),
+                               _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
+                               _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
+                               collectionSpec(), _options->collectionCallbackContext(collectionIndex()));
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr   = _revMessage->property(slice("sequence"));
         _remoteSequence     = RemoteSequence(sequenceStr);
@@ -92,11 +92,9 @@ namespace litecore::repl {
             case RevIDType::Invalid:
                 break;
             case RevIDType::Tree:
-                if ( !_db->usingVersionVectors() ) {
-                    valid = true;
-                    if ( !_rev->historyBuf && C4Document::getRevIDGeneration(_rev->revID) > 1 )
-                        warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
-                }
+                valid = true;
+                if ( !_rev->historyBuf && C4Document::getRevIDGeneration(_rev->revID) > 1 )
+                    warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
                 break;
             case RevIDType::Version:
                 // Incoming version IDs must be in absolute form (no '*')

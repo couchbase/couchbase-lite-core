@@ -169,7 +169,7 @@ namespace litecore::repl {
         bool valid;
         if ( docID.size < 1 || docID.size > 255 ) valid = false;
         else if ( _db->usingVersionVectors() )
-            valid = revID.findByte('@') && !revID.findByte('*');  // require absolute form
+            valid = (revID.findByte('@') && !revID.findByte('*')) || revID.findByte('-');  // require absolute form
         else
             valid = revID.findByte('-');
         if ( !valid ) {
@@ -338,19 +338,17 @@ namespace litecore::repl {
     // Checks whether the revID (if any) is really current for the given doc.
     // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
     int RevFinder::findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice& outCurrentRevID) {
+        // Get the local doc's current revID/vector and flags:
         C4DocumentFlags flags = 0;
-        {
-            // Get the local doc's current revID/vector and flags:
-            outCurrentRevID = nullslice;
-            try {
-                if ( Retained<C4Document> doc = _db->getDoc(collectionSpec(), docID, kDocGetMetadata); doc ) {
-                    flags           = doc->flags();
-                    outCurrentRevID = doc->getSelectedRevIDGlobalForm();
-                }
-            } catch ( ... ) {
-                gotError(C4Error::fromCurrentException());
-                return 500;
+        outCurrentRevID = nullslice;
+        try {
+            if ( Retained<C4Document> doc = _db->getDoc(collectionSpec(), docID, kDocGetMetadata); doc ) {
+                flags           = doc->flags();
+                outCurrentRevID = doc->getSelectedRevIDGlobalForm();
             }
+        } catch ( ... ) {
+            gotError(C4Error::fromCurrentException());
+            return 500;
         }
 
         if ( outCurrentRevID == revID ) {
@@ -358,8 +356,15 @@ namespace litecore::repl {
             return 304;
         } else if ( _db->usingVersionVectors() ) {
             // Version vectors:  (note that parentRevID is ignored; we don't need it)
+            if ( !outCurrentRevID ) {
+                // I don't have this doc at all
+                return 0;
+            }
             try {
-                auto theirVers = VersionVector::fromASCII(revID);
+                // If it's a legacy ID, make it into a Version:
+                alloc_slice revIDAsVersion = C4Document::revIDAsVersion(revID);
+
+                auto theirVers = VersionVector::fromASCII(revIDAsVersion);
                 auto myVers    = VersionVector::fromASCII(outCurrentRevID);
                 switch ( theirVers.compareTo(myVers) ) {
                     case kSame:
