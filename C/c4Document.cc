@@ -304,7 +304,11 @@ bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
 
 unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
     try {
-        return revidBuffer(revID).getRevID().generation();
+        revidBuffer buf;
+        if ( !buf.tryParse(revID) ) return 0;
+        revid r = buf.getRevID();
+        if (r.isVersion()) return 0;
+        return r.generation();
     }
     catchAndWarn() return 0;
 }
@@ -319,6 +323,18 @@ uint64_t C4Document::getRevIDTimestamp(slice revID) noexcept {
             return r.generation();
     }
     catchAndWarn() return 0;
+}
+
+alloc_slice C4Document::legacyRevIDAsVersion(slice revID) noexcept {
+    try {
+        revidBuffer buf;
+        if ( !buf.tryParse(revID) ) return nullslice;
+        revid r = buf.getRevID();
+        if ( r.isVersion() ) return alloc_slice(revID);
+        else
+            return Version::legacyVersion(r).asASCII();
+    }
+    catchAndWarn() return nullslice;
 }
 
 C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept {

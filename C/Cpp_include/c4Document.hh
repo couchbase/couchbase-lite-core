@@ -153,6 +153,7 @@ struct C4Document
     static bool                    equalRevIDs(slice revID1, slice revID2) noexcept;
     static unsigned                getRevIDGeneration(slice revID) noexcept;
     static uint64_t                getRevIDTimestamp(slice revID) noexcept;
+    static alloc_slice             legacyRevIDAsVersion(slice revID) noexcept;
 
     static C4RevisionFlags revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
 
