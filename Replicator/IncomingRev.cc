@@ -184,6 +184,7 @@ namespace litecore::repl {
     }
 
     // We've lost access to this doc on the server; it should be purged.
+    // This runs on the caller's (Puller's) thread.
     void IncomingRev::handleRevokedDoc(RevToInsert* rev) {
         reinitialize();
         _rev       = rev;
@@ -205,6 +206,7 @@ namespace litecore::repl {
         insertRevision();
     }
 
+    // This method may be enqueued as normal, or called directly from handleRev on the Puller's thread.
     void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
         // First create a Fleece document:
         Doc     fleeceDoc;
@@ -389,8 +391,6 @@ namespace litecore::repl {
         Assert(_rev->deltaSrc || _rev->doc || _rev->revocationMode != RevocationMode::kNone);
         increment(_pendingCallbacks);
 
-        // Starting _finishState from Insert
-        if ( currentActor() == this ) _finishState = FinishState::Insert;
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
     }
@@ -404,7 +404,7 @@ namespace litecore::repl {
         revoked ? _puller->revWasProvisionallyHandled<true>() : _puller->revWasProvisionallyHandled<false>();
     }
 
-    // Called by the Inserter after the revision is safely committed to disk.
+    // Called directly by the Inserter, on its thread, after the revision is safely committed to disk.
     void IncomingRev::revisionInserted() {
         Retained<IncomingRev> retainSelf = this;
         decrement(_pendingCallbacks);
@@ -451,33 +451,29 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // Enqueued -> Insert -> Finish
-        // If the transition is successful, we defer _revWasHandled to AfterEvent
-        // In this case, insertRevision is called in IncomingRev's thread.
-        FinishState expected = FinishState::Insert;
-        bool        succ     = _finishState.compare_exchange_strong(expected, FinishState::Finish);
-        if ( !succ ) { _puller->revWasHandled(this); }
+        // finish() can be called either on my queue, or on the Puller's or Inserter's queue.
+        // If on my queue, I'm not ready to be reset until after the `afterEvent` call following
+        // this method, so defer telling the Puller I'm done until then:
+        if ( currentActor() == this ) _finishedAfterEvent = true;
+        else
+            _puller->revWasHandled(this);
     }
 
     void IncomingRev::reset() {
-        _rev            = nullptr;
-        _parent         = nullptr;
-        _remoteSequence = {};
-        _bodySize       = 0;
-        _finishState    = FinishState::Unknown;
+        _rev                = nullptr;
+        _parent             = nullptr;
+        _remoteSequence     = {};
+        _bodySize           = 0;
+        _finishedAfterEvent = false;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-
-        // Insert -> AfterEvent
-        // (Insert ->)Finish => revWasHandled
-        FinishState expected = FinishState::Insert;
-        _finishState.compare_exchange_strong(expected, FinishState::AfterEvent);
-        // If the transition is not successful
-        if ( expected == FinishState::Finish ) { _puller->revWasHandled(this); }
+        // If the finish() method passed the buck to me (see above), call revWasHandled now:
+        auto expected = true;
+        if ( _finishedAfterEvent.compare_exchange_strong(expected, false) ) _puller->revWasHandled(this);
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
