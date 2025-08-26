@@ -19,6 +19,7 @@
 #include "mbedtls/md.h"
 #include <vector>
 
+#ifdef COUCHBASE_ENTERPRISE
 // Ensure that whenever the mbedTLS values change that we know about it
 static_assert(static_cast<int>(kC4SignatureDigestNone) == static_cast<int>(MBEDTLS_MD_NONE));
 static_assert(static_cast<int>(kC4SignatureDigestRIPEMD160) == static_cast<int>(MBEDTLS_MD_RIPEMD160));
@@ -27,6 +28,7 @@ static_assert(static_cast<int>(kC4SignatureDigestSHA224) == static_cast<int>(MBE
 static_assert(static_cast<int>(kC4SignatureDigestSHA256) == static_cast<int>(MBEDTLS_MD_SHA256));
 static_assert(static_cast<int>(kC4SignatureDigestSHA384) == static_cast<int>(MBEDTLS_MD_SHA384));
 static_assert(static_cast<int>(kC4SignatureDigestSHA512) == static_cast<int>(MBEDTLS_MD_SHA512));
+#endif
 
 #ifdef COUCHBASE_ENABLE_CERT_REQUEST
 #    define ENABLE_CERT_REQUEST
