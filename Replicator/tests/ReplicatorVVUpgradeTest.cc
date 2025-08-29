@@ -22,7 +22,7 @@
     replicated with a peer.*/
 class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
   public:
-    ReplicatorVVUpgradeTest() : ReplicatorLoopbackTest(0) {}    // always start in rev-tree mode
+    ReplicatorVVUpgradeTest() : ReplicatorLoopbackTest(0) {}  // always start in rev-tree mode
 
     /// Loads names_100.json into db, and bidirectionally syncs with db2.
     void populateAndSync() {

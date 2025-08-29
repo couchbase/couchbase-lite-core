@@ -307,7 +307,7 @@ unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
         revidBuffer buf;
         if ( !buf.tryParse(revID) ) return 0;
         revid r = buf.getRevID();
-        if (r.isVersion()) return 0;
+        if ( r.isVersion() ) return 0;
         return r.generation();
     }
     catchAndWarn() return 0;

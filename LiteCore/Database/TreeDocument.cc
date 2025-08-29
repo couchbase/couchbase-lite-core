@@ -277,11 +277,9 @@ namespace litecore {
         bool currentRevDescendsFrom(slice revID) const override {
             requireRevisions();
             const Rev* ancestor = _revTree[revidBuffer(revID).getRevID()];
-            if (!ancestor)
-                return false;
-            for (auto rev = _revTree.currentRevision(); rev; rev = rev->parent)
-                if (rev == ancestor)
-                    return true;
+            if ( !ancestor ) return false;
+            for ( auto rev = _revTree.currentRevision(); rev; rev = rev->parent )
+                if ( rev == ancestor ) return true;
             return false;
         }
 

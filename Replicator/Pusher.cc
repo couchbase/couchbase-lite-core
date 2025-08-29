@@ -422,7 +422,7 @@ namespace litecore::repl {
                 if ( receivedRevID && receivedRevID != rev->remoteAncestorRevID ) {
                     // Remote ancestor received in proposeChanges response, so try with
                     // this one instead
-                    if (doc->currentRevDescendsFrom(receivedRevID)) {
+                    if ( doc->currentRevDescendsFrom(receivedRevID) ) {
                         logInfo("Remote reported different rev of '%.*s' (mine: %.*s theirs: %.*s); retrying push",
                                 SPLAT(rev->docID), SPLAT(rev->remoteAncestorRevID), SPLAT(receivedRevID));
                         rev->remoteAncestorRevID = receivedRevID;

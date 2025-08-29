@@ -561,10 +561,9 @@ class ReplicatorLoopbackTest
 #pragma mark - VALIDATION:
 
     alloc_slice absoluteRevID(C4Document* doc) {
-        if (c4rev_getGeneration(doc->revID) > 0)
-            return doc->revID; // legacy tree-based ID
+        if ( c4rev_getGeneration(doc->revID) > 0 ) return doc->revID;  // legacy tree-based ID
         else
-            return c4doc_getRevisionHistory(doc, 999, nullptr, 0); // version vector
+            return c4doc_getRevisionHistory(doc, 999, nullptr, 0);  // version vector
     }
 
 #define fastREQUIRE(EXPR)                                                                                              \

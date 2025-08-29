@@ -676,7 +676,9 @@ unsigned c4rev_getGeneration(C4Slice revID) noexcept { return C4Document::getRev
 
 uint64_t c4rev_getTimestamp(C4Slice revID) noexcept { return C4Document::getRevIDTimestamp(revID); }
 
-C4SliceResult c4rev_legacyAsVersion(C4String revID) noexcept { return C4SliceResult(C4Document::legacyRevIDAsVersion(revID)); }
+C4SliceResult c4rev_legacyAsVersion(C4String revID) noexcept {
+    return C4SliceResult(C4Document::legacyRevIDAsVersion(revID));
+}
 
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
     return C4Document::revisionFlagsFromDocFlags(docFlags);
