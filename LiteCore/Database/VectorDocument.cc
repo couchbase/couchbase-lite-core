@@ -246,6 +246,22 @@ namespace litecore {
             return result;
         }
 
+        bool currentRevDescendsFrom(slice revID) const override {
+            VersionVecWithLegacy localVec(_doc, RemoteID::Local);
+
+            VersionVecWithLegacy ancestorVec( [&] {
+                if (revidBuffer(revID).getRevID().isVersion()) {
+                    auto vec = VersionVector::fromASCII(revID);
+                    return VersionVecWithLegacy(revid(vec.asBinary()));
+                } else {
+                    return VersionVecWithLegacy(&revID, 1, kMeSourceID);
+                }
+            }() );
+
+            auto cmp = VersionVecWithLegacy::compare(localVec, ancestorVec);
+            return cmp == kNewer || cmp == kSame;
+        }
+
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
             if ( auto rev = _doc.loadRemoteRevision(RemoteID(remote)) ) return rev->revID.expanded();
             return nullptr;

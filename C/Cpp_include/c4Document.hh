@@ -103,6 +103,10 @@ struct C4Document
         failUnsupported();
     }
 
+    /// Returns true if `revID` is known to be a direct ancestor of (or equal to) the current revision.
+    /// @note In a version-vector document, `revID` may be an entire version vector.
+    virtual bool currentRevDescendsFrom(slice revID) const = 0;
+
     // Remote database revision tracking:
 
     virtual alloc_slice remoteAncestorRevID(C4RemoteID)                 = 0;

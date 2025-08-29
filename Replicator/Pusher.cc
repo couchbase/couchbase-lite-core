@@ -422,12 +422,7 @@ namespace litecore::repl {
                 if ( receivedRevID && receivedRevID != rev->remoteAncestorRevID ) {
                     // Remote ancestor received in proposeChanges response, so try with
                     // this one instead
-
-                    // If the first portion of this test passes, then the rev exists in the tree.
-                    // If the second portion passes, then receivedRevID is an ancestor of the
-                    // current rev ID and it is usable for a retry.
-                    if ( doc->selectRevision(receivedRevID, false)
-                         && doc->selectCommonAncestorRevision(rev->revID, receivedRevID) ) {
+                    if (doc->currentRevDescendsFrom(receivedRevID)) {
                         logInfo("Remote reported different rev of '%.*s' (mine: %.*s theirs: %.*s); retrying push",
                                 SPLAT(rev->docID), SPLAT(rev->remoteAncestorRevID), SPLAT(receivedRevID));
                         rev->remoteAncestorRevID = receivedRevID;

@@ -274,6 +274,17 @@ namespace litecore {
             return true;
         }
 
+        bool currentRevDescendsFrom(slice revID) const override {
+            requireRevisions();
+            const Rev* ancestor = _revTree[revidBuffer(revID).getRevID()];
+            if (!ancestor)
+                return false;
+            for (auto rev = _revTree.currentRevision(); rev; rev = rev->parent)
+                if (rev == ancestor)
+                    return true;
+            return false;
+        }
+
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
             mustLoadRevisions();
             auto rev = _revTree.latestRevisionOnRemote(remote);
