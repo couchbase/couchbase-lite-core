@@ -22,9 +22,20 @@
     replicated with a peer.*/
 class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
   public:
-    ReplicatorVVUpgradeTest() : ReplicatorLoopbackTest(0) {}
+    ReplicatorVVUpgradeTest() : ReplicatorLoopbackTest(0) {}    // always start in rev-tree mode
 
-    // Reopen database, enabling version vectors:
+    /// Loads names_100.json into db, and bidirectionally syncs with db2.
+    void populateAndSync() {
+        importJSONLines(sFixturesDir + "names_100.json", _collDB1);
+
+        Log("-------- First Replication (Rev Trees) --------");
+        _expectedDocumentCount = 100;
+        runPushPullReplication();
+        compareDatabases();
+        validateCheckpoints(db, db2, "{\"local\":100}");
+    }
+
+    /// Reopens a database, enabling version vectors.
     void upgrade(C4Database*& database, C4Collection*& coll1) {
         alloc_slice name(c4db_getName(database));
         REQUIRE(c4db_close(database, WITH_ERROR()));
@@ -40,7 +51,7 @@ class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
         coll1 = createCollection(database, _collSpec);
     }
 
-    // Reopen both databases, enabling version vectors in both.
+    /// Reopens both databases, enabling version vectors in both.
     void upgrade() {
         upgrade(db, _collDB1);
         upgrade(db2, _collDB2);
@@ -48,9 +59,7 @@ class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
     }
 };
 
-#if 0
-// Disabled, c.f. https://jira.issues.couchbase.com/browse/CBL-6593
-TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push]") {
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push][Upgrade]") {
     //- db pushes docs to db2. Both are still on rev-trees.
     //- db and db2 both upgrade to version vectors.
     //- db updates two of the docs it pushed, and creates a new one.
@@ -70,15 +79,14 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push]") {
     createNewRev(_collDB1, "newDoc"_sl, kFleeceBody);
     _expectedDocumentCount = 3;
 
-    Log("-------- Second Replication --------");
+    Log("-------- Second Replication (Version Vectors) --------");
     runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOpts);
 
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":103}");
 }
-#endif
 
-TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull]") {
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull][Upgrade]") {
     //- db pushes docs to db2. Both are still on rev-trees.
     //- db and db2 both upgrade to version vectors.
     //- db updates two of the docs it pushed, and creates a new one.
@@ -95,8 +103,38 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull]") {
     createNewRev(_collDB1, "newDoc"_sl, kFleeceBody);
     _expectedDocumentCount = 3;
 
-    Log("-------- Second Replication --------");
+    Log("-------- Second Replication (Version Vectors) --------");
     runPullReplication();
 
+    compareDatabases();
+}
+
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push and Pull New Docs After VV Upgrade", "[Push][Pull][Upgrade]") {
+    populateAndSync();
+
+    Log("-------- Create a doc in each db --------");
+    createRev(_collDB1, "new1"_sl, "1-abcd"_sl, kFleeceBody);
+    createRev(_collDB2, "new2"_sl, "1-fedc"_sl, kFleeceBody);
+    _expectedDocumentCount = 2;
+
+    upgrade();
+
+    Log("-------- Second Replication (Version Vectors) --------");
+    runPushPullReplication();
+    compareDatabases();
+}
+
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push and Pull Existing Docs After VV Upgrade", "[Push][Pull][Upgrade]") {
+    populateAndSync();
+
+    Log("-------- Update existing doc in each db --------");
+    createRev(_collDB1, "0000010"_sl, "2-1111"_sl, kFleeceBody);
+    createRev(_collDB2, "0000020"_sl, "2-2222"_sl, kFleeceBody);
+    _expectedDocumentCount = 2;
+
+    upgrade();
+
+    Log("-------- Second Replication (Version Vectors) --------");
+    runPushPullReplication();
     compareDatabases();
 }
