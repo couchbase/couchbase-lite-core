@@ -717,14 +717,21 @@ namespace litecore {
     }
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
+        bool syncedFlag = (rec.flags & DocumentFlags::kSynced);
         if ( revid(rec.version).isVersion() ) {
             callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
+            int firstRemote = 1;
+            if ( syncedFlag ) {
+                // Apply the kSynced flag if it's set:
+                callback(RemoteID(1), revid(rec.version), rec.body.size > 0);
+                ++firstRemote;
+            }
             if ( rec.extra.size > 0 ) {
                 fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
                 Array               remotes = ValueFromData(rec.extra, kFLTrusted).asArray();
                 int                 n       = 0;
                 for ( Array::iterator i(remotes); i; ++i, ++n ) {
-                    if ( n > 0 ) {
+                    if ( n >= firstRemote ) {
                         Dict remote = i.value().asDict();
                         if ( slice revID = remote[kRevIDKey].asData(); revID )
                             callback(RemoteID(n), revid(revID), remote[kRevPropertiesKey] != nullptr);
@@ -735,12 +742,15 @@ namespace litecore {
             // Legacy RevTree record:
             RevTree    revTree(rec.body, rec.extra, rec.sequence);
             const Rev* curRev = revTree.currentRevision();
-            // First the local version:
-            callback(RemoteID::Local, curRev->revID, curRev->isBodyAvailable());
-            // Then the remotes:
-            for ( auto [id, rev] : revTree.remoteRevisions() ) {
-                if ( rev != curRev ) { callback(RemoteID(id), rev->revID, rev->isBodyAvailable()); }
+            if ( syncedFlag && curRev ) {
+                // Apply the kSynced flag if it's set:
+                revTree.setLatestRevisionOnRemote(RevTree::kDefaultRemoteID, curRev);
             }
+            // First the local version:
+            if ( curRev ) callback(RemoteID::Local, curRev->revID, curRev->isBodyAvailable());
+            // Then the remotes:
+            for ( auto [id, rev] : revTree.remoteRevisions() )
+                callback(RemoteID(id), rev->revID, rev->isBodyAvailable());
         }
     }
 
