@@ -161,6 +161,7 @@ namespace litecore {
 
     Version VersionVector::readCurrentVersionFromBinary(slice data) {
         slice_istream in = openBinary(data);
+        if ( in.size == 0 ) error::_throw(error::BadRevisionID, "Empty version vector");
         return Version(in);
     }
 
