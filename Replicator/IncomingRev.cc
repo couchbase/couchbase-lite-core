@@ -177,15 +177,14 @@ namespace litecore::repl {
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if ( _options->pullFilter(collectionIndex()) || jsonBody.size > kMaxImmediateParseSize || _mayContainBlobChanges
              || _mayContainEncryptedProperties ) {
-            _finishState = FinishState::Enqueued;
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), std::move(jsonBody));
         } else {
-            _finishState = FinishState::NotEnqueued;
             parseAndInsert(std::move(jsonBody));
         }
     }
 
     // We've lost access to this doc on the server; it should be purged.
+    // This runs on the caller's (Puller's) thread.
     void IncomingRev::handleRevokedDoc(RevToInsert* rev) {
         reinitialize();
         _rev       = rev;
@@ -207,6 +206,7 @@ namespace litecore::repl {
         insertRevision();
     }
 
+    // This method may be enqueued as normal, or called directly from handleRev on the Puller's thread.
     void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
         // First create a Fleece document:
         Doc     fleeceDoc;
@@ -390,6 +390,7 @@ namespace litecore::repl {
         Assert(_rev->error.code == 0);
         Assert(_rev->deltaSrc || _rev->doc || _rev->revocationMode != RevocationMode::kNone);
         increment(_pendingCallbacks);
+
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
     }
@@ -403,7 +404,7 @@ namespace litecore::repl {
         revoked ? _puller->revWasProvisionallyHandled<true>() : _puller->revWasProvisionallyHandled<false>();
     }
 
-    // Called by the Inserter after the revision is safely committed to disk.
+    // Called directly by the Inserter, on its thread, after the revision is safely committed to disk.
     void IncomingRev::revisionInserted() {
         Retained<IncomingRev> retainSelf = this;
         decrement(_pendingCallbacks);
@@ -450,28 +451,29 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // If the _finishState was `AfterEvent`, afterEvent() has already been called, so this is the last code to execute in this cycle
-        // of IncomingRev, and we should notify Puller now that we are done.
-        FinishState finishState = _finishState.exchange(FinishState::Finish);
-        if ( finishState == FinishState::AfterEvent || finishState == FinishState::NotEnqueued )
+        // finish() can be called either on my queue, or on the Puller's or Inserter's queue.
+        // If on my queue, I'm not ready to be reset until after the `afterEvent` call following
+        // this method, so defer telling the Puller I'm done until then:
+        if ( currentActor() == this ) _finishedAfterEvent = true;
+        else
             _puller->revWasHandled(this);
     }
 
     void IncomingRev::reset() {
-        _rev            = nullptr;
-        _parent         = nullptr;
-        _remoteSequence = {};
-        _bodySize       = 0;
-        _finishState    = FinishState::NotEnqueued;
+        _rev                = nullptr;
+        _parent             = nullptr;
+        _remoteSequence     = {};
+        _bodySize           = 0;
+        _finishedAfterEvent = false;
     }
 
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
         Worker::afterEvent();
-        // If the _finishState was `Finish`, finish() has already been called, so this is the last code to execute in this cycle
-        // of IncomingRev, and we should notify Puller now that we are done.
-        if ( _finishState.exchange(FinishState::AfterEvent) == FinishState::Finish ) _puller->revWasHandled(this);
+        // If the finish() method passed the buck to me (see above), call revWasHandled now:
+        auto expected = true;
+        if ( _finishedAfterEvent.compare_exchange_strong(expected, false) ) _puller->revWasHandled(this);
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {

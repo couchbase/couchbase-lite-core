@@ -53,8 +53,6 @@ namespace litecore::repl {
         void afterEvent() override;
 
       private:
-        enum class FinishState : uint8_t { NotEnqueued, Enqueued, Finish, AfterEvent };
-
         void        reinitialize();
         void        parseAndInsert(alloc_slice jsonBody);
         void        _handleRev(Retained<blip::MessageIn>);
@@ -85,9 +83,7 @@ namespace litecore::repl {
         RemoteSequence            _remoteSequence;
         uint32_t                  _serialNumber{0};
         std::atomic<bool>         _provisionallyInserted{false};
-
-        // Determines whether this IncomingRev is currently in use by the Puller.
-        std::atomic<FinishState> _finishState{FinishState::NotEnqueued};
+        std::atomic<bool>         _finishedAfterEvent{false};
 
         // blob stuff:
         std::vector<PendingBlob>                 _pendingBlobs;
