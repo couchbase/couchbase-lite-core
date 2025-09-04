@@ -272,9 +272,10 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "3.0 Active vs 3.1 Passive", "[
         // Several different errors can be triggered by this protocol mismatch concurretly,
         // and actual error before Stop is somewhat random. We check the error manually at
         // the end.
-        _ignoreStatusError = true;
+        _expectedError = {LiteCoreDomain, kC4ErrorRemoteError};
         runPushPullReplication({Default}, {Tulips, Lavenders});
-        CHECK(_statusReceived.error.code);
+        alloc_slice msg = c4error_getMessage(_statusReceived.error);
+        CHECK(msg.asString() == "This server is not configured for 3.0 client support");
     }
 }
 

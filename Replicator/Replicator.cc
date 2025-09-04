@@ -1318,10 +1318,13 @@ namespace litecore::repl {
             }
         }
 
-        WorkerHandler handler = _workerHandlers.useLocked<WorkerHandler>([&](WorkerHandlers& handlers) {
+        bool          handlersCleared = false;
+        WorkerHandler handler         = _workerHandlers.useLocked<WorkerHandler>([&](WorkerHandlers& handlers) {
             if ( auto it = handlers.find({profile.asString(), i}); it != handlers.end() ) {
                 return it->second;
             } else {
+                // handlers are cleared when the status turns to Stpped or it's terminated.
+                if ( handlers.empty() ) handlersCleared = true;
                 return WorkerHandler{};
             }
         });
@@ -1336,7 +1339,7 @@ namespace litecore::repl {
             }
 #endif
             handler(request);
-        } else {
+        } else if ( !handlersCleared ) {
             returnForbidden(request);
         }
     }
