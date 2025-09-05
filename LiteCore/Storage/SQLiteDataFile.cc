@@ -87,13 +87,8 @@ namespace litecore {
 #endif
     };
 
-    // Amount of file to memory-map
-    // https://www.sqlite.org/mmap.html#:~:text=To%20disable%20memory%2Dmapped%20I,any%20content%20beyond%20N%20bytes.
-#if TARGET_OS_OSX || TARGET_OS_SIMULATOR
-    static const int kMMapSize = 0;  // Avoid possible file corruption hazard on macOS
-#else
-    static const int kMMapSize = 50 * MB;
-#endif
+    // Reference: https://www.sqlite.org/mmap.html
+    static const int kMMapSize = 0;  // Avoid potential file corruption on some OSes.
 
     // If this fraction of the database is composed of free pages, vacuum it on close
     static const float kVacuumFractionThreshold = 0.25;
@@ -338,8 +333,8 @@ namespace litecore {
                     "PRAGMA journal_size_limit=%lld; "   // Limit WAL disk usage
                     "PRAGMA case_sensitive_like=true; "  // Case sensitive LIKE, for N1QL compat
                     "PRAGMA fullfsync=ON",  // Attempt to mitigate damage due to sudden loss of power (iOS / macOS)
-                    -(int)kCacheSize / 1024, options.mmapDisabled ? 0 : kMMapSize,
-                    options.diskSyncFull ? "full" : "normal", (long long)kJournalSize));
+                    -(int)kCacheSize / 1024, kMMapSize, options.diskSyncFull ? "full" : "normal",
+                    (long long)kJournalSize));
 
             (void)upgradeSchema(SchemaVersion::WithPurgeCount, "Adding purgeCnt column", [&] {
                 // Schema upgrade: Add the `purgeCnt` column to the kvmeta table.

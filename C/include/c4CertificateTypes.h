@@ -110,13 +110,13 @@ typedef C4_ENUM(uint8_t, C4KeyPairAlgorithm){
 /** Digest algorithms to be used when generating signatures.
     (Note: These enum values match mbedTLS's `mbedtls_md_type_t`.) */
 typedef C4_ENUM(int, C4SignatureDigestAlgorithm){
-        kC4SignatureDigestNone = 0,   ///< No digest, just direct signature of input data.
-        kC4SignatureDigestSHA1 = 4,   ///< SHA-1 message digest.
-        kC4SignatureDigestSHA224,     ///< SHA-224 message digest.
-        kC4SignatureDigestSHA256,     ///< SHA-256 message digest.
-        kC4SignatureDigestSHA384,     ///< SHA-384 message digest.
-        kC4SignatureDigestSHA512,     ///< SHA-512 message digest.
-        kC4SignatureDigestRIPEMD160,  ///< RIPEMD-160 message digest.
+        kC4SignatureDigestNone      = 0,  ///< No digest, just direct signature of input data.
+        kC4SignatureDigestRIPEMD160 = 4,  ///< RIPEMD-160 message digest.
+        kC4SignatureDigestSHA1,           ///< SHA-1 message digest.
+        kC4SignatureDigestSHA224 = 8,     ///< SHA-224 message digest.
+        kC4SignatureDigestSHA256,         ///< SHA-256 message digest.
+        kC4SignatureDigestSHA384,         ///< SHA-384 message digest.
+        kC4SignatureDigestSHA512,         ///< SHA-512 message digest.
 };
 
 /** Callbacks that must be provided to create an external key; these perform the crypto operations. */

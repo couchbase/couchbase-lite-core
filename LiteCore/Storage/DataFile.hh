@@ -76,7 +76,6 @@ namespace litecore {
             bool                   useDocumentKeys : 1;  ///< Use SharedKeys for Fleece docs
             bool                   upgradeable : 1;      ///< DB schema can be upgraded
             bool                   diskSyncFull : 1;     ///< SQLite PRAGMA synchronous
-            bool                   mmapDisabled : 1;     ///< Disable MMAP in SQLite
             bool                   noHousekeeping : 1;   ///< Disable automatic maintenance
             EncryptionAlgorithm    encryptionAlgorithm;  ///< What encryption (if any)
             alloc_slice            encryptionKey;        ///< Encryption key, if encrypting
