@@ -118,9 +118,9 @@ build_binaries () {
     mkdir -p ${WORKSPACE}/build_${FLAVOR}
     pushd ${WORKSPACE}/build_${FLAVOR}
     if [[ ${OS} == 'linux' ]]; then
-      cmake -DBUILD_ENTERPRISE=$build_enterprise -DEMBEDDED_MDNS=ON -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+      cmake -DBUILD_ENTERPRISE=$build_enterprise -DEMBEDDED_MDNS=ON -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON -DVERSION=${VERSION} -DBLD_NUM=${BLD_NUM} ../couchbase-lite-core
     else
-      cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON ../couchbase-lite-core
+      cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON -DVERSION=${VERSION} -DBLD_NUM=${BLD_NUM} ../couchbase-lite-core
     fi
     make -j8
     if [[ ${OS} == 'linux' ]]; then
