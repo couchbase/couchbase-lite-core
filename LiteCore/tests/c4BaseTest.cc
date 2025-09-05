@@ -204,48 +204,6 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {
     CHECK(fullSyncPragma == "2");
 }
 
-// https://www.sqlite.org/mmap.html#:~:text=To%20disable%20memory%2Dmapped%20I,any%20content%20beyond%20N%20bytes.
-N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag MMap", "[Database][C]") {
-    // Ensure that, by default, mmapDisabled is false.
-    CHECK(!litecore::asInternal(db)->dataFile()->options().mmapDisabled);
-
-    C4DatabaseConfig2 config = *c4db_getConfig2(db);
-    config.flags |= kC4DB_MmapDisabled;
-
-    std::stringstream ss;
-    ss << std::string(c4db_getName(db)) << "_" << c4_now();
-
-    c4::ref dbWithMmapDisabled = c4db_openNamed(slice(ss.str().c_str()), &config, ERROR_INFO());
-    CHECK(litecore::asInternal(dbWithMmapDisabled)->dataFile()->options().mmapDisabled);
-
-    config.flags ^= kC4DB_MmapDisabled;
-
-    c4::ref dbWithDefaultConfig = c4db_openNamed(slice(ss.str().c_str()), &config, ERROR_INFO());
-    // Another connection opened to the same database with `openNamed` and the default config will have mmap enabled.
-    CHECK(!litecore::asInternal(dbWithDefaultConfig)->dataFile()->options().mmapDisabled);
-
-    c4::ref dbAgain = c4db_openAgain(dbWithMmapDisabled, ERROR_INFO());
-    // The flag is passed to the database opened by openAgain.
-    CHECK(litecore::asInternal(dbAgain)->dataFile()->options().mmapDisabled);
-
-#if TARGET_OS_OSX || TARGET_OS_SIMULATOR
-    // Mmap is disabled on iOS Simulator and MacOS
-    const auto defaultMmapStr = alloc_slice("0");
-#else
-    ss = std::stringstream{};
-    ss << litecore::SQLiteDataFile::defaultMmapSize();
-    const auto defaultMmapStr = alloc_slice(ss.str());
-#endif
-
-    alloc_slice defaultPragma =
-            litecore::asInternal(dbWithDefaultConfig)->dataFile()->rawScalarQuery("PRAGMA mmap_size");
-    CHECK(defaultPragma == defaultMmapStr);
-
-    alloc_slice disabledPragma =
-            litecore::asInternal(dbWithMmapDisabled)->dataFile()->rawScalarQuery("PRAGMA mmap_size");
-    CHECK(disabledPragma == "0");
-}
-
 #pragma mark - INSTANCECOUNTED:
 
 namespace {
