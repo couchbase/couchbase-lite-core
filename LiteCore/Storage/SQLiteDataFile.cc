@@ -83,7 +83,7 @@ namespace litecore {
 
     static map<string, int> kValidExtensionVersions = {
 #ifdef COUCHBASE_ENTERPRISE
-            {"CouchbaseLiteVectorSearch", 1}
+            {"CouchbaseLiteVectorSearch", 2}
 #endif
     };
 
