@@ -169,7 +169,7 @@ namespace litecore::repl {
         bool valid;
         if ( docID.size < 1 || docID.size > 255 ) valid = false;
         else if ( _db->usingVersionVectors() )
-            valid = revID.findByte('@') && !revID.findByte('*');  // require absolute form
+            valid = (revID.findByte('@') && !revID.findByte('*')) || revID.findByte('-');  // require absolute form
         else
             valid = revID.findByte('-');
         if ( !valid ) {
@@ -274,7 +274,7 @@ namespace litecore::repl {
                     logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor", SPLAT(docID),
                              SPLAT(revID));
                     _db->setDocRemoteAncestor(collectionSpec(), docID, revID);
-                    if ( !passive() && !_db->usingVersionVectors() ) {
+                    if ( !passive() ) {
                         auto repl = replicatorIfAny();
                         if ( repl ) {
                             repl->docRemoteAncestorChanged(alloc_slice(docID), alloc_slice(revID), collectionIndex());
@@ -338,53 +338,28 @@ namespace litecore::repl {
     // Checks whether the revID (if any) is really current for the given doc.
     // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
     int RevFinder::findProposedChange(slice docID, slice revID, slice parentRevID, alloc_slice& outCurrentRevID) {
+        // Get the local doc's current revID/vector and flags:
         C4DocumentFlags flags = 0;
-        {
-            // Get the local doc's current revID/vector and flags:
-            outCurrentRevID = nullslice;
-            try {
-                if ( Retained<C4Document> doc = _db->getDoc(collectionSpec(), docID, kDocGetMetadata); doc ) {
-                    flags           = doc->flags();
-                    outCurrentRevID = doc->getSelectedRevIDGlobalForm();
-                }
-            } catch ( ... ) {
-                gotError(C4Error::fromCurrentException());
-                return 500;
+        outCurrentRevID       = nullslice;
+        try {
+            if ( Retained<C4Document> doc = _db->getDoc(collectionSpec(), docID, kDocGetMetadata); doc ) {
+                flags           = doc->flags();
+                outCurrentRevID = doc->getSelectedRevIDGlobalForm();
             }
+        } catch ( ... ) {
+            gotError(C4Error::fromCurrentException());
+            return 500;
         }
 
-        if ( outCurrentRevID == revID ) {
+        if ( C4Document::equalRevIDs(outCurrentRevID, revID) ) {
             // I already have this revision:
             return 304;
-        } else if ( _db->usingVersionVectors() ) {
-            // Version vectors:  (note that parentRevID is ignored; we don't need it)
-            try {
-                auto theirVers = VersionVector::fromASCII(revID);
-                auto myVers    = VersionVector::fromASCII(outCurrentRevID);
-                switch ( theirVers.compareTo(myVers) ) {
-                    case kSame:
-                    case kOlder:
-                        return 304;
-                    case kNewer:
-                        return 0;
-                    case kConflicting:
-                        return 409;
-                }
-                abort();  // unreachable
-            } catch ( const error& x ) {
-                if ( x == error::BadRevisionID ) return 500;
-                else
-                    throw;
-            }
+        } else if ( C4Document::equalRevIDs(outCurrentRevID, parentRevID) || (!parentRevID && (flags & kDocDeleted)) ) {
+            // Parent rev matches; or peer has new document and my doc is deleted:
+            return 0;
         } else {
-            // Rev-trees:
-            // I don't have this revision and it's not a conflict, so I want it!
-            if ( outCurrentRevID == parentRevID ||
-                 // Peer is creating a new doc; my doc is deleted, so that's OK
-                 (!parentRevID && (flags & kDocDeleted)) )
-                return 0;
-            else
-                return 409;  // Peer's revID isn't current, so this is a conflict
+            // Peer's revID isn't current, so this is a conflict:
+            return 409;
         }
     }
 

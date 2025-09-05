@@ -146,12 +146,22 @@ namespace litecore {
         }
     }
 
+    static bool startsWithZeros(slice s) {
+        if ( s.size < 4 ) return false;
+        uint32_t z;
+        memcpy(&z, s.buf, sizeof(z));
+        return z == 0;
+    }
+
     void VectorRecord::readRecordExtra(const alloc_slice& extra) {
-        if ( extra && !revid(_revID).isVersion() ) {
+        if ( extra && !revid(_revID).isVersion() && !startsWithZeros(extra) ) {
             // This doc hasn't been upgraded; `extra` is still in old RevTree format
+            if ( !RawRevision::isRevTree(extra) )
+                error::_throw(error::CorruptRevisionData, "extra is neither vector nor tree");
             importRevTree(_bodyDoc.allocedData(), extra);
         } else {
             if ( extra ) {
+                Assert(startsWithZeros(extra));
                 _extraDoc = Doc(extra, kFLTrusted, sharedKeys(), _bodyDoc.data());
             } else
                 _extraDoc = nullptr;
@@ -499,25 +509,27 @@ namespace litecore {
 
     VectorRecord::SaveResult VectorRecord::save(ExclusiveTransaction& transaction, HybridClock& versionClock) {
         requireRemotes();
-        auto [props, revID, flags] = currentRevision();
-        props                      = nullptr;  // unused
-        bool newRevision           = !revID || propertiesChanged();
+        auto revID       = revid(_revID);
+        bool newRevision = !revID || propertiesChanged();
         if ( !newRevision && !_changed ) return kNoSave;
 
         // If the revID hasn't been changed but the local properties have, generate a new revID:
         alloc_slice generatedRev;
-        if ( newRevision && _revID == _savedRevID ) {
+        if ( newRevision && revID == _savedRevID ) {
             generatedRev = generateVersionVector(revID, versionClock);
             revID        = revid(generatedRev);
             setRevID(revID);
             LogTo(DBLog, "Doc %.*s generated revID '%s'", FMTSLICE(_docID), revID.str().c_str());
         }
 
-        Assert(revID.isVersion());
-        if ( _savedRevID && !revid(_savedRevID).isVersion() ) {
-            LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'; new revID '%s'", FMTSLICE(_docID),
-                    revid(_savedRevID).str().c_str(), revID.str().c_str());
-            mutableRevisionDict(RemoteID::Local)[kLegacyRevIDKey].setData(_savedRevID);
+        if ( _savedRevID ) {
+            if ( revid(_savedRevID).isVersion() ) {
+                Assert(revID.isVersion(), "Cannot save a legacy revid over a version vector");
+            } else if ( revID.isVersion() ) {
+                LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'; new revID '%s'", FMTSLICE(_docID),
+                        revid(_savedRevID).str().c_str(), revID.str().c_str());
+                mutableRevisionDict(RemoteID::Local)[kLegacyRevIDKey].setData(_savedRevID);
+            }
         }
 
         alloc_slice body, extra;
@@ -577,6 +589,11 @@ namespace litecore {
             enc.writeKey(kRevPropertiesKey);
             ddenc.writeValue(_current.properties, 1);
             body = alloc_slice(FLEncoder_Snip(enc));
+
+            // Start extra with four zero bytes to distinguish it from an encoded RevTree:
+            uint32_t zero = 0;
+            FLEncoder_WriteRaw(enc, slice{&zero, sizeof(zero)});
+
             if ( revid legacy = lastLegacyRevID() ) {
                 enc.writeKey(kLegacyRevIDKey);
                 enc.writeData(legacy);
@@ -595,20 +612,13 @@ namespace litecore {
         return {body, extra};
     }
 
-    alloc_slice VectorRecord::generateRevID(Dict body, revid parentRevID, DocumentFlags flags) {
-        // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and JSON:
-        alloc_slice json = FLValue_ToJSONX(body, false, true);
-        parentRevID.setSize(min(parentRevID.size, size_t(255)));
-        auto     revLen     = (uint8_t)parentRevID.size;
-        uint8_t  delByte    = (flags & DocumentFlags::kDeleted) != 0;
-        SHA1     digest     = (SHA1Builder() << revLen << parentRevID << delByte << json).finish();
-        unsigned generation = parentRevID ? parentRevID.generation() + 1 : 1;
-        return alloc_slice(revidBuffer(generation, slice(digest)).getRevID());
-    }
-
     alloc_slice VectorRecord::generateVersionVector(revid parentRevID, HybridClock& versionClock) {
         VersionVector vec;
-        if ( parentRevID ) vec = parentRevID.asVersionVector();
+        if ( parentRevID ) {
+            if ( parentRevID.isVersion() ) vec = parentRevID.asVersionVector();
+            else
+                vec.add(Version::legacyVersion(parentRevID));
+        }
         vec.addNewVersion(versionClock);
         return vec.asBinary();
     }
@@ -707,14 +717,21 @@ namespace litecore {
     }
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
+        bool syncedFlag = (rec.flags & DocumentFlags::kSynced);
         if ( revid(rec.version).isVersion() ) {
             callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
+            int firstRemote = 1;
+            if ( syncedFlag ) {
+                // Apply the kSynced flag if it's set:
+                callback(RemoteID(1), revid(rec.version), rec.body.size > 0);
+                ++firstRemote;
+            }
             if ( rec.extra.size > 0 ) {
                 fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
                 Array               remotes = ValueFromData(rec.extra, kFLTrusted).asArray();
                 int                 n       = 0;
                 for ( Array::iterator i(remotes); i; ++i, ++n ) {
-                    if ( n > 0 ) {
+                    if ( n >= firstRemote ) {
                         Dict remote = i.value().asDict();
                         if ( slice revID = remote[kRevIDKey].asData(); revID )
                             callback(RemoteID(n), revid(revID), remote[kRevPropertiesKey] != nullptr);
@@ -725,12 +742,15 @@ namespace litecore {
             // Legacy RevTree record:
             RevTree    revTree(rec.body, rec.extra, rec.sequence);
             const Rev* curRev = revTree.currentRevision();
-            // First the local version:
-            callback(RemoteID::Local, curRev->revID, curRev->isBodyAvailable());
-            // Then the remotes:
-            for ( auto [id, rev] : revTree.remoteRevisions() ) {
-                if ( rev != curRev ) { callback(RemoteID(id), rev->revID, rev->isBodyAvailable()); }
+            if ( syncedFlag && curRev ) {
+                // Apply the kSynced flag if it's set:
+                revTree.setLatestRevisionOnRemote(RevTree::kDefaultRemoteID, curRev);
             }
+            // First the local version:
+            if ( curRev ) callback(RemoteID::Local, curRev->revID, curRev->isBodyAvailable());
+            // Then the remotes:
+            for ( auto [id, rev] : revTree.remoteRevisions() )
+                callback(RemoteID(id), rev->revID, rev->isBodyAvailable());
         }
     }
 

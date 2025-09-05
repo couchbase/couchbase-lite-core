@@ -92,11 +92,9 @@ namespace litecore::repl {
             case RevIDType::Invalid:
                 break;
             case RevIDType::Tree:
-                if ( !_db->usingVersionVectors() ) {
-                    valid = true;
-                    if ( !_rev->historyBuf && C4Document::getRevIDGeneration(_rev->revID) > 1 )
-                        warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
-                }
+                valid = true;
+                if ( !_rev->historyBuf && C4Document::getRevIDGeneration(_rev->revID) > 1 )
+                    warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
                 break;
             case RevIDType::Version:
                 // Incoming version IDs must be in absolute form (no '*')

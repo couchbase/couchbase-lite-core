@@ -56,8 +56,9 @@ namespace litecore {
         bool operator>(const revid& r) const FLPURE { return r < *this; }
 
         /// Returns true if both revids represent the same revision:
-        /// - If both are version vectors (or single versions) and their leading versions are equal
-        /// - or if both are digest-based and are bitwise equal.
+        /// - If both are version vectors (or single versions) and their leading versions are equal;
+        /// - or if both are digest-based and are bitwise equal;
+        /// - or if one is a digest and converting it to a legacy Version equals the other.
         [[nodiscard]] bool isEquivalentTo(const revid&) const noexcept FLPURE;
 
         /// Returns true for version-vector style (time\@peer), false for rev-tree style (gen-digest).

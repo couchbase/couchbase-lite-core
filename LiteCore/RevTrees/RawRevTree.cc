@@ -37,7 +37,11 @@ namespace litecore {
         const RawRevision* next;
         for ( auto rawRev = (const RawRevision*)raw_tree.buf; rawRev < end; rawRev = next ) {
             next = rawRev->next();
-            if ( next == rawRev ) return true;  // This is the end-of-tree marker (a 0 size).
+            if ( next == rawRev ) {
+                // This is the end-of-tree marker (a 0 size).
+                if ( rawRev == raw_tree.buf ) return false;  // a tree cannot have zero revisions
+                return true;
+            }
             if ( next <= (void*)&rawRev->revID[rawRev->revIDLen] ) return false;  // Rev is too short for its data:
         }
         return false;  // Fell off end before finding end marker
