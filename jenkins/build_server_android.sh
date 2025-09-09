@@ -120,6 +120,8 @@ ${CMAKE} \
     -DEMBEDDED_MDNS=ON \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DVERSION=${VERSION} \
+    -DBLD_NUM=${BLD_NUM} \
     -S ../couchbase-lite-core
 
 ${NINJA} install
@@ -136,6 +138,8 @@ ${CMAKE} \
     -DEMBEDDED_MDNS=ON \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=Debug \
+    -DVERSION=${VERSION} \
+    -DBLD_NUM=${BLD_NUM} \
     -S ../couchbase-lite-core
 
 ${NINJA} install
