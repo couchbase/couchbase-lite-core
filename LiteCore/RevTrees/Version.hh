@@ -19,6 +19,7 @@
 namespace litecore {
     class HybridClock;
     class VersionVector;
+    class revid;
 
     /** A single version identifier in a VersionVector.
         Consists of a SourceID (author) and logicalTime.
@@ -33,8 +34,8 @@ namespace litecore {
         /** Constructs a Version from a timestamp and peer ID. */
         Version(logicalTime t, SourceID p) : _author(p), _time(t) { validate(); }
 
-        /** Converts a legacy rev-tree revID (in binary form) to a Version. */
-        static Version legacyVersion(slice binaryRevID, SourceID source);
+        /** Converts a legacy rev-tree revID (in binary form) to a Version with kLegacyRevSourceID. */
+        static Version legacyVersion(revid revTreeID);
 
 #pragma mark - Accessors:
 

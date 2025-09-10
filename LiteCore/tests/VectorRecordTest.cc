@@ -19,6 +19,7 @@
 #include "c4.hh"
 #include "HybridClock.hh"
 #include "VectorRecord.hh"
+#include "VersionVector.hh"
 #include "fleece/Mutable.hh"
 #include <iostream>
 
@@ -214,4 +215,63 @@ TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord Remote Update", "[VectorReco
     CHECK(local == (Revision{doc.properties(), revid1.getRevID()}));
     doc.setRemoteRevision(kRemote1, local);
     CHECK(doc.save(t, clock) == VectorRecord::kNewSequence);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord legacy revIDs", "[VectorRecord][RevIDs]") {
+    HybridClock clock;
+    clock.setSource(make_unique<FakeClockSource>());
+    {
+        VectorRecord doc(*store, "Nuu");
+
+        doc.setRevID(revidBuffer("1-abcd").getRevID());
+        doc.mutableProperties()["year"] = 2525;
+        CHECK(doc.mutableProperties() == doc.properties());
+        doc.setFlags(DocumentFlags::kHasAttachments);
+        CHECK(doc.flags() == DocumentFlags::kHasAttachments);
+        CHECK(doc.changed());
+
+        {
+            ExclusiveTransaction t(db);
+            CHECK(doc.save(t, clock) == VectorRecord::kNewSequence);
+            CHECK(!doc.changed());
+            t.commit();
+        }
+
+        cerr << "Doc is: " << doc << "\n";
+        cerr << "Revisions: " << doc.revisionStorage() << "\n";
+        CHECK(doc.sequence() == 1_seq);
+        CHECK(doc.revID().str() == "1-abcd");
+        CHECK(!doc.currentRevision().hasVersionVector());
+        CHECK(doc.lastLegacyRevID() == nullslice);
+        CHECK(doc.flags() == DocumentFlags::kHasAttachments);
+        CHECK(doc.properties().toJSON(true, true) == "{year:2525}");
+        CHECK(!doc.changed());
+        CHECK(doc.mutableProperties() == doc.properties());
+        CHECK(doc.remoteRevision(RemoteID::Local)->properties == doc.properties());
+
+        {
+            ExclusiveTransaction t(db);
+            CHECK(doc.save(t, clock) == VectorRecord::kNoSave);
+
+            doc.mutableProperties()["weekday"] = "Friday";
+            doc.setFlags(DocumentFlags::kNone);
+            CHECK(doc.save(t, clock) == VectorRecord::kNewSequence);
+            t.commit();
+        }
+
+        cerr << "Doc is: " << doc << "\n";
+        cerr << "Revisions: " << doc.revisionStorage() << "\n";
+        CHECK(doc.sequence() == 2_seq);
+        CHECK(doc.revID().str() == "10000@*");
+        REQUIRE(doc.currentRevision().hasVersionVector());
+        CHECK(doc.currentRevision().versionVector().asString() == "10000@*; 1abcd000000@Revision+Tree+Encoding");
+        CHECK(doc.lastLegacyRevID() == revidBuffer("1-abcd").getRevID());
+        CHECK(doc.flags() == DocumentFlags::kNone);
+        CHECK(doc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
+        CHECK(!doc.changed());
+        CHECK(doc.mutableProperties() == doc.properties());
+        CHECK(doc.remoteRevision(RemoteID::Local)->properties == doc.properties());
+
+        cerr << "Storage:\n" << doc.dumpStorage();
+    }
 }

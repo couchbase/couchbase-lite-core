@@ -61,6 +61,13 @@ namespace litecore {
 
         /// Compares two VersionVecWithLegacy objects.
         static versionOrder compare(VersionVecWithLegacy const& a, VersionVecWithLegacy const& b) {
+            // Check whether a and b have the same legacy revid but one in a synthesized form:
+            auto matchingLegacyRevs = [](auto& x, auto& y) {
+                return x.vector.empty() && !x.legacy.empty() && !y.vector.empty()
+                       && Version::legacyVersion(revid(x.legacy[0])) == y.vector[0];
+            };
+            if ( matchingLegacyRevs(a, b) || matchingLegacyRevs(b, a) ) return kSame;
+
             extendedVersionOrder vectorOrder = extendedCompare(a.vector, b.vector);
             extendedVersionOrder legacyOrder = extendedCompare(a.legacy, b.legacy);
             if ( vectorOrder == kXConflicting || legacyOrder == kXConflicting ) return kConflicting;
