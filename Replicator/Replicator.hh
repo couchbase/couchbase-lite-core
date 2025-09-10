@@ -252,6 +252,9 @@ namespace litecore::repl {
         std::atomic<bool>     _setMsgHandlerFor3_0_ClientDone{false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
         alloc_slice                                    _correlationID{};
+        int                                            _httpStatus = 0;
+        std::unique_ptr<websocket::Headers>            _httpHeaders;
+
 #ifdef LITECORE_CPPTEST
         // Used for testing purposes to delay the changes response to the remote
         bool _delayChangesResponse{false};
