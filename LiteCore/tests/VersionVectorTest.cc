@@ -442,7 +442,7 @@ TEST_CASE("VersionVector all-conflicts", "[RevIDs]") {
     auto v1 = "1@AliceAliceAliceAliceAA"_vv, v2 = "2@BobBobBobBobBobBobBobA"_vv;
     auto v12 = VersionVector::merge(v1, v2, clock);
     // ASCII form requires a trailing ';' to distinguish it from a non-merge vector:
-    CHECK(v12.asASCII() == "1@*, 2@BobBobBobBobBobBobBobA, 1@AliceAliceAliceAliceAA;");
+    CHECK(v12.asASCII() == "3@*, 2@BobBobBobBobBobBobBobA, 1@AliceAliceAliceAliceAA;");
     CHECK(v12.isMerge());
     CHECK(v12.currentVersions() == 3);
 

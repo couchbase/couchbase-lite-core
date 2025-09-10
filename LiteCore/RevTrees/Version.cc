@@ -176,7 +176,7 @@ namespace litecore {
     }
 
     bool Version::updateClock(HybridClock& clock, bool anyone) const {
-        return (!anyone && !_author.isMe()) || clock.see(_time);
+        return (!anyone && _author.isMe()) || clock.see(_time);
     }
 
     void Version::throwBadBinary() { error::_throw(error::BadRevisionID, "Invalid binary version ID"); }
