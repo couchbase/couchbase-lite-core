@@ -437,6 +437,10 @@ namespace litecore {
                 // It's newer, so update local to this revision:
                 _doc.setCurrentRevision(newRev);
             } else if ( order == kConflicting ) {
+                if ( !rq.allowConflict ) {
+                    c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
+                    return -1;
+                }
                 // Conflict, so mark that and update only the remote:
                 newRev.flags |= DocumentFlags::kConflicted;
             }
