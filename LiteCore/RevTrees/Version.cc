@@ -12,6 +12,7 @@
 
 #include "Version.hh"
 #include "Base64.hh"
+#include "Endian.hh"
 #include "Error.hh"
 #include "HybridClock.hh"
 #include "RevID.hh"
@@ -23,9 +24,17 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
-    Version Version::legacyVersion(slice revID, SourceID source) {
-        auto gen = revid(revID).generation();
-        return Version(logicalTime(uint64_t(kMinValidTime) + gen), source);
+    Version Version::legacyVersion(revid oldRev) {
+        // From "Migrating RevIDs to Version Vectors"
+        // <https://docs.google.com/document/d/1hqeuQ7dlCD1XWsjnxRW6L5E15diLXkfo0Xn5F9vs13c>
+        // - The generation becomes the upper 24 bits of the clock
+        // - The first 40 bits of the digest become the lower 40 bits of the clock
+        // - The legacy sourceID is kLegacyRevSourceID, which in ASCII is "Revision+Tree+Encoding".
+        slice    digest = oldRev.digest();
+        uint64_t n      = 0;
+        ::memcpy(&n, digest.buf, std::min(size_t(8), digest.size));
+        n = (fleece::endian::dec64(n) >> 24) | (uint64_t(oldRev.generation()) << 40);
+        return Version(logicalTime(n), kLegacyRevSourceID);
     };
 
     static_assert(SourceID::kASCIILength == (sizeof(SourceID) * 4 + 2) / 3);

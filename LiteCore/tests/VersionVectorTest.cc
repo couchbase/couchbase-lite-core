@@ -226,6 +226,15 @@ TEST_CASE("Version", "[RevIDs]") {
     CHECK(Version("3e@AliceAliceAliceAliceAA", Alice) == me);
 }
 
+TEST_CASE("Legacy Version", "[RevIDs]") {
+    constexpr slice oldRevID = "12345-e0c8012361e94df6a1e1c2977169480e";
+    static_assert(12345 == 0x3039);
+    revidBuffer buf(oldRevID);
+    Version     vers = Version::legacyVersion(revid(buf));
+    CHECK(vers.author() == kLegacyRevSourceID);
+    CHECK(vers.asASCII() == "3039e0c8012361@Revision+Tree+Encoding"_sl);
+}
+
 TEST_CASE("Empty VersionVector", "[RevIDs]") {
     VersionVector v;
     CHECK(!v);
@@ -653,4 +662,12 @@ TEST_CASE("RevID <-> Version", "[RevIDs]") {
     CHECK(r.getRevID().isVersion());
     CHECK(r.getRevID().asVersion() == Version(17_ht, Alice));
     CHECK(r.getRevID().expanded() == "11@AliceAliceAliceAliceAA"_sl);
+}
+
+TEST_CASE("Tree RevID -> Version") {
+    uint8_t const sha[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 16, 18, 19, 20};
+    revidBuffer   rev(0xBC, slice(&sha, sizeof(sha)));
+    Version       v = Version::legacyVersion(rev.getRevID());
+    CHECK(v.author() == kLegacyRevSourceID);
+    CHECK(uint64_t(v.time()) == 0x0000BC0102030405);
 }
