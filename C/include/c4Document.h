@@ -171,10 +171,18 @@ CBL_CORE_API unsigned c4rev_getGeneration(C4String revID) C4API;
     Timestamps will be at least 2^50, while generations rarely hit one million.)*/
 CBL_CORE_API uint64_t c4rev_getTimestamp(C4String revID) C4API;
 
+/** Given a "legacy" tree-based revision ID, converts it to a synthetic version-based ID
+ *  using the standard algorithm (generation and 40 bits of the digest are stuffed into the
+ *  Version's timestamp, and the Version's sourceID is a well-known constant.)
+ *
+ *  Given a version-based revision ID, returns it unchanged. */
+CBL_CORE_API C4SliceResult c4rev_legacyAsVersion(C4String revID) C4API;
 
-/** Returns true if two revision IDs are equivalent.
-        - Digest-based IDs are equivalent only if byte-for-byte equal.
-        - Version-vector based IDs are equivalent if their initial versions are equal. */
+
+/** Returns true if two revision IDs are equivalent:
+ *  - If both are version vectors (or single versions) and their leading versions are equal;
+ *  - or if both are digest-based and are bitwise equal;
+ *  - or if one is a digest and converting it to a legacy Version equals the other. */
 CBL_CORE_API bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API;
 
 

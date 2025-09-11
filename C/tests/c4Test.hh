@@ -228,6 +228,7 @@ class C4Test {
     void closeDB();
     void reopenDB();
     void reopenDBReadOnly();
+    void reopenDBNewFlags(C4DatabaseFlags andFlags, C4DatabaseFlags orFlags);
     void deleteDatabase();
 
     void deleteAndRecreateDB() { deleteAndRecreateDB(db); }
@@ -239,7 +240,7 @@ class C4Test {
     static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
     static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist = true);
     int addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix = "") const;
-    int addDocs(C4Collection* collection, int total, const std::string& idprefix = "") const;
+    int addDocs(C4Collection* collection, int total, const std::string& idprefix = "", bool newRev = false) const;
 
     // Creates a new document revision with the given revID as a child of the current rev
     void               createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = 0) const;

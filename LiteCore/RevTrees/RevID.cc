@@ -71,8 +71,10 @@ namespace litecore {
 
     bool revid::isEquivalentTo(const revid& other) const noexcept {
         if ( *this == other ) return true;
+        bool otherIsVersion = other.isVersion();
+        if ( isVersion() ) return asVersion() == (otherIsVersion ? other.asVersion() : Version::legacyVersion(other));
         else
-            return isVersion() && other.isVersion() && asVersion() == other.asVersion();
+            return otherIsVersion && Version::legacyVersion(*this) == other.asVersion();
     }
 
     bool revid::expandInto(slice_ostream& dst) const noexcept {

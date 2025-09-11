@@ -81,6 +81,11 @@ namespace litecore {
         replication. */
     constexpr SourceID kMeSourceID;
 
+    /** SourceID used for mapping legacy tree-based RevIDs. (See Version::legacyVersion().)
+     *  In the usual base64 representation it displays as "Revision+Tree+Encoding". */
+    constexpr SourceID kLegacyRevSourceID({0x45, 0xeb, 0xe2, 0xb2, 0x2a, 0x27, 0xf9, 0x3a, 0xde, 0x7b, 0xe1, 0x27, 0x72,
+                                           0x87, 0x62, 0x9e});
+
     /** The possible orderings of two Versions or VersionVectors.
         (Can be interpreted as two 1-bit flags.) */
     enum versionOrder {

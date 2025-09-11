@@ -268,11 +268,13 @@ void C4Test::reopenDB() {
     Require(db);
 }
 
-void C4Test::reopenDBReadOnly() {
+void C4Test::reopenDBReadOnly() { reopenDBNewFlags(~kC4DB_Create, kC4DB_ReadOnly); }
+
+void C4Test::reopenDBNewFlags(C4DatabaseFlags andFlags, C4DatabaseFlags orFlags) {
     Require(c4db_close(db, WITH_ERROR()));
     c4db_release(db);
     db              = nullptr;
-    _dbConfig.flags = (_dbConfig.flags & ~kC4DB_Create) | kC4DB_ReadOnly;
+    _dbConfig.flags = (_dbConfig.flags & andFlags) | orFlags;
     db              = c4db_openNamed(kDatabaseName, &_dbConfig, ERROR_INFO());
     Require(db);
 }
@@ -322,7 +324,7 @@ alloc_slice C4Test::copyFixtureDB(const string& parentDir, const string& name) {
     return coll;
 }
 
-int C4Test::addDocs(C4Collection* collection, int total, const std::string& idprefix) const {
+int C4Test::addDocs(C4Collection* collection, int total, const std::string& idprefix, bool newRev) const {
     int              docNo   = 1;
     constexpr size_t bufSize = 80;
     for ( int i = 1; docNo <= total; i++ ) {
@@ -330,7 +332,9 @@ int C4Test::addDocs(C4Collection* collection, int total, const std::string& idpr
         TransactionHelper t(c4coll_getDatabase(collection));
         char              docID[bufSize];
         snprintf(docID, bufSize, "%s%d", idprefix.c_str(), docNo++);
-        createRev(collection, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+        if ( newRev ) createNewRev(collection, c4str(docID), kFleeceBody);
+        else
+            createRev(collection, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
     }
     C4Log("-------- Done creating docs --------");
     return docNo - 1;
