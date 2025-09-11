@@ -221,6 +221,7 @@ class ReplicatorCollectionSGTest : public ReplicatorAPITest {
      */
     void initTest(const std::vector<C4CollectionSpec>& collSpecs, const std::vector<std::string>& channelIDs = {"*"},
                   const std::string& username = kTestUserName) {
+        reopenDBNewFlags(~kC4DB_FakeVectorClock, 0);
         _collectionSpecs = collSpecs;
         _collections     = collectionPreamble(collSpecs);
         _collectionCount = _collectionSpecs.size();
