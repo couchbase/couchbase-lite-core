@@ -160,6 +160,15 @@ alloc_slice C4Document::getSelectedRevIDGlobalForm() const {
     return _selectedRevID;
 }
 
+bool C4Document::revisionHasAncestor(slice rev, slice ancestor) {
+    alloc_slice sel = selectedRev().revID;
+    if ( !selectRevision(rev) ) return false;
+    bool found = false;
+    do { found = (selectedRev().revID == ancestor); } while ( !found && selectParentRevision() );
+    selectRevision(sel);
+    return found;
+}
+
 #pragma mark - SAVING:
 
 alloc_slice C4Document::createDocID() {
