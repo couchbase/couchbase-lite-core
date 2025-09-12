@@ -674,7 +674,7 @@ namespace litecore {
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
             versionOrder cmp;
-            bool         recUsesVVs = revid(rec.version).isVersion();
+//            bool         recUsesVVs = revid(rec.version).isVersion();
             cmp                     = compareLocalRev(revid(rec.version));
             auto status             = C4FindDocAncestorsResultFlags(cmp);
 
