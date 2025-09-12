@@ -594,7 +594,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Multiple Collections Increment
                 addRevs(tulips, 500ms, alloc_slice("tulips-docko"), 1, 3, true, "db-tulips");
                 addRevs(roses2, 500ms, alloc_slice("roses2-docko"), 1, 3, true, "db2-roses");
                 addRevs(tulips2, 500ms, alloc_slice("tulips2-docko"), 1, 3, true, "db2-tulips");
-                sleepFor(5s);
+                sleepFor(10s);
                 stopWhenIdle();
             }});
             _callbackWhenIdle = nullptr;

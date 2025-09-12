@@ -119,21 +119,24 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
 
         // Newer revision:
         CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA; 3@AliceAliceAliceAliceAA"_sl)
-              == R"(1["3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"])");
+              == R"(1["3@AliceAliceAliceAliceAA"])");
 
         // Conflict:
-        CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA; 2@AliceAliceAliceAliceAA"_sl) == R"(3[])");
+        CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA; 2@AliceAliceAliceAliceAA"_sl)
+              == R"(3["3@AliceAliceAliceAliceAA"])");
 
         // Single version:
         CHECK(findDocAncestor(doc1, "10@BobBobBobBobBobBobBobA"_sl) == "2");
-        CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA"_sl) == "3[]");
-        CHECK(findDocAncestor(doc1, "1@DaveDaveDaveDaveDaveDA"_sl) == "3[]");
+        CHECK(findDocAncestor(doc1, "11@BobBobBobBobBobBobBobA"_sl) == R"(3["3@AliceAliceAliceAliceAA"])");
+
+        // Single version with a unknown author
+        CHECK(findDocAncestor(doc1, "1@DaveDaveDaveDaveDaveDA"_sl) == R"(3["3@AliceAliceAliceAliceAA"])");
 
         // Limit number of results:
         C4Slice newRevID = "11@BobBobBobBobBobBobBobA; 3@AliceAliceAliceAliceAA"_sl;
         REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(ancestors[0]) == R"(1["3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"])");
+        CHECK(toString(ancestors[0]) == R"(1["3@AliceAliceAliceAliceAA"])");
         freeAncestors();
 
         // Multiple docs:
@@ -143,10 +146,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
                               "1@DaveDaveDaveDaveDaveDA; 3@CarolCarolCarolCarolCA, 30@BobBobBobBobBobBobBobA"_sl};
         REQUIRE(c4coll_findDocAncestors(defaultColl, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors,
                                         WITH_ERROR()));
-        CHECK(toString(ancestors[0]) == R"(1["3@AliceAliceAliceAliceAA; 10@BobBobBobBobBobBobBobA"])");
+        CHECK(toString(ancestors[0]) == R"(1["3@AliceAliceAliceAliceAA"])");
         CHECK(toString(ancestors[1]) == "0");
         CHECK(!slice(ancestors[2]));
-        CHECK(toString(ancestors[3]) == R"(1["3@CarolCarolCarolCarolCA; 30@BobBobBobBobBobBobBobA"])");
+        CHECK(toString(ancestors[3]) == R"(1["3@CarolCarolCarolCarolCA"])");
         freeAncestors();
     }
 }
@@ -225,6 +228,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Random RevID", "[Document][C]") {
             kNotEncryptable = R"({"foo":1234,"nested":[0,1,{"SSN":{"type":"encryptable","value":"123-45-6789"}},3,4]})";
 
     slice json;
+
     SECTION("verify sha1 digest") { json = kNotEncryptable; }
     SECTION("verify encryptable") { json = kEncryptable; }
     if ( !json ) { return; }

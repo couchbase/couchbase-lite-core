@@ -694,7 +694,7 @@ namespace litecore {
                 return {&statusChar, 1};
             }
 
-            // I don't have the requested rev, so find revs that could be ancestors of it,
+            // I don't have the requested rev, so find all my current revs
             // and append them as a JSON array:
             result.str("");
             result << statusChar << '[';
@@ -704,8 +704,8 @@ namespace litecore {
             VectorRecord::forAllRevIDs(rec, [&](RemoteID, revid aRev, bool hasBody) {
                 if ( delim.count() < maxAncestors && hasBody >= mustHaveBodies ) {
                     alloc_slice vector;
-                    if ( recUsesVVs ) {
-                        if ( !(compareLocalRev(aRev) & kNewer) ) vector = localVec.asASCII(mySourceID);
+                    if ( aRev.isVersion() ) {
+                        vector = aRev.asVersion().asASCII(mySourceID);
                     } else {
                         vector = aRev.expanded();
                     }
