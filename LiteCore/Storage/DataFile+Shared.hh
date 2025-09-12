@@ -132,7 +132,7 @@ namespace litecore {
 
 
       protected:
-        Shared(const string& p) : Logging(DBLog), path(p) { logInfo("Path=%s Instantiated", p.c_str()); }
+        Shared(const string& p) : Logging(DBLog), path(p) { logVerbose("Path=%s Instantiated", p.c_str()); }
 
         ~Shared() {
             logDebug("destructing");
