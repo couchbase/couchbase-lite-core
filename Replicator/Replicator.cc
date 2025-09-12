@@ -84,8 +84,8 @@ namespace litecore::repl {
             v4 = (pullMode == kC4Disabled);
         }
         vector<string> result;
-        if ( v3 ) result.emplace_back(toString(ProtocolVersion::v3));
         if ( v4 ) result.emplace_back(toString(ProtocolVersion::v4));
+        if ( v3 ) result.emplace_back(toString(ProtocolVersion::v3));
         return result;
     }
 
