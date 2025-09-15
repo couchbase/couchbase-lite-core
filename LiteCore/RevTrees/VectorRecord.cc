@@ -754,4 +754,21 @@ namespace litecore {
         }
     }
 
+    optional<Version> VectorRecord::findLatestWithAuthor(SourceID author) {
+        RemoteID remote = RemoteID::Local;
+
+        optional<Version> latest = nullopt;
+
+        while ( auto rev = loadRemoteRevision(remote) ) {
+            VersionVector vv = rev->versionVector();
+            for ( auto ver : vv.versions() ) {
+                if ( ver.author() == author && (!latest || ver.time() > latest->time()) ) { latest = ver; }
+            }
+            remote = loadNextRemoteID(remote);
+        }
+
+        return latest;
+    }
+
+
 }  // namespace litecore

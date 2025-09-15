@@ -674,9 +674,8 @@ namespace litecore {
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
             versionOrder cmp;
-            bool         recUsesVVs = revid(rec.version).isVersion();
-            cmp                     = compareLocalRev(revid(rec.version));
-            auto status             = C4FindDocAncestorsResultFlags(cmp);
+            cmp         = compareLocalRev(revid(rec.version));
+            auto status = C4FindDocAncestorsResultFlags(cmp);
 
             // Check whether this revID matches any of the doc's remote revisions:
             if ( remoteDBID != 0 ) {
@@ -694,7 +693,7 @@ namespace litecore {
                 return {&statusChar, 1};
             }
 
-            // I don't have the requested rev, so find revs that could be ancestors of it,
+            // I don't have the requested rev, so find all my current revs
             // and append them as a JSON array:
             result.str("");
             result << statusChar << '[';
@@ -704,8 +703,8 @@ namespace litecore {
             VectorRecord::forAllRevIDs(rec, [&](RemoteID, revid aRev, bool hasBody) {
                 if ( delim.count() < maxAncestors && hasBody >= mustHaveBodies ) {
                     alloc_slice vector;
-                    if ( recUsesVVs ) {
-                        if ( !(compareLocalRev(aRev) & kNewer) ) vector = localVec.asASCII(mySourceID);
+                    if ( aRev.isVersion() ) {
+                        vector = aRev.asVersion().asASCII(mySourceID);
                     } else {
                         vector = aRev.expanded();
                     }
