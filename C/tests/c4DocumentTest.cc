@@ -803,7 +803,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Deletion External Pointers", "[Document
     CHECK(street == streetVal);
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][RevIDs][C]") {
     C4Error err;
     slice   kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;
     if ( isRevTrees() ) {
@@ -945,9 +945,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         CHECK(docBodyEquals(doc, kFleeceBody4));
 
         CHECK((int)doc->selectedRev.flags == kRevLeaf);
-        CHECK(doc->selectedRev.revID == "4@*"_sl);
+        CHECK(doc->selectedRev.revID == "8@*"_sl);
         alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-        CHECK(vector == "4@*, 7@AliceAliceAliceAliceAA, 4@CarolCarolCarolCarolCA;"_sl);
+        CHECK(vector == "8@*, 7@AliceAliceAliceAliceAA, 4@CarolCarolCarolCarolCA;"_sl);
         CHECK(c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
         CHECK(!c4doc_selectRevision(doc, kRev3ID, false, nullptr));
     }
@@ -979,9 +979,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK((int)doc->selectedRev.flags == 0);
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
-            CHECK(doc->selectedRev.revID == "5@*"_sl);
+            CHECK(doc->selectedRev.revID == "9@*"_sl);
             alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-            CHECK(vector == "5@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
+            CHECK(vector == "9@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
         }
 
         CHECK(!c4doc_selectRevision(doc, kRev3ID, false, nullptr));
@@ -1007,9 +1007,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK(!c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
-            CHECK(doc->selectedRev.revID == "6@*"_sl);
+            CHECK(doc->selectedRev.revID == "a@*"_sl);
             alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-            CHECK(vector == "6@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
+            CHECK(vector == "a@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
         }
     }
 
@@ -1037,9 +1037,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             CHECK(!c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
-            CHECK(doc->selectedRev.revID == "7@*"_sl);
+            CHECK(doc->selectedRev.revID == "b@*"_sl);
             alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
-            CHECK(vector == "7@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
+            CHECK(vector == "b@*, 4@CarolCarolCarolCarolCA, 3@*;"_sl);
         }
     }
 }

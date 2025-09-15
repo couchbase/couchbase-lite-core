@@ -161,6 +161,7 @@ namespace litecore {
 
     Version VersionVector::readCurrentVersionFromBinary(slice data) {
         slice_istream in = openBinary(data);
+        if ( in.size == 0 ) error::_throw(error::BadRevisionID, "Empty version vector");
         return Version(in);
     }
 
@@ -398,7 +399,7 @@ namespace litecore {
     VersionVector VersionVector::merge(const VersionVector& v1, const VersionVector& v2, HybridClock& clock) {
         // Start with a new timestamp for me, and the current versions of the two vectors.
         // (Yes, kMeSourceID may occur twice in the vector; it's OK in a merge.)
-        if ( !v1.current().updateClock(clock) || !v2.current().updateClock(clock) )
+        if ( !v1.current().updateClock(clock, true) || !v2.current().updateClock(clock, true) )
             error::_throw(error::BadRevisionID, "Invalid timestamps in version vector");
         VersionVector result({Version(clock.now(), kMeSourceID), v1.current(), v2.current()}, 3);
         std::sort(result._vers.begin() + 1, result._vers.end(), Version::byDescendingTimes);

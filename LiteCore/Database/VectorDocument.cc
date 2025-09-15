@@ -103,7 +103,7 @@ namespace litecore {
                     // It's a single version, so find a vector that starts with it:
                     Version vers = revID.asVersion();
                     while ( auto rev = _doc.loadRemoteRevision(remote) ) {
-                        if ( rev->revID && rev->version() == vers ) return {{remote, *rev}};
+                        if ( rev->hasVersionVector() && rev->version() == vers ) return {{remote, *rev}};
                         remote = _doc.loadNextRemoteID(remote);
                     }
                 } else {
@@ -246,6 +246,22 @@ namespace litecore {
             return result;
         }
 
+        bool currentRevDescendsFrom(slice revID) const override {
+            VersionVecWithLegacy localVec(_doc, RemoteID::Local);
+
+            VersionVecWithLegacy ancestorVec([&] {
+                if ( revidBuffer(revID).getRevID().isVersion() ) {
+                    auto vec = VersionVector::fromASCII(revID);
+                    return VersionVecWithLegacy(revid(vec.asBinary()));
+                } else {
+                    return VersionVecWithLegacy(&revID, 1, kMeSourceID);
+                }
+            }());
+
+            auto cmp = VersionVecWithLegacy::compare(localVec, ancestorVec);
+            return cmp == kNewer || cmp == kSame;
+        }
+
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
             if ( auto rev = _doc.loadRemoteRevision(RemoteID(remote)) ) return rev->revID.expanded();
             return nullptr;
@@ -370,7 +386,7 @@ namespace litecore {
             return _saveIfRequested(rq, outError);
         }
 
-        // Handles `c4doc_put` when `rq.existingRevision` is true (called by the Pusher)
+        // Handles `c4doc_put` when `rq.existingRevision` is true (called by the Inserter during pull)
         int32_t putExistingRevision(const C4DocPutRequest& rq, C4Error* outError) override {
             VersionVecWithLegacy curVers(_doc, RemoteID::Local);
             VersionVecWithLegacy newVers((slice*)rq.history, rq.historyCount, mySourceID());
@@ -403,9 +419,13 @@ namespace litecore {
                 if ( order != kConflicting ) commonAncestor = 0;
             }
 
+            alloc_slice newVersBinary;
+            if ( newVers.vector.empty() ) newVersBinary = newVers.legacy.at(0);
+            else
+                newVersBinary = newVers.vector.asBinary();
+
             // Assemble a new Revision:
-            alloc_slice newVersBinary = newVers.vector.asBinary();
-            Doc         fldoc         = _newProperties(rq, outError);
+            Doc fldoc = _newProperties(rq, outError);
             if ( !fldoc ) return -1;
             Revision newRev;
             newRev.properties = fldoc.asDict();
@@ -416,7 +436,11 @@ namespace litecore {
             if ( order == kNewer ) {
                 // It's newer, so update local to this revision:
                 _doc.setCurrentRevision(newRev);
-            } else {
+            } else if ( order == kConflicting ) {
+                if ( !rq.allowConflict ) {
+                    c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
+                    return -1;
+                }
                 // Conflict, so mark that and update only the remote:
                 newRev.flags |= DocumentFlags::kConflicted;
             }
@@ -582,13 +606,54 @@ namespace litecore {
 
         // These variables get reused in every call to the callback but are declared outside to
         // avoid multiple construct/destruct calls:
-        stringstream  result;
-        VersionVector localVec, requestedVec;
+        stringstream          result;
+        VersionVector         localVec, requestedVec;
+        optional<revidBuffer> requestedLegacyRev;
+
+        auto compareLegacyToVector = [](revid legacyID, VersionVector const& vec) {
+            if ( vec[0].author() == kLegacyRevSourceID ) {
+                // Compare two tree revids:
+                auto localTime  = Version::legacyVersion(legacyID).time();
+                auto remoteTime = vec[0].time();
+                if ( localTime < remoteTime ) return kOlder;
+                else if ( localTime > remoteTime )
+                    return kNewer;
+                else
+                    return kSame;
+            } else {
+                return kOlder;
+            }
+        };
 
         // Subroutine to compare a local version with the requested one:
-        auto compareLocalRev = [&](slice revVersion) -> versionOrder {
-            localVec.readBinary(revVersion);
-            return localVec.compareTo(requestedVec);
+        auto compareLocalRev = [&](revid localVersion) -> versionOrder {
+            if ( requestedLegacyRev ) {
+                // Request has a legacy revID:
+                if ( localVersion.isVersion() ) {
+                    // Local rev is a version vector:
+                    localVec.readBinary(localVersion);
+                    auto order = compareLegacyToVector(requestedLegacyRev->getRevID(), localVec);
+                    return versionOrder(2 - order);  // reverse the order
+                } else {
+                    // Local rev is also a legacy revID:
+                    auto cmp = localVersion.compare(requestedLegacyRev->getRevID());
+                    if ( cmp < 0 ) return kOlder;
+                    else if ( cmp > 0 )
+                        return kNewer;
+                    else
+                        return kSame;
+                }
+            } else {
+                // Request has a version vector, requestedVec:
+                if ( localVersion.isVersion() ) {
+                    // Local rev also has a version vector:
+                    localVec.readBinary(localVersion);
+                    return localVec.compareTo(requestedVec);
+                } else {
+                    // Local rev is a legacy revid:
+                    return compareLegacyToVector(localVersion, requestedVec);
+                }
+            }
         };
 
         auto callback = [&](const RecordUpdate& rec) -> alloc_slice {
@@ -596,22 +661,24 @@ namespace litecore {
             // --- It will be called once for each existing requested docID, in arbitrary order ---
 
             // Look up matching requested revID, and convert to encoded binary form:
-            requestedVec.readASCII(revMap[rec.key], mySourceID);
+            slice rev            = revMap[rec.key];
+            bool  requestUsesVVs = rev.findByte('@') != nullptr;
+            if ( requestUsesVVs ) {
+                requestedVec.readASCII(rev, mySourceID);
+                requestedLegacyRev.reset();
+            } else {
+                requestedVec.clear();
+                requestedLegacyRev.emplace();
+                requestedLegacyRev->parse(rev);
+            }
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
             versionOrder cmp;
-            bool         recUsesVVs = revid(rec.version).isVersion();
-            if ( recUsesVVs ) {
-                localVec.readBinary(rec.version);
-                cmp = localVec.compareTo(requestedVec);
-            } else {
-                // Doc still has a legacy tree-based revID
-                cmp = kOlder;
-            }
+            cmp         = compareLocalRev(revid(rec.version));
             auto status = C4FindDocAncestorsResultFlags(cmp);
 
             // Check whether this revID matches any of the doc's remote revisions:
-            if ( remoteDBID != 0 && recUsesVVs ) {
+            if ( remoteDBID != 0 ) {
                 VectorRecord::forAllRevIDs(rec, [&](RemoteID remote, revid aRev, bool hasBody) {
                     if ( remote > RemoteID::Local && compareLocalRev(aRev) == kSame ) {
                         if ( hasBody ) status |= kRevsHaveLocal;
