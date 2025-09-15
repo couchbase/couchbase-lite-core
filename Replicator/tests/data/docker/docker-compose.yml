@@ -22,7 +22,7 @@ services:
     build:
       context: ./sg
       args:
-        - SG_DEB_ARM64=${SG_DEB_ARM64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.1.11/couchbase-sync-gateway-enterprise_3.1.11_aarch64.deb}
+        - SG_DEB_ARM64=${SG_DEB_ARM64:-http://latestbuilds.service.couchbase.com/builds/latestbuilds/sync_gateway/4.0.0/209/couchbase-sync-gateway-enterprise_4.0.0-209_aarch64.deb}
         - SG_DEB_AMD64=${SG_DEB_AMD64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.1.11/couchbase-sync-gateway-enterprise_3.1.11_x86_64.deb}
         - SSL=${SSL:-true}
     ports:
