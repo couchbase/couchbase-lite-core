@@ -7,6 +7,7 @@
 #pragma once
 #include "Base.hh"
 #include <iomanip>
+#include <ostream>
 #include <string_view>
 #include <utility>
 
