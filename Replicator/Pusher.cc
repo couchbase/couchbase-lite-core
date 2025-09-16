@@ -219,12 +219,6 @@ namespace litecore::repl {
                 encodeRevID(enc, change->revID);
                 slice remoteAncestorRevID = change->remoteAncestorRevID;
                 if ( remoteAncestorRevID || change->bodySize > 0 ) encodeRevID(enc, remoteAncestorRevID);
-                if ( !_db->usingVersionVectors() && remoteAncestorRevID
-                     && C4Document::getRevIDGeneration(remoteAncestorRevID)
-                                >= C4Document::getRevIDGeneration(change->revID) ) {
-                    warn("Proposed rev '%.*s' #%.*s has invalid ancestor %.*s", SPLAT(change->docID),
-                         SPLAT(change->revID), SPLAT(remoteAncestorRevID));
-                }
             } else {
                 enc << uint64_t(change->sequence) << change->docID;
                 encodeRevID(enc, change->revID);

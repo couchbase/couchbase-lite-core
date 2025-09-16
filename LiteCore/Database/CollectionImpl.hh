@@ -49,19 +49,19 @@ namespace litecore {
                 _sequenceTracker = std::make_unique<access_lock<SequenceTracker>>(SequenceTracker(store.name()));
 
             DatabaseImpl* dbImpl = asInternal(db);
-            logInfo("DB=%s Instantiated", dbImpl->dataFile()->loggingName().c_str());
+            logVerbose("DB=%s Instantiated", dbImpl->dataFile()->loggingName().c_str());
         }
 
         ~CollectionImpl() override { destructExtraInfo(_extraInfo); }
 
         void close() {
-            logInfo("Closing");
+            logVerbose("Closing");
             stopHousekeeping();
             _sequenceTracker = nullptr;
             _documentFactory = nullptr;
             _keyStore        = nullptr;
             _database        = nullptr;
-            logInfo("Closed");
+            logVerbose("Closed");
         }
 
         std::string fullName() const {

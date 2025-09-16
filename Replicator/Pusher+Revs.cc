@@ -40,6 +40,24 @@ namespace {
         }
     }
 
+    // Searches for a deleted revision that descends from `ancestor`;
+    // if it finds one, returns the history from it back to the ancestor. (Rev-tree only.)
+    alloc_slice findTombstoneOfAncestor(C4Document* doc, slice ancestor, unsigned maxHistory) {
+        alloc_slice sel(doc->selectedRev().revID);
+        alloc_slice history;
+        doc->selectCurrentRevision();
+        do {
+            auto& rev = doc->selectedRev();
+            if ( (rev.flags & kRevLeaf) && (rev.flags & kRevDeleted)
+                 && doc->revisionHasAncestor(rev.revID, ancestor) ) {
+                history = doc->getRevisionHistory(maxHistory, &ancestor, 1);
+                break;
+            }
+        } while ( doc->selectNextRevision() );
+        doc->selectRevision(sel);
+        return history;
+    }
+
 }  // anonymous namespace
 
 namespace litecore::repl {
@@ -131,6 +149,7 @@ namespace litecore::repl {
         auto fullReplacementRevID =
                 replacementRevID ? alloc_slice(_db->convertVersionToAbsolute(replacementRevID)) : nullslice;
         alloc_slice currentReplacementRevID = extractCurrentVersion(fullReplacementRevID);
+        alloc_slice effectiveRevID          = currentReplacementRevID ? currentReplacementRevID : currentRevID;
 
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
@@ -138,25 +157,35 @@ namespace litecore::repl {
         assignCollectionToMsg(msg, collectionIndex());
         msg.compressed = true;
         msg["id"_sl]   = request->docID;
-        if ( currentReplacementRevID ) {
-            msg["rev"_sl]      = currentReplacementRevID;
-            msg["replacedRev"] = fullRevID;
-        } else
-            msg["rev"_sl] = currentRevID;
+        msg["rev"_sl]  = effectiveRevID;
+        if ( currentReplacementRevID ) msg["replacedRev"] = fullRevID;
         msg["sequence"_sl] = narrow_cast<int64_t>((uint64_t)request->sequence);
         if ( root ) {
-            if ( request->noConflicts ) msg["noconflicts"_sl] = true;
             auto revisionFlags = doc->selectedRev().flags;
             if ( revisionFlags & kRevDeleted ) msg["deleted"_sl] = "1"_sl;
 
             // Include the document history, but skip the current revision 'cause it's redundant
-            alloc_slice history        = request->historyString(doc);
-            alloc_slice effectiveRevID = currentReplacementRevID ? currentReplacementRevID : currentRevID;
+            alloc_slice history = request->historyString(doc);
             if ( history.hasPrefix(effectiveRevID) && history.size > effectiveRevID.size ) {
                 slice historyTruncated = history.from(effectiveRevID.size + 1);
                 while ( historyTruncated.hasPrefix(' ') ) historyTruncated = historyTruncated.from(1);
                 msg["history"_sl] = historyTruncated;
             }
+
+            if ( slice remoteRevID = request->remoteAncestorRevID;
+                 remoteRevID && !_db->usingVersionVectors()
+                 && !doc->revisionHasAncestor(effectiveRevID, remoteRevID) ) {
+                // This rev conflicts with the server's current rev; it's sometimes unavoidable.
+                // Presumably the server's rev was deleted locally as part of conflict resolution.
+                // Send the tombstone, if any, so the server can update its rev-tree:
+                alloc_slice ts        = findTombstoneOfAncestor(doc, remoteRevID, request->maxHistory);
+                msg["deleted_branch"] = ts;
+                if ( request->noConflicts ) {
+                    warn("Sending conflicting 'rev' with '%.*s' #%.*s (server has #%.*s). Tombstone is %.*s",
+                         SPLAT(request->docID), SPLAT(effectiveRevID), SPLAT(remoteRevID), SPLAT(ts));
+                }
+            } else if ( request->noConflicts )
+                msg["noconflicts"_sl] = true;
 
             bool sendLegacyAttachments =
                     (request->legacyAttachments && (revisionFlags & kRevHasAttachments) && !_db->disableBlobSupport());
@@ -181,7 +210,7 @@ namespace litecore::repl {
                     bodyEncoder.writeValue(root);
                 }
             }
-            logVerbose("Transmitting 'rev' message with '%.*s' #%.*s", SPLAT(request->docID), SPLAT(request->revID));
+            logVerbose("Transmitting 'rev' message with '%.*s' #%.*s", SPLAT(request->docID), SPLAT(effectiveRevID));
             sendRequest(msg, [this, request](const MessageProgress& progress) { onRevProgress(request, progress); });
             increment(_revisionsInFlight);
 
