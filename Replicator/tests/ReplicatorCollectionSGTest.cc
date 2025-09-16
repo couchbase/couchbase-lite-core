@@ -323,7 +323,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Push & Pull S
     std::vector<unordered_map<alloc_slice, uint64_t>> localDocIDs{_collectionCount};
 
     for ( size_t i = 0; i < _collectionCount; ++i ) {
-        addDocs(_collections[i], 20, idPrefix + "remote-");
+        addDocs(_collections[i], 20, idPrefix + "remote-", true);
         docIDs[i] = getDocIDs(_collections[i]);
     }
 
@@ -454,7 +454,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
 
     initTest({Lavenders, Roses, Tulips});
 
-    for ( auto& coll : _collections ) { addDocs(coll, 10, idPrefix); }
+    for ( auto& coll : _collections ) { addDocs(coll, 10, idPrefix, true); }
 
     updateDocIDs();
 
@@ -465,7 +465,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental P
 
     // Add docs to local database
     idPrefix = timePrefix();
-    for ( auto& coll : _collections ) { addDocs(coll, 5, idPrefix); }
+    for ( auto& coll : _collections ) { addDocs(coll, 5, idPrefix, true); }
 
     updateDocIDs();
 
@@ -481,7 +481,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
     initTest({Lavenders, Roses, Tulips});
 
     for ( size_t i = 0; i < _collectionCount; ++i ) {
-        addDocs(_collections[i], 2, idPrefix + "db-" + string(_collectionSpecs[i].name));
+        addDocs(_collections[i], 2, idPrefix + "db-" + string(_collectionSpecs[i].name), true);
     }
 
 
@@ -491,7 +491,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Multiple Collections Incremental R
             for ( size_t i = 0; i < _collectionCount; ++i ) {
                 const string collName = string(_collectionSpecs[i].name);
                 const string docID    = stringprintf("%s-%s-docko", idPrefix.c_str(), collName.c_str());
-                ReplicatorLoopbackTest::addRevs(_collections[i], 500ms, alloc_slice(docID), 1, 10, true,
+                ReplicatorLoopbackTest::addRevs(_collections[i], 500ms, alloc_slice(docID), 1, 10, false,
                                                    ("db-"s + collName).c_str());
             }
             _stopWhenIdle.store(true);
@@ -1002,7 +1002,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Replicate Encrypted Properties wit
     {
         TransactionHelper t(db);
         for ( size_t i = 0; i < _collectionCount; ++i ) {
-            createFleeceRev(_collections[i], slice(docs[i]), kRevID, originalJSON);
+            createFleeceRev(_collections[i], slice(docs[i]), nullslice, originalJSON);
             encContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[i]),
                                    std::forward_as_tuple(_collections[i], docs[i].c_str(), "xNum"));
             decContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[i]),
@@ -1103,11 +1103,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Encryption Error SG", "[.SyncServe
         TransactionHelper t(db);
         for ( unsigned i = 0; i < docs.size(); ++i ) {
             if ( i == 1 ) {
-                createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
+                createFleeceRev(_collections[0], slice(docs[i]), nullslice, clearBody);
                 encContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[0]),
                                        std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
             } else {
-                createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
+                createFleeceRev(_collections[0], slice(docs[i]), nullslice, unencryptedBody);
             }
         }
     }
@@ -1210,11 +1210,11 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Decryption Error SG", "[.SyncServe
         TransactionHelper t(db);
         for ( unsigned i = 0; i < docs.size(); ++i ) {
             if ( i == 1 ) {
-                createFleeceRev(_collections[0], slice(docs[i]), kRevID, clearBody);
+                createFleeceRev(_collections[0], slice(docs[i]), nullslice, clearBody);
                 encContextMap->emplace(std::piecewise_construct, std::forward_as_tuple(_collectionSpecs[0]),
                                        std::forward_as_tuple(_collections[0], docs[i].c_str(), "xNum"));
             } else {
-                createFleeceRev(_collections[0], slice(docs[i]), kRevID, unencryptedBody);
+                createFleeceRev(_collections[0], slice(docs[i]), nullslice, unencryptedBody);
             }
         }
     }
@@ -1948,8 +1948,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull iTunes deltas from Collection
           timeWithoutDelta / timeWithDelta);
 }
 
-// Disabled, to be re-enabled with CBL-5621
-#if 0
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter from SG",
                  "[.SyncServerCollection][Delta]") {
@@ -1958,14 +1956,13 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     initTest({Tulips}, {channelID}, "test_user");
 
     static constexpr int         kNumDocs = 10, kNumProps = 100;
-    static constexpr int         kDocBufSize = 80;
-    static constexpr const char* cblTicket   = "cbl-4499";
+    static constexpr const char* cblTicket = "cbl-4499";
 
     const string docPrefix = idPrefix + cblTicket + "_";
 
     vector<string> docIDs(kNumDocs);
 
-    for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+    for ( int docNo = 0; docNo < kNumDocs; ++docNo ) {
         docIDs[docNo] = stringprintf("%sdoc-%03d", docPrefix.c_str(), docNo);
     }
 
@@ -1973,7 +1970,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     auto populateDB = [&]() {
         TransactionHelper t(db);
         std::srand(123456);  // start random() sequence at a known place
-        for (const string& docID : docIDs) {
+        for ( const string& docID : docIDs ) {
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for ( int p = 0; p < kNumProps; ++p ) {
@@ -1997,7 +1994,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     replicate(replParams);
 
     // -------- Updating docs on SG --------
-    for (const string& docID : docIDs) {
+    for ( const string& docID : docIDs ) {
         C4Error             error;
         c4::ref<C4Document> doc = c4coll_getDoc(_collections[0], slice(docID), true, kDocGetAll, ERROR_INFO(error));
         REQUIRE(doc);
@@ -2024,9 +2021,9 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
                      FLDict flbody, void* context) { return true; };
 
     // -------- Pulling changes from SG --------
-#    ifdef LITECORE_CPPTEST
+#ifdef LITECORE_CPPTEST
     _expectedDocPullErrors = {docPrefix + "doc-001"};
-#    endif
+#endif
     replParams.setPushPull(kC4Disabled, kC4OneShot);
     replParams.setPullFilter(_pullFilter).setCallbackContext(this);
     {
@@ -2051,7 +2048,6 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Pull invalid deltas with filter fr
     }
     CHECK(n == kNumDocs);
 }
-#endif
 
 // cbl-4499
 TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Push invalid deltas to SG", "[.SyncServerCollection][Delta]") {

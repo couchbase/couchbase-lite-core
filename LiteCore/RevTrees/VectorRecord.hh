@@ -15,6 +15,8 @@
 #include "RevID.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
+
+#include "SourceID.hh"
 #include <iosfwd>
 #include <optional>
 
@@ -221,10 +223,10 @@ namespace litecore {
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
+        std::optional<Version> findLatestWithAuthor(SourceID author);
+
         //---- For testing:
 
-        /// Generates a rev-tree revision ID given document properties, parent revision ID, and flags.
-        static alloc_slice generateRevID(Dict, revid parentRevID, DocumentFlags);
         /// Generates a version-vector revision ID given parent vector.
         static alloc_slice generateVersionVector(revid parentVersionVector, HybridClock&);
 
@@ -250,7 +252,6 @@ namespace litecore {
         MutableDict                    mutableRevisionDict(RemoteID remoteID);
         Dict                           originalProperties() const;
         pair<alloc_slice, alloc_slice> encodeBodyAndExtra(FLEncoder NONNULL);
-        alloc_slice                    encodeExtra(FLEncoder NONNULL);
         bool                           propertiesChanged() const;
         void                           clearPropertiesChanged() const;
         void                           updateDocFlags();

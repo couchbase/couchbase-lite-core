@@ -54,17 +54,15 @@ if(NOT DEFINED CMAKE_OSX_ARCHITECTURES)
     endif()
 endif()
 
-if(DEFINED ENV{VERSION})
-    message(VERBOSE "Using VERSION:$ENV{VERSION} from environment variable")
-    set(CBL_VERSION_STRING $ENV{VERSION})
-else()
-    message(WARNING "No VERSION set, defaulting to 0.0.0")
-    set(CBL_VERSION_STRING "0.0.0")
+set(VERSION "0.0.0" CACHE STRING "LiteCore version")
+set(BLD_NUM 0       CACHE STRING "LiteCore build number")
+if(NOT BLD_NUM MATCHES "^(0|[1-9][0-9]*)$")
+    message(FATAL_ERROR "BLD_NUM must be a natural number. Got: '${BLD_NUM}'")
 endif()
 
 project (
     LiteCore
-    VERSION ${CBL_VERSION_STRING}
+    VERSION ${VERSION}
 )
 include(CMakeDependentOption)
 

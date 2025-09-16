@@ -84,8 +84,8 @@ namespace litecore::repl {
             v4 = (pullMode == kC4Disabled);
         }
         vector<string> result;
-        if ( v3 ) result.emplace_back(toString(ProtocolVersion::v3));
         if ( v4 ) result.emplace_back(toString(ProtocolVersion::v4));
+        if ( v3 ) result.emplace_back(toString(ProtocolVersion::v3));
         return result;
     }
 
@@ -268,7 +268,12 @@ namespace litecore::repl {
             _subRepls[coll].puller->start(_subRepls[coll].checkpointer->remoteMinSequence());
     }
 
-    pair<int, websocket::Headers> Replicator::httpResponse() const { return webSocket()->httpResponse(); }
+    pair<int, websocket::Headers> Replicator::httpResponse() const {
+        pair<int, websocket::Headers> result;
+        result.first = _httpStatus;
+        if ( _httpHeaders ) result.second = *_httpHeaders;
+        return result;
+    }
 
     void Replicator::docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex coll) {
         Retained<Pusher> pusher = _subRepls[coll].pusher;
@@ -618,13 +623,14 @@ namespace litecore::repl {
         logInfo("Connected!");
 
         if ( auto socket = connection().webSocket(); socket->role() == websocket::Role::Client ) {
-            auto [status, headers] = socket->httpResponse();
-            if ( status == 101 && !headers["Sec-WebSocket-Protocol"_sl] ) {
+            _httpHeaders                    = make_unique<websocket::Headers>();
+            tie(_httpStatus, *_httpHeaders) = socket->httpResponse();
+            if ( _httpStatus == 101 && !(*_httpHeaders)["Sec-WebSocket-Protocol"_sl] ) {
                 gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
                                        "Incompatible replication protocol "
                                        "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
             }
-            if ( slice x_corr = headers.get("X-Correlation-Id"_sl); x_corr ) {
+            if ( slice x_corr = _httpHeaders->get("X-Correlation-Id"_sl); x_corr ) {
                 _correlationID = x_corr;
                 logInfo("Received X-Correlation-Id");
             }
