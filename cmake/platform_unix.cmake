@@ -150,6 +150,8 @@ function(setup_litecore_build_unix)
                 -Wno-nullability-extension
                 -Wno-old-style-cast
                 -Wno-padded
+                -Wno-reserved-identifier
+                -Wno-reserved-macro-identifier
                 -Wno-shadow-field # "parameter shadows member inherited from type"
                 -Wno-shadow-uncaptured-local # "declaration [of a lambda parameter] shadows a local variable"
                 -Wno-suggest-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
