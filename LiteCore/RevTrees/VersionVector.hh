@@ -227,6 +227,13 @@ namespace litecore {
             - This operation is commutative.*/
         [[nodiscard]] static VersionVector merge(const VersionVector& v1, const VersionVector& v2, HybridClock& clock);
 
+        /** Merges two vectors without creating a new version. The result is not a merge vector.
+            Used when the body of a merged document is the same as that of the winning revision.
+            - All the authors in both are present, with the larger of the two timestamps.
+            - The current version will be the current version of `winner`.
+            - This operation is not commutative. */
+        [[nodiscard]] static VersionVector trivialMerge(const VersionVector& winner, const VersionVector& loser);
+
         /// True if this vector is the direct result of merging conflicting versions.
         bool isMerge() const { return _nCurrent > 1; }
 

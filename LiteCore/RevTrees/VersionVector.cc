@@ -239,6 +239,9 @@ namespace litecore {
         else if ( otherCount == 0 )
             return kNewer;
 
+        // Compare each vector's current version against the matching source in the other.
+        // Note that a vector resulting from a trivialMerge will compare as the same as the winning
+        // parent, since their current versions match; this is unintuitive but considered correct.
         auto myCmp = this->compareTo(other.current());
         if ( myCmp == kSame ) return kSame;
         auto theirCmp = other.compareTo(this->current());
@@ -403,8 +406,10 @@ namespace litecore {
             error::_throw(error::BadRevisionID, "Invalid timestamps in version vector");
         VersionVector result({Version(clock.now(), kMeSourceID), v1.current(), v2.current()}, 3);
         std::sort(result._vers.begin() + 1, result._vers.end(), Version::byDescendingTimes);
-        SourceID const& conflictor1 = result[1].author();
-        SourceID const& conflictor2 = result[2].author();
+        SourceID conflictor1 = result[1].author();
+        SourceID conflictor2 = result[2].author();
+        if ( conflictor1 == conflictor2 )
+            error::_throw(error::BadRevisionID, "Merging 'conflicting' vectors with the same current author");
 
         // Walk through the two vectors, adding the most recent timestamp for each other author:
         compareBySource(v1, v2, [&](SourceID author, logicalTime t1, logicalTime t2) {
@@ -416,6 +421,22 @@ namespace litecore {
 
         // Now sort the non-merge versions by descending time, as usual:
         sort(result._vers.begin() + 3, result._vers.end(), Version::byDescendingTimes);
+#if DEBUG
+        result.validate();
+#endif
+        return result;
+    }
+
+    VersionVector VersionVector::trivialMerge(const VersionVector& winner, const VersionVector& loser) {
+        VersionVector result({winner.current()});
+        SourceID      winningAuthor = winner.current().author();
+        compareBySource(winner, loser, [&](SourceID author, logicalTime t1, logicalTime t2) {
+            // Add the current timestamp of each other author appearing in either vector:
+            if ( author != winningAuthor ) result._vers.emplace_back(std::max(t1, t2), author);
+            return true;
+        });
+        // Now sort the non-current versions by descending time, as usual:
+        sort(result._vers.begin() + 1, result._vers.end(), Version::byDescendingTimes);
 #if DEBUG
         result.validate();
 #endif

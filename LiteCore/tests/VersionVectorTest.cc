@@ -375,7 +375,7 @@ TEST_CASE("VersionVector comparison", "[RevIDs]") {
     CHECK(z4 % c2);
 }
 
-TEST_CASE("VersionVector conflicts", "[RevIDs]") {
+TEST_CASE("VersionVector conflicts", "[RevIDs][Conflict]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>(0, 0));
 
@@ -410,6 +410,22 @@ TEST_CASE("VersionVector conflicts", "[RevIDs]") {
     REQUIRE(merged.size() == 2);
     CHECK(merged[0] == v13[1]);
     CHECK(merged[1] == v13[2]);
+
+    // Try a trivial merge:
+    v13 = VersionVector::trivialMerge(v1, v3);
+    CHECK(v13.asASCII() == "6@*; 4@AliceAliceAliceAliceAA, 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA");
+    CHECK_FALSE(v13.isMerge());
+    CHECK(v13.current() == v1.current());
+    CHECK(v13.compareTo(v1) == kSame);  // it counts as the same bc the current Version matches
+    CHECK(v13.compareTo(v3) == kNewer);
+
+    // Other way round:
+    v13 = VersionVector::trivialMerge(v3, v1);
+    CHECK(v13.asASCII() == "4@AliceAliceAliceAliceAA; 6@*, 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA");
+    CHECK_FALSE(v13.isMerge());
+    CHECK(v13.current() == v3.current());
+    CHECK(v13.compareTo(v1) == kNewer);
+    CHECK(v13.compareTo(v3) == kSame);  // it counts as the same bc the current Version matches
 
     // Check that merge-related methods do the right thing on non-merges:
     CHECK(!v1.isMerge());
