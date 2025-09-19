@@ -134,9 +134,13 @@ namespace litecore::websocket {
 
         using PeerCertValidator = std::function<bool(slice certData, std::string_view hostname)>;
 
-        void setPeerCertValidator(PeerCertValidator cv) { _peerCertValidator = std::move(cv); }
+        void setPeerCertValidator(std::shared_ptr<PeerCertValidator> cv) {
+            _peerCertValidator = std::move(cv);
+            // If we are not given a valid validator, the validator will always return true.
+            if ( cv ) _hasPeerCertValidator = true;
+        }
 
-        bool hasPeerCertValidator() const { return _peerCertValidator != nullptr; }
+        bool hasPeerCertValidator() const { return _hasPeerCertValidator; }
 
         /** The HTTP response status and headers.
             Available after a client socket connects. Otherwise zero status and empty headers. */
@@ -158,7 +162,11 @@ namespace litecore::websocket {
         ~WebSocket() override;
 
         bool validatePeerCert(slice certData, std::string_view hostname) {
-            return !_peerCertValidator || _peerCertValidator(certData, hostname);
+            if ( !_hasPeerCertValidator ) return true;
+            if ( auto validator = _peerCertValidator.lock() ) return (*validator)(certData, hostname);
+            else
+                // This is the case when the validator is expired by ReplicateTask
+                return false;
         }
 
         /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
@@ -166,10 +174,11 @@ namespace litecore::websocket {
 
 
       private:
-        const URL                      _url;
-        const Role                     _role;
-        Retained<WeakHolder<Delegate>> _delegateWeakHolder;
-        PeerCertValidator              _peerCertValidator;
+        const URL                        _url;
+        const Role                       _role;
+        Retained<WeakHolder<Delegate>>   _delegateWeakHolder;
+        std::weak_ptr<PeerCertValidator> _peerCertValidator;
+        bool                             _hasPeerCertValidator{false};
     };
 
     class Message : public RefCounted {

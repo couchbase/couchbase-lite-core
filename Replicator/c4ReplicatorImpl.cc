@@ -184,7 +184,7 @@ namespace litecore {
 
 
 #ifdef COUCHBASE_ENTERPRISE
-    void C4ReplicatorImpl::setPeerTLSCertificateValidator(PeerTLSCertificateValidator v) {
+    void C4ReplicatorImpl::setPeerTLSCertificateValidator(std::shared_ptr<PeerTLSCertificateValidator> v) {
         _peerTLSCertificateValidator = std::move(v);
     }
 
