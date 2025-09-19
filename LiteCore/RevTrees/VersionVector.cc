@@ -18,6 +18,7 @@
 #include "slice_stream.hh"
 #include "NumConversion.hh"
 #include <algorithm>
+#include <unordered_map>
 
 namespace litecore {
     using namespace std;
@@ -320,7 +321,7 @@ namespace litecore {
                     ++i;
             }
         }
-        // Now add the new version:
+        // Now add the new version and clear the 'isMerge' state:
         _vers.insert(_vers.begin(), v);
         _nCurrent = 1;
 #if DEBUG
@@ -428,19 +429,54 @@ namespace litecore {
     }
 
     VersionVector VersionVector::trivialMerge(const VersionVector& winner, const VersionVector& loser) {
-        VersionVector result({winner.current()});
-        SourceID      winningAuthor = winner.current().author();
-        compareBySource(winner, loser, [&](SourceID author, logicalTime t1, logicalTime t2) {
-            // Add the current timestamp of each other author appearing in either vector:
-            if ( author != winningAuthor ) result._vers.emplace_back(std::max(t1, t2), author);
-            return true;
-        });
-        // Now sort the non-current versions by descending time, as usual:
-        sort(result._vers.begin() + 1, result._vers.end(), Version::byDescendingTimes);
+        // Build a map from an author to its newest timestamp in either vector:
+        unordered_map<SourceID, logicalTime> merge;
+        for ( auto [author, time] : winner._vers ) merge.insert({author, time});
+        for ( auto [author, time] : loser._vers ) {
+            if ( auto i = merge.find(author); i == merge.end() ) merge.insert({author, time});
+            else if ( time > i->second )
+                i->second = time;
+        }
+
+        vec    result;
+        size_t nCurrent = winner._nCurrent;
+        if ( nCurrent > 1 ) {
+            // If winner is a merge vector, check whether the CV and MV timestamps stayed the same:
+            auto begin = winner._vers.begin(), end = begin + winner._nCurrent;
+            for ( auto i = begin; i != end; ++i ) {
+                if ( i == begin || i->author() != begin->author() ) {
+                    if ( i->time() < merge.find(i->author())->second ) {
+                        nCurrent = 1;  // nope; so the result can't be a merge vector.
+                        break;
+                    }
+                }
+            }
+            if ( nCurrent > 1 ) {
+                // If they're still valid, copy over the CV and MV:
+                for ( auto i = begin; i != end; ++i ) {
+                    result.push_back(*i);
+                    merge.erase(i->author());
+                }
+            }
+        }
+
+        if ( nCurrent == 1 ) {
+            // If result isn't a merge, make its CV the merged Version of the winning author:
+            auto i = merge.find(winner.current().author());
+            result.push_back(Version(i->second, i->first));
+            merge.erase(i);
+        }
+
+        // Now add the remaining merged versions:
+        for ( auto& [author, time] : merge ) result.push_back(Version(time, author));
+
+        // Finally put the non-current versions into canonical descending chronological order:
+        sort(result.begin() + nCurrent, result.end(), Version::byDescendingTimes);
+        VersionVector resultVec(std::move(result), nCurrent);
 #if DEBUG
-        result.validate();
+        resultVec.validate();
 #endif
-        return result;
+        return resultVec;
     }
 
     VersionVector::vec VersionVector::mergedVersions() const {
