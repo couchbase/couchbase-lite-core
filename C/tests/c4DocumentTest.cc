@@ -803,7 +803,41 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Deletion External Pointers", "[Document
     CHECK(street == streetVal);
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][RevIDs][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Redundant VV Merge", "[Document][RevIDs][Conflict][C]") {
+    if ( isRevTrees() ) return;
+
+    const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
+    auto       defaultColl  = getCollection(db, kC4DefaultCollectionSpec);
+    createRev(kDocID, "8@*, 7@AliceAliceAliceAliceAA, 6@BobBobBobBobBobBobBobA; 4@CarolCarolCarolCarolCA"_sl,
+              kFleeceBody2);
+
+    // "Pull" a revision that merges the same conflict with the same body but different revID:
+    TransactionHelper t(db);
+    C4Slice           otherRev =
+            "9@ZegpoldZegpoldZegpoldA, 7@AliceAliceAliceAliceAA, 6@BobBobBobBobBobBobBobA; 4@CarolCarolCarolCarolCA"_sl;
+    C4DocPutRequest rq{
+            .body             = kFleeceBody2,
+            .docID            = kDocID,
+            .revFlags         = kRevKeepBody,
+            .existingRevision = true,
+            .allowConflict    = true,
+            .history          = &otherRev,
+            .historyCount     = 1,
+            .save             = true,
+            .remoteDBID       = 1,
+    };
+    c4::ref<C4Document> doc = c4coll_putDoc(defaultColl, &rq, nullptr, ERROR_INFO());
+    REQUIRE(doc);
+
+    CHECK(doc->revID == "8@*"_sl);
+    CHECK(fleece::Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ok":"go"})");
+    CHECK(alloc_slice(c4doc_getRemoteAncestor(doc, C4RemoteID(1))) == "9@ZegpoldZegpoldZegpoldA"_sl);
+    REQUIRE(c4doc_selectRevision(doc, "9@ZegpoldZegpoldZegpoldA"_sl, true, WITH_ERROR()));
+    CHECK(fleece::Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ok":"go"})");
+    CHECK(doc->sequence == 1);  // adding remote rev didn't disturb local sequence
+}
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][RevIDs][Conflict][C]") {
     C4Error err;
     slice   kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;
     if ( isRevTrees() ) {
