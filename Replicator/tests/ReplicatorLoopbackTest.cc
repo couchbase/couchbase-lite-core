@@ -1172,13 +1172,12 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[P
     {
         TransactionHelper t(db);
         C4Error           error;
-        CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID, kC4SliceNull, kRevDeleted,
-                                    WITH_ERROR(&error)));
+        CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID, kC4SliceNull, 0, WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
 
     doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
-    CHECK(doc->revID == revOrVersID(kConflictRev2BID, "2@*"));
+    CHECK(doc->revID == kConflictRev2BID);
 
     // Update the doc and push it to db2:
     createNewRev(_collDB1, docID, kFleeceBody);
@@ -1219,8 +1218,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull
     {
         TransactionHelper t(db);
         C4Error           error;
-        CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID, kC4SliceNull, kRevDeleted,
-                                    WITH_ERROR(&error)));
+        CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID, kC4SliceNull, 0, WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
 
@@ -1228,7 +1226,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull
     alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
     if ( isRevTrees() ) CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
     else
-        CHECK(mergedID == "2@*, 1@MajorMajorMajorMajorQQ, 1@NorbertHeisenbergVonQQ;"_sl);
+        CHECK(mergedID == "1@MajorMajorMajorMajorQQ; 1@*, 1@NorbertHeisenbergVonQQ"_sl);
 
     // Update the doc and push it to db2:
     createNewRev(_collDB1, docID, kFleeceBody);
@@ -1897,7 +1895,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing r
     }
 
     doc = c4coll_getDoc(_collDB1, C4STR("doc2"), true, kDocGetAll, nullptr);
-    CHECK(doc->revID == revOrVersID(kDoc1Rev2B, "3@*"));
+    CHECK(doc->revID == revOrVersID(kDoc1Rev2B, kDoc2Rev2B));
     CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
     seq = C4SequenceNumber(isRevTrees() ? 8 : 6);
     CHECK(doc->sequence == seq);

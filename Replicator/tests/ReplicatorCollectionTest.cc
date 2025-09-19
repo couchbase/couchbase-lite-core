@@ -692,7 +692,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Push and Pull Attachments", "[
     checkAttachments(db2, blobKeys2b, attachments2);
 }
 
-N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull]") {
+N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Resolve Conflict", "[Push][Pull][Conflict]") {
     int  resolveCount = 0;
     auto resolver     = [&resolveCount](CollectionSpec spec, C4Document* localDoc, C4Document* remoteDoc) {
         resolveCount++;

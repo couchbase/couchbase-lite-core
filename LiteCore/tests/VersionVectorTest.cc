@@ -375,7 +375,7 @@ TEST_CASE("VersionVector comparison", "[RevIDs]") {
     CHECK(z4 % c2);
 }
 
-TEST_CASE("VersionVector conflicts", "[RevIDs]") {
+TEST_CASE("VersionVector conflicts", "[RevIDs][Conflict]") {
     HybridClock clock;
     clock.setSource(make_unique<FakeClockSource>(0, 0));
 
@@ -420,6 +420,62 @@ TEST_CASE("VersionVector conflicts", "[RevIDs]") {
     CHECK(!vEmpty.isMerge());
     CHECK(vEmpty.currentVersions() == 0);
     CHECK(vEmpty.mergedVersions().empty());
+}
+
+TEST_CASE("VersionVector trivial merge", "[RevIDs][Conflict]") {
+    VersionVector v1 = "6@*;2@AliceAliceAliceAliceAA,1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA"_vv;
+    VersionVector v3 = "4@AliceAliceAliceAliceAA;1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA"_vv;
+    CHECK(v1.compareTo(v3) == kConflicting);
+
+    VersionVector v13 = VersionVector::trivialMerge(v1, v3);
+    CHECK(v13.asASCII() == "6@*; 4@AliceAliceAliceAliceAA, 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA");
+    CHECK_FALSE(v13.isMerge());
+    CHECK(v13.current() == v1.current());
+    CHECK(v13.compareTo(v1) == kSame);  // it counts as the same bc the current Version matches
+    CHECK(v13.compareTo(v3) == kNewer);
+
+    // Other way round:
+    VersionVector v31 = VersionVector::trivialMerge(v3, v1);
+    CHECK(v31.asASCII() == "4@AliceAliceAliceAliceAA; 6@*, 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA");
+    CHECK_FALSE(v31.isMerge());
+    CHECK(v31.current() == v3.current());
+    CHECK(v31.compareTo(v1) == kNewer);
+    CHECK(v31.compareTo(v3) == kSame);
+}
+
+TEST_CASE("VersionVector trivial merge of merge", "[RevIDs][Conflict]") {
+    VersionVector m1 = "6@*, 5@*, 2@AliceAliceAliceAliceAA; 1@DaveDaveDaveDaveDaveDA, 2@CarolCarolCarolCarolCA"_vv;
+    VersionVector m2 = "4@DaveDaveDaveDaveDaveDA, 2@CarolCarolCarolCarolCA"_vv;
+    {
+        // The winner is a merged vector:
+        VersionVector m12 = VersionVector::trivialMerge(m1, m2);
+        CHECK(m12.asASCII()
+              == "6@*, 5@*, 2@AliceAliceAliceAliceAA; 4@DaveDaveDaveDaveDaveDA, 2@CarolCarolCarolCarolCA");
+        CHECK(m12.isMerge());
+        CHECK(m12.current() == m1.current());
+        CHECK(m12.compareTo(m1) == kSame);
+        CHECK(m12.compareTo(m2) == kNewer);
+    }
+    {
+        // Other way round:
+        VersionVector m21 = VersionVector::trivialMerge(m2, m1);
+        CHECK(m21.asASCII() == "4@DaveDaveDaveDaveDaveDA; 6@*, 2@AliceAliceAliceAliceAA, 2@CarolCarolCarolCarolCA");
+        CHECK_FALSE(m21.isMerge());
+        CHECK(m21.current() == m2.current());
+        CHECK(m21.compareTo(m2) == kSame);
+        CHECK(m21.compareTo(m1) == kNewer);
+    }
+    {
+        // Now the annoying case where loser has revisions newer than ones in the winner's MV,
+        // so the result can't be a merge:
+        VersionVector m3  = "4@AliceAliceAliceAliceAA, 2@CarolCarolCarolCarolCA"_vv;
+        VersionVector m13 = VersionVector::trivialMerge(m1, m3);
+        CHECK(m13.asASCII() == "6@*; 4@AliceAliceAliceAliceAA, 2@CarolCarolCarolCarolCA, 1@DaveDaveDaveDaveDaveDA");
+        CHECK(!m13.isMerge());
+        CHECK(m13.current() == m1.current());
+        CHECK(m13.compareTo(m1) == kSame);
+        CHECK(m13.compareTo(m3) == kNewer);
+    }
 }
 
 TEST_CASE("VersionVector update merge with two by me", "[RevIDs]") {
