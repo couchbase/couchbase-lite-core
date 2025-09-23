@@ -131,7 +131,7 @@ namespace litecore {
             );
 #endif
 #ifdef COUCHBASE_ENTERPRISE
-            webSocket->setPeerCertValidator(_peerTLSCertificateValidator);
+            webSocket->setPeerCertValidator(getPeerTLSCertificateValidator());
 #endif
             _replicator = new Replicator(dbAccess, webSocket, *this, _options);
 

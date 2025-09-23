@@ -73,8 +73,9 @@ namespace litecore {
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override;
 
 #ifdef COUCHBASE_ENTERPRISE
-        void    setPeerTLSCertificateValidator(std::shared_ptr<PeerTLSCertificateValidator>) override;
-        C4Cert* getPeerTLSCertificate() const override;
+        void setPeerTLSCertificateValidator(std::shared_ptr<PeerTLSCertificateValidator>) override;
+        std::shared_ptr<PeerTLSCertificateValidator> getPeerTLSCertificateValidator() const override;
+        C4Cert*                                      getPeerTLSCertificate() const override;
 
         struct BLIPHandlerSpec {
             std::string                           profile;
@@ -157,6 +158,7 @@ namespace litecore {
         bool                          _cancelStop{false};
 #ifdef COUCHBASE_ENTERPRISE
         std::shared_ptr<PeerTLSCertificateValidator> _peerTLSCertificateValidator;
+        mutable std::mutex                           _peerValidatorMutex;
         BLIPHandlerSpecs                             _pendingHandlers;
 #endif
 

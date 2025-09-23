@@ -63,7 +63,8 @@ struct C4Replicator
     using PeerTLSCertificateValidator = std::function<bool(slice certData, std::string_view hostname)>;
 
     /// Registers a callback that can accept or reject a peer's certificate during the TLS handshake.
-    virtual void setPeerTLSCertificateValidator(std::shared_ptr<PeerTLSCertificateValidator>) = 0;
+    virtual void setPeerTLSCertificateValidator(std::shared_ptr<PeerTLSCertificateValidator>)   = 0;
+    virtual std::shared_ptr<PeerTLSCertificateValidator> getPeerTLSCertificateValidator() const = 0;
 
     virtual C4Cert* C4NULLABLE getPeerTLSCertificate() const = 0;
 #endif
