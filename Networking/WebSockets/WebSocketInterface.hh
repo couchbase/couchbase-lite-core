@@ -137,7 +137,7 @@ namespace litecore::websocket {
         void setPeerCertValidator(std::shared_ptr<PeerCertValidator> cv) {
             _peerCertValidator = std::move(cv);
             // If we are not given a valid validator, the validator will always return true.
-            if ( cv ) _hasPeerCertValidator = true;
+            _hasPeerCertValidator = !!cv;
         }
 
         bool hasPeerCertValidator() const { return _hasPeerCertValidator; }
