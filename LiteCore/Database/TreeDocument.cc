@@ -366,9 +366,10 @@ namespace litecore {
             _revTree.markBranchAsNotConflict(losingRev, false);
 
             // Deal with losingRev:
-            if ( pruneLosingBranch ) {
+            if ( pruneLosingBranch && !losingRev->isLatestRemoteRevision() ) {
                 // Purge its branch entirely
                 purgeRevision(losingRevID);
+                LogTo(DBLog, "Resolved conflict, purging branch '%.*s' #%.*s", SPLAT(_docID), SPLAT(losingRevID));
             } else if ( !losingRev->isClosed() ) {
                 // or just put a tombstone on top of it
                 selectRevision(losingRev);
@@ -377,6 +378,8 @@ namespace litecore {
                 rq.history         = (C4String*)&losingRevID;
                 rq.historyCount    = 1;
                 Assert(putNewRevision(rq, nullptr));
+                LogTo(DBLog, "Resolved conflict, deleting branch '%.*s' #%.*s with #%.*s", SPLAT(_docID),
+                      SPLAT(losingRevID), SPLAT(_selected.revID));
             }
 
             if ( mergedBody.buf ) {
