@@ -187,12 +187,12 @@ namespace litecore {
     using PeerTLSCertificateValidator = C4Replicator::PeerTLSCertificateValidator;
 
     void C4ReplicatorImpl::setPeerTLSCertificateValidator(std::shared_ptr<PeerTLSCertificateValidator> v) {
-        std::scoped_lock<std::mutex> lock(_peerValidatorMutex);
+        std::unique_lock<std::mutex> lock(_peerValidatorMutex);
         _peerTLSCertificateValidator = std::move(v);
     }
 
     std::shared_ptr<PeerTLSCertificateValidator> C4ReplicatorImpl::getPeerTLSCertificateValidator() const {
-        std::scoped_lock<std::mutex> lock(_peerValidatorMutex);
+        std::unique_lock<std::mutex> lock(_peerValidatorMutex);
         return _peerTLSCertificateValidator;
     }
 
