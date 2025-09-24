@@ -401,22 +401,38 @@ namespace litecore {
                 return -1;
             }
 
-            // Compare it with the current document revision:
-            versionOrder order = VersionVecWithLegacy::compare(newVers, curVers);
-            logPutExisting(curVers, newVers, order, remote);
+            Doc fldoc = _newProperties(rq, outError);
+            if ( !fldoc ) return -1;
+            Dict newProperties = fldoc.asDict();
 
-            // Check for no-op or conflict:
-            int commonAncestor = 1;
-            if ( order != kNewer ) {
-                if ( remote == RemoteID::Local ) {
-                    if ( order == kConflicting ) {
-                        c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
-                        return -1;
-                    } else {
-                        return 0;
+            versionOrder order;
+            int          commonAncestor;
+            if ( newVers.vector.mergesSameVersions(curVers.vector) && newProperties.isEqual(_doc.properties()) ) {
+                // This a redundant merge: same body, same MV.
+                order = kSame;
+                logPutExisting(curVers, newVers, order, remote);
+                commonAncestor = 0;
+                if ( remote == RemoteID::Local ) return commonAncestor;
+                newProperties = _doc.properties();
+
+            } else {
+                // Compare it with the current document revision:
+                order = VersionVecWithLegacy::compare(newVers, curVers);
+                logPutExisting(curVers, newVers, order, remote);
+
+                // Check for no-op or conflict:
+                commonAncestor = 1;
+                if ( order != kNewer ) {
+                    if ( remote == RemoteID::Local ) {
+                        if ( order == kConflicting ) {
+                            c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
+                            return -1;
+                        } else {
+                            return 0;
+                        }
                     }
+                    if ( order != kConflicting ) commonAncestor = 0;
                 }
-                if ( order != kConflicting ) commonAncestor = 0;
             }
 
             alloc_slice newVersBinary;
@@ -425,10 +441,8 @@ namespace litecore {
                 newVersBinary = newVers.vector.asBinary();
 
             // Assemble a new Revision:
-            Doc fldoc = _newProperties(rq, outError);
-            if ( !fldoc ) return -1;
             Revision newRev;
-            newRev.properties = fldoc.asDict();
+            newRev.properties = newProperties;
             newRev.revID      = revid(newVersBinary);
             newRev.flags      = convertNewRevisionFlags(rq.revFlags);
 

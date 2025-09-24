@@ -89,7 +89,7 @@ function Build() {
     & "C:\Program Files\CMake\bin\cmake.exe" `
         -T version=14.36.17.6 `
         -A $MsArch `
-        -DBUILD_ENTERPRISE=$build_enterprise `
+        -DBUILD_ENTERPRISE="$build_enterprise" `
         -DCMAKE_INSTALL_PREFIX="$(Get-Location)\install" `
         -DVERSION="$Version" `
         -DBLD_NUM="$BldNum" `
