@@ -207,8 +207,8 @@ NODISCARD CBL_CORE_API int32_t c4doc_purgeRevision(C4Document* doc, C4String rev
         @param doc  The document.
         @param winningRevID  The conflicting revision to be kept (and optionally updated.)
         @param losingRevID  The conflicting revision to be deleted.
-        @param mergedBody  The body of the merged revision, or NULL if none.
-        @param mergedFlags  Flags for the merged revision.
+        @param mergedBody  The body of the merged revision, or nullslice to keep the winning rev's body.
+        @param mergedFlags  Flags for the merged revision. Ignored if mergedBody is nullslice.
         @param error  Error information is stored here.
         @return  True on success, false on failure. */
 NODISCARD CBL_CORE_API bool c4doc_resolveConflict(C4Document* doc, C4String winningRevID, C4String losingRevID,
