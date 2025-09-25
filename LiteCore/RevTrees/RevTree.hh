@@ -162,7 +162,6 @@ namespace litecore {
 
         void keepBody(const Rev* NONNULL);
         void removeBody(const Rev* NONNULL);
-        void removeBodiesOnBranch(const Rev* NONNULL);
 
         void removeNonLeafBodies();
 
