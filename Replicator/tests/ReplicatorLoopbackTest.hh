@@ -576,8 +576,11 @@ class ReplicatorLoopbackTest
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
         fastREQUIRE(doc1->docID == doc2->docID);
-        fastREQUIRE(absoluteRevID(doc1) == absoluteRevID(doc2));
         fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
+
+        alloc_slice revid1(c4doc_getSelectedRevIDGlobalForm(doc1));
+        alloc_slice revid2(c4doc_getSelectedRevIDGlobalForm(doc1));
+        fastREQUIRE(revid1 == revid2);  // Note: comparing entire version vectors may give false negatives
 
         // Compare canonical JSON forms of both docs:
         Dict rev1 = c4doc_getProperties(doc1), rev2 = c4doc_getProperties(doc2);

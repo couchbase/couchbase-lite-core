@@ -100,3 +100,13 @@ namespace litecore {
     }
 
 }  // namespace litecore
+
+// Makes SourceID hashable, for use in unordered_map:
+template <>
+struct std::hash<litecore::SourceID> {
+    std::size_t operator()(litecore::SourceID const& id) const noexcept FLPURE {
+        std::size_t h;
+        ::memcpy(&h, &id.bytes(), sizeof(h));
+        return h;
+    }
+};

@@ -401,22 +401,38 @@ namespace litecore {
                 return -1;
             }
 
-            // Compare it with the current document revision:
-            versionOrder order = VersionVecWithLegacy::compare(newVers, curVers);
-            logPutExisting(curVers, newVers, order, remote);
+            Doc fldoc = _newProperties(rq, outError);
+            if ( !fldoc ) return -1;
+            Dict newProperties = fldoc.asDict();
 
-            // Check for no-op or conflict:
-            int commonAncestor = 1;
-            if ( order != kNewer ) {
-                if ( remote == RemoteID::Local ) {
-                    if ( order == kConflicting ) {
-                        c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
-                        return -1;
-                    } else {
-                        return 0;
+            versionOrder order;
+            int          commonAncestor;
+            if ( newVers.vector.mergesSameVersions(curVers.vector) && newProperties.isEqual(_doc.properties()) ) {
+                // This a redundant merge: same body, same MV.
+                order = kSame;
+                logPutExisting(curVers, newVers, order, remote);
+                commonAncestor = 0;
+                if ( remote == RemoteID::Local ) return commonAncestor;
+                newProperties = _doc.properties();
+
+            } else {
+                // Compare it with the current document revision:
+                order = VersionVecWithLegacy::compare(newVers, curVers);
+                logPutExisting(curVers, newVers, order, remote);
+
+                // Check for no-op or conflict:
+                commonAncestor = 1;
+                if ( order != kNewer ) {
+                    if ( remote == RemoteID::Local ) {
+                        if ( order == kConflicting ) {
+                            c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
+                            return -1;
+                        } else {
+                            return 0;
+                        }
                     }
+                    if ( order != kConflicting ) commonAncestor = 0;
                 }
-                if ( order != kConflicting ) commonAncestor = 0;
             }
 
             alloc_slice newVersBinary;
@@ -425,10 +441,8 @@ namespace litecore {
                 newVersBinary = newVers.vector.asBinary();
 
             // Assemble a new Revision:
-            Doc fldoc = _newProperties(rq, outError);
-            if ( !fldoc ) return -1;
             Revision newRev;
-            newRev.properties = fldoc.asDict();
+            newRev.properties = newProperties;
             newRev.revID      = revid(newVersBinary);
             newRev.flags      = convertNewRevisionFlags(rq.revFlags);
 
@@ -484,19 +498,18 @@ namespace litecore {
 
         void resolveConflict(slice winningRevID, slice losingRevID, slice mergedBody, C4RevisionFlags mergedFlags,
                              bool /*pruneLosingBranch*/) override {
+            // Look up the Revisions:
             optional<pair<RemoteID, Revision>> won = _findRemote(winningRevID), lost = _findRemote(losingRevID);
             if ( !won || !lost ) error::_throw(error::NotFound, "Revision not found");
             if ( won->first == lost->first ) error::_throw(error::InvalidParameter, "That's the same revision");
 
             // One has to be Local, the other has to be remote and a conflict:
-            Revision localRev, remoteRev;
+            Revision remoteRev;
             RemoteID remoteID;
             bool     localWon = won->first == RemoteID::Local;
             if ( localWon ) {
-                localRev                 = won->second;
                 tie(remoteID, remoteRev) = *lost;
             } else if ( lost->first == RemoteID::Local ) {
-                localRev                 = lost->second;
                 tie(remoteID, remoteRev) = *won;
             } else {
                 error::_throw(error::Conflict, "Conflict must involve the local revision");
@@ -504,35 +517,41 @@ namespace litecore {
             if ( !(remoteRev.flags & DocumentFlags::kConflicted) )
                 error::_throw(error::Conflict, "Revisions are not in conflict");
 
-            // Construct a merged version vector:
-            VersionVector localVersion = localRev.versionVector(), remoteVersion = remoteRev.versionVector(),
-                          mergedVersion;
-            if ( !localWon && !mergedBody.buf && !localVersion.isNewerIgnoring(kMeSourceID, remoteVersion) ) {
-                // If there's no new merged body, and the local revision lost,
-                // and its only changes not in the remote version are by me, then
-                // just get rid of the local version and keep the remote one.
-                // TODO: This assumes the local rev hasn't been pushed anywhere yet.
-                //       If that's not true, then we should create a new version;
-                //       but currently there's no way of knowing.
-                mergedVersion = remoteVersion;
-            } else {
-                mergedVersion =
-                        VersionVector::merge(localVersion, remoteVersion, asInternal(database())->versionClock());
+            // Parse mergedBody, but if it's equal to the winning rev's body, ignore it:
+            Doc  mergedDoc;
+            Dict mergedProperties;
+            if ( mergedBody.buf ) {
+                mergedDoc        = _newProperties(alloc_slice(mergedBody));
+                mergedProperties = mergedDoc.asDict();
+                if ( mergedProperties.isEqual(won->second.properties) ) {
+                    mergedProperties = nullptr;
+                    mergedBody       = nullslice;
+                }
             }
+
+            // Construct a merged version vector. If the body is equal to the winning rev's body,
+            // it's a "trivial merge" that doesn't result in a merge vector.
+            VersionVector winningVersion = won->second.versionVector();
+            VersionVector losingVersion  = lost->second.versionVector();
+            VersionVector mergedVersion;
+            if ( mergedBody.buf )
+                mergedVersion =
+                        VersionVector::merge(winningVersion, losingVersion, asInternal(database())->versionClock());
+            else
+                mergedVersion = VersionVector::trivialMerge(winningVersion, losingVersion);
             alloc_slice mergedRevID = mergedVersion.asBinary();
 
             // Update the local/current revision with the resulting merge:
-            Doc mergedDoc;
-            localRev.revID = revid(mergedRevID);
+            Revision mergedRev;
+            mergedRev.revID = revid(mergedRevID);
             if ( mergedBody.buf ) {
-                mergedDoc           = _newProperties(alloc_slice(mergedBody));
-                localRev.properties = mergedDoc.asDict();
-                localRev.flags      = convertNewRevisionFlags(mergedFlags);
+                mergedRev.properties = mergedProperties;
+                mergedRev.flags      = convertNewRevisionFlags(mergedFlags);
             } else {
-                localRev.properties = won->second.properties;
-                localRev.flags      = won->second.flags - DocumentFlags::kConflicted;
+                mergedRev.properties = won->second.properties;
+                mergedRev.flags      = won->second.flags - DocumentFlags::kConflicted;
             }
-            _doc.setCurrentRevision(localRev);
+            _doc.setCurrentRevision(mergedRev);
 
             // Remote rev is no longer a conflict:
             remoteRev.flags = remoteRev.flags - DocumentFlags::kConflicted;
@@ -540,8 +559,9 @@ namespace litecore {
 
             _updateDocFields();
             _selectRemote(RemoteID::Local);
+            if ( !localWon ) std::swap(winningVersion, losingVersion);  // log local version first
             LogTo(DBLog, "Resolved conflict in '%.*s' between #%s and #%s -> #%s", SPLAT(_docID),
-                  string(localVersion.asASCII()).c_str(), string(remoteVersion.asASCII()).c_str(),
+                  string(winningVersion.asASCII()).c_str(), string(losingVersion.asASCII()).c_str(),
                   string(mergedVersion.asASCII()).c_str());
         }
 
