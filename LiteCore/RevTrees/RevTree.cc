@@ -298,8 +298,6 @@ namespace litecore {
                 newRev->addFlag(Rev::kIsConflict);  // Creating or extending a branch
             parentRev->clearFlag(Rev::kLeaf);
             if ( revFlags & Rev::kKeepBody ) keepBody(newRev);
-            else if ( revFlags & Rev::kClosed )
-                removeBodiesOnBranch(parentRev);  // no bodies on a closed conflict branch
         } else {
             // Root revision:
             if ( markConflict && !_revs.empty() ) newRev->addFlag(Rev::kIsConflict);  // Creating a 2nd root
@@ -423,13 +421,6 @@ namespace litecore {
             const_cast<Rev*>(rev)->removeBody();
             _changed = true;
         }
-    }
-
-    void RevTree::removeBodiesOnBranch(const Rev* rev) {
-        do {
-            removeBody(rev);
-            rev = rev->parent;
-        } while ( rev );
     }
 
     // Remove bodies of already-saved revs that are no longer leaves:

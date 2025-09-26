@@ -93,6 +93,9 @@ struct C4Document
 
     virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) { failUnsupported(); }
 
+    /// Returns true if `ancestor` is an ancestor of (or equal to) `rev`. (Rev trees only)
+    bool revisionHasAncestor(slice rev, slice ancestor);
+
     // Revision info:
 
     virtual alloc_slice getSelectedRevIDGlobalForm() const;

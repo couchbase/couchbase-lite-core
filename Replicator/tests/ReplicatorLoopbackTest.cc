@@ -1235,6 +1235,54 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull
     compareDatabases();
 }
 
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Force Server Branch Switch", "[Push][Conflict]") {
+    if ( !isRevTrees() ) return;  // this does not make sense with version vectors
+    C4Slice docID = C4STR("Khan");
+
+    {
+        TransactionHelper t(db);
+        createFleeceRev(_collDB1, docID, "1-11111111"_sl, "{}"_sl);
+        createConflictingRev(_collDB1, docID, "1-11111111"_sl, "2-22222222"_sl);
+    }
+    _expectedDocumentCount = 1;
+
+    // Push db to db2, so both will have the doc:
+    C4Log("---- Pushing");
+    runPushReplication();
+
+    // Create a conflict:
+    {
+        C4Log("---- Creating conflict");
+        TransactionHelper t(db);
+        createConflictingRev(_collDB1, docID, "1-11111111"_sl, "2-cccccccc"_sl);
+        c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
+        CHECK(doc->flags & kDocConflicted);
+        REQUIRE(alloc_slice(c4doc_getRemoteAncestor(doc, C4RemoteID{1})) == "2-22222222"_sl);
+        REQUIRE(c4doc_setRemoteAncestor(doc, C4RemoteID(2), "2-cccccccc"_sl, WITH_ERROR()));
+        REQUIRE(c4doc_save(doc, 0, WITH_ERROR()));
+        CHECK(doc->sequence == C4SequenceNumber{3});
+    }
+    {
+        C4Log("---- Resolving conflict");
+        TransactionHelper   t(db);
+        c4::ref<C4Document> doc = c4coll_getDoc(_collDB1, docID, true, kDocGetAll, nullptr);
+        CHECK(doc->flags & kDocConflicted);
+        REQUIRE(c4doc_resolveConflict(doc, "2-cccccccc"_sl, "2-22222222"_sl, nullslice, 0, WITH_ERROR()));
+        c4doc_selectCurrentRevision(doc);
+        CHECK(doc->selectedRev.revID == "2-cccccccc"_sl);
+        REQUIRE(c4doc_save(doc, 0, WITH_ERROR()));
+        CHECK(doc->sequence == C4SequenceNumber{4});
+    }
+
+    C4Log("---- Pushing Again");
+    runPushReplication();
+
+    C4Log("---- Check");
+    c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, docID, true, kDocGetAll, nullptr);
+    CHECK(doc->revID == "2-cccccccc"_sl);
+    CHECK_FALSE(doc->flags & kDocConflicted);
+}
+
 N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull][Conflict]") {
     if ( !isRevTrees() ) return;  // this does not make sense with version vectors
 

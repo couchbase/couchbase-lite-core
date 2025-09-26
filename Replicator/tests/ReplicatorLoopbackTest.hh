@@ -426,11 +426,12 @@ class ReplicatorLoopbackTest
 
     // Installs a simple conflict handler equivalent to the one in CBL 2.0-2.5: it just picks one
     // side and tosses the other one out.
-    void installConflictHandler() {
+    void installConflictHandler(bool allowServerConflict = false) {
         c4::ref<C4Database> resolvDB = c4db_openAgain(db, nullptr);
         Require(resolvDB);
         auto& conflictHandlerRunning = _conflictHandlerRunning;
-        _conflictHandler             = [resolvDB, &conflictHandlerRunning](ReplicatedRev* rev) {
+
+        _conflictHandler = [resolvDB, &conflictHandlerRunning, allowServerConflict](ReplicatedRev* rev) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             Log("Resolving conflict in '%.*s' %.*s ...", SPLAT(rev->docID), SPLAT(rev->revID));
 
@@ -446,7 +447,7 @@ class ReplicatorLoopbackTest
             }
             if ( !(doc->flags & kDocConflicted) ) {
                 Log("conflictHandler: Doc '%.*s' not conflicted anymore (at %.*s)", SPLAT(rev->docID),
-                                SPLAT(doc->revID));
+                    SPLAT(doc->revID));
                 conflictHandlerRunning = false;
                 return;
             }
@@ -468,17 +469,26 @@ class ReplicatorLoopbackTest
                 remoteWins = c4rev_getTimestamp(localRevID) < c4rev_getTimestamp(remoteRevID);
 
             Log("Resolving conflict in '%.*s': local=#%.*s (%02X), remote=#%.*s (%02X); %s wins", SPLAT(rev->docID),
-                            SPLAT(localRevID), localFlags, SPLAT(remoteRevID), remoteFlags, (remoteWins ? "remote" : "local"));
+                SPLAT(localRevID), localFlags, SPLAT(remoteRevID), remoteFlags, (remoteWins ? "remote" : "local"));
 
-            // Resolve. The remote rev has to win, in that it has to stay on the main branch, to avoid
-            // conflicts with the server. But if we want the local copy to really win, we use its body:
-            FLDict          mergedBody  = nullptr;
-            C4RevisionFlags mergedFlags = remoteFlags;
-            if ( remoteWins ) {
-                mergedBody  = localBody;
-                mergedFlags = localFlags;
+            // Resolve the document:
+            if ( allowServerConflict ) {
+                if ( remoteWins ) {
+                    std::swap(localRevID, remoteRevID);
+                    std::swap(localFlags, remoteFlags);
+                }
+                Check(c4doc_resolveConflict2(doc, localRevID, remoteRevID, nullptr, localFlags, &error));
+            } else {
+                // The remote rev has to win, in that it has to stay on the main branch, to avoid
+                // conflicts with the server. But if we want the local copy to really win, we use its body:
+                FLDict          mergedBody  = nullptr;
+                C4RevisionFlags mergedFlags = remoteFlags;
+                if ( remoteWins ) {
+                    mergedBody  = localBody;
+                    mergedFlags = localFlags;
+                }
+                Check(c4doc_resolveConflict2(doc, remoteRevID, localRevID, mergedBody, mergedFlags, &error));
             }
-            Check(c4doc_resolveConflict2(doc, remoteRevID, localRevID, mergedBody, mergedFlags, &error));
             Check((doc->flags & kDocConflicted) == 0);
             Require(c4doc_save(doc, 0, &error));
             conflictHandlerRunning = false;
