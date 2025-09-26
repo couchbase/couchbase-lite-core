@@ -840,9 +840,6 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Redundant VV Merge", "[Document][RevIDs][Conflic
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
     const bool kSecondRemote = GENERATE(false, true);
     DYNAMIC_SECTION("" << (kSecondRemote ? "With a second remote" : "Default")) {
-        // Version Vector is not working with second remote yet
-        if ( !isRevTrees() && kSecondRemote ) return;
-
         C4Error err;
         slice   kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;
         if ( isRevTrees() ) {
@@ -1008,7 +1005,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
                 alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
                 CHECK(vector == "4@CarolCarolCarolCarolCA; 7@AliceAliceAliceAliceAA, 3@*"_sl);
                 CHECK(c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
-                CHECK(!c4doc_selectRevision(doc, kRev3ID, false, nullptr));
+                // Normally kRev3ID won't exist anymore due to the merge.
+                // But with kSecondRemote, remote #2 still has kRev3ID as its current version.
+                CHECK(c4doc_selectRevision(doc, kRev3ID, false, nullptr) == kSecondRemote);
             }
             {
                 C4Log("--- Resolve, remote wins but merge vectors [body merged]");
@@ -1020,7 +1019,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
                 alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
                 CHECK(vector == "8@*, 7@AliceAliceAliceAliceAA, 4@CarolCarolCarolCarolCA;"_sl);
                 CHECK(c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
-                CHECK(!c4doc_selectRevision(doc, kRev3ID, false, nullptr));
+                // Normally kRev3ID won't exist anymore due to the merge.
+                // But with kSecondRemote, remote #2 still has kRev3ID as its current version.
+                CHECK(c4doc_selectRevision(doc, kRev3ID, false, nullptr) == kSecondRemote);
             }
             // (not saving the doc, so this has no side effects upon the code below.)
         }
