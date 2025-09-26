@@ -279,8 +279,7 @@ namespace litecore::repl {
         alloc_slice foreignAncestor = dbAccess.getDocRemoteAncestor(doc);
         logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID()), SPLAT(foreignAncestor));
         if ( foreignAncestor == slice(doc->revID()) ) return false;  // skip this rev: it's already on the peer
-        if ( foreignAncestor && !_usingVersionVectors
-             && C4Document::getRevIDGeneration(foreignAncestor) >= C4Document::getRevIDGeneration(doc->revID()) ) {
+        if ( foreignAncestor && !_usingVersionVectors && doc->revisionHasAncestor(foreignAncestor, doc->revID()) ) {
             if ( !_options->isActive() ) {
                 C4Error error = C4Error::make(WebSocketDomain, 409, "conflicts with newer server revision"_sl);
                 _delegate.failedToGetChange(rev, error, false);
