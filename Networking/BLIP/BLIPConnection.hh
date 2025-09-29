@@ -78,7 +78,8 @@ namespace litecore::blip {
         std::string loggingIdentifier() const override { return _name; }
 
         /** Exposed only for testing. */
-        websocket::WebSocket* webSocket() const;
+        websocket::WebSocket*          webSocket() const;
+        Retained<websocket::WebSocket> webSocketSafe() const;
 
       protected:
         ~Connection() override;
@@ -99,6 +100,7 @@ namespace litecore::blip {
         int8_t                                   _compressionLevel;
         std::atomic<State>                       _state{kClosed};
         CloseStatus                              _closeStatus;
+        mutable std::mutex                       _webSocketMutex;
     };
 
     /** Abstract interface of Connection delegates. The Connection calls these methods when

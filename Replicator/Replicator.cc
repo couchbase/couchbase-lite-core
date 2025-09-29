@@ -620,9 +620,15 @@ namespace litecore::repl {
             return;
         }
 
+        Retained<websocket::WebSocket> socket = connection().webSocketSafe();
+        if ( !socket ) {
+            logInfo("The connection is closed from WebSoket");
+            return;
+        }
+
         logInfo("Connected!");
 
-        if ( auto socket = connection().webSocket(); socket->role() == websocket::Role::Client ) {
+        if ( socket->role() == websocket::Role::Client ) {
             _httpHeaders                    = make_unique<websocket::Headers>();
             tie(_httpStatus, *_httpHeaders) = socket->httpResponse();
             if ( _httpStatus == 101 && !(*_httpHeaders)["Sec-WebSocket-Protocol"_sl] ) {
