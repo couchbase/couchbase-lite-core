@@ -153,9 +153,7 @@ namespace litecore::blip {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_close), closeCode, alloc_slice(message));
         }
 
-        WebSocket* webSocket() const { return _webSocket; }
-
-        Retained<WebSocket> webSocketSafe() const {
+        Retained<WebSocket> webSocket() const {
             std::unique_lock lock(_webSocketMutex);
             return _webSocket;
         }
@@ -705,8 +703,6 @@ namespace litecore::blip {
         _io = nullptr;
     }
 
-    websocket::WebSocket* Connection::webSocket() const { return _io->webSocket(); }
-
-    Retained<websocket::WebSocket> Connection::webSocketSafe() const { return _io ? _io->webSocketSafe() : nullptr; }
+    Retained<websocket::WebSocket> Connection::webSocket() const { return _io ? _io->webSocket() : nullptr; }
 
 }  // namespace litecore::blip
