@@ -620,9 +620,15 @@ namespace litecore::repl {
             return;
         }
 
-        if ( Retained<websocket::WebSocket> socket = webSocket(); socket->role() == websocket::Role::Client ) {
-            logInfo("Connected!");
+        Retained<websocket::WebSocket> socket = webSocket();
+        if ( !socket ) {
+            logInfo("The connection is closed from WebSoket");
+            return;
+        }
 
+        logInfo("Connected!");
+
+        if ( socket->role() == websocket::Role::Client ) {
             _httpHeaders                    = make_unique<websocket::Headers>();
             tie(_httpStatus, *_httpHeaders) = socket->httpResponse();
             if ( _httpStatus == 101 && !(*_httpHeaders)["Sec-WebSocket-Protocol"_sl] ) {
@@ -634,9 +640,6 @@ namespace litecore::repl {
                 _correlationID = x_corr;
                 logInfo("Received X-Correlation-Id");
             }
-        } else {
-            logInfo("The connection is closed from WebSoket");
-            return;
         }
 
         Signpost::mark(Signpost::replicatorConnect, uintptr_t(this));

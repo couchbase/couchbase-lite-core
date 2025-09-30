@@ -99,7 +99,6 @@ namespace litecore::blip {
         int8_t                                   _compressionLevel;
         std::atomic<State>                       _state{kClosed};
         CloseStatus                              _closeStatus;
-        mutable std::mutex                       _webSocketMutex;
     };
 
     /** Abstract interface of Connection delegates. The Connection calls these methods when
