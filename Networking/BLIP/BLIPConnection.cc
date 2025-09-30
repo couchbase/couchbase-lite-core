@@ -114,6 +114,7 @@ namespace litecore::blip {
         Stopwatch                                       _timeOpen;
         atomic_flag                                     _connectedWebSocket = ATOMIC_FLAG_INIT;
         Retained<WeakHolder<Delegate>>                  _weakThis{new WeakHolder<Delegate>(this)};
+        mutable std::mutex                              _webSocketMutex;
 
       public:
         BLIPIO(Connection* connection, WebSocket* webSocket, Deflater::CompressionLevel compressionLevel)
@@ -152,7 +153,15 @@ namespace litecore::blip {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_close), closeCode, alloc_slice(message));
         }
 
-        WebSocket* webSocket() const { return _webSocket; }
+        Retained<WebSocket> webSocket() const {
+            std::unique_lock lock(_webSocketMutex);
+            return _webSocket;
+        }
+
+        void resetWebSocket() {
+            std::unique_lock lock(_webSocketMutex);
+            _webSocket = nullptr;
+        }
 
         std::string loggingIdentifier() const override {
             return _connection ? _connection->name()
@@ -236,7 +245,7 @@ namespace litecore::blip {
         void _closed(websocket::CloseStatus status) {
             _onWebSocketMessages();  // process any pending incoming frames
 
-            _webSocket = nullptr;
+            resetWebSocket();  // thread-safe of _webSocket = nullptr;
             if ( _connection ) {
                 Retained<BLIPIO> holdOn(this);
                 if ( _closingWithError ) {
@@ -694,6 +703,6 @@ namespace litecore::blip {
         _io = nullptr;
     }
 
-    websocket::WebSocket* Connection::webSocket() const { return _io->webSocket(); }
+    Retained<websocket::WebSocket> Connection::webSocket() const { return _io ? _io->webSocket() : nullptr; }
 
 }  // namespace litecore::blip

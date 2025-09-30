@@ -136,7 +136,7 @@ class ReplicatorLoopbackTest
             headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
 
             // Bind the replicators' WebSockets and start them:
-            LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
+            LoopbackWebSocket::bind(_replClient->webSocket().get(), _replServer->webSocket().get(), headers);
             Stopwatch st;
             _replClient->start(reset);
             _replServer->start();
@@ -226,7 +226,7 @@ class ReplicatorLoopbackTest
             headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
 
             // Bind the replicators' WebSockets and start them:
-            LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
+            LoopbackWebSocket::bind(_replClient->webSocket().get(), _replServer->webSocket().get(), headers);
             _replClient->start();
             _replServer->start();
         } catch ( const exception& exc ) {
