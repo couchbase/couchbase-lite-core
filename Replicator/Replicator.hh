@@ -109,7 +109,7 @@ namespace litecore::repl {
         Retained<Replicator> replicatorIfAny() override { return this; }
 
         // exposed for unit tests:
-        websocket::WebSocket* webSocket() const { return connection().webSocket(); }
+        Retained<websocket::WebSocket> webSocket() const { return connection().webSocket(); }
 
         slice remoteURL() const { return _remoteURL; }
 
