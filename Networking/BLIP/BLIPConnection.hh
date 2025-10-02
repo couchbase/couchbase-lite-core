@@ -78,7 +78,7 @@ namespace litecore::blip {
         std::string loggingIdentifier() const override { return _name; }
 
         /** Exposed only for testing. */
-        websocket::WebSocket* webSocket() const;
+        Retained<websocket::WebSocket> webSocket() const;
 
       protected:
         ~Connection() override;
