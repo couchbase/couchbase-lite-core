@@ -253,7 +253,7 @@ TEST_CASE("VersionVector <-> String", "[RevIDs]") {
     CHECK(v.asASCII() == "3@*");
     CHECK(v.asASCII(Bob) == "3@BobBobBobBobBobBobBobA");
 
-    v.readASCII("3@*, 2@AliceAliceAliceAliceAA,  1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA");
+    v.readASCII("3@*; 2@AliceAliceAliceAliceAA,  1@DaveDaveDaveDaveDaveDA,2@CarolCarolCarolCarolCA");
     CHECK(v.count() == 4);
     CHECK(v.currentVersions() == 1);
     CHECK(v[0] == Version(3_ht, kMeSourceID));
@@ -445,7 +445,7 @@ TEST_CASE("VersionVector trivial merge", "[RevIDs][Conflict]") {
 
 TEST_CASE("VersionVector trivial merge of merge", "[RevIDs][Conflict]") {
     VersionVector m1 = "6@*, 5@*, 2@AliceAliceAliceAliceAA; 1@DaveDaveDaveDaveDaveDA, 2@CarolCarolCarolCarolCA"_vv;
-    VersionVector m2 = "4@DaveDaveDaveDaveDaveDA, 2@CarolCarolCarolCarolCA"_vv;
+    VersionVector m2 = "4@DaveDaveDaveDaveDaveDA; 2@CarolCarolCarolCarolCA"_vv;
     {
         // The winner is a merged vector:
         VersionVector m12 = VersionVector::trivialMerge(m1, m2);
