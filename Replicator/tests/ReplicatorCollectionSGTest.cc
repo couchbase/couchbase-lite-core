@@ -2318,7 +2318,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "CBL-5448", "[.SyncServer]") {
     auto [replServer, replClient] = PeerReplicators(db, db2, delegate);
     Headers headers;
     headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
-    LoopbackWebSocket::bind(replServer->webSocket(), replClient->webSocket(), headers);
+    LoopbackWebSocket::bind(replServer->webSocket().get(), replClient->webSocket().get(), headers);
 
     // Create doc with blob on Device 2
     // Which is synced by continuous P2P to Device 1
@@ -2395,7 +2395,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "CBL-5448", "[.SyncServer]") {
 
     // Create another pair of replicators because re-using the existing ones causes SEGFAULT :(
     auto [replServer2, replClient2] = PeerReplicators(db, db2, delegate);
-    LoopbackWebSocket::bind(replServer2->webSocket(), replClient2->webSocket(), headers);
+    LoopbackWebSocket::bind(replServer2->webSocket().get(), replClient2->webSocket().get(), headers);
     // During this replication, Server (device 2) pulls the doc from Client (device 1).
     // It is here that CBL-5448 is triggered, as Server does not apply `kRevHasAttachments` to the incoming rev.
     replServer2->start();
