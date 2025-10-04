@@ -204,7 +204,8 @@ namespace litecore {
             if ( str.size > 0 ) str.moveStart(1);  // skip comma
             while ( str.hasPrefix(' ') ) str.moveStart(1);
         }
-        if ( _nCurrent == 0 && !_vers.empty() ) _nCurrent = 1;
+        // Without the semicolon, all versions are interpreted as current.
+        if ( _nCurrent == 0 && !_vers.empty() ) _nCurrent = _vers.size();
         validate();
     }
 
