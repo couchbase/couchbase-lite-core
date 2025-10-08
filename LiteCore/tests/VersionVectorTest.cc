@@ -11,6 +11,7 @@
 //
 
 #include "VersionVector.hh"
+#include "Endian.hh"
 #include "HybridClock.hh"
 #include "RevTree.hh"
 #include "LiteCoreTest.hh"
@@ -121,7 +122,7 @@ TEST_CASE("HybridClock", "[RevIDs]") {
     CHECK_FALSE(c.see(tBogus));
 
     // Receive a bogus timestamp from before I even implemented HybridClock:
-    auto tBogusPast = 0x166c9b7676dd86a8_ht;
+    auto tBogusPast = 0xffffffffff_ht;
     CHECK_FALSE(c.see(tBogusPast));
 
     auto t3 = c.now();
@@ -726,4 +727,32 @@ TEST_CASE("Tree RevID -> Version") {
     Version       v = Version::legacyVersion(rev.getRevID());
     CHECK(v.author() == kLegacyRevSourceID);
     CHECK(uint64_t(v.time()) == 0x0000BC0102030405);
+}
+
+TEST_CASE("Valid Timestamp", "[RevIDs]") {
+    constexpr slice oldRevID = "1-345d1331e65b3d965502c924d70e12337e0ea966";
+    revidBuffer     buf(oldRevID);
+    Version         vers = Version::legacyVersion(revid(buf));
+    CHECK(vers.author() == kLegacyRevSourceID);
+
+    // Encoding of timestamp
+
+    uint64_t n  = 0x963d5be631135d34;              // First 8 bytes in little endian.
+    uint64_t n2 = fleece::endian::dec64(n) >> 24;  // shift out 3 bytes in big endian representation.
+    CHECK(n2 == 0x345d1331e6UL);                   // we are little endian
+    uint64_t synthesizedTime = n2 | (uint64_t(1) << 40);
+    CHECK(synthesizedTime == 0x1345d1331e6UL);
+
+    CHECK(vers.asASCII() == "1345d1331e6@Revision+Tree+Encoding"_sl);
+
+    HybridClock clock;
+    clock.setSource(make_unique<RealClockSource>());
+    CHECK(clock.see(vers.time()));  // clock.see returns false if time is not valid.
+
+    // Theoretical minimum
+    constexpr slice minRevID = "1-00";
+    revidBuffer     minbuf(minRevID);
+    Version         minvers = Version::legacyVersion(revid(minbuf));
+    CHECK(minvers.asASCII() == "10000000000@Revision+Tree+Encoding"_sl);
+    CHECK(clock.see(minvers.time()));
 }
