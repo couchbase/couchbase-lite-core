@@ -17,6 +17,7 @@
 //
 
 #include "ReplicatorLoopbackTest.hh"
+#include "c4Collection.h"
 
 /** For testing scenarios where a database is upgraded to version vectors after it's already
     replicated with a peer.*/
@@ -137,4 +138,22 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push and Pull Existing Docs After VV 
     Log("-------- Second Replication (Version Vectors) --------");
     runPushPullReplication();
     compareDatabases();
+}
+
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV Upgrade", "[Conflicts][Upgrade][Pull]") {
+    const auto docName = "test"_sl;
+    createRev(_collDB1, docName, "1-1111"_sl, kFleeceBody);
+    {
+        TransactionHelper t(db);
+        createConflictingRev(_collDB1, docName, "1-1111"_sl, "2-1111"_sl);
+        createConflictingRev(_collDB1, docName, "1-1111"_sl, "2-2222"_sl);
+    }
+
+    upgrade(db, _collDB1);
+    syncDBConfig();
+
+    auto doc = c4coll_getDoc(_collDB1, docName, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    auto conflictResult = c4doc_resolveConflict(doc, "2-1111"_sl, "2-2222"_sl, kC4SliceNull, kRevDeleted, ERROR_INFO());
+    REQUIRE(conflictResult);
 }
