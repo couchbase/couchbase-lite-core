@@ -290,6 +290,11 @@ namespace litecore::websocket {
                 return;
             }
 
+            if ( _socketLCState == SOCKET_CLOSED ) {
+                warn("Socket is already closed, giving up on sendPing...");
+                return;
+            }
+
             schedulePing();
             startResponseTimer(min(kPongTimeout, chrono::seconds(heartbeatInterval() - 1)));
             // exit scope to release the lock -- this is needed before calling sendOp,
