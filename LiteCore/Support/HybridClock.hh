@@ -16,8 +16,8 @@ namespace litecore {
     /** A local wall-clock time expressed as a 64-bit count of nanoseconds since the Unix epoch. */
     enum class walltime_t : uint64_t { epoch = 0 };
 
-    /// An arbitrary timestamp that's the lowest we're willing to accept -- recent past, mid-2023.
-    static constexpr walltime_t kMinValidTime{0x1770000000000000};
+    /// An arbitrary timestamp that's the lowest we're willing to accept -- recent past, end of 1969.
+    static constexpr walltime_t kMinValidTime{0x10000000000};
 
     /** A version's logical timestamp indicating when a peer last made a change.
         This is not necessarily a real time; for most purposes it suffices that it just increases
