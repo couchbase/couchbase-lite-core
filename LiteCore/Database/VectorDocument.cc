@@ -696,7 +696,7 @@ namespace litecore {
         };
 
         // Subroutine to compare a local version with the requested one:
-        auto compareLocalRev = [&](revid localVersion) -> versionOrder {
+        auto compareLocalRev = [&](revid localVersion, const RecordUpdate* rec) -> versionOrder {
             if ( requestedLegacyRev ) {
                 // Request has a legacy revID:
                 if ( localVersion.isVersion() ) {
@@ -706,12 +706,24 @@ namespace litecore {
                     return versionOrder(2 - order);  // reverse the order
                 } else {
                     // Local rev is also a legacy revID:
-                    auto cmp = localVersion.compare(requestedLegacyRev->getRevID());
-                    if ( cmp < 0 ) return kOlder;
-                    else if ( cmp > 0 )
-                        return kNewer;
-                    else
+                    auto remoteVersion = requestedLegacyRev->getRevID();
+                    if ( localVersion == remoteVersion ) {
                         return kSame;
+                    } else if ( localVersion.generation() == remoteVersion.generation() ) {
+                        return kConflicting;
+                    } else if ( localVersion.generation() < remoteVersion.generation() ) {
+                        return kOlder;
+                    } else if ( rec ) {
+                        // Remote is a lower generation; check whether it's an ancestor:
+                        RevTree revTree(rec->body, rec->extra, rec->sequence);
+                        auto rev = revTree[remoteVersion];
+                        if (rev && rev->isAncestorOf(revTree.currentRevision()))
+                            return kNewer;
+                        else
+                            return kConflicting;
+                    } else {
+                        return kNewer;
+                    }
                 }
             } else {
                 // Request has a version vector, requestedVec:
@@ -744,13 +756,13 @@ namespace litecore {
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
             versionOrder cmp;
-            cmp         = compareLocalRev(revid(rec.version));
+            cmp         = compareLocalRev(revid(rec.version), &rec);
             auto status = C4FindDocAncestorsResultFlags(cmp);
 
             // Check whether this revID matches any of the doc's remote revisions:
             if ( remoteDBID != 0 ) {
                 VectorRecord::forAllRevIDs(rec, [&](RemoteID remote, revid aRev, bool hasBody) {
-                    if ( remote > RemoteID::Local && compareLocalRev(aRev) == kSame ) {
+                    if ( remote > RemoteID::Local && compareLocalRev(aRev, nullptr) == kSame ) {
                         if ( hasBody ) status |= kRevsHaveLocal;
                         if ( remote == RemoteID(remoteDBID) ) status |= kRevsAtThisRemote;
                     }
