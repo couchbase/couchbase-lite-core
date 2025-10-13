@@ -756,3 +756,644 @@ TEST_CASE("Valid Timestamp", "[RevIDs]") {
     CHECK(minvers.asASCII() == "10000000000@Revision+Tree+Encoding"_sl);
     CHECK(clock.see(minvers.time()));
 }
+
+// The sourceID is a base-64 encoded 128-bit binary data. The length must by 22 bytes.
+static std::string padTo22(string vv) {
+    std::stringstream ss;
+    while ( vv.length() > 0 ) {
+        auto p = vv.find('@');
+        if ( p != string::npos ) {
+            ss << vv.substr(0, p + 1);
+            vv          = vv.substr(p + 1);
+            auto e      = vv.find_first_of(",;");
+            auto source = vv.substr(0, e);
+            Assert(source.length() <= 22);
+            if ( source.length() < 22 ) {
+                ss << source << string(21 - source.length(), '+');
+                ss << "Q";
+            } else {
+                ss << vv.substr(0, 22);
+            }
+            if ( e != string::npos ) {
+                ss << vv[e];
+                vv = vv.substr(e + 1);
+            } else {
+                vv = vv.substr(vv.length());
+            }
+        } else {
+            ss << vv;
+        }
+    }
+    return ss.str();
+}
+
+// Cf. TestHLVIsDominating in sync_gateway
+TEST_CASE("CompareTo vs IsDominating") {
+    struct {
+        string name;
+        string hlvA;
+        string hlvB;
+        bool   expectedResult;
+        // SGW test: hlvA.isDominating(hlvB),
+    } testCases[]{{
+                          "Matching current source, newer version",
+                          "20@cluster1;2@cluster2",
+                          "10@cluster1;1@cluster2",
+                          true,
+                  },
+                  {
+                          "Matching current source and version",
+                          "20@cluster1;2@cluster2",
+                          "20@cluster1;2@cluster2",
+                          true,
+                  },
+                  {
+                          "B CV found in A's PV",
+                          "20@cluster1;10@cluster2",
+                          "10@cluster2;15@cluster1",
+                          true,
+                  },
+                  {
+                          "B CV older than A's PV for same source",
+                          "20@cluster1;15@cluster2",
+                          "10@cluster2;15@cluster1",
+                          true,
+                  },
+                  {
+                          "Unique sources in A",
+                          "20@cluster1;15@cluster2,3@cluster3",
+                          "10@cluster2;10@cluster1",
+                          true,
+                  },
+                  {
+                          "Unique sources in B",
+                          "20@cluster1",
+                          "15@cluster1;3@cluster3",
+                          true,
+                  },
+                  {
+                          "B has newer cv",
+                          "10@cluster1",
+                          "15@cluster1",
+                          false,
+                  },
+                  {
+                          "B has newer cv than A pv",
+                          "20@cluster2;10@cluster1",
+                          "15@cluster1;20@cluster2",
+                          false,
+                  },
+                  {
+                          "B's cv not found in A",
+                          "20@cluster2;10@cluster1",
+                          "5@cluster3",
+                          false,
+                  },
+                  {
+                          "a.MV dominates B.CV",
+                          "20@cluster1,20@cluster2,5@cluster3",
+                          "10@cluster2",
+                          true,
+                  },
+                  {
+                          "a.MV doesn't dominate B.CV",
+                          "20@cluster1,5@cluster2,5@cluster3",
+                          "10@cluster2",
+                          false,
+                  },
+                  {
+                          "b.CV.source occurs in both a.CV and a.MV, dominates both",
+                          "2@cluster1,1@cluster1,3@cluster2",
+                          "4@cluster1",
+                          false,
+                  },
+                  {
+                          "b.CV.source occurs in both a.CV and a.MV, dominates only a.MV",
+                          "4@cluster1,1@cluster1,2@cluster2",
+                          "3@cluster1",
+                          true,
+                  }};
+
+    auto isDominating = [](versionOrder vo) -> bool { return vo == kSame || vo == kNewer; };
+
+    for ( const auto& test : testCases ) {
+        printf("----- %s\n", test.name.c_str());
+        VersionVector a   = VersionVector::fromASCII(padTo22(test.hlvA));
+        VersionVector b   = VersionVector::fromASCII(padTo22(test.hlvB));
+        auto          cmp = a.compareTo(b);
+        CHECK(isDominating(cmp) == test.expectedResult);
+    }
+}
+
+// HLVConflictStatus returns whether two HLVs are in conflict or not
+enum HLVConflictStatus : int16_t {
+    // HLVNoConflict indicates the two HLVs are not in conflict.
+    HLVNoConflict = 1,
+    // HLVConflict indicates the two HLVs are in conflict.
+    HLVConflict,
+    // HLVNoConflictRevAlreadyPresent indicates the two HLVs are not in conflict, but the incoming HLV does not have any
+    // newer versions to add to the local HLV
+    HLVNoConflictRevAlreadyPresent
+};
+
+// Cf.  TestHLVIsInConflict in sync_gateway
+TEST_CASE("CompareTo vs IsInConflict") {
+    struct {
+        string            name;
+        string            localHLV;
+        string            incomingHLV;
+        HLVConflictStatus conflict;
+        // SGW test: IsInConflict(ctx context.Context, localHLV, incomingHLV *HybridLogicalVector)
+    } testCases[]{
+            {
+                    "CV equal",
+                    "111@abc;123@def",
+                    "111@abc;123@ghi",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "no conflict case",
+                    "111@abc;123@def",
+                    "112@abc;123@ghi",
+                    HLVNoConflict,
+            },
+            {
+                    "local revision is newer",
+                    "111@abc;123@def",
+                    "100@abc;123@ghi",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "merge versions match",
+                    "130@abc,123@def,100@ghi;50@jkl",
+                    "150@mno,123@def,100@ghi;50@jkl",
+                    HLVNoConflict,
+            },
+            {
+                    "cv conflict",
+                    "1@abc",
+                    "1@def",
+                    HLVConflict,
+            },
+            {
+                    "Matching current source, newer version",
+                    "20@cluster1;2@cluster2",
+                    "10@cluster1;1@cluster2",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "Matching current source and version",
+                    "20@cluster1;2@cluster2",
+                    "20@cluster1;2@cluster2",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "B CV found in A's PV",
+                    "20@cluster1;10@cluster2",
+                    "10@cluster2;15@cluster1",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "B CV older than A's PV for same source",
+                    "20@cluster1;15@cluster2",
+                    "10@cluster2;15@cluster1",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "Unique sources in A",
+                    "20@cluster1;15@cluster2,3@cluster3",
+                    "10@cluster2;10@cluster1",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "Unique sources in B",
+                    "20@cluster1",
+                    "15@cluster1;3@cluster3",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "B has newer cv than A pv",
+                    "20@cluster2;10@cluster1",
+                    "15@cluster1;20@cluster2",
+                    HLVNoConflict,
+            },
+            {
+                    "B's cv not found in A",
+                    "20@cluster2;10@cluster1",
+                    "5@cluster3",
+                    HLVConflict,
+            },
+            {
+                    "a.MV dominates B.CV",
+                    "20@cluster1,20@cluster2,5@cluster3",
+                    "10@cluster2",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+            {
+                    "a.MV doesn't dominate B.CV", "20@cluster1,5@cluster2,5@cluster3", "10@cluster2",
+                    HLVConflict,  // conflict since mv doesn't match
+            },
+            {
+                    "b.CV.source occurs in both a.CV and a.MV, dominates both",
+                    "2@cluster1,1@cluster1,3@cluster2",
+                    "4@cluster1",
+                    HLVNoConflict,
+            },
+            {
+                    "b.CV.source occurs in both a.CV and a.MV, dominates only a.MV",
+                    "4@cluster1,1@cluster1,2@cluster2",
+                    "3@cluster1",
+                    HLVNoConflictRevAlreadyPresent,
+            },
+    };
+
+    std::set<string> failingTests{// Test based only on the merge versions.
+                                  "merge versions match"};
+
+    for ( const auto& test : testCases ) {
+        printf("----- %s\n", test.name.c_str());
+
+        VersionVector a   = VersionVector::fromASCII(padTo22(test.localHLV));
+        VersionVector b   = VersionVector::fromASCII(padTo22(test.incomingHLV));
+        auto          cmp = a.compareTo(b);
+
+        if ( failingTests.contains(test.name) ) {
+            // skip this case now.
+            // printf("test.conflict(%d) vs cmp(%d)\n", test.conflict, cmp);
+            continue;
+        }
+        switch ( test.conflict ) {
+            case HLVNoConflict:
+                CHECK(cmp == kOlder);
+                break;
+            case HLVConflict:
+                CHECK(cmp == kConflicting);
+                break;
+            case HLVNoConflictRevAlreadyPresent:
+                CHECK((cmp == kNewer || cmp == kSame));
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+// Cf. TestHLVUpdateFromIncoming in sync_gateway
+TEST_CASE("trivialMerge vs UpdateWithIncomingHLV") {
+    struct {
+        string name;
+        string existingHLV;
+        string incomingHLV;
+        string finalHLV;
+        // SGW test: localHLV.UpdateWithIncomingHLV(incomingHLV) == finalHLV
+    } testCases[] = {
+            {
+                    "update cv and add pv",
+                    "15@abc",
+                    "25@def;20@abc",
+                    "25@def;20@abc",
+            },
+            {
+                    "update cv, move cv to pv",
+                    "15@abc;30@def",
+                    "35@def;15@abc",
+                    "35@def;15@abc",
+            },
+            {
+                    "Add new MV",
+                    "",
+                    "1@b,1@a,2@c",
+                    "1@b,1@a,2@c",
+            },
+            {
+                    "existing mv, move to pv",
+                    "3@c,2@b,1@a",
+                    "4@c",
+                    "4@c;2@b,1@a",
+            },
+            {
+                    "incoming pv overwrite mv, equal values",
+                    "3@c,2@b,1@a",
+                    "4@c;2@b,1@a",
+                    "4@c;2@b,1@a",
+            },
+            {
+                    "incoming mv overwrite pv, equal values",
+                    "3@c;2@b,1@a",
+                    "4@c,2@b,1@a",
+                    "4@c,2@b,1@a",
+            },
+            {
+                    "incoming mv overwrite pv, greater values",
+                    "3@c;2@b,1@a",
+                    "4@c,5@b,6@a",
+                    "4@c,5@b,6@a",
+            },
+            // Invalid MV cleanup cases should preserve any conflicting versions from incoming HLV
+            {
+                    // Invalid since MV should always have two values.
+                    "Add single value MV",
+                    "",
+                    "1@b,1@a",
+                    "1@b,1@a",
+            },
+            {
+                    // Invalid since there should not be able to be an incoming merge conflict where a different newer version exists.
+                    "incoming mv partially overlaps with pv",
+                    "3@c;2@b,6@a",
+                    "4@c,2@b,1@a",
+                    "4@c,2@b,1@a",
+            },
+            {
+                    "incoming doc has MV existing does not", "10@xyz;8@foo,9@bar", "20@abc,10@def,11@efg;5@foo",
+                    //            "20@abc,10@def,11@efg;10@xyz,8@foo,9@bar",
+                    "20@abc,10@def,11@efg;10@xyz,9@bar,8@foo",  // canonical order
+            },
+            {
+                    "incoming HLV had CV in common with existing HLV PV",
+                    "11@xyz;7@foo,10@abc",
+                    "20@abc;5@foo",
+                    "20@abc;11@xyz,7@foo",
+            },
+            {
+                    "existing HLV had CV in common with incoming HLV PV",
+                    "11@xyz;7@foo",
+                    "20@abc;5@foo,10@xyz",
+                    "20@abc;11@xyz,7@foo",
+            },
+            {
+                    "incoming hlv has MV entry less than existing hlv", "2@xyz,8@def,9@efg;1@foo",
+                    "10@abc,1@def,3@efg;1@foo",
+                    //            "10@abc;2@xyz,8@def,9@efg,1@foo",
+                    "10@abc;9@efg,8@def,2@xyz,1@foo",  // canonical order
+            },
+            {
+                    "incoming hlv has PV entry less than existing hlv PV entry", "2@xyz;8@def,9@efg,4@foo",
+                    "10@abc;1@foo,3@def",
+                    //            "10@abc;2@xyz,4@foo,8@def,9@efg",
+                    "10@abc;9@efg,8@def,4@foo,2@xyz",  // canonical order
+            },
+            {
+                    "local hlv has MV entry greater than remote hlv",
+                    "2@xyz,8@def,9@efg;1@bar",
+                    "10@abc,10@def,11@efg;1@foo",
+                    "10@abc,10@def,11@efg;2@xyz,1@bar,1@foo",
+            },
+            {
+                    "local hlv has PV entry greater than remote hlv PV entry", "2@xyz;8@def,9@efg",
+                    "10@abc;10@foo,11@def",
+                    //            "10@abc;2@xyz,11@def,9@efg,10@foo",
+                    "10@abc;11@def,10@foo,9@efg,2@xyz,",  // canonical order
+            },
+            {
+                    "both local and remote have mv and no common sources", "2@xyz,8@lmn,9@pqr;1@bar",
+                    "10@abc,10@def,11@efg;1@foo",
+                    //            "10@abc,10@def,11@efg;2@xyz,8@lmn,9@pqr,1@bar,1@foo",
+                    "10@abc,10@def,11@efg;9@pqr,8@lmn,2@xyz,1@bar,1@foo",  // canonical order
+            },
+            {
+                    "both local and remote have no common sources in PV",
+                    "20@xyz;2@bar",
+                    "10@abc;1@foo",
+                    "10@abc;20@xyz,2@bar,1@foo",
+            },
+            {
+                    "local hlv has cv less than remote hlv",
+                    "20@xyz;2@foo",
+                    "10@abc;1@foo",
+                    "10@abc;20@xyz,2@foo",
+            },
+    };
+
+    std::set<string> failingTests{
+            // In SGW, the mvs of the incomingHLV are kept unless any of them dominated by
+            // the mvs of existingHLV
+            "incoming mv partially overlaps with pv",
+    };
+
+    for ( const auto& test : testCases ) {
+        printf("----- %s\n", test.name.c_str());
+
+        VersionVector a = VersionVector::fromASCII(padTo22(test.existingHLV));
+        VersionVector b = VersionVector::fromASCII(padTo22(test.incomingHLV));
+        VersionVector c = VersionVector::fromASCII(padTo22(test.finalHLV));
+
+        VersionVector merged = VersionVector::trivialMerge(b, a);
+
+        if ( failingTests.contains(test.name) ) {
+            string lite = merged.asASCII().asString();
+            string sgw  = c.asASCII().asString();
+            // printf("FAILING %s =====\nLite=%s\nSGW=%s\n", test.name.c_str(), lite.c_str(), sgw.c_str());
+            continue;
+        }
+
+        CHECK(merged.asASCII() == c.asASCII());
+    }
+}
+
+// Cf.  TestHLVUpdateFromIncomingNewCV in sync_gateway
+TEST_CASE("merge vs MergeWithIncomingHLV") {
+    struct {
+        string name;
+        string existingHLV;
+        string incomingHLV;
+        string newCV;
+        string finalHLV;
+        // SGW test: localHLV.MergeWithIncomingHLV(test.newCV, incomingHLV) == finalHLV
+        // Lite function: VersionVector::merge(existingHLV, incomingHLV, clock);
+    } testCases[] = {
+            {
+                    "simple merge",
+                    "1@a",
+                    "2@b",
+                    "3@c",  // newCV:       Version{SourceID: "c", Value: 3},
+                    "3@c,2@b,1@a",
+            },
+            {
+                    "existing mv",
+#if 0
+            // In LiteCore, the merge function uses the hybrid clock for the time of the new CV.
+            // It bumps the time based on the times of CVs of the merged HLVs. It presumes that
+            // the time of the CV is newer than the times of the accompanying MVs and PVs.
+            // We adjust the time of CVs in order to make the comparison meaningful.
+            "1@a,3@d,4@e",
+            "2@b",
+            "5@c",        // newCV:       Version{SourceID: "c", Value: 5},
+            "5@c,2@b,1@a;4@e,3@d",
+#else
+                    "5@a,3@d,4@e",
+                    "2@b",
+                    "6@c",  // newCV:       Version{SourceID: "c", Value: 5},
+                    "6@c,5@a,2@b;4@e,3@d",
+#endif
+            },
+            {
+                    "existing pv",
+#if 0
+            "1@a;3@d,4@e",
+            "2@b",
+            "5@c",        // newCV:       Version{SourceID: "c", Value: 5},
+            "5@c,2@b,1@a;4@e,3@d",
+#else
+                    "5@a;3@d,4@e",
+                    "2@b",
+                    "6@c",  // newCV:       Version{SourceID: "c", Value: 5},
+                    "6@c,5@a,2@b;4@e,3@d",
+#endif
+            },
+            {
+                    "incoming mv",
+                    "1@a",
+                    "4@b,3@d,2@e",
+                    "5@c",  // newCV:       Version{SourceID: "c", Value: 5},
+                    "5@c,4@b,1@a;3@d,2@e",
+            },
+            {
+                    "incoming pv",
+#if 0
+            "1@a",
+            "2@b;4@d,3@e",
+            "5@c",      // newCV:       Version{SourceID: "c", Value: 5},
+            "5@c,2@b,1@a;4@d,3@e",
+#else
+                    "1@a",
+                    "5@b;4@d,3@e",
+                    "6@c",  // newCV:       Version{SourceID: "c", Value: 5},
+                    "6@c,5@b,1@a;4@d,3@e",
+#endif
+            },
+            {
+                    "both mv",
+                    "1@a,3@d,4@e",
+                    "6@b,5@f,2@g",
+                    "7@c",  // newCV:       Version{SourceID: "c", Value: 7},
+                    "7@c,6@b,1@a;5@f,4@e,3@d,2@g",
+            },
+            {
+                    "both pv",
+#if 0
+            "1@a;3@d,4@e",
+            "2@b;6@f,5@g",
+            "7@c",      // newCV:       Version{SourceID: "c", Value: 7},
+            "7@c,2@b,1@a;6@f,5@g,4@e,3@d",
+#else
+                    "5@a;3@d,4@e",
+                    "7@b;6@f,5@g",
+                    "8@c",  // newCV:       Version{SourceID: "c", Value: 7},
+                    "8@c,7@b,5@a;6@f,5@g,4@e,3@d",
+#endif
+            },
+            {
+                    "existing mv and incoming pv",
+#if 0
+            "1@a,3@d,4@e",
+            "2@b;6@f,5@g",
+            "7@c",      // newCV:       Version{SourceID: "c", Value: 7},
+            "7@c,2@b,1@a;6@f,5@g,4@e,3@d",
+#else
+                    "5@a,3@d,4@e",
+                    "7@b;6@f,5@g",
+                    "8@c",  // newCV:       Version{SourceID: "c", Value: 7},
+                    "8@c,7@b,5@a;6@f,5@g,4@e,3@d",
+#endif
+            },
+            {
+                    "existing pv and incoming mv",
+#if 0
+            "1@a;3@d,4@e",
+            "6@b,5@f,2@g",
+            "7@c",      // newCV:       Version{SourceID: "c", Value: 7},
+            "7@c,6@b,1@a;5@f,4@e,3@d,2@g",
+#else
+                    "5@a;3@d,4@e",
+                    "6@b,5@f,2@g",
+                    "7@c",  // newCV:       Version{SourceID: "c", Value: 7},
+                    "7@c,6@b,5@a;5@f,4@e,3@d,2@g",
+#endif
+            },
+            {
+                    "existing mv,pv, incoming mv",
+#if 0
+            "1@a,3@d,4@e;8@h,7@g",
+            "6@b,5@f,2@c",
+            "9@i",      // newCV:       Version{SourceID: "i", Value: 9},
+            "9@i,6@b,1@a;8@h,7@g,5@f,4@e,3@d,2@c",
+#else
+                    "9@a,3@d,4@e;8@h,7@g",
+                    "6@b,5@f,2@c",
+                    "a@i",  // newCV:       Version{SourceID: "i", Value: 9},
+                    "a@i,9@a,6@b;8@h,7@g,5@f,4@e,3@d,2@c",
+#endif
+            },
+            {
+                    "existing mv,pv, incoming pv",
+#if 0
+            "1@a,3@d,4@e;8@h,7@g",
+            "6@b;5@f,2@c",
+            "9@i",      // newCV:       Version{SourceID: "i", Value: 9},
+            "9@i,6@b,1@a;8@h,7@g,5@f,4@e,3@d,2@c",
+#else
+                    "9@a,3@d,4@e;8@h,7@g",
+                    "6@b;5@f,2@c",
+                    "a@i",  // newCV:       Version{SourceID: "i", Value: 9},
+                    "a@i,9@a,6@b;8@h,7@g,5@f,4@e,3@d,2@c",
+#endif
+            },
+            {
+                    "existing mv,pv, incoming mv,pv",
+#if 0
+            "1@a,3@d,4@e;8@h,7@g",
+            "6@b,5@f,2@c;9@i,10@j",
+            "11@k",         // newCV:       Version{SourceID: "k", Value: 11},
+            // note newCV is b@k because SourceID is always encoded
+            "b@k,6@b,1@a;10@j,9@i,8@h,7@g,5@f,4@e,3@d,2@c",
+#else
+                    "9@a,3@d,4@e;8@h,7@g",
+                    "11@b,5@f,2@c;9@i,10@j",
+                    "12@k",  // newCV:       Version{SourceID: "k", Value: 11},
+                    // note newCV is b@k because SourceID is always encoded
+                    "12@k,11@b,9@a;10@j,9@i,8@h,7@g,5@f,4@e,3@d,2@c",
+#endif
+            },
+            {
+                    "existing mv duplicates value with existing cv",
+                    "3@a,2@b,1@a",
+                    "4@d",
+                    "5@e",  // newCV:       Version{SourceID: "e", Value: 5},
+                    "5@e,4@d,3@a;2@b",
+            },
+            {
+                    "incoming mv duplicates value with incoming cv",
+                    "1@a",
+                    "4@c,3@b,2@c",
+                    "5@d",  // newCV:       Version{SourceID: "d", Value: 5},
+                    "5@d,4@c,1@a;3@b",
+            },
+    };
+
+    auto toGlobalSourceID = [](const VersionVector& vv, const string& globalMeID) -> string {
+        string strVV = vv.asASCII().asString();
+        auto   star  = strVV.find("*");
+        if ( star != string::npos ) strVV.replace(star, 1, globalMeID);
+        return strVV;
+    };
+
+    for ( const auto& test : testCases ) {
+        HybridClock clock;
+        clock.setSource(make_unique<FakeClockSource>(1, 0));
+
+        printf("----- %s\n", test.name.c_str());
+        VersionVector localHLV    = VersionVector::fromASCII(padTo22(test.existingHLV));
+        VersionVector incomingHLV = VersionVector::fromASCII(padTo22(test.incomingHLV));
+        VersionVector expectedHLV = VersionVector::fromASCII(padTo22(test.finalHLV));
+
+        CHECK(localHLV.compareTo(incomingHLV) == kConflicting);
+
+        VersionVector merged               = VersionVector::merge(localHLV, incomingHLV, clock);
+        auto          at                   = test.finalHLV.find("@");
+        auto          finalSrcID           = test.newCV.substr(at + 1);
+        auto          mergedWithFinalSrcID = padTo22(toGlobalSourceID(merged, finalSrcID));
+
+        CHECK(mergedWithFinalSrcID == expectedHLV.asASCII().asString());
+    }
+}
