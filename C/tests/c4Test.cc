@@ -312,6 +312,27 @@ alloc_slice C4Test::copyFixtureDB(const string& parentDir, const string& name) {
     return alloc_slice(dbPath.unextendedName());
 }
 
+void C4Test::upgradeToVersionVectors(C4Database*& database, bool fakeClock) {
+    C4DatabaseConfig2 config = dbConfig();
+    Assert((config.flags & kC4DB_VersionVectors) == 0, "db already uses version vectors");
+
+    alloc_slice name(c4db_getName(database));
+    REQUIRE(c4db_close(database, WITH_ERROR()));
+    c4db_release(database);
+    database = nullptr;
+
+    C4Log("---- Reopening '%.*s' with version vectors ---", FMTSLICE(name));
+    config.flags |= kC4DB_VersionVectors;
+    if ( fakeClock ) config.flags |= kC4DB_FakeVectorClock;
+    database = c4db_openNamed(name, &config, ERROR_INFO());
+    REQUIRE(database);
+}
+
+void C4Test::upgradeToVersionVectors(bool fakeClock) {
+    upgradeToVersionVectors(db, fakeClock);
+    syncDBConfig();
+}
+
 /*static*/ C4Collection* C4Test::createCollection(C4Database* db, C4CollectionSpec spec) {
     auto coll = c4db_createCollection(db, spec, ERROR_INFO());
     Require(coll);

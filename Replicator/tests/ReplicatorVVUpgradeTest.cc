@@ -22,15 +22,13 @@
 
 static alloc_slice makeRealishVector(const char* suffix, uint64_t* unixTs = nullptr) {
     uint64_t ts = 0;
-    if (unixTs && *unixTs != 0) {
+    if ( unixTs && *unixTs != 0 ) {
         ts = *unixTs;
     } else {
-        ts = static_cast<uint64_t>(
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::system_clock::now().time_since_epoch()
-            ).count()
-        );
-        if (unixTs) *unixTs = ts;
+        ts = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                           std::chrono::system_clock::now().time_since_epoch())
+                                           .count());
+        if ( unixTs ) *unixTs = ts;
     }
 
     const string src = to_string(ts) + suffix;
@@ -54,28 +52,12 @@ class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
         validateCheckpoints(db, db2, "{\"local\":100}");
     }
 
-    /// Reopens a database, enabling version vectors.
-    void upgrade(C4Database*& database, C4Collection*& coll1, bool fakeClock = false) {
-        alloc_slice name(c4db_getName(database));
-        REQUIRE(c4db_close(database, WITH_ERROR()));
-        c4db_release(database);
-        database = nullptr;
-        coll1    = nullptr;
-
-        C4Log("---- Reopening '%.*s' with version vectors ---", FMTSLICE(name));
-        C4DatabaseConfig2 config = dbConfig();
-        config.flags |= kC4DB_VersionVectors;
-        if (fakeClock) config.flags |= kC4DB_FakeVectorClock;
-        database = c4db_openNamed(name, &config, ERROR_INFO());
-        REQUIRE(database);
-        coll1 = createCollection(database, _collSpec);
-    }
-
     /// Reopens both databases, enabling version vectors in both.
     void upgrade(bool fakeClock = false) {
-        upgrade(db, _collDB1, fakeClock);
-        upgrade(db2, _collDB2, fakeClock);
-        syncDBConfig();
+        upgradeToVersionVectors(db, fakeClock);
+        _collDB1 = createCollection(db, _collSpec);
+        upgradeToVersionVectors(db2, fakeClock);
+        _collDB2 = createCollection(db2, _collSpec);
     }
 };
 
@@ -166,76 +148,87 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
     const slice kDoc1Rev2B = "2-2222"_sl;
 
     slice left, right, winner, loser, body, resultingRevID;
-    SECTION("Local Lower Wins") {
-        left = winner = kDoc1Rev2A;
-        right = loser  = kDoc1Rev2B;
-        body           = kFLSliceNull;
-        resultingRevID = "22222000000@Revision+Tree+Encoding"_sl;
+
+    const char* sectionName;
+    switch ( GENERATE(0, 1, 2, 3, 4) ) {
+        case 0:
+            sectionName = "Local Lower Wins";
+            left = winner = kDoc1Rev2A;
+            right = loser  = kDoc1Rev2B;
+            body           = kFLSliceNull;
+            resultingRevID = "22222000000@Revision+Tree+Encoding"_sl;
+            break;
+        case 1:  // CBL-7500
+            sectionName = "Remote Lower Wins";
+            left = winner = kDoc1Rev2B;
+            right = loser  = kDoc1Rev2A;
+            body           = kFLSliceNull;
+            resultingRevID = "22222000000@Revision+Tree+Encoding"_sl;
+            break;
+        case 2:  // CBL-7500
+            sectionName = "Local Higher Wins";
+            left = winner = kDoc1Rev2B;
+            right = loser  = kDoc1Rev2A;
+            body           = kFLSliceNull;
+            resultingRevID = "22222000000@Revision+Tree+Encoding"_sl;
+            break;
+        case 3:
+            sectionName = "Remote Higher Wins";
+            right = winner = kDoc1Rev2B;
+            left = loser   = kDoc1Rev2A;
+            body           = kFLSliceNull;
+            resultingRevID = "2-2222"_sl;
+            break;
+        case 4:
+            sectionName = "Merge";
+            left = winner = kDoc1Rev2A;
+            right = loser  = kDoc1Rev2B;
+            body           = kFleeceBody;
+            resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
+            break;
+        default:
+            __builtin_unreachable();
     }
 
-    // CBL-7500
-    // SECTION("Remote Lower Wins") {
-    //     right = winner = kDoc1Rev2A;
-    //     left = loser = kDoc1Rev2B;
-    //     body = kFLSliceNull;
-    // }
+    DYNAMIC_SECTION("" << sectionName) {
+        createFleeceRev(_collDB1, docName, "1-1111"_sl, "{}"_sl);
+        createFleeceRev(_collDB1, docName, left, "{\"db\":1}"_sl);
+        createFleeceRev(_collDB2, docName, right, "{\"db\":2}"_sl);
 
-    // SECTION("Local Higher Wins") {
-    //     left = winner = kDoc1Rev2B;
-    //     right = loser = kDoc1Rev2A;
-    //     body = kFLSliceNull;
-    // }
+        upgrade();
+        syncDBConfig();
 
-    SECTION("Remote Higher Wins") {
-        right = winner = kDoc1Rev2B;
-        left = loser   = kDoc1Rev2A;
-        body           = kFLSliceNull;
-        resultingRevID = "2-2222"_sl;
+        _expectedDocPullErrors = set<string>{docName.asString()};
+        _expectedDocumentCount = 1;
+        runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
+
+        auto doc = c4coll_getDoc(_collDB1, docName, true, kDocGetAll, ERROR_INFO());
+        DEFER { c4doc_release(doc); };
+        REQUIRE(doc);
+
+        CHECK((doc->flags & kDocConflicted) != 0);
+        CHECK(doc->selectedRev.revID == left);
+        REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
+        CHECK(doc->selectedRev.revID == right);
+        CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+
+        {
+            TransactionHelper t(db);
+            auto conflictResult = c4doc_resolveConflict(doc, winner, loser, body, kRevDeleted, ERROR_INFO());
+            REQUIRE(conflictResult);
+            CHECK(c4doc_save(doc, 0, ERROR_INFO()));
+        }
+
+        auto finalDoc = c4coll_getDoc(_collDB1, docName, true, kDocGetAll, ERROR_INFO());
+        DEFER { c4doc_release(finalDoc); };
+        REQUIRE(finalDoc);
+        CHECK(finalDoc->selectedRev.revID == resultingRevID);
     }
-
-    SECTION("Merge") {
-        left = winner = kDoc1Rev2A;
-        right = loser  = kDoc1Rev2B;
-        body           = kFleeceBody;
-        resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
-    }
-
-    createFleeceRev(_collDB1, docName, "1-1111"_sl, "{}"_sl);
-    createFleeceRev(_collDB1, docName, left, "{\"db\":1}"_sl);
-    createFleeceRev(_collDB2, docName, right, "{\"db\":2}"_sl);
-
-    upgrade();
-    syncDBConfig();
-
-    _expectedDocPullErrors = set<string>{docName.asString()};
-    _expectedDocumentCount = 1;
-    runReplicators(Replicator::Options::pulling(kC4OneShot, _collSpec), Replicator::Options::passive(_collSpec));
-
-    auto doc = c4coll_getDoc(_collDB1, docName, true, kDocGetAll, ERROR_INFO());
-    DEFER { c4doc_release(doc); };
-    REQUIRE(doc);
-
-    CHECK(doc->selectedRev.revID == left);
-    REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-    CHECK(doc->selectedRev.revID == right);
-    CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
-
-    {
-        TransactionHelper t(db);
-        auto              conflictResult = c4doc_resolveConflict(doc, winner, loser, body, kRevDeleted, ERROR_INFO());
-        REQUIRE(conflictResult);
-        CHECK(c4doc_save(doc, 0, ERROR_INFO()));
-    }
-
-    auto finalDoc = c4coll_getDoc(_collDB1, docName, true, kDocGetAll, ERROR_INFO());
-    DEFER { c4doc_release(finalDoc); };
-    REQUIRE(finalDoc);
-    CHECK(finalDoc->selectedRev.revID == resultingRevID);
 }
 
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgrade", "[Conflicts][Upgrade][Pull]") {
-    const auto  docName    = "test"_sl;
-    const slice kDoc1Rev2A = "2-1111"_sl;
+    const auto        docName    = "test"_sl;
+    const slice       kDoc1Rev2A = "2-1111"_sl;
     const alloc_slice kDoc1Rev2B = makeRealishVector("@BobBobBobBobBobBobBobA");
 
     createFleeceRev(_collDB1, docName, "1-1111"_sl, "{}"_sl);

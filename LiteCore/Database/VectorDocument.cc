@@ -539,10 +539,10 @@ namespace litecore {
 
             // Time to start the dance of the two revisions.  One or both could be legacy rev tree IDs at this point
             // and that needs to be accounted for.
-            Revision winningVersion = won->second;
-            Revision losingVersion  = lost->second;
+            Revision      winningVersion = won->second;
+            Revision      losingVersion  = lost->second;
             VersionVector mergedVersion;
-            alloc_slice mergedRevID;
+            alloc_slice   mergedRevID;
             if ( mergedBody.buf ) {
                 // In the case of a merge, we always create a resulting version vector
                 if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
