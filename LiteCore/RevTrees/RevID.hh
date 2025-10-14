@@ -78,6 +78,7 @@ namespace litecore {
         [[nodiscard]] alloc_slice expanded() const;
         [[nodiscard]] bool        expandInto(slice_ostream& dst) const noexcept;
         [[nodiscard]] std::string str() const;
+        [[nodiscard]] std::string longString() const;  // prints entire version vector
 
         explicit operator std::string() const { return str(); }
 

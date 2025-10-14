@@ -27,13 +27,16 @@ namespace litecore {
     class Version;
     class VersionVector;
 
-    /// Metadata and properties of a document revision.
+    /** Metadata and properties of a document revision.
+     *  @warning  This is a lightweight, non-owning object; its `properties` and `revID` will be
+     *            invalidated if any change is made to the owning VectorRecord. */
     struct Revision {
         /// The root of the document's properties.
-        /// \warning  Mutating the owning \ref VectorRecord will invalidate this pointer!
+        /// @warning  Mutating the owning \ref VectorRecord will invalidate this pointer!
         fleece::Dict properties;
 
         /// The encoded version/revision ID. Typically this stores a VersionVector.
+        /// @warning  Mutating the owning \ref VectorRecord will invalidate this slice!
         revid revID;
 
         /// The revision's flags:
