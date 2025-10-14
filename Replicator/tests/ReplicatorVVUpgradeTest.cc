@@ -187,7 +187,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
             resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
             break;
         default:
-            __builtin_unreachable();
+            throw logic_error("unreachable");
     }
 
     DYNAMIC_SECTION("" << sectionName) {
