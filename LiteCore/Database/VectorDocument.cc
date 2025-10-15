@@ -563,7 +563,7 @@ namespace litecore {
                 } else if ( !winningVersion.hasVersionVector() || !losingVersion.hasVersionVector() ) {
                     // At least one side had a legacy rev tree ID, so this requires some fuss.
                     if ( localWon ) {
-                        if (!winningVersion.hasVersionVector() && !losingVersion.hasVersionVector()) {
+                        if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
                             // Both sides are legacy rev ID which makes a trivial merge not possible
                             // due to the converted versions both having the same fake author.  Make an
                             // actual merge here
