@@ -563,11 +563,20 @@ namespace litecore {
                 } else if ( !winningVersion.hasVersionVector() || !losingVersion.hasVersionVector() ) {
                     // At least one side had a legacy rev tree ID, so this requires some fuss.
                     if ( localWon ) {
-                        // Convert to a version vector up front, along the lines of "server branch switch"
-                        // that we used to do when the local won in rev tree mode.
-                        mergedVersion = VersionVector::trivialMerge(toVersionVector(winningVersion),
-                                                                    toVersionVector(losingVersion));
-                        mergedRevID   = mergedVersion.asBinary();
+                        if (!winningVersion.hasVersionVector() && !losingVersion.hasVersionVector()) {
+                            // Both sides are legacy rev ID which makes a trivial merge not possible
+                            // due to the converted versions both having the same fake author.  Make an
+                            // actual merge here
+                            mergedVersion.add(Version::legacyVersion(losingVersion.revID));
+                            mergedVersion.addNewVersion(asInternal(database())->versionClock());
+                            mergedRevID = mergedVersion.asBinary();
+                        } else {
+                            // Convert to a version vector up front, along the lines of "server branch switch"
+                            // that we used to do when the local won in rev tree mode.
+                            mergedVersion = VersionVector::trivialMerge(toVersionVector(winningVersion),
+                                                                        toVersionVector(losingVersion));
+                            mergedRevID   = mergedVersion.asBinary();
+                        }
                     } else {
                         if ( losingVersion.hasVersionVector() ) {
                             // In this case, the rev tree ID of the remote won, but we already have a version
@@ -577,7 +586,7 @@ namespace litecore {
                             mergedRevID   = mergedVersion.asBinary();
                         } else {
                             // In this case the local ID is a rev tree ID, so it's safe to swap it out
-                            // with the remote winning ID (which is either rev tree or version vector).
+                            // with the remote winning version vector ID
                             mergedRevID = winningVersion.revID;
                         }
                     }
