@@ -541,7 +541,8 @@ namespace litecore {
             alloc_slice mergedRevID;
             {
                 // Time to start the dance of the two revisions.  One or both could be legacy rev tree IDs at this point
-                // and that needs to be accounted for.
+                // and that needs to be accounted for.  Furthermore, the "winningRevID" must always be the remote rev ID
+                // to keep the history intact until completely converted to VV.
                 Revision const& winningVersion = won->second;
                 Revision const& losingVersion  = lost->second;
                 VersionVector   mergedVersion;
@@ -549,8 +550,9 @@ namespace litecore {
                     // In the case of a merge, we always create a resulting version vector
                     if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
                         // We can't use merge when both sides are legacy, because they will have the same
-                        // fake author.  All we can do is just convert the winner.
-                        mergedVersion.add(Version::legacyVersion(winningVersion.revID));
+                        // fake author.  So just make a new CV, since the rev tree ID of the remote will
+                        // be in the history.
+                        mergedVersion.addNewVersion(asInternal(database())->versionClock());
                     } else {
                         // Otherwise, it's fair game to just throw everything into the merge function.  Any
                         // legacy rev IDs will be converted to the intermediate version vector form.
@@ -565,9 +567,9 @@ namespace litecore {
                     if ( localWon ) {
                         if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
                             // Both sides are legacy rev ID which makes a trivial merge not possible
-                            // due to the converted versions both having the same fake author.  Make an
-                            // actual merge here
-                            mergedVersion.add(Version::legacyVersion(losingVersion.revID));
+                            // due to the converted versions both having the same fake author. So just
+                            // create a new CV, since the rev tree ID of the remote will
+                            // be in the history.
                             mergedVersion.addNewVersion(asInternal(database())->versionClock());
                             mergedRevID = mergedVersion.asBinary();
                         } else {
