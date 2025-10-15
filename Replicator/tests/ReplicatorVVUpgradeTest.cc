@@ -154,21 +154,21 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
         case 0:
             sectionName = "Local Lower Wins";
             left = winner = kDoc1Rev2A;
-            right = loser  = kDoc1Rev2B;
-            body           = kFLSliceNull;
+            right = loser = kDoc1Rev2B;
+            body          = kFLSliceNull;
             break;
         case 1:  // CBL-7500
             sectionName = "Remote Lower Wins";
             left = loser = kDoc1Rev2B;
-            right = winner  = kDoc1Rev2A;
+            right = winner = kDoc1Rev2A;
             body           = kFLSliceNull;
             resultingRevID = "2-1111"_sl;
             break;
         case 2:  // CBL-7500
             sectionName = "Local Higher Wins";
             left = winner = kDoc1Rev2B;
-            right = loser  = kDoc1Rev2A;
-            body           = kFLSliceNull;
+            right = loser = kDoc1Rev2A;
+            body          = kFLSliceNull;
             break;
         case 3:
             sectionName = "Remote Higher Wins";
@@ -212,7 +212,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
 
         {
             TransactionHelper t(db);
-            auto conflictResult = c4doc_resolveConflict(doc, winner, loser, body, 0, ERROR_INFO());
+            auto              conflictResult = c4doc_resolveConflict(doc, winner, loser, body, 0, ERROR_INFO());
             REQUIRE(conflictResult);
             CHECK(c4doc_save(doc, 0, ERROR_INFO()));
         }
