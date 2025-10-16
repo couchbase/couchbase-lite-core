@@ -530,10 +530,11 @@ namespace litecore {
         }
 
         if ( _savedRevID ) {
-            if ( revid(_savedRevID).isVersion() ) {
+            revid savedRevID(_savedRevID);
+            if ( savedRevID.isVersion() ) {
                 Assert(revID.isVersion(), "Cannot save a legacy revid over a version vector");
             } else if ( revID.isVersion() && !lastLegacyRevID() ) {
-                setLastLegacyRevID(revID);
+                setLastLegacyRevID(savedRevID);
             }
         }
 
