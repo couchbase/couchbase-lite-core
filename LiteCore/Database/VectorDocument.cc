@@ -621,6 +621,10 @@ namespace litecore {
             // Update the local/current revision with the resulting merge:
             _doc.setCurrentRevision(mergedRev);
 
+            if (localWon && !remoteRev.revID.isVersion()) {
+                _doc.setLastLegacyRevID(remoteRev.revID);
+            }
+
             // Remote rev is no longer a conflict:
             remoteRev.flags = remoteRev.flags - DocumentFlags::kConflicted;
             _doc.setRemoteRevision(remoteID, remoteRev);
