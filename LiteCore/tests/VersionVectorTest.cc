@@ -279,6 +279,35 @@ TEST_CASE("VersionVector <-> String", "[RevIDs]") {
 
     for ( uint8_t b : v.asBinary() ) fprintf(stderr, "0x%02X, ", b);
     fprintf(stderr, "\n");
+
+    slice         noPVStr = "4@*, 2@AliceAliceAliceAliceAA, 1@DaveDaveDaveDaveDaveDA;"_sl;
+    VersionVector noPV;
+    noPV.readASCII(noPVStr);
+    // The semicolon divides the current versions (the current version and merge versions) from
+    // the past versions.
+    CHECK(noPV.currentVersions() == 3);
+
+    // It's ASCII representtion ends with the semicolon:
+    alloc_slice noPVasASCII = noPV.asASCII();
+    CHECK(noPVasASCII[noPVasASCII.size - 1] == ';');
+
+    // The ending semicolon is optional if there is no past versions.
+    VersionVector noPV2;
+    noPV2.readASCII(noPVStr.upTo(noPVStr.size - 1));
+    CHECK(noPV2.currentVersions() == 3);
+
+    // However, the ASCII representation still ends with the semicolon
+    CHECK(noPV2.asASCII() == noPVasASCII);
+
+    // Special rule for noPV.currentVersions() == 1: the API genenerated
+    // ASCII form does not have the ending semicolon
+    slice         cv = "1@DaveDaveDaveDaveDaveDA;"_sl;
+    VersionVector cvOnly;
+    cvOnly.readASCII(cv);
+    REQUIRE(cvOnly.currentVersions() == 1);
+    REQUIRE(cvOnly.count() == 1);
+    // The returned ASCII does not have the ending ";"
+    CHECK(cvOnly.asASCII() == cv.upTo(cv.size - 1));
 }
 
 TEST_CASE("VersionVector <-> Binary", "[RevIDs]") {
