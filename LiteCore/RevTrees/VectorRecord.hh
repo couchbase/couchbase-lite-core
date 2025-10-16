@@ -150,6 +150,10 @@ namespace litecore {
         /// (`nullslice` if it still has a legacy revid, or never had one.)
         revid lastLegacyRevID() const FLPURE;
 
+        /// Forcibly sets the document's last tree-based revid.
+        /// Only for use in certain conflict resolution scenarios.
+        void setLastLegacyRevID(revid);
+
         //---- Modifying the document:
 
         /// The properties as a mutable Dict, that can be modified in place.

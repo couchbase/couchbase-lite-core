@@ -456,6 +456,13 @@ namespace litecore {
         return revid(_revisions[0].asDict()[kLegacyRevIDKey].asData());
     }
 
+    void VectorRecord::setLastLegacyRevID(revid revID) {
+        LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'",
+            FMTSLICE(_docID), revID.str().c_str());
+        requireRemotes();
+        mutableRevisionDict(RemoteID::Local)[kLegacyRevIDKey].setData(revID);
+    }
+
 #pragma mark - CHANGE HANDLING:
 
     void VectorRecord::updateDocFlags() {
@@ -525,10 +532,8 @@ namespace litecore {
         if ( _savedRevID ) {
             if ( revid(_savedRevID).isVersion() ) {
                 Assert(revID.isVersion(), "Cannot save a legacy revid over a version vector");
-            } else if ( revID.isVersion() ) {
-                LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'; new revID '%s'", FMTSLICE(_docID),
-                        revid(_savedRevID).str().c_str(), revID.str().c_str());
-                mutableRevisionDict(RemoteID::Local)[kLegacyRevIDKey].setData(_savedRevID);
+            } else if ( revID.isVersion() && !lastLegacyRevID() ) {
+                setLastLegacyRevID(revID);
             }
         }
 
