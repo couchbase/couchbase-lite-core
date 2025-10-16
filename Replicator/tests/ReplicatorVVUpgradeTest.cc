@@ -156,14 +156,14 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
             left = winner = kDoc1Rev2A;
             right = loser  = kDoc1Rev2B;
             body           = kFLSliceNull;
-            resultingRevID = "22222000000@Revision+Tree+Encoding"_sl;
+            resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
             break;
         case 1:  // CBL-7500
             sectionName = "Remote Lower Wins";
-            left = winner = kDoc1Rev2B;
-            right = loser  = kDoc1Rev2A;
+            left = loser = kDoc1Rev2B;
+            right = winner = kDoc1Rev2A;
             body           = kFLSliceNull;
-            resultingRevID = "22222000000@Revision+Tree+Encoding"_sl;
+            resultingRevID = "2-1111"_sl;
             break;
         case 2:  // CBL-7500
             sectionName = "Local Higher Wins";
@@ -182,9 +182,8 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
         case 4:
             sectionName = "Merge";
             left = winner = kDoc1Rev2A;
-            right = loser  = kDoc1Rev2B;
-            body           = kFleeceBody;
-            resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
+            right = loser = kDoc1Rev2B;
+            body          = kFleeceBody;
             break;
         default:
             throw logic_error("unreachable");
@@ -214,7 +213,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
 
         {
             TransactionHelper t(db);
-            auto conflictResult = c4doc_resolveConflict(doc, winner, loser, body, kRevDeleted, ERROR_INFO());
+            auto              conflictResult = c4doc_resolveConflict(doc, winner, loser, body, 0, ERROR_INFO());
             REQUIRE(conflictResult);
             CHECK(c4doc_save(doc, 0, ERROR_INFO()));
         }
@@ -222,7 +221,11 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
         auto finalDoc = c4coll_getDoc(_collDB1, docName, true, kDocGetAll, ERROR_INFO());
         DEFER { c4doc_release(finalDoc); };
         REQUIRE(finalDoc);
-        CHECK(finalDoc->selectedRev.revID == resultingRevID);
+        if ( resultingRevID ) {
+            CHECK(finalDoc->selectedRev.revID == resultingRevID);
+        } else {
+            CHECK(slice(finalDoc->selectedRev.revID).findByte('*'));
+        }
     }
 }
 
@@ -278,17 +281,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgr
         resultingRevID = winner;
     }
 
-    SECTION("Merge Local Wins") {
-        winner = kDoc1Rev2A;
-        loser  = kDoc1Rev2B;
-        body   = kFleeceBody;
-        createFleeceRev(_collDB1, docName, kDoc1Rev2A, "{\"db\":1}"_sl);
-        upgrade();
-        syncDBConfig();
-        createFleeceRev(_collDB2, docName, kDoc1Rev2B, "{\"db\":2}"_sl);
-    }
-
-    SECTION("Merge Remote Wins") {
+    SECTION("Merge") {
         winner = kDoc1Rev2B;
         loser  = kDoc1Rev2A;
         body   = kFleeceBody;
@@ -311,7 +304,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgr
 
     {
         TransactionHelper t(db);
-        auto              conflictResult = c4doc_resolveConflict(doc, winner, loser, body, kRevDeleted, ERROR_INFO());
+        auto              conflictResult = c4doc_resolveConflict(doc, winner, loser, body, 0, ERROR_INFO());
         REQUIRE(conflictResult);
         CHECK(c4doc_save(doc, 0, ERROR_INFO()));
     }
@@ -371,7 +364,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Conflicts After VV Upgrade", 
 
     {
         TransactionHelper t(db);
-        auto              conflictResult = c4doc_resolveConflict(doc, winner, loser, body, kRevDeleted, ERROR_INFO());
+        auto              conflictResult = c4doc_resolveConflict(doc, winner, loser, body, 0, ERROR_INFO());
         REQUIRE(conflictResult);
         CHECK(c4doc_save(doc, 0, ERROR_INFO()));
     }
