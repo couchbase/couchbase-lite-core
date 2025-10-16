@@ -237,6 +237,10 @@ class C4Test {
     static alloc_slice copyFixtureDB(const std::string& name);
     static alloc_slice copyFixtureDB(const std::string& parentDir, const std::string& name);
 
+    /// Closes `db`, adds `kC4DB_VersionVectors` to config, and reopens.
+    void upgradeToVersionVectors(bool fakeClock = false);
+    void upgradeToVersionVectors(C4Database*&, bool fakeClock = false);
+
     static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
     static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist = true);
     int addDocs(C4Database* database, C4CollectionSpec spec, int total, std::string idprefix = "") const;

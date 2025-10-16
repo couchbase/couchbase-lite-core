@@ -27,6 +27,14 @@ namespace litecore {
     using namespace fleece;
     using namespace litecore;
 
+    static VersionVector toVersionVector(const Revision& rev) {
+        if ( rev.hasVersionVector() ) { return rev.versionVector(); }
+
+        VersionVector v;
+        v.add(Version::legacyVersion(rev.revID));
+        return v;
+    }
+
     class VectorDocument final
         : public C4Document
         , public InstanceCountedIn<VectorDocument> {
@@ -529,29 +537,91 @@ namespace litecore {
                 }
             }
 
-            // Construct a merged version vector. If the body is equal to the winning rev's body,
-            // it's a "trivial merge" that doesn't result in a merge vector.
-            VersionVector winningVersion = won->second.versionVector();
-            VersionVector losingVersion  = lost->second.versionVector();
-            VersionVector mergedVersion;
-            if ( mergedBody.buf )
-                mergedVersion =
-                        VersionVector::merge(winningVersion, losingVersion, asInternal(database())->versionClock());
-            else
-                mergedVersion = VersionVector::trivialMerge(winningVersion, losingVersion);
-            alloc_slice mergedRevID = mergedVersion.asBinary();
+            Revision    mergedRev;
+            alloc_slice mergedRevID;
+            {
+                // Time to start the dance of the two revisions.  One or both could be legacy rev tree IDs at this point
+                // and that needs to be accounted for.  Furthermore, the "winningRevID" must always be the remote rev ID
+                // to keep the history intact until completely converted to VV.
+                Revision const& winningVersion = won->second;
+                Revision const& losingVersion  = lost->second;
+                VersionVector   mergedVersion;
+                if ( mergedBody.buf ) {
+                    // In the case of a merge, we always create a resulting version vector
+                    if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
+                        // We can't use merge when both sides are legacy, because they will have the same
+                        // fake author.  So just make a new CV, since the rev tree ID of the remote will
+                        // be in the history.
+                        mergedVersion.addNewVersion(asInternal(database())->versionClock());
+                    } else {
+                        // Otherwise, it's fair game to just throw everything into the merge function.  Any
+                        // legacy rev IDs will be converted to the intermediate version vector form.
+                        mergedVersion =
+                                VersionVector::merge(toVersionVector(winningVersion), toVersionVector(losingVersion),
+                                                     asInternal(database())->versionClock());
+                    }
+
+                    mergedRevID = mergedVersion.asBinary();
+                } else if ( !winningVersion.hasVersionVector() || !losingVersion.hasVersionVector() ) {
+                    // At least one side had a legacy rev tree ID, so this requires some fuss.
+                    if ( localWon ) {
+                        if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
+                            // Both sides are legacy rev ID which makes a trivial merge not possible
+                            // due to the converted versions both having the same fake author. So just
+                            // create a converted CV, since the rev tree ID of the remote will
+                            // be in the history.
+                            mergedVersion.add(Version::legacyVersion(winningVersion.revID));
+                            mergedRevID = mergedVersion.asBinary();
+                        } else {
+                            // Convert to a version vector up front, along the lines of "server branch switch"
+                            // that we used to do when the local won in rev tree mode.
+                            mergedVersion = VersionVector::trivialMerge(toVersionVector(winningVersion),
+                                                                        toVersionVector(losingVersion));
+                            mergedRevID   = mergedVersion.asBinary();
+                        }
+                    } else {
+                        if ( losingVersion.hasVersionVector() ) {
+                            // In this case, the rev tree ID of the remote won, but we already have a version
+                            // vector saved.  We can't put the rev tree ID on top of it, so convert the rev
+                            // tree ID to the intermediate version vector form.
+                            mergedVersion = toVersionVector(winningVersion);
+                            mergedRevID   = mergedVersion.asBinary();
+                        } else {
+                            // In this case the local ID is a rev tree ID, so it's safe to swap it out
+                            // with the remote winning version vector ID
+                            mergedRevID = winningVersion.revID;
+                        }
+                    }
+                } else {
+                    // Both sides are version vectors
+                    mergedVersion = VersionVector::trivialMerge(toVersionVector(winningVersion),
+                                                                toVersionVector(losingVersion));
+                    mergedRevID   = mergedVersion.asBinary();
+                }
+
+                // Assemble the merged revision metadata:
+                mergedRev.revID = revid(mergedRevID);
+                if ( mergedBody.buf ) {
+                    mergedRev.properties = mergedProperties;
+                    mergedRev.flags      = convertNewRevisionFlags(mergedFlags);
+                } else {
+                    mergedRev.properties = won->second.properties;
+                    mergedRev.flags      = won->second.flags - DocumentFlags::kConflicted;
+                }
+
+                if ( DBLog.willLog(LogLevel::Info) ) {
+                    string local  = winningVersion.revID.longString();
+                    string remote = losingVersion.revID.longString();
+                    if ( !localWon ) std::swap(local, remote);
+                    LogTo(DBLog, "Resolved conflict in '%.*s' between #%s and #%s -> #%s", SPLAT(_docID), local.c_str(),
+                          remote.c_str(), mergedRev.revID.expanded().asString().c_str());
+                }
+            }
 
             // Update the local/current revision with the resulting merge:
-            Revision mergedRev;
-            mergedRev.revID = revid(mergedRevID);
-            if ( mergedBody.buf ) {
-                mergedRev.properties = mergedProperties;
-                mergedRev.flags      = convertNewRevisionFlags(mergedFlags);
-            } else {
-                mergedRev.properties = won->second.properties;
-                mergedRev.flags      = won->second.flags - DocumentFlags::kConflicted;
-            }
             _doc.setCurrentRevision(mergedRev);
+
+            if ( localWon && !remoteRev.revID.isVersion() ) { _doc.setLastLegacyRevID(remoteRev.revID); }
 
             // Remote rev is no longer a conflict:
             remoteRev.flags = remoteRev.flags - DocumentFlags::kConflicted;
@@ -559,10 +629,6 @@ namespace litecore {
 
             _updateDocFields();
             _selectRemote(RemoteID::Local);
-            if ( !localWon ) std::swap(winningVersion, losingVersion);  // log local version first
-            LogTo(DBLog, "Resolved conflict in '%.*s' between #%s and #%s -> #%s", SPLAT(_docID),
-                  string(winningVersion.asASCII()).c_str(), string(losingVersion.asASCII()).c_str(),
-                  string(mergedVersion.asASCII()).c_str());
         }
 
         bool save(unsigned /*maxRevTreeDepth*/ = 0) override {
@@ -646,7 +712,7 @@ namespace litecore {
         };
 
         // Subroutine to compare a local version with the requested one:
-        auto compareLocalRev = [&](revid localVersion) -> versionOrder {
+        auto compareLocalRev = [&](revid localVersion, const RecordUpdate* rec) -> versionOrder {
             if ( requestedLegacyRev ) {
                 // Request has a legacy revID:
                 if ( localVersion.isVersion() ) {
@@ -656,12 +722,23 @@ namespace litecore {
                     return versionOrder(2 - order);  // reverse the order
                 } else {
                     // Local rev is also a legacy revID:
-                    auto cmp = localVersion.compare(requestedLegacyRev->getRevID());
-                    if ( cmp < 0 ) return kOlder;
-                    else if ( cmp > 0 )
-                        return kNewer;
-                    else
+                    auto remoteVersion = requestedLegacyRev->getRevID();
+                    if ( localVersion == remoteVersion ) {
                         return kSame;
+                    } else if ( localVersion.generation() == remoteVersion.generation() ) {
+                        return kConflicting;
+                    } else if ( localVersion.generation() < remoteVersion.generation() ) {
+                        return kOlder;
+                    } else if ( rec ) {
+                        // Remote is a lower generation; check whether it's an ancestor:
+                        RevTree revTree(rec->body, rec->extra, rec->sequence);
+                        auto    rev = revTree[remoteVersion];
+                        if ( rev && rev->isAncestorOf(revTree.currentRevision()) ) return kNewer;
+                        else
+                            return kConflicting;
+                    } else {
+                        return kNewer;
+                    }
                 }
             } else {
                 // Request has a version vector, requestedVec:
@@ -694,13 +771,13 @@ namespace litecore {
 
             // Check whether the doc's current rev is this version, or a newer, or a conflict:
             versionOrder cmp;
-            cmp         = compareLocalRev(revid(rec.version));
+            cmp         = compareLocalRev(revid(rec.version), &rec);
             auto status = C4FindDocAncestorsResultFlags(cmp);
 
             // Check whether this revID matches any of the doc's remote revisions:
             if ( remoteDBID != 0 ) {
                 VectorRecord::forAllRevIDs(rec, [&](RemoteID remote, revid aRev, bool hasBody) {
-                    if ( remote > RemoteID::Local && compareLocalRev(aRev) == kSame ) {
+                    if ( remote > RemoteID::Local && compareLocalRev(aRev, nullptr) == kSame ) {
                         if ( hasBody ) status |= kRevsHaveLocal;
                         if ( remote == RemoteID(remoteDBID) ) status |= kRevsAtThisRemote;
                     }

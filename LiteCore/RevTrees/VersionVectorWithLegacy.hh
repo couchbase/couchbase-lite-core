@@ -81,7 +81,7 @@ namespace litecore {
             if ( !legacy.empty() ) {
                 std::string_view delimiter;
                 if ( !vector.empty() ) {
-                    if ( vector.currentVersions() == vector.count() ) delimiter = "; ";
+                    if ( vector.currentVersions() == 1 ) delimiter = "; ";
                     else
                         delimiter = ", ";
                 }

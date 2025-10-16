@@ -104,10 +104,9 @@ namespace litecore {
         }
     }
 
-    std::string revid::str() const {
-        alloc_slice exp = expanded();
-        return {(char*)exp.buf, exp.size};
-    }
+    std::string revid::str() const { return string(expanded()); }
+
+    std::string revid::longString() const { return string(isVersion() ? asVersionVector().asASCII() : expanded()); }
 
 #pragma mark - RevIDBuffer:
 
