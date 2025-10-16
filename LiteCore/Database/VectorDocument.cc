@@ -568,9 +568,9 @@ namespace litecore {
                         if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
                             // Both sides are legacy rev ID which makes a trivial merge not possible
                             // due to the converted versions both having the same fake author. So just
-                            // create a new CV, since the rev tree ID of the remote will
+                            // create a converted CV, since the rev tree ID of the remote will
                             // be in the history.
-                            mergedVersion.addNewVersion(asInternal(database())->versionClock());
+                            mergedVersion.add(Version::legacyVersion(winningVersion.revID));
                             mergedRevID = mergedVersion.asBinary();
                         } else {
                             // Convert to a version vector up front, along the lines of "server branch switch"
