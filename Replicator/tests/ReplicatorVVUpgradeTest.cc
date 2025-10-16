@@ -154,8 +154,8 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
         case 0:
             sectionName = "Local Lower Wins";
             left = winner = kDoc1Rev2A;
-            right = loser = kDoc1Rev2B;
-            body          = kFLSliceNull;
+            right = loser  = kDoc1Rev2B;
+            body           = kFLSliceNull;
             resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
             break;
         case 1:  // CBL-7500
@@ -168,8 +168,8 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
         case 2:  // CBL-7500
             sectionName = "Local Higher Wins";
             left = winner = kDoc1Rev2B;
-            right = loser = kDoc1Rev2A;
-            body          = kFLSliceNull;
+            right = loser  = kDoc1Rev2A;
+            body           = kFLSliceNull;
             resultingRevID = "22222000000@Revision+Tree+Encoding"_sl;
             break;
         case 3:
@@ -182,8 +182,8 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
         case 4:
             sectionName = "Merge";
             left = winner = kDoc1Rev2A;
-            right = loser  = kDoc1Rev2B;
-            body           = kFleeceBody;
+            right = loser = kDoc1Rev2B;
+            body          = kFleeceBody;
             break;
         default:
             throw logic_error("unreachable");

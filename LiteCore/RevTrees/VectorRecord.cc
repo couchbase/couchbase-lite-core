@@ -457,8 +457,7 @@ namespace litecore {
     }
 
     void VectorRecord::setLastLegacyRevID(revid revID) {
-        LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'",
-            FMTSLICE(_docID), revID.str().c_str());
+        LogToAt(DBLog, Verbose, "Doc %.*s saving legacy revID '%s'", FMTSLICE(_docID), revID.str().c_str());
         requireRemotes();
         mutableRevisionDict(RemoteID::Local)[kLegacyRevIDKey].setData(revID);
     }
