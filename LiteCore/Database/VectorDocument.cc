@@ -27,7 +27,7 @@ namespace litecore {
     using namespace fleece;
     using namespace litecore;
 
-    C4_ENUM(uint8_t, LegacyResolutionType){NoLegacy = 0, BothSideLegacy, OneSideLegacy};
+    typedef C4_ENUM(uint8_t, LegacyResolutionType){NoLegacy = 0, BothSideLegacy, OneSideLegacy};
 
     static VersionVector toVersionVector(const Revision& rev) {
         if ( rev.hasVersionVector() ) { return rev.versionVector(); }
