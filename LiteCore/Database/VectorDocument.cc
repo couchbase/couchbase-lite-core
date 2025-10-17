@@ -27,6 +27,8 @@ namespace litecore {
     using namespace fleece;
     using namespace litecore;
 
+    typedef C4_ENUM(uint8_t, LegacyResolutionType){NoLegacy = 0, BothSideLegacy, OneSideLegacy};
+
     static VersionVector toVersionVector(const Revision& rev) {
         if ( rev.hasVersionVector() ) { return rev.versionVector(); }
 
@@ -542,13 +544,17 @@ namespace litecore {
             {
                 // Time to start the dance of the two revisions.  One or both could be legacy rev tree IDs at this point
                 // and that needs to be accounted for.  Furthermore, the "winningRevID" must always be the remote rev ID
-                // to keep the history intact until completely converted to VV.
+                // to keep the history intact until completely converted to VV.  There are a lot of corner cases to deal
+                // with here so my sympathies to the next person who has to reason about this jungle of if/else.
                 Revision const& winningVersion = won->second;
                 Revision const& losingVersion  = lost->second;
                 VersionVector   mergedVersion;
+
+                auto legacyResolution = legacyResolutionType(winningVersion, losingVersion);
+
                 if ( mergedBody.buf ) {
                     // In the case of a merge, we always create a resulting version vector
-                    if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
+                    if ( legacyResolution == BothSideLegacy ) {
                         // We can't use merge when both sides are legacy, because they will have the same
                         // fake author.  So just make a new CV, since the rev tree ID of the remote will
                         // be in the history.
@@ -562,15 +568,28 @@ namespace litecore {
                     }
 
                     mergedRevID = mergedVersion.asBinary();
-                } else if ( !winningVersion.hasVersionVector() || !losingVersion.hasVersionVector() ) {
+                } else if ( legacyResolution != NoLegacy ) {
                     // At least one side had a legacy rev tree ID, so this requires some fuss.
                     if ( localWon ) {
-                        if ( !winningVersion.hasVersionVector() && !losingVersion.hasVersionVector() ) {
-                            // Both sides are legacy rev ID which makes a trivial merge not possible
-                            // due to the converted versions both having the same fake author. So just
-                            // create a converted CV, since the rev tree ID of the remote will
-                            // be in the history.
-                            mergedVersion.add(Version::legacyVersion(winningVersion.revID));
+                        if ( legacyResolution == BothSideLegacy ) {
+                            if ( winningVersion.isLegacyVersion() || losingVersion.isLegacyVersion() ) {
+                                // One side has an RTE already, so we have to make a merge because we've
+                                // already progressed to the point where we cannot add both to the VV
+                                // Put the remote version in the history so that the remote can still
+                                // figure out where it came from
+                                auto convertedLoser = losingVersion.hasVersionVector()
+                                                              ? losingVersion.version()
+                                                              : Version::legacyVersion(losingVersion.revID);
+                                mergedVersion.add(convertedLoser);
+                                mergedVersion.addNewVersion(asInternal(database())->versionClock());
+                            } else {
+                                // Both sides are legacy rev ID which makes a trivial merge not possible
+                                // due to the converted versions both having the same fake author. So just
+                                // create a converted CV, since the rev tree ID of the remote will
+                                // be in the history.
+                                mergedVersion.add(Version::legacyVersion(winningVersion.revID));
+                            }
+
                             mergedRevID = mergedVersion.asBinary();
                         } else {
                             // Convert to a version vector up front, along the lines of "server branch switch"
@@ -664,6 +683,18 @@ namespace litecore {
         VectorRecord        _doc;
         optional<RemoteID>  _remoteID;    // Identifies selected revision
         mutable fleece::Doc _latestBody;  // Holds onto latest Fleece body I created
+
+        static LegacyResolutionType legacyResolutionType(const Revision& winner, const Revision& loser) {
+            if ( !winner.hasVersionVector() && !loser.hasVersionVector() ) { return BothSideLegacy; }
+
+            if ( !winner.hasVersionVector() && loser.isLegacyVersion() ) { return BothSideLegacy; }
+
+            if ( !loser.hasVersionVector() && winner.isLegacyVersion() ) { return BothSideLegacy; }
+
+            if ( !winner.hasVersionVector() || !loser.hasVersionVector() ) { return OneSideLegacy; }
+
+            return NoLegacy;
+        }
     };
 
 #pragma mark - FACTORY:

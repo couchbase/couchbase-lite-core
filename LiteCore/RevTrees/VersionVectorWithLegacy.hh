@@ -81,9 +81,12 @@ namespace litecore {
             if ( !legacy.empty() ) {
                 std::string_view delimiter;
                 if ( !vector.empty() ) {
-                    if ( vector.currentVersions() == 1 ) delimiter = "; ";
+                    if ( vector.currentVersions() < vector.count() ) delimiter = ", ";
+                    else if ( vector.currentVersions() == 1 )
+                        delimiter = "; ";
+                    // else the vector ends with ";"
                     else
-                        delimiter = ", ";
+                        delimiter = " ";
                 }
                 for ( alloc_slice const& rev : legacy ) {
                     out << delimiter << revid(rev).str();

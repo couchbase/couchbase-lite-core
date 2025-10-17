@@ -96,6 +96,10 @@ namespace litecore {
 
     bool Revision::hasVersionVector() const { return revID.isVersion(); }
 
+    bool Revision::isLegacyVersion() const {
+        return hasVersionVector() && revID.asVersion().author() == kLegacyRevSourceID;
+    }
+
     VectorRecord::VectorRecord(KeyStore& store, const Record& rec)
         : _store(store)
         , _docID(rec.key())
