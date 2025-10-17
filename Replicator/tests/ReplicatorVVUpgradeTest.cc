@@ -230,9 +230,10 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
 }
 
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgrade", "[Conflicts][Upgrade][Pull]") {
-    const auto        docName    = "test"_sl;
-    const slice       kDoc1Rev2A = "2-1111"_sl;
-    const alloc_slice kDoc1Rev2B = makeRealishVector("@BobBobBobBobBobBobBobA");
+    const auto        docName     = "test"_sl;
+    const slice       kDoc1Rev2A  = "2-1111"_sl;
+    const alloc_slice kDoc1Rev2B  = makeRealishVector("@BobBobBobBobBobBobBobA");
+    const alloc_slice kDoc1RevRTE = makeRealishVector("@Revision+Tree+Encoding");
 
     createFleeceRev(_collDB1, docName, "1-1111"_sl, "{}"_sl);
 
@@ -246,6 +247,26 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgr
         syncDBConfig();
         createFleeceRev(_collDB2, docName, kDoc1Rev2B, "{\"db\":2}"_sl);
         resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
+    }
+
+    SECTION("Local Rev-Tree Wins Against RTE") {
+        winner = kDoc1Rev2A;
+        loser  = kDoc1RevRTE;
+        body   = kFLSliceNull;
+        createFleeceRev(_collDB1, docName, kDoc1Rev2A, "{\"db\":1}"_sl);
+        upgrade();
+        syncDBConfig();
+        createFleeceRev(_collDB2, docName, kDoc1RevRTE, "{\"db\":2}"_sl);
+    }
+
+    SECTION("Local RTE Wins Against Rev-Tree") {
+        winner = kDoc1RevRTE;
+        loser  = kDoc1Rev2A;
+        body   = kFLSliceNull;
+        createFleeceRev(_collDB2, docName, kDoc1Rev2A, "{\"db\":1}"_sl);
+        upgrade();
+        syncDBConfig();
+        createFleeceRev(_collDB1, docName, kDoc1RevRTE, "{\"db\":2}"_sl);
     }
 
     SECTION("Local VV Wins") {
@@ -268,6 +289,28 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgr
         syncDBConfig();
         createFleeceRev(_collDB1, docName, kDoc1Rev2B, "{\"db\":2}"_sl);
         resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
+    }
+
+    SECTION("Remote Rev-Tree Wins Against RTE") {
+        winner = kDoc1Rev2A;
+        loser  = kDoc1RevRTE;
+        body   = kFLSliceNull;
+        createFleeceRev(_collDB2, docName, kDoc1Rev2A, "{\"db\":1}"_sl);
+        upgrade();
+        syncDBConfig();
+        createFleeceRev(_collDB1, docName, kDoc1RevRTE, "{\"db\":2}"_sl);
+        resultingRevID = "21111000000@Revision+Tree+Encoding"_sl;
+    }
+
+    SECTION("Remote RTE Wins Against Rev-Tree") {
+        winner = kDoc1RevRTE;
+        loser  = kDoc1Rev2A;
+        body   = kFLSliceNull;
+        createFleeceRev(_collDB1, docName, kDoc1Rev2A, "{\"db\":1}"_sl);
+        upgrade();
+        syncDBConfig();
+        createFleeceRev(_collDB2, docName, kDoc1RevRTE, "{\"db\":2}"_sl);
+        resultingRevID = winner;
     }
 
     SECTION("Remote VV Wins") {

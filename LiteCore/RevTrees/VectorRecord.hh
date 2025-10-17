@@ -48,6 +48,9 @@ namespace litecore {
         /// Returns true if `revID` is a version vector, false if it's a tree-based revid.
         bool hasVersionVector() const;
 
+        /// returns true if `revID` is a version vector in RTE format
+        bool isLegacyVersion() const;
+
         /// Returns the current (first) version of the version vector encoded in the `revID`.
         [[nodiscard]] Version version() const;
 
