@@ -402,6 +402,10 @@ namespace litecore {
             VersionVecWithLegacy newVers((slice*)rq.history, rq.historyCount, mySourceID());
             auto                 remote = RemoteID(rq.remoteDBID);
 
+            // history uses absolute form of VV. The absolute form may be equivalent to the local
+            // one of local form. We turn it to local form to be comparable. C.f. CBL-7565
+            if ( newVers.vector and newVers.vector.isAbsolute() ) { newVers.vector.makeLocal(mySourceID()); }
+
             if ( !newVers.vector.updateClock(asInternal(database())->versionClock()) ) {
                 if ( outError ) {
                     alloc_slice vecStr = newVers.vector.asASCII();
