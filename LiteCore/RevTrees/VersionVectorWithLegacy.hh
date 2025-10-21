@@ -116,10 +116,10 @@ namespace litecore {
                 vector.readASCII(history[0], mySourceID);  // -> Single vector (or single version)
             } else if ( historyCount == 2 ) {
                 vector.readASCII(history[1], mySourceID);
-                vector.add(Version(history[0]));  // -> New version plus parent vector
+                vector.add(Version(history[0], mySourceID));  // -> New version plus parent vector
             } else if ( historyCount > 2 ) {
                 for ( ssize_t i = historyCount - 1; i >= 0; --i )
-                    vector.add(Version(history[i]));  // -> List of versions
+                    vector.add(Version(history[i], mySourceID));  // -> List of versions
             }
         }
 
