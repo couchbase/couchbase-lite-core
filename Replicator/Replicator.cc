@@ -77,7 +77,7 @@ namespace litecore::repl {
         if ( flags & kC4DB_VersionVectors ) {
             // Local db may have VVs. V4 is fine. V3 is OK if I don't push anything.
             v4 = true;
-            v3 = (pushMode == kC4Disabled);
+            v3 = false;
         } else {
             // Local db does not have VVs. V3 is fine. V4 is OK if I don't pull anything.
             v3 = true;
