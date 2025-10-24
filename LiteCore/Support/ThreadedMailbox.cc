@@ -216,7 +216,12 @@ namespace litecore { namespace actor {
         void ThreadedMailbox::reschedule() { Scheduler::schedule(this); }
 
         void ThreadedMailbox::performNextMessage() {
-            LogVerbose(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
+            if ( auto refCount = _actor->refCount(); refCount <= 0 ) {
+                LogVerbose(ActorLog, "actor=%p performNextMessage() called when actor's refCount=%d\n", this, refCount);
+            }
+
+            //            LogVerbose(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
+            LogVerbose(ActorLog, "%s(%p) performNextMessage", _actor->actorCName(), this);
             DebugAssert(++_active == 1);  // Fail-safe check to detect 'impossible' re-entrant call
             sCurrentActor = _actor;
             auto& fn      = front();

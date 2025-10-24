@@ -234,15 +234,16 @@ namespace litecore::repl {
     }
 
     void Replicator::terminate() {
-        logDebug("terminate() called...");
+        logVerbose("terminate() called...");
         if ( connected() ) {
-            logDebug("...connected() was true, doing extra stuff...");
+            logVerbose("...connected() was true, doing extra stuff...");
             Assert(_connectionState == Connection::kClosed);
             connection().terminate();
             std::for_each(_subRepls.begin(), _subRepls.end(), [](SubReplicator& sub) {
                 sub.pusher = nullptr;
                 sub.puller = nullptr;
             });
+            logVerbose("...connected() was true, doing extra stuff... done");
             _workerHandlers.useLocked()->clear();
         }
 
@@ -251,7 +252,7 @@ namespace litecore::repl {
         // dangerous to leave it around.  Set it to null here to avoid using it further.
         _delegate = nullptr;
         _db.reset();
-        logDebug("...done with terminate()");
+        logVerbose("...done with terminate()");
     }
 
     void Replicator::_disconnect(websocket::CloseCode closeCode, slice message) {
@@ -550,10 +551,12 @@ namespace litecore::repl {
     void Replicator::changedStatus() {
         if ( status().level == kC4Stopped ) {
             DebugAssert(!connected());  // must already have gotten _onClose() delegate callback
+            logVerbose("...changedStatus() && level==Stopped resetting pusher/puller");
             std::for_each(_subRepls.begin(), _subRepls.end(), [](SubReplicator& sub) {
                 sub.pusher = nullptr;
                 sub.puller = nullptr;
             });
+            logVerbose("...changedStatus() && level==Stopped resetting done");
             _workerHandlers.useLocked()->clear();
             _db->close();
             Signpost::end(Signpost::replication, uintptr_t(this));

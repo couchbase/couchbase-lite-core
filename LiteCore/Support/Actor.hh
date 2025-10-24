@@ -93,6 +93,8 @@ namespace litecore::actor {
             return _asynchronize(methodName, fn);
         }
 
+        const char* actorCName() { return _nameBuf; }
+
       protected:
         /** Constructs an Actor.
             @param domain The domain which this actor is logged to.
@@ -103,7 +105,9 @@ namespace litecore::actor {
                         This helps control the number of threads created by the OS. This is only
                         implemented on Apple platforms, where it determines the target queue. */
         explicit Actor(LogDomain& domain, const std::string& name = "", Mailbox* parentMailbox = nullptr)
-            : Logging(domain), _mailbox(this, name, parentMailbox) {}
+            : Logging(domain), _mailbox(this, name, parentMailbox) {
+            snprintf(_nameBuf, 80, "%s", name.c_str());
+        }
 
         /** Schedules a call to a method. */
         template <class Rcvr, class... Args>
@@ -167,6 +171,7 @@ namespace litecore::actor {
         void _waitTillCaughtUp(std::mutex*, std::condition_variable*, bool*);
 
         Mailbox _mailbox;
+        char    _nameBuf[80];
     };
 
 #undef ACTOR_BIND_METHOD
