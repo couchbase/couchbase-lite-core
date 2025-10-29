@@ -18,7 +18,6 @@
 
 #pragma once
 #include "fleece/Fleece.hh"
-#include "Error.hh"
 #include "StringUtil.hh"
 #include "ArgumentTokenizer.hh"
 #include <algorithm>
@@ -45,26 +44,7 @@ class Tool {
 
     static Tool* instance;
 
-    /** Entry point for a Tool. */
-    virtual int main(int argc, const char* argv[]) {
-        try {
-            if ( getenv("CLICOLOR") ) enableColor();
-            _toolPath = std::string(argv[0]);
-            std::vector<std::string> args;
-            for ( int i = 1; i < argc; ++i ) args.push_back(argv[i]);
-            _argTokenizer.reset(args);
-            return run();
-        } catch ( const exit_error& x ) { return x.status; } catch ( const fail_error& ) {
-            return 1;
-        } catch ( const litecore::error& x ) {
-            errorOccurred(litecore::stringprintf("Uncaught LiteCore exception: %s", x.what()));
-            if ( x.backtrace ) x.backtrace->writeTo(std::cerr);
-            std::cerr << std::endl;
-        } catch ( const std::exception& x ) {
-            errorOccurred(litecore::stringprintf("Uncaught C++ exception: %s", x.what()));
-        } catch ( ... ) { errorOccurred("Uncaught unknown C++ exception"); }
-        return 1;
-    }
+    virtual int main(int argc, const char* argv[]);
 
     Tool(const Tool& parent)
         : _verbose(parent._verbose)
