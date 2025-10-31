@@ -175,7 +175,6 @@ set(MBEDTLS_FATAL_WARNINGS OFF CACHE INTERNAL "") # Work around doc-comment synt
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
 configure_file(cmake/config_thread.h.in ${GENERATED_HEADERS_DIR}/config_thread.h)
-include_directories(${GENERATED_HEADERS_DIR})
 
 add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
 
@@ -189,7 +188,12 @@ endif()
 # Separate library to make possible replace or not use
 # during static linking
 add_library(CouchbaseSqlite3 STATIC LiteCore/Storage/SQLiteChooser.c)
-target_include_directories(CouchbaseSqlite3 PUBLIC vendor/SQLiteCpp/sqlite3)
+if (ZLIB_INCLUDE)
+  target_include_directories(CouchbaseSqlite3 PRIVATE ${ZLIB_INCLUDE})
+endif()
+target_include_directories(CouchbaseSqlite3 PUBLIC vendor/SQLiteCpp/sqlite3
+  PRIVATE ${GENERATED_HEADERS_DIR}
+)
 target_compile_definitions(
   CouchbaseSqlite3
   PUBLIC
@@ -276,12 +280,18 @@ set(
     vendor/vector_search
 )
 
+if (ZLIB_INCLUDE)
+  target_include_directories(LiteCoreObjects PRIVATE ${ZLIB_INCLUDE})
+  target_include_directories(LiteCoreUnitTesting PRIVATE ${ZLIB_INCLUDE})
+endif()
 target_include_directories(
     LiteCoreObjects PRIVATE
+    ${GENERATED_HEADERS_DIR}
     ${LiteCoreObjectsIncludes}
 )
 target_include_directories(
     LiteCoreUnitTesting PRIVATE
+    ${GENERATED_HEADERS_DIR}
     ${LiteCoreObjectsIncludes}
 )
 
@@ -315,10 +325,15 @@ if(LITECORE_BUILD_SHARED)
         add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
     endif()
 
+    if (ZLIB_INCLUDE)
+       target_include_directories(LiteCore PRIVATE ${ZLIB_INCLUDE})
+    endif()
+
     target_include_directories(
         LiteCore INTERFACE
         C/include
         C/Cpp_include
+        PRIVATE ${GENERATED_HEADERS_DIR}
     ) 
     target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 
@@ -394,8 +409,12 @@ set(
 )
 
 add_library(LiteCoreWebSocket STATIC EXCLUDE_FROM_ALL ${LC_WEBSOCKET_SRC})
+if (ZLIB_INCLUDE)
+    target_include_directories(LiteCoreWebSocket PRIVATE ${ZLIB_INCLUDE})
+endif()
 target_include_directories(
     LiteCoreWebSocket PRIVATE
+    ${GENERATED_HEADERS_DIR}
     C
     C/include
     C/Cpp_include

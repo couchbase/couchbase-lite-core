@@ -59,7 +59,7 @@ function(setup_globals)
     if (NOT ZLIB_INCLUDE)
         message(FATAL_ERROR "libz header files not found")
     endif()
-    include_directories(${ZLIB_INCLUDE})
+    set(ZLIB_INCLUDE "${ZLIB_INCLUDE}" PARENT_SCOPE)
     message("Using libz header files in ${ZLIB_INCLUDE}")
 
     mark_as_advanced(
