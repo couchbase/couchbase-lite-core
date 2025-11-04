@@ -49,22 +49,6 @@ function(setup_globals)
 
     # Enable relative RPATHs for installed bits
     set (CMAKE_INSTALL_RPATH "\$ORIGIN" PARENT_SCOPE)
-
-    find_library(ZLIB_LIB z)
-    if (NOT ZLIB_LIB)
-        message(FATAL_ERROR "libz not found")
-    endif()
-    message("Found libz at ${ZLIB_LIB}")
-    find_path(ZLIB_INCLUDE NAMES zlib.h PATH_SUFFIXES include)
-    if (NOT ZLIB_INCLUDE)
-        message(FATAL_ERROR "libz header files not found")
-    endif()
-    set(ZLIB_INCLUDE "${ZLIB_INCLUDE}" PARENT_SCOPE)
-    message("Using libz header files in ${ZLIB_INCLUDE}")
-
-    mark_as_advanced(
-           ZLIB_LIB ZLIB_INCLUDE
-    )
 endfunction()
 
 function(set_litecore_source)
@@ -86,12 +70,34 @@ function(set_litecore_source)
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
-    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
+    # zlib
+    find_library(ZLIB_LIB z)
+    if (NOT ZLIB_LIB)
+        message(FATAL_ERROR "libz not found")
+    endif()
+    message("Found libz at ${ZLIB_LIB}")
+    find_path(ZLIB_INCLUDE NAMES zlib.h PATH_SUFFIXES include)
+    if (NOT ZLIB_INCLUDE)
+        message(FATAL_ERROR "libz header files not found")
+    endif()
+    message("Using libz header files in ${ZLIB_INCLUDE}")
+
+    mark_as_advanced(
+           ZLIB_LIB ZLIB_INCLUDE
+    )
+
     foreach(target ${LITECORE_TARGETS})
+        # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
         target_compile_options(
             ${target} PRIVATE
             "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
         )
+
+        if(${target} STREQUAL "LiteCore" OR
+           ${target} STREQUAL "CouchbaseSqlite3" OR
+           ${target} STREQUAL "LiteCoreWebSocket")
+           target_include_directories(${target} PRIVATE ${ZLIB_INCLUDE})
+        endif()
     endforeach()
 
     foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
@@ -99,6 +105,7 @@ function(setup_litecore_build)
            ${liteCoreVariant} INTERFACE
            Threads::Threads
         )
+        target_include_directories(${liteCoreVariant} PRIVATE ${ZLIB_INCLUDE})
     endforeach()
 
     if(NOT LITECORE_DISABLE_ICU AND NOT LITECORE_DYNAMIC_ICU)

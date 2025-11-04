@@ -188,9 +188,6 @@ endif()
 # Separate library to make possible replace or not use
 # during static linking
 add_library(CouchbaseSqlite3 STATIC LiteCore/Storage/SQLiteChooser.c)
-if (ZLIB_INCLUDE)
-  target_include_directories(CouchbaseSqlite3 PRIVATE ${ZLIB_INCLUDE})
-endif()
 target_include_directories(CouchbaseSqlite3 PUBLIC vendor/SQLiteCpp/sqlite3
   PRIVATE ${GENERATED_HEADERS_DIR}
 )
@@ -280,10 +277,6 @@ set(
     vendor/vector_search
 )
 
-if (ZLIB_INCLUDE)
-  target_include_directories(LiteCoreObjects PRIVATE ${ZLIB_INCLUDE})
-  target_include_directories(LiteCoreUnitTesting PRIVATE ${ZLIB_INCLUDE})
-endif()
 target_include_directories(
     LiteCoreObjects PRIVATE
     ${GENERATED_HEADERS_DIR}
@@ -323,10 +316,6 @@ if(LITECORE_BUILD_SHARED)
         )
     else()
         add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreObjects>)
-    endif()
-
-    if (ZLIB_INCLUDE)
-       target_include_directories(LiteCore PRIVATE ${ZLIB_INCLUDE})
     endif()
 
     target_include_directories(
@@ -409,9 +398,6 @@ set(
 )
 
 add_library(LiteCoreWebSocket STATIC EXCLUDE_FROM_ALL ${LC_WEBSOCKET_SRC})
-if (ZLIB_INCLUDE)
-    target_include_directories(LiteCoreWebSocket PRIVATE ${ZLIB_INCLUDE})
-endif()
 target_include_directories(
     LiteCoreWebSocket PRIVATE
     ${GENERATED_HEADERS_DIR}
