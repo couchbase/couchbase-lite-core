@@ -139,7 +139,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Nonexistent Collection SG", "[.Syn
     replParams.collections[2].pull = kC4OneShot;
 
     slice   expectedErrorMsg;
-    C4Error expectedError;
+    C4Error expectedError{};
 
     SECTION("Collection absent at the remote") {
         expectedErrorMsg = "Collection 'flowers.dummy' is not found on the remote server"_sl;
