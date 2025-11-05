@@ -92,12 +92,6 @@ function(setup_litecore_build)
             ${target} PRIVATE
             "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
         )
-
-        if(${target} STREQUAL "LiteCore" OR
-           ${target} STREQUAL "CouchbaseSqlite3" OR
-           ${target} STREQUAL "LiteCoreWebSocket")
-           target_include_directories(${target} PRIVATE ${ZLIB_INCLUDE})
-        endif()
     endforeach()
 
     foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
@@ -105,6 +99,7 @@ function(setup_litecore_build)
            ${liteCoreVariant} INTERFACE
            Threads::Threads
         )
+        target_link_libraries(${liteCoreVariant} PRIVATE ${ZLIB_LIB})
         target_include_directories(${liteCoreVariant} PRIVATE ${ZLIB_INCLUDE})
     endforeach()
 
