@@ -59,11 +59,11 @@ jobs:
           sleep 10
         done
         echo "SG is up"
-        # until curl -sIkL -H "Authorization: Basic YWRtaW46cGFzc3dvcmQ=" --fail https://localhost:4885/scratch-30; do
-        #   printf '.'
-        #   sleep 10
-        # done
-        # echo "SG Legacy is up"
+        until curl -sIkL -H "Authorization: Basic YWRtaW46cGFzc3dvcmQ=" --fail https://localhost:4885/scratch-30; do
+          printf '.'
+          sleep 10
+        done
+        echo "SG Legacy is up"
 
 #### TEST
 
@@ -75,13 +75,13 @@ jobs:
         ./CppTests -r quiet "[.SyncServerCollection]"
         popd
 
-    # - name: Run SG Legacy Tests
-    #   working-directory: ${{github.workspace}}/build
-    #   shell: bash
-    #   run: |
-    #     pushd LiteCore/tests
-    #     ./CppTests -r quiet "[.SyncServer30]"
-    #     popd
+    - name: Run SG Legacy Tests
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: |
+        pushd LiteCore/tests
+        ./CppTests -r quiet "[.SyncServer30]"
+        popd
 
     - name: Stop Docker containers
       if: always()

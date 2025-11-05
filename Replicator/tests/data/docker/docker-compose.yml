@@ -31,16 +31,16 @@ services:
     depends_on:
       - "lite-core-cbs"
 
-  # lite-core-sg-legacy:
-  #   build:
-  #     context: ./sg
-  #     args:
-  #       - SG_DEB_ARM64=${SG_LEGACY_DEB_ARM64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.9/couchbase-sync-gateway-enterprise_3.0.9_aarch64.deb}
-  #       - SG_DEB_AMD64=${SG_LEGACY_DEB_AMD64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.9/couchbase-sync-gateway-enterprise_3.0.9_x86_64.deb}
-  #       - SSL=${SSL:-true}
-  #       - LEGACY_MODE=true
-  #   ports:
-  #     - "4884:4884"
-  #     - "4885:4885"
-  #   depends_on:
-  #     - "lite-core-cbs"
+  lite-core-sg-legacy:
+    build:
+      context: ./sg
+      args:
+        - SG_DEB_ARM64=${SG_LEGACY_DEB_ARM64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.9/couchbase-sync-gateway-enterprise_3.0.9_aarch64.deb}
+        - SG_DEB_AMD64=${SG_LEGACY_DEB_AMD64:-https://packages.couchbase.com/releases/couchbase-sync-gateway/3.0.9/couchbase-sync-gateway-enterprise_3.0.9_x86_64.deb}
+        - SSL=${SSL:-true}
+        - LEGACY_MODE=true
+    ports:
+      - "4884:4884"
+      - "4885:4885"
+    depends_on:
+      - "lite-core-cbs"
