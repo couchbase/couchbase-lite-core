@@ -13,8 +13,7 @@ vendor/zlib folder (the target will be automatically added on those platforms, b
 must link with it via target_link_libraries)
 ]]#
 
-cmake_minimum_required (VERSION 3.9)
-cmake_policy(VERSION 3.9)
+cmake_minimum_required (VERSION 3.9...4.0)
 project (BLIP_Cpp)
 
 set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")

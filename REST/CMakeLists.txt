@@ -5,8 +5,7 @@ This project builds a simple REST API for LiteCore to use in conjunction with th
 library tests.  It is *not* meant to be used anywhere else, so don't do it!
 ]]#
 
-cmake_minimum_required (VERSION 3.9)
-cmake_policy(VERSION 3.9)
+cmake_minimum_required (VERSION 3.9...4.0)
 project (LiteCoreREST)
 
 ### BUILD SETTINGS:
