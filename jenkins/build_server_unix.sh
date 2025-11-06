@@ -117,11 +117,21 @@ build_binaries () {
     CMAKE_BUILD_TYPE_NAME="cmake_build_type_${FLAVOR}"
     mkdir -p ${WORKSPACE}/build_${FLAVOR}
     pushd ${WORKSPACE}/build_${FLAVOR}
+
+    local cmakeOptions="-DBUILD_ENTERPRISE=$build_enterprise"
     if [[ ${OS} == 'linux' ]]; then
-      cmake -DBUILD_ENTERPRISE=$build_enterprise -DEMBEDDED_MDNS=ON -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON -DVERSION=${VERSION} -DBLD_NUM=${BLD_NUM} ../couchbase-lite-core
-    else
-      cmake -DBUILD_ENTERPRISE=$build_enterprise -DCMAKE_INSTALL_PREFIX=`pwd`/install -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} -DLITECORE_MACOS_FAT_DEBUG=ON -DVERSION=${VERSION} -DBLD_NUM=${BLD_NUM} ../couchbase-lite-core
+        cmakeOptions="${cmakeOptions} -DEMBEDDED_MDNS=ON"
     fi
+    cmakeOptions="${cmakeOptions} \
+        -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+        -DCMAKE_BUILD_TYPE=${!CMAKE_BUILD_TYPE_NAME} \
+        -DLITECORE_MACOS_FAT_DEBUG=ON \
+        -DVERSION=${VERSION} \
+        -DBLD_NUM=${BLD_NUM}"
+    if [[ ${FLAVOR} == "debug" ]]; then
+        cmakeOptions="${cmakeOptions} -DLITECORE_SANITIZE=ON"
+    fi
+    cmake ${cmakeOptions} ../couchbase-lite-core
     make -j8
     if [[ ${OS} == 'linux' ]]; then
         ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh $PWD
