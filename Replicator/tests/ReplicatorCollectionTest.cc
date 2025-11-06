@@ -252,33 +252,6 @@ N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Unmatched Collections", "[
     runPushPullReplication({Roses, Lavenders}, {Tulips, Lavenders});
 }
 
-// CBL-7181.
-// The problem scenario:
-// 1. active replicator has the default collection as the only one in its collection set
-// 2. passive replicator does not have the default collection in its collection set
-// In this case, the active replicator will use 3.0 protocol in order to connect to 3.0 server, as well
-// as 3.1 server (passive replicator).
-N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "3.0 Active vs 3.1 Passive", "[Push][Pull]") {
-    // When the collection set of the active replicator has only one default collection,
-    // it will act like a 3.0 client (3.0 protocols)
-
-    SECTION("Passive replicator has default collection") {
-        runPushPullReplication({Default}, {Tulips, Lavenders, Default});
-    }
-
-    SECTION("Passive replicator does not have default collection") {
-        // Before the CBL ticket is resolved, the following test
-        // would hit an assertion.
-        // Several different errors can be triggered by this protocol mismatch concurretly,
-        // and actual error before Stop is somewhat random. We check the error manually at
-        // the end.
-        _expectedError = {LiteCoreDomain, kC4ErrorRemoteError};
-        runPushPullReplication({Default}, {Tulips, Lavenders});
-        alloc_slice msg = c4error_getMessage(_statusReceived.error);
-        CHECK(msg.asString() == "This server is not configured for 3.0 client support");
-    }
-}
-
 N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Use Zero Collections", "[Push][Pull]") {
     ExpectingExceptions x;
     _expectedError = {LiteCoreDomain, kC4ErrorInvalidParameter};
@@ -339,16 +312,6 @@ struct CheckDBEntries {
 };
 
 N_WAY_TEST_CASE_METHOD(ReplicatorCollectionTest, "Sync with Default Collection", "[Push][Pull]") {
-#ifdef LITECORE_CPPTEST
-    bool collectionAwareActive  = GENERATE(false, true);
-    bool collectionAwareOnEntry = repl::Options::sActiveIsCollectionAware;
-    if ( collectionAwareActive ) {
-        repl::Options::sActiveIsCollectionAware = true;
-        std::cerr << "        Active Replicator is collection-aware" << std::endl;
-    }
-    DEFER { repl::Options::sActiveIsCollectionAware = collectionAwareOnEntry; };
-#endif
-
     addDocs(db, Default, 10);
     addDocs(db2, Default, 10);
 
