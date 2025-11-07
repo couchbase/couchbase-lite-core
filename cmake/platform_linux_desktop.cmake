@@ -59,11 +59,10 @@ function(setup_globals)
     if (NOT ZLIB_INCLUDE)
         message(FATAL_ERROR "libz header files not found")
     endif()
-    include_directories(${ZLIB_INCLUDE})
     message("Using libz header files in ${ZLIB_INCLUDE}")
 
     mark_as_advanced(
-           ZLIB_LIB ZLIB_INCLUDE
+        ZLIB_LIB ZLIB_INCLUDE
     )
 endfunction()
 
@@ -99,6 +98,7 @@ function(setup_litecore_build)
            ${liteCoreVariant} INTERFACE
            Threads::Threads
         )
+        target_include_directories(${liteCoreVariant} PRIVATE ${ZLIB_INCLUDE})
     endforeach()
 
     if(NOT LITECORE_DISABLE_ICU AND NOT LITECORE_DYNAMIC_ICU)
