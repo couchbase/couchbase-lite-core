@@ -49,6 +49,21 @@ function(setup_globals)
 
     # Enable relative RPATHs for installed bits
     set (CMAKE_INSTALL_RPATH "\$ORIGIN" PARENT_SCOPE)
+
+    find_library(ZLIB_LIB z)
+    if (NOT ZLIB_LIB)
+        message(FATAL_ERROR "libz not found")
+    endif()
+    message("Found libz at ${ZLIB_LIB}")
+    find_path(ZLIB_INCLUDE NAMES zlib.h PATH_SUFFIXES include)
+    if (NOT ZLIB_INCLUDE)
+        message(FATAL_ERROR "libz header files not found")
+    endif()
+    message("Using libz header files in ${ZLIB_INCLUDE}")
+
+    mark_as_advanced(
+        ZLIB_LIB ZLIB_INCLUDE
+    )
 endfunction()
 
 function(set_litecore_source)
@@ -70,24 +85,8 @@ function(set_litecore_source)
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
-    # zlib
-    find_library(ZLIB_LIB z)
-    if (NOT ZLIB_LIB)
-        message(FATAL_ERROR "libz not found")
-    endif()
-    message("Found libz at ${ZLIB_LIB}")
-    find_path(ZLIB_INCLUDE NAMES zlib.h PATH_SUFFIXES include)
-    if (NOT ZLIB_INCLUDE)
-        message(FATAL_ERROR "libz header files not found")
-    endif()
-    message("Using libz header files in ${ZLIB_INCLUDE}")
-
-    mark_as_advanced(
-           ZLIB_LIB ZLIB_INCLUDE
-    )
-
+    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
     foreach(target ${LITECORE_TARGETS})
-        # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
         target_compile_options(
             ${target} PRIVATE
             "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
@@ -99,7 +98,6 @@ function(setup_litecore_build)
            ${liteCoreVariant} INTERFACE
            Threads::Threads
         )
-        target_link_libraries(${liteCoreVariant} PRIVATE ${ZLIB_LIB})
         target_include_directories(${liteCoreVariant} PRIVATE ${ZLIB_INCLUDE})
     endforeach()
 
