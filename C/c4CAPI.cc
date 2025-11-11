@@ -846,14 +846,26 @@ void c4dbobs_free(C4DatabaseObserver* obs) noexcept { delete obs; }
 C4DocumentObserver* c4docobs_createWithCollection(C4Collection* coll, C4String docID,
                                                   C4DocumentObserverCallback callback, void* C4NULLABLE context,
                                                   C4Error* C4NULLABLE error) noexcept {
-    return tryCatch<unique_ptr<C4DocumentObserver>>(error,
-                                                    [&] {
-                                                        auto fn = [=](C4DocumentObserver* obs, C4Collection* collection,
-                                                                      fleece::slice docID, C4SequenceNumber seq) {
-                                                            callback(obs, collection, docID, seq, context);
-                                                        };
-                                                        return C4DocumentObserver::create(coll, docID, fn);
-                                                    })
+    return tryCatch<unique_ptr<C4DocumentObserver>>(
+                   error,
+                   [&] {
+                       auto fn = [=](C4DocumentObserver * obs, C4Collection * collection, fleece::slice docID,
+                                     C4SequenceNumber seq)
+#ifndef _MSC_VER
+                               // callback passed in by the C4 client is typed as
+                               // void(*)(C4DocumentObserver*, C4Collection*, FLSlice, uint64_t, void*),
+                               // whereas C4DocumentObserverCallback =
+                               // void(*)(C4DocumentObserver *, C4Collection *, FLSlice, C4SequenceNumber, void*),
+                               // where C4SequenceNumber is enum class : uint64_t.
+                               // UBSan on x86_64 flags this as a runtime error, but the check is overly aggressive,
+                               // so we’re turning it off.
+                               __attribute__((no_sanitize("undefined")))
+#endif
+                       {
+                           callback(obs, collection, docID, seq, context);
+                       };
+                       return C4DocumentObserver::create(coll, docID, fn);
+                   })
             .release();
 }
 
