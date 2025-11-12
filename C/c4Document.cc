@@ -358,6 +358,16 @@ C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) 
     return revFlags;
 }
 
+C4DocumentFlags C4Document::documentFlagsFromRevFlags(C4RevisionFlags revFlags) noexcept {
+    if ( !revFlags ) return 0;
+
+    C4DocumentFlags docFlags{kDocExists};
+    if ( revFlags & kRevDeleted ) docFlags |= kDocDeleted;
+    if ( revFlags & kRevHasAttachments ) docFlags |= kDocHasAttachments;
+    if ( revFlags & kRevIsConflict ) docFlags |= kDocConflicted;
+    return docFlags;
+}
+
 C4Document* C4Document::containingValue(FLValue value) noexcept { return C4Collection::documentContainingValue(value); }
 
 bool C4Document::isOldMetaProperty(slice propertyName) noexcept {
