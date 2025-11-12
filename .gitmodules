@@ -1,9 +1,6 @@
 [submodule "vendor/SQLiteCpp"]
 	path = vendor/SQLiteCpp
 	url = https://github.com/couchbasedeps/SQLiteCpp.git
-[submodule "wiki"]
-	path = wiki
-	url = https://github.com/couchbase/couchbase-lite-core.wiki.git
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
 	url = https://github.com/couchbasedeps/mbedtls.git
