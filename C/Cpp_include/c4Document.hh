@@ -163,6 +163,7 @@ struct C4Document
     static alloc_slice             legacyRevIDAsVersion(slice revID) noexcept;
 
     static C4RevisionFlags revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
+    static C4DocumentFlags documentFlagsFromRevFlags(C4RevisionFlags revFlags) noexcept;
 
     /// Returns the Document instance, if any, that contains the given Fleece value.
     static C4Document* C4NULLABLE containingValue(FLValue) noexcept;
