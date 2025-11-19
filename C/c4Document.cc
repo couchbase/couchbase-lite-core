@@ -359,8 +359,6 @@ C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) 
 }
 
 C4DocumentFlags C4Document::documentFlagsFromRevFlags(C4RevisionFlags revFlags) noexcept {
-    if ( !revFlags ) return 0;
-
     C4DocumentFlags docFlags{kDocExists};
     if ( revFlags & kRevDeleted ) docFlags |= kDocDeleted;
     if ( revFlags & kRevHasAttachments ) docFlags |= kDocHasAttachments;
