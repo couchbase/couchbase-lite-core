@@ -22,6 +22,96 @@
 #    include <map>
 #    include <sstream>
 
+#    define THREAD_STATS
+#    ifdef THREAD_STATS
+#        include "Logging_Internal.hh"
+#    endif
+namespace { namespace threadStats {
+#    ifdef THREAD_STATS
+        struct Stats {
+            uint64_t                timestamp;  // microseconds
+            litecore::actor::Actor* actor;
+        };
+
+        std::vector<Stats> enterTimes;
+
+        constexpr unsigned warningThreshold = 1000000;  // 1s
+        constexpr unsigned checkInterval    = warningThreshold;
+
+        uint64_t   lastChecked = 0;
+        std::mutex mutex;
+        using namespace std::chrono;
+        using namespace litecore;
+
+        void init(size_t numThreads) { enterTimes.resize(numThreads); }
+
+        void enter(size_t taskID, actor::Actor* actor) {
+            uint64_t        timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
+            std::lock_guard lock(mutex);
+            enterTimes[taskID - 1] = {timestamp, actor};
+        }
+
+        void exit(size_t taskID) {
+            std::lock_guard lock(mutex);
+            enterTimes[taskID - 1] = {0, nullptr};
+        }
+
+        void check() {
+            uint64_t timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
+            if ( timestamp - lastChecked < checkInterval ) {
+                return;
+            } else
+                lastChecked = timestamp;
+
+            std::vector<std::pair<actor::Actor*, uint64_t>> longRunningActors;
+            {
+                std::lock_guard lock(mutex);
+                for ( size_t i = 0; i < enterTimes.size(); ++i ) {
+                    if ( enterTimes[i].timestamp == 0 ) continue;
+                    int64_t elapsed = timestamp - enterTimes[i].timestamp;
+                    if ( elapsed > warningThreshold ) longRunningActors.push_back({enterTimes[i].actor, elapsed});
+                }
+            }
+            if ( longRunningActors.size() == 0 ) return;
+
+            bool              warning = false;
+            std::stringstream ss;
+            ss << "Busy threads: ";
+            if ( longRunningActors.size() < enterTimes.size() )
+                ss << longRunningActors.size() << " out of " << enterTimes.size()
+                   << " threads are occupied by actors for excessive amount of time:\n";
+            else {
+                ss << "all " << enterTimes.size() << " threads are occupied by actors for excessive amount of time:\n";
+                warning = true;
+            }
+
+            for ( size_t i = 0; i < longRunningActors.size(); ++i ) {
+                std::string objPath;
+                if ( LogObjectRef objRef = longRunningActors[i].first->getObjectRef(); objRef != LogObjectRef::None ) {
+                    objPath = loginternal::sObjectMap.getObjectPath(objRef);
+                }
+                ss << "  actor=";
+                if ( objPath.empty() ) ss << longRunningActors[i].first;
+                else
+                    ss << objPath;
+                ss << " timeInThread=" << longRunningActors[i].second / 1000.0 << "ms";
+                if ( i + 1 < longRunningActors.size() ) ss << "\n";
+            }
+            if ( warning ) LogWarn(litecore::ActorLog, "%s", ss.str().c_str());
+            else
+                LogTo(litecore::ActorLog, "%s", ss.str().c_str());
+        }
+#    else
+        void init(size_t numThreads) {}
+
+        void enter(size_t taskID, litecore::actor::Actor* actor) {}
+
+        void exit(size_t taskID) {}
+
+        void check() {}
+#    endif
+}}  // namespace ::threadStats
+
 using namespace std;
 
 namespace litecore { namespace actor {
@@ -72,6 +162,7 @@ namespace litecore { namespace actor {
                     if ( _numThreads == 0 ) _numThreads = 2;
                 }
                 LogTo(ActorLog, "Starting Scheduler<%p> with %u threads", this, _numThreads);
+                threadStats::init(_numThreads);
                 for ( unsigned id = 1; id <= _numThreads; id++ ) _threadPool.emplace_back([this, id] { task(id); });
             }
         }
@@ -93,7 +184,11 @@ namespace litecore { namespace actor {
             ThreadedMailbox* mailbox;
             while ( (mailbox = _queue.pop()) != nullptr ) {
                 LogVerbose(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
+                threadStats::enter(taskID, mailbox->_actor);
+
                 mailbox->performNextMessage();
+
+                threadStats::exit(taskID);
                 mailbox = nullptr;
             }
             LogTo(ActorLog, "   task %d finished", taskID);
@@ -124,6 +219,7 @@ namespace litecore { namespace actor {
         void ThreadedMailbox::enqueue(const char* name, const std::function<void()>& f) {
             beginLatency();
             retain(_actor);
+            threadStats::check();
 
 #    if ACTORS_USE_MANIFESTS
             auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();
@@ -155,6 +251,7 @@ namespace litecore { namespace actor {
             beginLatency();
             _delayedEventCount++;
             retain(_actor);
+            threadStats::check();
 
 #    if ACTORS_USE_MANIFESTS
             auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();
