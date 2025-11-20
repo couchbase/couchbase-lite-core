@@ -55,16 +55,17 @@ namespace { namespace threadStats {
         }
 
         void check() {
-            auto time = system_clock::now();
-            if ( time - lastChecked < checkInterval ) {
-                return;
-            } else
-                lastChecked = time;
-
+            auto              time = system_clock::now();
             std::stringstream ss;
             unsigned          count = 0;
             {
                 std::lock_guard lock(mutex);
+
+                if ( time - lastChecked < checkInterval ) {
+                    return;
+                } else
+                    lastChecked = time;
+
                 for ( const auto& enter : enterTimes ) {
                     if ( enter.time.time_since_epoch() == system_clock::duration::zero() ) continue;
                     if ( auto elapsed = time - enter.time; elapsed > warningThreshold ) {
