@@ -17,99 +17,75 @@
 #    include "Error.hh"
 #    include "Timer.hh"
 #    include "Logging.hh"
+#    include "Logging_Internal.hh"
 #    include <future>
 #    include <random>
 #    include <map>
 #    include <sstream>
 
-#    define THREAD_STATS
-#    ifdef THREAD_STATS
-#        include "Logging_Internal.hh"
-#    endif
 namespace { namespace threadStats {
-#    ifdef THREAD_STATS
+        using namespace std::chrono;
+        using namespace std::chrono_literals;
+        using namespace litecore;
+
+        constexpr std::chrono::duration warningThreshold = 5s;
+        constexpr std::chrono::duration checkInterval    = warningThreshold;
+
         struct Stats {
-            uint64_t                timestamp;  // microseconds
-            litecore::actor::Actor* actor;
+            time_point<system_clock> time;
+            actor::Actor*            actor;
         };
 
         std::vector<Stats> enterTimes;
 
-        constexpr unsigned warningThreshold = 1000000;  // 1s
-        constexpr unsigned checkInterval    = warningThreshold;
-
-        uint64_t   lastChecked = 0;
-        std::mutex mutex;
-        using namespace std::chrono;
-        using namespace litecore;
+        time_point<system_clock> lastChecked;
+        std::mutex               mutex;
 
         void init(size_t numThreads) { enterTimes.resize(numThreads); }
 
         void enter(size_t taskID, actor::Actor* actor) {
-            uint64_t        timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
+            auto            time = system_clock::now();
             std::lock_guard lock(mutex);
-            enterTimes[taskID - 1] = {timestamp, actor};
+            enterTimes[taskID - 1] = {time, actor};
         }
 
         void exit(size_t taskID) {
             std::lock_guard lock(mutex);
-            enterTimes[taskID - 1] = {0, nullptr};
+            enterTimes[taskID - 1] = {{}, nullptr};
         }
 
         void check() {
-            uint64_t timestamp = duration_cast<microseconds>(system_clock::now().time_since_epoch()).count();
-            if ( timestamp - lastChecked < checkInterval ) {
+            auto time = system_clock::now();
+            if ( time - lastChecked < checkInterval ) {
                 return;
             } else
-                lastChecked = timestamp;
+                lastChecked = time;
 
-            std::vector<std::pair<actor::Actor*, uint64_t>> longRunningActors;
+            std::stringstream ss;
+            unsigned          count = 0;
             {
                 std::lock_guard lock(mutex);
-                for ( size_t i = 0; i < enterTimes.size(); ++i ) {
-                    if ( enterTimes[i].timestamp == 0 ) continue;
-                    int64_t elapsed = timestamp - enterTimes[i].timestamp;
-                    if ( elapsed > warningThreshold ) longRunningActors.push_back({enterTimes[i].actor, elapsed});
+                for ( const auto& enter : enterTimes ) {
+                    if ( enter.time.time_since_epoch() == system_clock::duration::zero() ) continue;
+                    if ( auto elapsed = time - enter.time; elapsed > warningThreshold ) {
+                        if ( count++ > 0 ) ss << "\n";
+                        std::string objPath;
+                        if ( LogObjectRef objRef = enter.actor->getObjectRef(); objRef != LogObjectRef::None ) {
+                            objPath = loginternal::sObjectMap.getObjectPath(objRef);
+                        }
+                        ss << "  actor=";
+                        if ( objPath.empty() ) ss << enter.actor;
+                        else
+                            ss << objPath;
+                        ss << " timeInThread=" << duration_cast<milliseconds>(elapsed).count() << "ms";
+                    }
                 }
             }
-            if ( longRunningActors.size() == 0 ) return;
-
-            bool              warning = false;
-            std::stringstream ss;
-            ss << "Busy threads: ";
-            if ( longRunningActors.size() < enterTimes.size() )
-                ss << longRunningActors.size() << " out of " << enterTimes.size()
-                   << " threads are occupied by actors for excessive amount of time:\n";
-            else {
-                ss << "all " << enterTimes.size() << " threads are occupied by actors for excessive amount of time:\n";
-                warning = true;
+            if ( count > 0 ) {
+                LogWarn(ActorLog, "%u out of %zu threads are running for an excessive amount of time:\n%s", count,
+                        enterTimes.size(), ss.str().c_str());
             }
-
-            for ( size_t i = 0; i < longRunningActors.size(); ++i ) {
-                std::string objPath;
-                if ( LogObjectRef objRef = longRunningActors[i].first->getObjectRef(); objRef != LogObjectRef::None ) {
-                    objPath = loginternal::sObjectMap.getObjectPath(objRef);
-                }
-                ss << "  actor=";
-                if ( objPath.empty() ) ss << longRunningActors[i].first;
-                else
-                    ss << objPath;
-                ss << " timeInThread=" << longRunningActors[i].second / 1000.0 << "ms";
-                if ( i + 1 < longRunningActors.size() ) ss << "\n";
-            }
-            if ( warning ) LogWarn(litecore::ActorLog, "%s", ss.str().c_str());
-            else
-                LogTo(litecore::ActorLog, "%s", ss.str().c_str());
         }
-#    else
-        void init(size_t numThreads) {}
-
-        void enter(size_t taskID, litecore::actor::Actor* actor) {}
-
-        void exit(size_t taskID) {}
-
-        void check() {}
-#    endif
 }}  // namespace ::threadStats
 
 using namespace std;
