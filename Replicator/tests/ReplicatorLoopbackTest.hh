@@ -363,7 +363,7 @@ class ReplicatorLoopbackTest
         }
     }
 
-    void replicatorDocumentsEnded(Replicator* repl, const std::vector<Retained<ReplicatedRev>>& revs) override {
+    void replicatorDocumentsEnded(Replicator* repl, const std::vector<Ref<ReplicatedRev>>& revs) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         std::unique_lock<std::mutex> lock(_mutex);
 

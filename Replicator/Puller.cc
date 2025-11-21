@@ -143,7 +143,7 @@ namespace litecore::repl {
     }
 
     // We lost access to some documents; they need to be purged locally.
-    void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
+    void Puller::_documentsRevoked(std::vector<Ref<RevToInsert>> revs) {
         for ( auto& rev : revs ) {
             if ( _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
                  && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
@@ -158,7 +158,7 @@ namespace litecore::repl {
     }
 
     // Received an incoming "rev" message, which contains a revision body to insert
-    void Puller::handleRev(Retained<MessageIn> msg) {
+    void Puller::handleRev(Ref<MessageIn> msg) {
         if ( _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
              && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs ) {
             startIncomingRev(msg);
@@ -174,7 +174,7 @@ namespace litecore::repl {
     }
 
     // Received an incoming "norev" message, which means the peer was unable to send a revision
-    void Puller::handleNoRev(Retained<MessageIn> msg) {
+    void Puller::handleNoRev(Ref<MessageIn> msg) {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
         slice sequence(msg->property("sequence"_sl));
@@ -351,7 +351,7 @@ namespace litecore::repl {
 
 #pragma mark - STATUS / PROGRESS:
 
-    void Puller::_childChangedStatus(Retained<Worker> task, Status status) {
+    void Puller::_childChangedStatus(Ref<Worker> task, Status status) {
         // Combine the IncomingRev's progress into mine:
         addProgress(status.progressDelta);
         if ( status.error.domain == WebSocketDomain && status.error.code == 503 ) {
@@ -441,7 +441,7 @@ namespace litecore::repl {
                     _activeIncomingRevs, _waitingRevMessages.size(), _unfinishedIncomingRevs);
         }
 
-        if ( level == kC4Stopped ) _revFinder = nullptr;  // break cycle
+        if ( level == kC4Stopped ) std::move(_revFinder).destroy();  // break cycle
 
         return level;
     }

@@ -22,8 +22,8 @@ namespace litecore {
       public:
         explicit VectorDocumentFactory(C4Collection* db) : DocumentFactory(db) {}
 
-        Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
-        Retained<C4Document> newDocumentInstance(const Record&) override;
+        Ref<C4Document> newDocumentInstance(slice docID, ContentOption) override;
+        Ref<C4Document> newDocumentInstance(const Record&) override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs, const std::vector<slice>& revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,

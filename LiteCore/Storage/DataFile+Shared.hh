@@ -33,7 +33,7 @@ namespace litecore {
         , public fleece::InstanceCountedIn<DataFile::Shared>
         , public Logging {
       public:
-        static Retained<Shared> forPath(const FilePath& path, DataFile* dataFile) {
+        static fleece::Ref<Shared> forPath(const FilePath& path, DataFile* dataFile) {
             string             pathStr = path.canonicalPath();
             unique_lock<mutex> lock(sFileMapMutex);
             Retained<Shared>   file = sFileMap[pathStr];
@@ -47,7 +47,7 @@ namespace litecore {
             lock.unlock();
 
             if ( dataFile ) file->addDataFile(dataFile);
-            return file;
+            return file.asRef();
         }
 
         static size_t openCountOnPath(const FilePath& path) {
@@ -124,7 +124,7 @@ namespace litecore {
             return i->second;
         }
 
-        Retained<RefCounted> addSharedObject(const string& key, RefCounted* object) {
+        Ref<RefCounted> addSharedObject(const string& key, RefCounted* object) {
             lock_guard<mutex> lock(_mutex);
             auto              e = _sharedObjects.emplace(key, object);
             return e.first->second;
@@ -146,13 +146,13 @@ namespace litecore {
 
 
       private:
-        mutex                                       _transactionMutex;      // Mutex for transactions
-        condition_variable                          _transactionCond;       // For waiting on the mutex
-        ExclusiveTransaction*                       _transaction{nullptr};  // Currently active Transaction object
-        vector<DataFile*>                           _dataFiles;             // Open DataFiles on this File
-        unordered_map<string, Retained<RefCounted>> _sharedObjects;
-        bool                                        _condemned{false};  // Prevents db from being opened or deleted
-        mutex                                       _mutex;             // Mutex for non-transaction state
+        mutex                                          _transactionMutex;      // Mutex for transactions
+        condition_variable                             _transactionCond;       // For waiting on the mutex
+        ExclusiveTransaction*                          _transaction{nullptr};  // Currently active Transaction object
+        vector<DataFile*>                              _dataFiles;             // Open DataFiles on this File
+        unordered_map<string, fleece::Ref<RefCounted>> _sharedObjects;
+        bool                                           _condemned{false};  // Prevents db from being opened or deleted
+        mutex                                          _mutex;             // Mutex for non-transaction state
 
         static unordered_map<string, Shared*> sFileMap;
         static mutex                          sFileMapMutex;

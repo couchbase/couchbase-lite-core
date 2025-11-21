@@ -99,9 +99,9 @@ namespace litecore {
         void        updateScope();
         alloc_slice addScope(const alloc_slice& body);
 
-        KeyStore&                            _store;
-        Record                               _rec;
-        std::vector<Retained<VersFleeceDoc>> _fleeceScopes;
-        ContentOption                        _contentLoaded{};
+        KeyStore&                       _store;
+        Record                          _rec;
+        std::vector<Ref<VersFleeceDoc>> _fleeceScopes;
+        ContentOption                   _contentLoaded{};
     };
 }  // namespace litecore

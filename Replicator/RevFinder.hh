@@ -41,7 +41,7 @@ namespace litecore::repl {
             /** Tells the Delegate about the "rev" messages it will be receiving. */
             virtual void expectSequences(std::vector<ChangeSequence>) = 0;
             /** These document(s) are no longer accessible on the server and should be purged. */
-            virtual void documentsRevoked(std::vector<Retained<RevToInsert>>) = 0;
+            virtual void documentsRevoked(std::vector<Ref<RevToInsert>>) = 0;
         };
 
         RevFinder(Replicator* NONNULL, Delegate* NONNULL, CollectionIndex);
@@ -69,7 +69,7 @@ namespace litecore::repl {
             return _numRevsBeingRequested + _numRevokedBeingHandled <= tuning::kMaxRevsBeingRequested;
         }
 
-        void handleChanges(Retained<blip::MessageIn>);
+        void handleChanges(Ref<blip::MessageIn>);
         void handleMoreChanges();
         void handleChangesNow(blip::MessageIn* req);
 
@@ -81,12 +81,12 @@ namespace litecore::repl {
         void     _reRequestingRev();
         void     checkDocAndRevID(slice docID, slice revID);
 
-        Retained<Delegate>                    _delegate;
-        std::deque<Retained<blip::MessageIn>> _waitingChangesMessages;  // Queued 'changes' messages
-        unsigned _numRevsBeingRequested{0};      // # of 'rev' msgs requested but not yet received
-        unsigned _numRevokedBeingHandled{0};     // # of revoked docs currently being processed
-        bool     _announcedDeltaSupport{false};  // Did I send "deltas:true" yet?
-        bool     _mustBeProposed{false};         // Do I handle only "proposedChanges"?
+        Retained<Delegate>               _delegate;
+        std::deque<Ref<blip::MessageIn>> _waitingChangesMessages;     // Queued 'changes' messages
+        unsigned                         _numRevsBeingRequested{0};   // # of 'rev' msgs requested but not yet received
+        unsigned                         _numRevokedBeingHandled{0};  // # of revoked docs currently being processed
+        bool                             _announcedDeltaSupport{false};  // Did I send "deltas:true" yet?
+        bool                             _mustBeProposed{false};         // Do I handle only "proposedChanges"?
 #ifdef LITECORE_CPPTEST
       public:
         bool _disableReplacementRevs{false};

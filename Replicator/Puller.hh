@@ -63,20 +63,20 @@ namespace litecore::repl {
             enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), std::move(changes));
         }
 
-        void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
+        void documentsRevoked(std::vector<Ref<RevToInsert>> revs) override {
             enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), std::move(revs));
         }
 
-        void          _childChangedStatus(Retained<Worker>, Status) override;
+        void          _childChangedStatus(Ref<Worker>, Status) override;
         ActivityLevel computeActivityLevel(std::string* reason) const override;
         void          activityLevelChanged(ActivityLevel level);
 
       private:
         void _start(RemoteSequence sinceSequence);
         void _expectSequences(std::vector<RevFinder::ChangeSequence>);
-        void _documentsRevoked(std::vector<Retained<RevToInsert>>);
-        void handleRev(Retained<blip::MessageIn>);
-        void handleNoRev(Retained<blip::MessageIn>);
+        void _documentsRevoked(std::vector<Ref<RevToInsert>>);
+        void handleRev(Ref<blip::MessageIn>);
+        void handleNoRev(Ref<blip::MessageIn>);
         template <bool revoked>
         Retained<IncomingRev> makeIncomingRev();
         void                  startIncomingRev(blip::MessageIn* NONNULL);
@@ -97,13 +97,13 @@ namespace litecore::repl {
         bool           _caughtUp{false};     // Got all historic sequences, now up to date
         bool           _fatalError{false};   // Have I gotten a fatal error?
 
-        RemoteSequenceSet                          _missingSequences;    // Known sequences I need to pull
-        std::deque<Retained<blip::MessageIn>>      _waitingRevMessages;  // Queued 'rev' messages
-        std::deque<Retained<RevToInsert>>          _waitingRevoked;      // Queued revoked docs
-        mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
-        actor::ActorCountBatcher<Puller>           _provisionallyHandledRevs;
-        actor::ActorCountBatcher<Puller>           _provisionallyHandledRevoked;
-        actor::ActorBatcher<Puller, IncomingRev>   _returningRevs;
+        RemoteSequenceSet                        _missingSequences;    // Known sequences I need to pull
+        std::deque<Ref<blip::MessageIn>>         _waitingRevMessages;  // Queued 'rev' messages
+        std::deque<Ref<RevToInsert>>             _waitingRevoked;      // Queued revoked docs
+        mutable std::vector<Ref<IncomingRev>>    _spareIncomingRevs;   // Cache of IncomingRevs
+        actor::ActorCountBatcher<Puller>         _provisionallyHandledRevs;
+        actor::ActorCountBatcher<Puller>         _provisionallyHandledRevoked;
+        actor::ActorBatcher<Puller, IncomingRev> _returningRevs;
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
         actor::Mailbox* mailboxForChildren() override { return &_revMailbox; }
@@ -112,13 +112,13 @@ namespace litecore::repl {
         // call this->mailboxForChildren() which depends on it.
         actor::Mailbox _revMailbox;
 #endif
-        Retained<Inserter>          _inserter;
-        mutable Retained<RevFinder> _revFinder;
-        unsigned                    _pendingRevMessages{0};     // # of 'rev' msgs expected but not yet being processed
-        unsigned                    _activeIncomingRevs{0};     // # of IncomingRev workers running for revs
-        unsigned                    _activeIncomingRevoked{0};  // # of IncomingRev workers running for revoked docs
-        unsigned                    _unfinishedIncomingRevs{0};
-        unsigned                    _unfinishedIncomingRevoked{0};
+        Ref<Inserter>          _inserter;
+        mutable Ref<RevFinder> _revFinder;
+        unsigned               _pendingRevMessages{0};     // # of 'rev' msgs expected but not yet being processed
+        unsigned               _activeIncomingRevs{0};     // # of IncomingRev workers running for revs
+        unsigned               _activeIncomingRevoked{0};  // # of IncomingRev workers running for revoked docs
+        unsigned               _unfinishedIncomingRevs{0};
+        unsigned               _unfinishedIncomingRevoked{0};
     };
 
 

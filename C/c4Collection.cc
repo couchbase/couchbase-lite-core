@@ -45,7 +45,7 @@ C4Document* C4Collection::documentContainingValue(FLValue value) noexcept {
     return doc;
 }
 
-Retained<C4Query> C4Collection::newQuery(C4QueryLanguage language, slice expr, int* errPos) const {
+Ref<C4Query> C4Collection::newQuery(C4QueryLanguage language, slice expr, int* errPos) const {
     if ( _usuallyFalse(!_database) ) failClosed();
     return C4Query::newQuery(const_cast<C4Collection*>(this), language, expr, errPos);
 }

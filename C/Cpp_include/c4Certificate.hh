@@ -32,7 +32,7 @@ struct C4Cert final
     , public fleece::InstanceCountedIn<C4Cert>
     , C4Base {
 #ifdef COUCHBASE_ENTERPRISE
-    static Retained<C4Cert> fromData(slice certData);
+    static Ref<C4Cert> fromData(slice certData);
 
     alloc_slice getData(bool pemEncoded);
 
@@ -67,10 +67,10 @@ struct C4Cert final
 
     // Certificate signing requests:
 
-    static Retained<C4Cert> createRequest(const std::vector<C4CertNameComponent>& nameComponents,
-                                          C4CertUsage certUsages, C4KeyPair* subjectKey);
+    static Ref<C4Cert> createRequest(const std::vector<C4CertNameComponent>& nameComponents, C4CertUsage certUsages,
+                                     C4KeyPair* subjectKey);
 
-    static Retained<C4Cert> requestFromData(slice certRequestData);
+    static Ref<C4Cert> requestFromData(slice certRequestData);
 
     bool isSigned();
 
@@ -78,8 +78,8 @@ struct C4Cert final
 
     void sendSigningRequest(const C4Address& address, slice optionsDictFleece, const SigningCallback& callback);
 
-    Retained<C4Cert> signRequest(const C4CertIssuerParameters& params, C4KeyPair* issuerPrivateKey,
-                                 C4Cert* C4NULLABLE issuerCert);
+    Ref<C4Cert> signRequest(const C4CertIssuerParameters& params, C4KeyPair* issuerPrivateKey,
+                            C4Cert* C4NULLABLE issuerCert);
 
     // Persistence:
 
@@ -101,8 +101,8 @@ struct C4Cert final
     litecore::crypto::CertSigningRequest* assertUnsignedCert();
 
 #endif  // COUCHBASE_ENTERPRISE
-    litecore::crypto::Cert* C4NULLABLE   asSignedCert();
-    Retained<litecore::crypto::CertBase> _impl;
+    litecore::crypto::Cert* C4NULLABLE asSignedCert();
+    Ref<litecore::crypto::CertBase>    _impl;
 };
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -112,11 +112,11 @@ struct C4Cert final
 struct C4KeyPair final
     : public fleece::RefCounted
     , C4Base {
-    static Retained<C4KeyPair> generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent);
+    static Ref<C4KeyPair> generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent);
 
-    static Retained<C4KeyPair> fromPublicKeyData(slice publicKeyData);
+    static Ref<C4KeyPair> fromPublicKeyData(slice publicKeyData);
 
-    static Retained<C4KeyPair> fromPrivateKeyData(slice privateKeyData, slice passwordOrNull);
+    static Ref<C4KeyPair> fromPrivateKeyData(slice privateKeyData, slice passwordOrNull);
 
     bool hasPrivateKey();
 
@@ -136,8 +136,8 @@ struct C4KeyPair final
 
     // Externally-Implemented Key-Pairs:
 
-    static Retained<C4KeyPair> fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void* externalKey,
-                                            const C4ExternalKeyCallbacks& callbacks);
+    static Ref<C4KeyPair> fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void* externalKey,
+                                       const C4ExternalKeyCallbacks& callbacks);
 
     // Internal:
     litecore::crypto::PrivateKey* C4NULLABLE getPrivateKey();
@@ -147,10 +147,10 @@ struct C4KeyPair final
 
     explicit C4KeyPair(litecore::crypto::Key*);
     ~C4KeyPair() override;
-    Retained<litecore::crypto::PublicKey>   getPublicKey();
+    Ref<litecore::crypto::PublicKey>        getPublicKey();
     litecore::crypto::PersistentPrivateKey* getPersistentPrivateKey();
 
-    Retained<litecore::crypto::Key> _impl;
+    Ref<litecore::crypto::Key> _impl;
 };
 
 #endif  // COUCHBASE_ENTERPRISE

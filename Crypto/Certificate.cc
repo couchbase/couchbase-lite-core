@@ -508,14 +508,14 @@ namespace litecore::crypto {
 
     mbedtls_pk_context* CertSigningRequest::keyContext() { return &_csr->pk; }
 
-    Retained<Cert> CertSigningRequest::sign(const Cert::IssuerParameters& issuerParams, PrivateKey* issuerKeyPair,
-                                            Cert* issuerCert) {
+    Ref<Cert> CertSigningRequest::sign(const Cert::IssuerParameters& issuerParams, PrivateKey* issuerKeyPair,
+                                       Cert* issuerCert) {
         Cert::SubjectParameters subjectParams(subjectName());
         subjectParams.keyUsage        = keyUsage();
         subjectParams.nsCertType      = nsCertType();
         subjectParams.subjectAltNames = subjectAltNames();
-        auto cert                     = retained(new Cert(
-                Cert::create(subjectParams, subjectPublicKey().get(), issuerParams, issuerKeyPair, issuerCert)));
+        auto cert                     = make_retained<Cert>(
+                Cert::create(subjectParams, subjectPublicKey().get(), issuerParams, issuerKeyPair, issuerCert));
         if ( issuerCert ) {
             auto issuerCopy = retained(new Cert(issuerCert->dataOfChain()));
             cert->append(issuerCopy);

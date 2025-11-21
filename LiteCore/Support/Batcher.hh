@@ -22,14 +22,14 @@
 #include <vector>
 
 namespace litecore::actor {
-    using fleece::Retained;
+    using fleece::Ref;
     static constexpr int AnyGen = INT_MAX;
 
     /** A simple queue that adds objects one at a time and sends them to its target in a batch. */
     template <class ITEM>
     class Batcher {
       public:
-        using Items = std::unique_ptr<std::vector<Retained<ITEM>>>;
+        using Items = std::unique_ptr<std::vector<Ref<ITEM>>>;
 
         Batcher(std::function<void(int gen)> processNow, std::function<void(int gen)> processLater,
                 Timer::duration latency = {}, size_t capacity = 0)
@@ -44,7 +44,7 @@ namespace litecore::actor {
             std::lock_guard<std::mutex> lock(_mutex);
 
             if ( !_items ) {
-                _items.reset(new std::vector<Retained<ITEM>>);
+                _items.reset(new std::vector<Ref<ITEM>>);
                 _items->reserve(_capacity ? _capacity : 200);
             }
             _items->push_back(item);

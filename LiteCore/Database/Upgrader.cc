@@ -42,7 +42,7 @@ namespace litecore {
         Upgrader(const FilePath& oldPath, const FilePath& newPath, C4DatabaseConfig config)
             : Upgrader(oldPath, DatabaseImpl::open(newPath, asTreeVersioning(config))) {}
 
-        Upgrader(const FilePath& oldPath, Retained<DatabaseImpl> newDB)
+        Upgrader(const FilePath& oldPath, Ref<DatabaseImpl> newDB)
             : _oldPath(oldPath)
             , _oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE)  // *
             , _newDB(std::move(newDB))
@@ -163,7 +163,7 @@ namespace litecore {
             // Convert the JSON body to Fleece:
             alloc_slice body;
             {
-                Retained<Doc> doc = convertBody(getColumnAsSlice(*_currentRev, 4));
+                Ref<Doc> doc = convertBody(getColumnAsSlice(*_currentRev, 4));
                 if ( hasAttachments ) copyAttachments(doc);
                 body = doc->allocedData();
             }
@@ -191,7 +191,7 @@ namespace litecore {
         }
 
         // Converts a JSON document body to Fleece.
-        Retained<Doc> convertBody(slice json) {
+        Ref<Doc> convertBody(slice json) {
             Encoder&      enc = _newDB->sharedEncoder();
             JSONConverter converter(enc);
             if ( !converter.encodeJSON(json) ) error::_throw(error::CorruptRevisionData, "invalid JSON data");
@@ -259,7 +259,7 @@ namespace litecore {
 
         FilePath                      _oldPath;
         SQLite::Database              _oldDB;
-        Retained<DatabaseImpl>        _newDB;
+        Ref<DatabaseImpl>             _newDB;
         FilePath                      _attachments;
         unique_ptr<SQLite::Statement> _currentRev, _parentRevs;
     };

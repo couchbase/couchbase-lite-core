@@ -35,9 +35,9 @@ C4Query::C4Query(C4Collection* coll, C4QueryLanguage language, slice queryExpres
 
 C4Query::~C4Query() = default;
 
-Retained<C4Query> C4Query::newQuery(C4Collection* coll, C4QueryLanguage language, slice expr, int* outErrorPos) {
+Ref<C4Query> C4Query::newQuery(C4Collection* coll, C4QueryLanguage language, slice expr, int* outErrorPos) {
     try {
-        return retained(new C4Query(coll, language, expr));
+        return new C4Query(coll, language, expr);
     } catch ( Query::parseError& x ) {
         if ( outErrorPos ) { *outErrorPos = x.errorPosition; }
         throw;
@@ -47,7 +47,7 @@ Retained<C4Query> C4Query::newQuery(C4Collection* coll, C4QueryLanguage language
     }
 }
 
-Retained<C4Query> C4Query::newQuery(C4Database* db, C4QueryLanguage language, slice expr, int* outErrorPos) {
+Ref<C4Query> C4Query::newQuery(C4Database* db, C4QueryLanguage language, slice expr, int* outErrorPos) {
     return newQuery(db->getDefaultCollection(), language, expr, outErrorPos);
 }
 
@@ -80,7 +80,7 @@ void C4Query::setParameters(slice parameters) {
 
 #pragma mark - ENUMERATOR:
 
-Retained<QueryEnumerator> C4Query::_createEnumerator(slice encodedParameters) {
+Ref<QueryEnumerator> C4Query::_createEnumerator(slice encodedParameters) {
     Query::Options options(encodedParameters ? encodedParameters : parameters());
     return _query->createEnumerator(&options);
 }
@@ -99,7 +99,8 @@ C4QueryEnumerator* C4Query::createEnumerator(slice encodedParameters) {
 C4Query::Enumerator::Enumerator(C4Query* query, slice encodedParameters)
     : _enum(query->_createEnumerator(encodedParameters)), _query(query->_query) {}
 
-C4Query::Enumerator::Enumerator(Retained<litecore::QueryEnumerator> e) : _enum(std::move(e)) {}
+C4Query::Enumerator::Enumerator(C4Query* query, Ref<litecore::QueryEnumerator> e)
+    : _enum(std::move(e)), _query(query->_query) {}
 
 C4Query::Enumerator::Enumerator(Enumerator&& c4e) noexcept
     : _enum(std::move(c4e._enum)), _query(std::move(c4e._query)) {}
@@ -107,8 +108,8 @@ C4Query::Enumerator::Enumerator(Enumerator&& c4e) noexcept
 C4Query::Enumerator::~Enumerator() = default;
 
 void C4Query::Enumerator::close() noexcept {
-    _enum  = nullptr;
-    _query = nullptr;
+    std::move(_enum).destroy();
+    std::move(_query).destroy();
 }
 
 int64_t C4Query::Enumerator::rowCount() const { return _enum->getRowCount(); }
@@ -118,7 +119,6 @@ bool C4Query::Enumerator::next() { return _enum->next(); }
 void C4Query::Enumerator::seek(int64_t rowIndex) { _enum->seek(rowIndex); }
 
 bool C4Query::Enumerator::restart() {
-    Assert(_query);
     auto newEnum = _enum->refresh(_query);
     if ( !newEnum ) return false;
     _enum = newEnum;
@@ -171,7 +171,7 @@ class C4Query::LiveQuerierDelegate : public LiveQuerier::Delegate {
     Retained<C4Query> _query;
 };
 
-Retained<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
+Ref<C4QueryObserver> C4Query::observe(std::function<void(C4QueryObserver*)> callback) {
     return C4QueryObserverImpl::newQueryObserver(this, callback);
 }
 

@@ -263,7 +263,7 @@ namespace litecore::websocket {
     void WebSocketImpl::deliverMessageToDelegate(slice data, bool /*binary*/) {
         logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
-        Retained<Message> message(new MessageImpl(this, data, true));
+        Ref<Message> message(new MessageImpl(this, data, true));
         delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
     }
 

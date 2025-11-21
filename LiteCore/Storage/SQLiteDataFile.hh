@@ -104,7 +104,7 @@ namespace litecore {
         ///                 Each array item is an index row; its items are its column values.
         void inspectIndex(slice name, int64_t& outRowCount, alloc_slice* outRows = nullptr);
 
-        Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
+        Ref<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
 
         // Deprecated in favor of enableExtension!
         static void setExtensionPath(string);

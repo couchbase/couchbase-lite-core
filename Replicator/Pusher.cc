@@ -55,7 +55,7 @@ namespace litecore::repl {
     }
 
     // Handles an incoming "subChanges" message: starts passive push (i.e. the peer is pulling).
-    void Pusher::handleSubChanges(Retained<MessageIn> req) {
+    void Pusher::handleSubChanges(Ref<MessageIn> req) {
         if ( !passive() ) {
             warn("Ignoring 'subChanges' request from peer; I'm already pushing");
             req->respondWithError({"LiteCore"_sl, 501, "Not implemented."_sl});
@@ -470,7 +470,7 @@ namespace litecore::repl {
         if ( i != _conflictsIMightRetry.end() ) {
             // OK, this is a potential conflict I noted in shouldRetryConflictWithNewerAncestor().
             // See if the doc is unchanged, by getting it by sequence:
-            Retained<RevToSend> rev = i->second;
+            Ref<RevToSend> rev = i->second;
             _conflictsIMightRetry.erase(i);
             auto                 coll = _db->useCollection(collectionSpec());
             Retained<C4Document> doc  = coll->getDocumentBySequence(rev->sequence);

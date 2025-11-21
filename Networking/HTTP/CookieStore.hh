@@ -23,7 +23,6 @@ struct C4Address;
 
 namespace litecore::net {
     using fleece::RefCounted;
-    using fleece::Retained;
 
     /** Represents an HTTP cookie. */
     struct Cookie {

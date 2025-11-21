@@ -53,7 +53,7 @@ namespace litecore {
         : public C4Database
         , public DataFile::Delegate {
       public:
-        static Retained<DatabaseImpl> open(const FilePath& path, C4DatabaseConfig config);
+        static Ref<DatabaseImpl> open(const FilePath& path, C4DatabaseConfig config);
 
         FilePath filePath() const { return _dataFile->filePath().dir(); }
 
@@ -177,7 +177,7 @@ namespace litecore {
 
         C4DocumentVersioning checkDocumentVersioning();
 
-        using CollectionsMap = std::unordered_map<CollectionSpec, Retained<C4Collection>>;
+        using CollectionsMap = std::unordered_map<CollectionSpec, Ref<C4Collection>>;
 
         unique_ptr<DataFile>                      _dataFile;  // Underlying DataFile
         mutable std::recursive_mutex              _collectionsMutex;

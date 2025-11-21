@@ -55,7 +55,7 @@ namespace litecore::repl {
       private:
         void        reinitialize();
         void        parseAndInsert(alloc_slice jsonBody);
-        void        _handleRev(Retained<blip::MessageIn>);
+        void        _handleRev(Ref<blip::MessageIn>);
         void        gotDeltaSrc(alloc_slice deltaSrcBody);
         fleece::Doc parseBody(alloc_slice jsonBody);
         void        processFleeceBody(fleece::Doc);

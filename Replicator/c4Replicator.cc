@@ -30,8 +30,8 @@ using namespace litecore;
 
 #pragma mark - C4DATABASE METHODS:
 
-static Retained<C4Replicator> newRemoteReplicator(DatabaseOrPool db, C4Address serverAddress, slice remoteDatabaseName,
-                                                  const C4ReplicatorParameters& params, slice logPrefix) {
+static Ref<C4Replicator> newRemoteReplicator(DatabaseOrPool db, C4Address serverAddress, slice remoteDatabaseName,
+                                             const C4ReplicatorParameters& params, slice logPrefix) {
     if ( !params.socketFactory ) {
         C4Replicator::validateRemote(serverAddress, remoteDatabaseName);
         if ( serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl ) {
@@ -43,20 +43,20 @@ static Retained<C4Replicator> newRemoteReplicator(DatabaseOrPool db, C4Address s
     return new C4RemoteReplicator(std::move(db), params, serverAddress, remoteDatabaseName, logPrefix);
 }
 
-Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress, slice remoteDatabaseName,
-                                                 const C4ReplicatorParameters& params, slice logPrefix) {
+Ref<C4Replicator> C4Database::newReplicator(C4Address serverAddress, slice remoteDatabaseName,
+                                            const C4ReplicatorParameters& params, slice logPrefix) {
     return newRemoteReplicator(this, serverAddress, remoteDatabaseName, params, logPrefix);
 }
 
-Retained<C4Replicator> NewReplicator(DatabasePool* dbPool, C4Address serverAddress, slice remoteDatabaseName,
-                                     const C4ReplicatorParameters& params, slice logPrefix) {
+Ref<C4Replicator> NewReplicator(DatabasePool* dbPool, C4Address serverAddress, slice remoteDatabaseName,
+                                const C4ReplicatorParameters& params, slice logPrefix) {
     return newRemoteReplicator(dbPool, serverAddress, remoteDatabaseName, params, logPrefix);
 }
 
 
 #ifdef COUCHBASE_ENTERPRISE
-static Retained<C4Replicator> _newLocalReplicator(DatabaseOrPool db, DatabaseOrPool otherDB,
-                                                  const C4ReplicatorParameters& params, slice logPrefix) {
+static Ref<C4Replicator> _newLocalReplicator(DatabaseOrPool db, DatabaseOrPool otherDB,
+                                             const C4ReplicatorParameters& params, slice logPrefix) {
     std::for_each(params.collections, params.collections + params.collectionCount,
                   [](const C4ReplicationCollection& coll) {
                       AssertParam(coll.push != kC4Disabled || coll.pull != kC4Disabled,
@@ -66,29 +66,29 @@ static Retained<C4Replicator> _newLocalReplicator(DatabaseOrPool db, DatabaseOrP
     return new C4LocalReplicator(db, params, otherDB, logPrefix);
 }
 
-Retained<C4Replicator> C4Database::newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params,
-                                                      slice logPrefix) {
+Ref<C4Replicator> C4Database::newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params,
+                                                 slice logPrefix) {
     return _newLocalReplicator(this, otherLocalDB, params, logPrefix);
 }
 
-Retained<C4Replicator> NewLocalReplicator(DatabasePool* dbPool, DatabasePool* otherLocalDB,
-                                          const C4ReplicatorParameters& params, slice logPrefix) {
+Ref<C4Replicator> NewLocalReplicator(DatabasePool* dbPool, DatabasePool* otherLocalDB,
+                                     const C4ReplicatorParameters& params, slice logPrefix) {
     return _newLocalReplicator(dbPool, otherLocalDB, params, logPrefix);
 }
 #endif
 
-Retained<C4Replicator> C4Database::newIncomingReplicator(WebSocket* openSocket, const C4ReplicatorParameters& params,
-                                                         slice logPrefix) {
+Ref<C4Replicator> C4Database::newIncomingReplicator(WebSocket* openSocket, const C4ReplicatorParameters& params,
+                                                    slice logPrefix) {
     return new C4IncomingReplicator(this, params, openSocket, logPrefix);
 }
 
-Retained<C4Replicator> C4Database::newIncomingReplicator(C4Socket* openSocket, const C4ReplicatorParameters& params,
-                                                         slice logPrefix) {
+Ref<C4Replicator> C4Database::newIncomingReplicator(C4Socket* openSocket, const C4ReplicatorParameters& params,
+                                                    slice logPrefix) {
     return newIncomingReplicator(WebSocketFrom(openSocket), params, logPrefix);
 }
 
-Retained<C4Replicator> NewIncomingReplicator(DatabasePool* dbPool, WebSocket* openSocket,
-                                             const C4ReplicatorParameters& params, fleece::slice logPrefix) {
+Ref<C4Replicator> NewIncomingReplicator(DatabasePool* dbPool, WebSocket* openSocket,
+                                        const C4ReplicatorParameters& params, fleece::slice logPrefix) {
     return new C4IncomingReplicator(dbPool, params, openSocket, logPrefix);
 }
 

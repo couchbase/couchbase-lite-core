@@ -65,7 +65,7 @@ namespace litecore::repl {
     void Pusher::maybeSendMoreRevs() {
         while ( _revisionsInFlight < tuning::kMaxRevsInFlight
                 && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply && !_revQueue.empty() ) {
-            Retained<RevToSend> first = std::move(_revQueue.front());
+            Ref<RevToSend> first = std::move(_revQueue.front());
             _revQueue.pop_front();
             sendRevision(first);
             if ( _revQueue.size() == tuning::kMaxRevsQueued - 1 )
@@ -78,7 +78,7 @@ namespace litecore::repl {
     }
 
     // Send a "rev" message containing a revision body.
-    void Pusher::sendRevision(Retained<RevToSend> request) {
+    void Pusher::sendRevision(Ref<RevToSend> request) {
         if ( !connected() ) return;
 
         logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%u/%u]", SPLAT(request->docID), SPLAT(request->revID),
@@ -235,7 +235,7 @@ namespace litecore::repl {
     }
 
     // "rev" message progress callback:
-    void Pusher::onRevProgress(const Retained<RevToSend>& rev, const MessageProgress& progress) {
+    void Pusher::onRevProgress(const Ref<RevToSend>& rev, const MessageProgress& progress) {
         switch ( progress.state ) {
             case MessageProgress::kDisconnected:
                 doneWithRev(rev, false, false);

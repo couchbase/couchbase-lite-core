@@ -89,7 +89,7 @@ struct C4Listener final
     C4Listener(const C4Listener&) = delete;
 
     // internal use only
-    C4Listener(C4ListenerConfig const& config, Retained<litecore::REST::HTTPListener> impl);
+    C4Listener(C4ListenerConfig const& config, Ref<litecore::REST::HTTPListener> impl);
 
   private:
     C4Listener(C4Listener&&) noexcept;

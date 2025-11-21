@@ -22,6 +22,7 @@
 #include <vector>
 
 namespace litecore::actor {
+    using fleece::Ref;
     using fleece::RefCounted;
     using fleece::Retained;
 
