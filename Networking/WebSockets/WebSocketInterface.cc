@@ -34,8 +34,7 @@ namespace litecore::websocket {
 
     void WebSocket::connect(Retained<WeakHolder<Delegate>> weakDelegate) {
         DebugAssert(!_delegateWeakHolder);
-        // Clang-Tidy suggests std::move, but it breaks the retain
-        _delegateWeakHolder = weakDelegate;  // NOLINT(performance-unnecessary-value-param)
+        _delegateWeakHolder = std::move(weakDelegate);
         connect();
     }
 

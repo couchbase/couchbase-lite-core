@@ -88,7 +88,7 @@ namespace litecore {
       private:
         friend class LazyIndex;
         LazyIndexUpdate(LazyIndex*, unsigned dimension, sequence_t firstSeq, sequence_t curSeq, SequenceSet indexedSeqs,
-                        Retained<QueryEnumerator>, size_t limit);
+                        Ref<QueryEnumerator>, size_t limit);
 
         using VectorPtr = std::unique_ptr<float[]>;
 
@@ -106,7 +106,7 @@ namespace litecore {
             ItemStatus status;    ///< True if client is skipping this vector for now
         };
 
-        Retained<LazyIndex>       _manager;  // Owning LazyIndex
+        Ref<LazyIndex>            _manager;  // Owning LazyIndex
         sequence_t                _firstSeq;
         sequence_t                _lastSeq;
         sequence_t                _atSeq;             // KeyStore's lastSequence at time of query

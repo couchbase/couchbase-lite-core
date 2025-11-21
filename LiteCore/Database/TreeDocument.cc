@@ -50,7 +50,7 @@ namespace litecore {
             if ( other._selectedRev ) _selectedRev = _revTree[other._selectedRev->revID];
         }
 
-        Retained<C4Document> copy() const override { return new TreeDocument(*this); }
+        Ref<C4Document> copy() const override { return new TreeDocument(*this); }
 
         void init() {
             _revTree.owner = this;
@@ -650,11 +650,11 @@ namespace litecore {
 
 #pragma mark - FACTORY:
 
-    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
+    Ref<C4Document> TreeDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
         return new TreeDocument(collection(), docID, c);
     }
 
-    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(const Record& rec) {
+    Ref<C4Document> TreeDocumentFactory::newDocumentInstance(const Record& rec) {
         return new TreeDocument(collection(), rec);
     }
 

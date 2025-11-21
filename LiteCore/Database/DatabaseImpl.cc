@@ -53,8 +53,8 @@ namespace litecore {
 
 #pragma mark - OPENING / CLOSING:
 
-    Retained<DatabaseImpl> DatabaseImpl::open(const FilePath& path, C4DatabaseConfig config) {
-        Retained<DatabaseImpl> db = new DatabaseImpl(path, config);
+    Ref<DatabaseImpl> DatabaseImpl::open(const FilePath& path, C4DatabaseConfig config) {
+        Ref<DatabaseImpl> db = new DatabaseImpl(path, config);
         db->open(path);
         return db;
     }

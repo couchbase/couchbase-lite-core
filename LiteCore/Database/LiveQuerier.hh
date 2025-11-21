@@ -72,7 +72,7 @@ namespace litecore {
         void _dbChanged(clock::time_point);
         void _currentResult(CurrentResultCallback callback);
 
-        Retained<DatabaseImpl>    _database;             // The database
+        Ref<DatabaseImpl>         _database;             // The database
         BackgroundDB*             _backgroundDB;         // Shadow DB on background thread
         Delegate*                 _delegate;             // Whom ya gonna call?
         alloc_slice               _expression;           // The query text

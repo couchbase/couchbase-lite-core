@@ -300,7 +300,7 @@ namespace litecore::crypto {
         atomic<NCRYPT_KEY_HANDLE> _keyPair;
     };
 
-    Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
+    Ref<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
         LogTo(TLSLogDomain, "Generating %u-bit RSA key-pair in Keychain", keySizeInBits);
         char         timestr[100] = "LiteCore ";
         wchar_t      wtimestr[100];
@@ -436,7 +436,7 @@ namespace litecore::crypto {
         const auto* const winCert = getWinCert(persistentID);
         if ( !winCert ) { return nullptr; }
 
-        Retained<Cert>    cert     = new Cert(slice(winCert->pbCertEncoded, winCert->cbCertEncoded));
+        Ref<Cert>         cert     = new Cert(slice(winCert->pbCertEncoded, winCert->cbCertEncoded));
         const auto* const winChain = getCertChain(winCert);
 
         DEFER {

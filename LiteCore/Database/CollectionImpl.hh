@@ -132,7 +132,7 @@ namespace litecore {
             options.sortOption = kUnsorted;
             RecordEnumerator e(keyStore(), options);
             while ( e.next() ) {
-                Retained<C4Document> doc = _documentFactory->newDocumentInstance(e.record());
+                Ref<C4Document> doc = _documentFactory->newDocumentInstance(e.record());
                 doc->selectCurrentRevision();
                 do {
                     if ( doc->loadRevisionBody() ) {
@@ -151,13 +151,13 @@ namespace litecore {
             return _documentFactory.get();
         }
 
-        virtual Retained<C4Document> newDocumentInstance(const litecore::Record& record) {
+        Ref<C4Document> newDocumentInstance(const litecore::Record& record) {
             return documentFactory()->newDocumentInstance(record);
         }
 
         Retained<C4Document> getDocument(slice docID, bool mustExist, C4DocContentLevel content) const override {
-            auto doc = documentFactory()->newDocumentInstance(docID, ContentOption(content));
-            if ( mustExist && !doc->exists() ) doc = nullptr;
+            Ref<C4Document> doc = documentFactory()->newDocumentInstance(docID, ContentOption(content));
+            if ( mustExist && !doc->exists() ) return nullptr;
             return doc;
         }
 
@@ -302,12 +302,12 @@ namespace litecore {
             DebugAssert(rq.save, "putNewDoc optimization works only if rq.save is true");
             Record record(rq.docID);
             if ( !rq.docID.buf ) record.setKey(C4Document::createDocID());
-            Retained<C4Document> doc = documentFactory()->newDocumentInstance(record);
-            int                  commonAncestorIndex;
+            Ref<C4Document> doc = documentFactory()->newDocumentInstance(record);
+            int             commonAncestorIndex;
             if ( rq.existingRevision ) commonAncestorIndex = doc->putExistingRevision(rq, nullptr);
             else
                 commonAncestorIndex = doc->putNewRevision(rq, nullptr) ? 0 : -1;
-            if ( commonAncestorIndex < 0 ) doc = nullptr;
+            if ( commonAncestorIndex < 0 ) return {nullptr, commonAncestorIndex};
             return {doc, commonAncestorIndex};
         }
 

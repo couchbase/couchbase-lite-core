@@ -60,7 +60,7 @@ namespace litecore::repl {
 
       private:
         Pusher*                         _pusher;
-        Retained<Replicator>            _repl;
+        Ref<Replicator>                 _repl;
         unique_ptr<C4ReadStream>        _blob;
         Replicator::BlobProgress        _progress;
         actor::Timer::clock::time_point _lastNotifyTime = actor::Timer::clock::now();
@@ -87,7 +87,7 @@ namespace litecore::repl {
     }
 
     // Incoming request to send an attachment/blob
-    void Pusher::handleGetAttachment(Retained<MessageIn> req) {
+    void Pusher::handleGetAttachment(Ref<MessageIn> req) {
         slice                    digest;
         Replicator::BlobProgress progress;
         unique_ptr<C4ReadStream> blob = readBlobFromRequest(req, digest, progress);
@@ -98,7 +98,7 @@ namespace litecore::repl {
         reply.compressed = req->boolProperty("compress"_sl);
         logVerbose("Sending blob %.*s (length=%" PRIu64 ", compress=%d)", SPLAT(digest), blob->getLength(),
                    reply.compressed);
-        Retained<Replicator> repl = replicator();
+        Ref<Replicator> repl = replicator();
 
         auto collIndex = Worker::getCollectionIndex(*req);
         if ( collIndex != kNotCollectionIndex ) {
@@ -115,7 +115,7 @@ namespace litecore::repl {
     void Pusher::_attachmentSent() { decrement(_blobsInFlight); }
 
     // Incoming request to prove I have an attachment that I'm pushing, without sending it:
-    void Pusher::handleProveAttachment(Retained<MessageIn> request) {
+    void Pusher::handleProveAttachment(Ref<MessageIn> request) {
         slice                    digest;
         Replicator::BlobProgress progress;
         unique_ptr<C4ReadStream> blob = readBlobFromRequest(request, digest, progress);

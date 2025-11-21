@@ -61,13 +61,13 @@ struct C4Database
     [[nodiscard]] static bool deleteNamed(slice name, slice inDirectory);
     [[nodiscard]] static bool deleteAtPath(slice path);
 
-    static Retained<C4Database> openNamed(slice name, const Config&);
+    static Ref<C4Database> openNamed(slice name, const Config&);
 
-    static Retained<C4Database> openAtPath(slice path, C4DatabaseFlags, const C4EncryptionKey* C4NULLABLE = nullptr);
+    static Ref<C4Database> openAtPath(slice path, C4DatabaseFlags, const C4EncryptionKey* C4NULLABLE = nullptr);
 
     static void shutdownLiteCore();
 
-    Retained<C4Database> openAgain() const;
+    Ref<C4Database> openAgain() const;
 
     virtual void close()                                      = 0;
     virtual void closeAndDeleteFile()                         = 0;
@@ -216,22 +216,21 @@ struct C4Database
 
     // Queries & Indexes:
 
-    Retained<C4Query> newQuery(C4QueryLanguage language, slice queryExpression,
-                               int* C4NULLABLE outErrorPos = nullptr) const;
+    Ref<C4Query> newQuery(C4QueryLanguage language, slice queryExpression, int* C4NULLABLE outErrorPos = nullptr) const;
 
     // Replicator:
 
-    Retained<C4Replicator> newReplicator(C4Address serverAddress, slice remoteDatabaseName,
-                                         const C4ReplicatorParameters& params, slice logPrefix = {});
+    Ref<C4Replicator> newReplicator(C4Address serverAddress, slice remoteDatabaseName,
+                                    const C4ReplicatorParameters& params, slice logPrefix = {});
 
-    Retained<C4Replicator> newIncomingReplicator(C4Socket* openSocket, const C4ReplicatorParameters& params,
-                                                 slice logPrefix = {});
-    Retained<C4Replicator> newIncomingReplicator(litecore::websocket::WebSocket* openSocket,
-                                                 const C4ReplicatorParameters& params, slice logPrefix = {});
+    Ref<C4Replicator> newIncomingReplicator(C4Socket* openSocket, const C4ReplicatorParameters& params,
+                                            slice logPrefix = {});
+    Ref<C4Replicator> newIncomingReplicator(litecore::websocket::WebSocket* openSocket,
+                                            const C4ReplicatorParameters& params, slice logPrefix = {});
 
 #ifdef COUCHBASE_ENTERPRISE
-    Retained<C4Replicator> newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params,
-                                              slice logPrefix = {});
+    Ref<C4Replicator> newLocalReplicator(C4Database* otherLocalDB, const C4ReplicatorParameters& params,
+                                         slice logPrefix = {});
 #endif
 
     alloc_slice getCookies(const C4Address&);

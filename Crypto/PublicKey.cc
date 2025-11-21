@@ -89,9 +89,9 @@ namespace litecore::crypto {
         });
     }
 
-    Retained<PrivateKey> PrivateKey::generateTemporaryRSA(unsigned keySizeInBits) {
-        Retained<PrivateKey> key = new PrivateKey();
-        auto                 ctx = key->context();
+    Ref<PrivateKey> PrivateKey::generateTemporaryRSA(unsigned keySizeInBits) {
+        Ref<PrivateKey> key = new PrivateKey();
+        auto            ctx = key->context();
         TRY(mbedtls_pk_setup(ctx, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA)));
         LogTo(TLSLogDomain, "Generating %u-bit RSA key-pair...", keySizeInBits);
         TRY(mbedtls_rsa_gen_key(mbedtls_pk_rsa(*ctx), mbedtls_ctr_drbg_random, RandomNumberContext(), keySizeInBits,

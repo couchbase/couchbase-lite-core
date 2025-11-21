@@ -129,7 +129,7 @@ constexpr const char* kInvalidDbNameMsgTemplate =
         "and starts with a letter or digit, followed by letters, digits, dashes, "
         "or underscores.";
 
-/*static*/ Retained<C4Database> C4Database::openNamed(slice name, const Config& config) {
+/*static*/ Ref<C4Database> C4Database::openNamed(slice name, const Config& config) {
     if ( !(config.flags & kC4DB_ReadOnly) && !isValidDbName(name) ) {
         Warn(kInvalidDbNameMsgTemplate, name.asString().c_str());
     }
@@ -140,7 +140,7 @@ constexpr const char* kInvalidDbNameMsgTemplate =
     return DatabaseImpl::open(path, oldConfig);
 }
 
-/*static*/ Retained<C4Database> C4Database::openAtPath(slice path, C4DatabaseFlags flags, const C4EncryptionKey* key) {
+/*static*/ Ref<C4Database> C4Database::openAtPath(slice path, C4DatabaseFlags flags, const C4EncryptionKey* key) {
     C4DatabaseConfig config = {flags};
     if ( key ) config.encryptionKey = *key;
     return DatabaseImpl::open(FilePath(path, ""), config);
@@ -168,7 +168,7 @@ constexpr const char* kInvalidDbNameMsgTemplate =
 
 /*static*/ void C4Database::shutdownLiteCore() { SQLiteDataFile::shutdown(); }
 
-Retained<C4Database> C4Database::openAgain() const {
+Ref<C4Database> C4Database::openAgain() const {
     auto config = _config;
     config.flags |= kC4DB_NoHousekeeping;
     return openNamed(getName(), config);
@@ -195,7 +195,7 @@ C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig
 
 #pragma mark - QUERIES:
 
-Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int* errPos) const {
+Ref<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int* errPos) const {
     return C4Query::newQuery(getDefaultCollectionSafe(), language, expr, errPos);
 }
 

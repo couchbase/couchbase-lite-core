@@ -195,8 +195,8 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
         // First the fast path: try to save directly via putNewRevision. Do this on a copy, not on
         // myself, because putNewRevision changes the instance, and if it fails I don't want to keep
         // those changes.
-        Retained<C4Document> savedDoc = this->copy();
-        C4Error              myErr;
+        Ref<C4Document> savedDoc = this->copy();
+        C4Error         myErr;
         if ( savedDoc->checkNewRev(parentRev, revFlags, false, &myErr) && savedDoc->putNewRevision(rq, &myErr) ) {
             // Fast path succeeded!
             return savedDoc;

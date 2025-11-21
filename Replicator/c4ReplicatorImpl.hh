@@ -131,7 +131,7 @@ namespace litecore {
         // Replicator::Delegate method, notifying that the status level or progress have changed.
         void replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) override;
         // Replicator::Delegate method, notifying that document(s) have finished.
-        void replicatorDocumentsEnded(Replicator* repl, const std::vector<Retained<ReplicatedRev>>& revs) override;
+        void replicatorDocumentsEnded(Replicator* repl, const std::vector<Ref<ReplicatedRev>>& revs) override;
         // Replicator::Delegate method, notifying of blob up/download progress.
         void replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) override;
 
@@ -149,13 +149,13 @@ namespace litecore {
         // I will deadlock!
         void notifyStateChanged() noexcept;
 
-        mutable std::mutex            _mutex;
-        DatabaseOrPool const          _database;
-        Retained<Replicator::Options> _options;
-        Retained<Replicator>          _replicator;
-        C4ReplicatorStatus            _status{kC4Stopped};
-        bool                          _activeWhenSuspended{false};
-        bool                          _cancelStop{false};
+        mutable std::mutex       _mutex;
+        DatabaseOrPool const     _database;
+        Ref<Replicator::Options> _options;
+        Retained<Replicator>     _replicator;
+        C4ReplicatorStatus       _status{kC4Stopped};
+        bool                     _activeWhenSuspended{false};
+        bool                     _cancelStop{false};
 #ifdef COUCHBASE_ENTERPRISE
         std::shared_ptr<PeerTLSCertificateValidator> _peerTLSCertificateValidator;
         mutable std::mutex                           _peerValidatorMutex;

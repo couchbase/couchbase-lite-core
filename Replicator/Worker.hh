@@ -69,7 +69,7 @@ namespace litecore::repl {
 
         /// The Replicator at the top of the tree. Never NULL.
         /// @warning Throws rather than returning NULL.
-        Retained<Replicator> replicator();
+        Ref<Replicator> replicator();
 
         /// True if the replicator is passive (run by the listener.)
         virtual bool passive() const { return false; }
@@ -79,7 +79,7 @@ namespace litecore::repl {
 
         /// Child workers call this on their parent when their status changes.
         void childChangedStatus(Worker* task, const Status& status) {
-            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), Retained<Worker>(task), status);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), Ref<Worker>(task), status);
         }
 
         C4ReplicatorProgressLevel progressNotificationLevel() const { return _options->progressLevel; }
@@ -169,8 +169,8 @@ namespace litecore::repl {
 
         /// Registers a method to run when a BLIP request with the given profile arrives.
         template <class ACTOR>
-        void registerHandler(const char* profile NONNULL, void (ACTOR::*method)(Retained<blip::MessageIn>)) {
-            std::function<void(Retained<blip::MessageIn>)> fn(std::bind(method, (ACTOR*)this, std::placeholders::_1));
+        void registerHandler(const char* profile NONNULL, void (ACTOR::*method)(Ref<blip::MessageIn>)) {
+            std::function<void(Ref<blip::MessageIn>)> fn(std::bind(method, (ACTOR*)this, std::placeholders::_1));
             _connection->setRequestHandler(profile, false, asynchronize(profile, fn));
         }
 
@@ -211,7 +211,7 @@ namespace litecore::repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Retained<Worker> task, Status) {}
+        virtual void _childChangedStatus(Ref<Worker> task, Status) {}
 
         /// Adds the counts in the given struct to my status's progress.
         void addProgress(C4Progress);
