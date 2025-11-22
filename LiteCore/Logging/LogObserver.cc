@@ -102,7 +102,7 @@ namespace litecore {
     }
 
     void LogObservers::notify(RawLogEntry const& entry, const char* format, va_list args) {
-        fleece::smallVector<fleece::Retained<LogObserver>, 4> curObservers;
+        fleece::smallVector<Ref<LogObserver>, 4> curObservers;
         {
             // Temporarily lock, to copy the list of observers that will be notified:
             unique_lock lock(_mutex);

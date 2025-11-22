@@ -46,7 +46,7 @@ namespace litecore::repl {
     }
 
     // Receiving an incoming "changes" (or "proposeChanges") message
-    void RevFinder::handleChanges(Retained<MessageIn> req) {
+    void RevFinder::handleChanges(Ref<MessageIn> req) {
         if ( pullerHasCapacity() ) {
             handleChangesNow(req);
         } else {
@@ -182,10 +182,10 @@ namespace litecore::repl {
     // adds each entry to `sequences`, and returns the number of new revs.
     unsigned RevFinder::findRevs(Array changes, JSONEncoder& encoder, vector<ChangeSequence>& sequences) {
         // Compile the docIDs/revIDs into parallel vectors:
-        vector<slice>                 docIDs, revIDs;
-        vector<Retained<RevToInsert>> revoked;
-        vector<uint32_t>              changeIndexes;
-        auto                          nChanges = changes.count();
+        vector<slice>            docIDs, revIDs;
+        vector<Ref<RevToInsert>> revoked;
+        vector<uint32_t>         changeIndexes;
+        auto                     nChanges = changes.count();
         docIDs.reserve(nChanges);
         revIDs.reserve(nChanges);
         uint32_t changeIndex = 0;

@@ -95,9 +95,9 @@ namespace litecore::websocket {
 
         void received(Message* message, actor::delay_t latency = actor::delay_t::zero()) {
             if ( latency == actor::delay_t::zero() ) {
-                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_received), retained(message));
+                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_received), retainedRef(message));
             } else {
-                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_queueMessage), retained(message));
+                _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_queueMessage), retainedRef(message));
                 _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_dequeueMessage));
             }
         }
@@ -117,8 +117,8 @@ namespace litecore::websocket {
             ~LoopbackMessage() override { _webSocket->ack(_size); }
 
           private:
-            size_t                      _size;
-            Retained<LoopbackWebSocket> _webSocket;
+            size_t                 _size;
+            Ref<LoopbackWebSocket> _webSocket;
         };
 
         // The internal Actor that does the real work
@@ -203,7 +203,7 @@ namespace litecore::websocket {
                 if ( _peer ) {
                     Assert(_state == State::connected);
                     logDebug("SEND: %s", formatMsg(msg, binary).c_str());
-                    Retained<Message> message(new LoopbackMessage(_webSocket, msg, binary));
+                    Ref<Message> message(new LoopbackMessage(_webSocket, msg, binary));
                     _peer->received(message, _latency);
                 } else {
                     logInfo("SEND: Failed, socket is closed");
@@ -211,20 +211,20 @@ namespace litecore::websocket {
             }
 
             // Cannot use const& because it breaks Actor::enqueue
-            void _queueMessage(Retained<Message> message)  // NOLINT(performance-unnecessary-value-param)
+            void _queueMessage(Ref<Message> message)  // NOLINT(performance-unnecessary-value-param)
             {
                 _msgWaitBuffer.push_back(message);
             }
 
             void _dequeueMessage() {
                 Assert(!_msgWaitBuffer.empty());
-                Retained<Message> msg = _msgWaitBuffer.front();
+                Ref<Message> msg = _msgWaitBuffer.front();
                 _msgWaitBuffer.pop_front();
                 _received(msg);
             }
 
             // Cannot use const& because it breaks Actor::enqueue
-            virtual void _received(Retained<Message> message) {  // NOLINT(performance-unnecessary-value-param)
+            virtual void _received(Ref<Message> message) {  // NOLINT(performance-unnecessary-value-param)
                 if ( !connected() ) return;
                 logDebug("RECEIVED: %s", formatMsg(message->data, message->binary).c_str());
                 _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
@@ -297,13 +297,13 @@ namespace litecore::websocket {
           private:
             friend class LoopbackWebSocket;
 
-            Retained<LoopbackWebSocket>   _webSocket;
-            const actor::delay_t          _latency{0.0};
-            Retained<LoopbackWebSocket>   _peer;
-            std::atomic<size_t>           _bufferedBytes{0};
-            State                         _state{State::unconnected};
-            std::deque<Retained<Message>> _msgWaitBuffer;
-            Headers                       _responseHeaders;
+            Retained<LoopbackWebSocket> _webSocket;
+            const actor::delay_t        _latency{0.0};
+            Retained<LoopbackWebSocket> _peer;
+            std::atomic<size_t>         _bufferedBytes{0};
+            State                       _state{State::unconnected};
+            std::deque<Ref<Message>>    _msgWaitBuffer;
+            Headers                     _responseHeaders;
         };
     };
 

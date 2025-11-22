@@ -58,8 +58,8 @@ struct C4Index
 
     C4Index(C4Collection* coll, std::string name) : _collection(coll), _name(std::move(name)) {}
 
-    Retained<C4Collection> _collection;
-    std::string            _name;
+    Ref<C4Collection> _collection;
+    std::string       _name;
 };
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -102,14 +102,14 @@ struct C4IndexUpdater final
 
   private:
     friend struct C4IndexImpl;
-    C4IndexUpdater(Retained<litecore::LazyIndexUpdate>, C4Collection*);
+    C4IndexUpdater(Ref<litecore::LazyIndexUpdate>, C4Collection*);
     ~C4IndexUpdater();
 
     // Invariants: _update != nullptr || (finish() has been called)
-    bool hasFinished() const { return !_update; }
+    bool hasFinished() const { return !_update.isValid(); }
 
-    Retained<litecore::LazyIndexUpdate> _update;
-    Retained<C4Collection>              _collection;
+    Ref<litecore::LazyIndexUpdate> _update;
+    Ref<C4Collection>              _collection;
 };
 
 #endif

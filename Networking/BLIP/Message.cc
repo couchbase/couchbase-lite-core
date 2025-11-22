@@ -242,11 +242,11 @@ namespace litecore::blip {
         _unackedBytes += frameSize;
         if ( _unackedBytes >= kIncomingAckThreshold ) {
             // Send an ACK after enough data has been received of this message:
-            MessageType          msgType = isResponse() ? kAckResponseType : kAckRequestType;
-            uint8_t              buf[kMaxVarintLen64];
-            alloc_slice          payload(buf, PutUVarInt(buf, _rawBytesReceived));
-            Retained<MessageOut> ack = new MessageOut(
-                    _connection, (FrameFlags)(FrameFlags(msgType) | kUrgent | kNoReply), payload, nullptr, _number);
+            MessageType     msgType = isResponse() ? kAckResponseType : kAckRequestType;
+            uint8_t         buf[kMaxVarintLen64];
+            alloc_slice     payload(buf, PutUVarInt(buf, _rawBytesReceived));
+            Ref<MessageOut> ack = new MessageOut(_connection, (FrameFlags)(FrameFlags(msgType) | kUrgent | kNoReply),
+                                                 payload, nullptr, _number);
             _connection->send(ack);
             _unackedBytes = 0;
         }
@@ -315,7 +315,7 @@ namespace litecore::blip {
         Assert(!_responded);
         _responded = true;
         if ( mb.type == kRequestType ) mb.type = kResponseType;
-        Retained<MessageOut> message = new MessageOut(_connection, mb, _number);
+        Ref<MessageOut> message = new MessageOut(_connection, mb, _number);
         _connection->send(message);
     }
 

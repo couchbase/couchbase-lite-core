@@ -95,7 +95,7 @@ namespace litecore::websocket {
 
     // This runs on its own thread.
     void BuiltInWebSocket::_bgConnect() {
-        Retained<BuiltInWebSocket> temporarySelfRetain = this;
+        Ref<BuiltInWebSocket> temporarySelfRetain = this;
         setThreadName();
 
         if ( _socket ) {
@@ -292,7 +292,7 @@ namespace litecore::websocket {
             }
 #ifdef COUCHBASE_ENTERPRISE
             if ( parameters().externalKey ) {
-                Retained<crypto::Cert> cert = make_retained<crypto::Cert>(certData);
+                Ref<crypto::Cert> cert = make_retained<crypto::Cert>(certData);
                 _tlsContext->setIdentity(new crypto::Identity(cert, parameters().externalKey->getPrivateKey()));
                 return true;
             }
@@ -302,7 +302,7 @@ namespace litecore::websocket {
                 return true;
             } else {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-                Retained<crypto::Cert>       cert = new crypto::Cert(certData);
+                Ref<crypto::Cert>            cert = new crypto::Cert(certData);
                 Retained<crypto::PrivateKey> key  = cert->loadPrivateKey();
                 if ( !key ) {
                     closeWithError(c4error_make(LiteCoreDomain, kC4ErrorCrypto,

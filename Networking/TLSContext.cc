@@ -66,7 +66,7 @@ namespace litecore::net {
 #ifdef ROOT_CERT_LOOKUP_AVAILABLE
     bool TLSContext::findSigningRootCert(const string& certStr, string& rootStr) {
         try {
-            Retained<Cert> cert = new Cert(certStr);
+            Ref<Cert>      cert = new Cert(certStr);
             Retained<Cert> root = cert->findSigningRootCert();
             if ( root ) rootStr = string(root->dataOfChain());
             return true;
@@ -104,7 +104,7 @@ namespace litecore::net {
             });
 
             _context->set_auth_callback([](const string& certData) {
-                Retained<Cert> cert = new Cert(slice(certData));
+                Ref<Cert> cert = new Cert(slice(certData));
                 return cert->isSelfSigned();
             });
         } else {

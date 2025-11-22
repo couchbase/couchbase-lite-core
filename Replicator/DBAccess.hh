@@ -30,6 +30,7 @@
 #include <optional>
 
 namespace litecore::repl {
+    using fleece::Ref;
     using fleece::Retained;
     class ReplicatedRev;
     class UseCollection;
@@ -170,7 +171,7 @@ namespace litecore::repl {
         fleece::SharedKeys tempSharedKeys();
         fleece::SharedKeys updateTempSharedKeys();
 
-        Retained<DatabasePool>        _pool;                           // Pool of C4Databases
+        Ref<DatabasePool>             _pool;                           // Pool of C4Databases
         C4BlobStore*                  _blobStore{};                    // Database's BlobStore
         fleece::SharedKeys            _tempSharedKeys;                 // Keys used in tempEncodeJSON()
         std::mutex                    _tempSharedKeysMutex;            // Mutex for replacing _tempSharedKeys

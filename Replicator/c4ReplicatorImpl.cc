@@ -321,7 +321,7 @@ namespace litecore {
     }
 
     void C4ReplicatorImpl::replicatorStatusChanged(Replicator* repl, const Replicator::Status& newStatus) {
-        Retained<C4ReplicatorImpl> selfRetain = this;  // Keep myself alive till this method returns
+        Ref<C4ReplicatorImpl> selfRetain = this;  // Keep myself alive till this method returns
 
         bool stopped, resume = false;
         {
@@ -360,8 +360,7 @@ namespace litecore {
         // On return from this method, if I stopped I may be deleted (due to clearing _selfRetain)
     }
 
-    void C4ReplicatorImpl::replicatorDocumentsEnded(Replicator*                                 repl,
-                                                    const std::vector<Retained<ReplicatedRev>>& revs) {
+    void C4ReplicatorImpl::replicatorDocumentsEnded(Replicator* repl, const std::vector<Ref<ReplicatedRev>>& revs) {
         if ( repl != _replicator ) return;
 
         auto                                nRevs = revs.size();

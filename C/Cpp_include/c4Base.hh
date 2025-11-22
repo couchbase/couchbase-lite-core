@@ -37,6 +37,8 @@ struct C4Base {
     using alloc_slice = fleece::alloc_slice;
     template <class T>
     using Retained = fleece::Retained<T>;
+    template <class T>
+    using Ref = fleece::Ref<T>;
 };
 
 // Forward references to internal LiteCore classes named in the public headers

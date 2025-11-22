@@ -61,7 +61,7 @@ namespace litecore::repl {
             C4Error          error;
         };
 
-        using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
+        using DocumentsEnded = std::vector<Ref<ReplicatedRev>>;
 
         /// A list of WebSocket subprotocol names supported by a Replicator with the given Options.
         static std::vector<string> compatibleProtocols(C4DatabaseFlags, Options::Mode pushMode, Options::Mode pullMode);
@@ -144,7 +144,7 @@ namespace litecore::repl {
         }
 
         void onRequestReceived(blip::MessageIn* msg NONNULL) override {
-            enqueue(FUNCTION_TO_QUEUE(Replicator::_onRequestReceived), retained(msg));
+            enqueue(FUNCTION_TO_QUEUE(Replicator::_onRequestReceived), retainedRef(msg));
         }
 
         void changedStatus() override;
@@ -153,14 +153,14 @@ namespace litecore::repl {
 
         // Worker method overrides:
         ActivityLevel computeActivityLevel(std::string* reason) const override;
-        void          _childChangedStatus(Retained<Worker>, Status taskStatus) override;
+        void          _childChangedStatus(Ref<Worker>, Status taskStatus) override;
 
       private:
         void _onHTTPResponse(int status, websocket::Headers headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
         void _onClose(CloseStatus, blip::Connection::State);
-        void _onRequestReceived(Retained<blip::MessageIn> msg);
+        void _onRequestReceived(Ref<blip::MessageIn> msg);
 
         void _start(bool reset);
         void _stop();
@@ -187,10 +187,10 @@ namespace litecore::repl {
         // Checkpoints:
         void        checkpointIsInvalid();
         std::string remoteDBIDString() const;
-        void        handleGetCheckpoint(Retained<blip::MessageIn>);
-        void        handleSetCheckpoint(Retained<blip::MessageIn>);
-        void        handleGetCollections(Retained<blip::MessageIn>);
-        void        returnForbidden(Retained<blip::MessageIn>);
+        void        handleGetCheckpoint(Ref<blip::MessageIn>);
+        void        handleSetCheckpoint(Ref<blip::MessageIn>);
+        void        handleGetCollections(Ref<blip::MessageIn>);
+        void        returnForbidden(Ref<blip::MessageIn>);
         slice       getPeerCheckpointDocID(blip::MessageIn* request, const char* whatFor) const;
 
         string statusVString() const;
@@ -198,14 +198,14 @@ namespace litecore::repl {
         void   updatePullStatus(CollectionIndex i, const Status& status);
         void   prepareWorkers();
 
-        void delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn>);
+        void delegateCollectionSpecificMessageToWorker(Ref<blip::MessageIn>);
 
       public:
-        using WorkerHandler = std::function<void(Retained<blip::MessageIn>)>;
+        using WorkerHandler = std::function<void(Ref<blip::MessageIn>)>;
 
         template <typename WORKER>
         void registerWorkerHandler(WORKER* worker, const char* profile NONNULL,
-                                   void (WORKER::*method)(Retained<blip::MessageIn>)) {
+                                   void (WORKER::*method)(Ref<blip::MessageIn>)) {
             WorkerHandler                 fn(std::bind(method, worker, std::placeholders::_1));
             pair<string, CollectionIndex> key{profile, worker->collectionIndex()};
             _workerHandlers.useLocked()->emplace(key, worker->asynchronize(profile, fn));

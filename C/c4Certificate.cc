@@ -76,7 +76,7 @@ CertSigningRequest* C4Cert::assertUnsignedCert() {
     return (CertSigningRequest*)_impl.get();
 }
 
-Retained<C4Cert> C4Cert::fromData(slice certData) { return new C4Cert(new Cert(certData)); }
+Ref<C4Cert> C4Cert::fromData(slice certData) { return new C4Cert(new Cert(certData)); }
 
 alloc_slice C4Cert::getData(bool pemEncoded) { return _impl->data(pemEncoded ? KeyFormat::PEM : KeyFormat::DER); }
 
@@ -162,8 +162,8 @@ Retained<C4Cert> C4Cert::getNextInChain() {
 // Certificate signing requests:
 
 
-Retained<C4Cert> C4Cert::createRequest(const std::vector<C4CertNameComponent>& nameComponents, C4CertUsage certUsages,
-                                       C4KeyPair* subjectKey) {
+Ref<C4Cert> C4Cert::createRequest(const std::vector<C4CertNameComponent>& nameComponents, C4CertUsage certUsages,
+                                  C4KeyPair* subjectKey) {
     vector<DistinguishedName::Entry> name;
     SubjectAltNames                  altNames;
     for ( auto& component : nameComponents ) {
@@ -178,7 +178,7 @@ Retained<C4Cert> C4Cert::createRequest(const std::vector<C4CertNameComponent>& n
     return new C4Cert(new CertSigningRequest(params, subjectKey->getPrivateKey()));
 }
 
-Retained<C4Cert> C4Cert::requestFromData(slice certRequestData) {
+Ref<C4Cert> C4Cert::requestFromData(slice certRequestData) {
 #    ifdef ENABLE_CERT_REQUEST
     return new C4Cert(new CertSigningRequest(certRequestData));
 #    else
@@ -205,8 +205,8 @@ void C4Cert::sendSigningRequest(const C4Address& address, slice optionsDictFleec
 
 // NOLINTEND(readability-convert-member-functions-to-static)
 
-Retained<C4Cert> C4Cert::signRequest(const C4CertIssuerParameters& c4Params, C4KeyPair* issuerPrivateKey,
-                                     C4Cert* C4NULLABLE issuerC4Cert) {
+Ref<C4Cert> C4Cert::signRequest(const C4CertIssuerParameters& c4Params, C4KeyPair* issuerPrivateKey,
+                                C4Cert* C4NULLABLE issuerC4Cert) {
     auto csr        = assertUnsignedCert();
     auto privateKey = issuerPrivateKey->getPrivateKey();
     AssertParam(privateKey != nullptr, "No private key");
@@ -275,7 +275,7 @@ C4KeyPair::C4KeyPair(Key* key) : _impl(key) { Assert(key); }
 
 C4KeyPair::~C4KeyPair() = default;
 
-Retained<PublicKey> C4KeyPair::getPublicKey() {
+Ref<PublicKey> C4KeyPair::getPublicKey() {
     if ( PrivateKey* priv = getPrivateKey(); priv ) return priv->publicKey();
     else
         return (PublicKey*)_impl.get();
@@ -288,7 +288,7 @@ PersistentPrivateKey* C4KeyPair::getPersistentPrivateKey() {
     return nullptr;
 }
 
-Retained<C4KeyPair> C4KeyPair::generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent) {
+Ref<C4KeyPair> C4KeyPair::generate(C4KeyPairAlgorithm algorithm, unsigned sizeInBits, bool persistent) {
     AssertParam(algorithm == kC4RSA, "Invalid algorithm");
     Retained<PrivateKey> privateKey;
     if ( persistent ) {
@@ -303,11 +303,9 @@ Retained<C4KeyPair> C4KeyPair::generate(C4KeyPairAlgorithm algorithm, unsigned s
     return new C4KeyPair(privateKey);
 }
 
-Retained<C4KeyPair> C4KeyPair::fromPublicKeyData(slice publicKeyData) {
-    return new C4KeyPair(new PublicKey(publicKeyData));
-}
+Ref<C4KeyPair> C4KeyPair::fromPublicKeyData(slice publicKeyData) { return new C4KeyPair(new PublicKey(publicKeyData)); }
 
-Retained<C4KeyPair> C4KeyPair::fromPrivateKeyData(slice privateKeyData, slice passwordOrNull) {
+Ref<C4KeyPair> C4KeyPair::fromPrivateKeyData(slice privateKeyData, slice passwordOrNull) {
     return new C4KeyPair(new PrivateKey(privateKeyData, passwordOrNull));
 }
 
@@ -380,8 +378,8 @@ namespace litecore {
         }
 
         fleece::alloc_slice publicKeyRawData() override {
-            alloc_slice         data(publicKeyDERData());
-            Retained<PublicKey> publicKey = new PublicKey(data);
+            alloc_slice    data(publicKeyDERData());
+            Ref<PublicKey> publicKey = new PublicKey(data);
             return publicKey->data(KeyFormat::Raw);
         }
 
@@ -410,8 +408,8 @@ namespace litecore {
 
 }  // namespace litecore
 
-Retained<C4KeyPair> C4KeyPair::fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void* externalKey,
-                                            const C4ExternalKeyCallbacks& callbacks) {
+Ref<C4KeyPair> C4KeyPair::fromExternal(C4KeyPairAlgorithm algorithm, size_t keySizeInBits, void* externalKey,
+                                       const C4ExternalKeyCallbacks& callbacks) {
     AssertParam(algorithm == kC4RSA, "Invalid algorithm");
     return new C4KeyPair(new ExternalKeyPair(keySizeInBits, externalKey, callbacks));
 }

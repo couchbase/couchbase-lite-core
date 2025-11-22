@@ -404,7 +404,7 @@ namespace litecore::repl {
 
     // Called directly by the Inserter, on its thread, after the revision is safely committed to disk.
     void IncomingRev::revisionInserted() {
-        Retained<IncomingRev> retainSelf = this;
+        Ref<IncomingRev> retainSelf = this;
         decrement(_pendingCallbacks);
         finish();
     }

@@ -22,6 +22,7 @@
 struct C4DocumentInfo;
 
 namespace litecore::repl {
+    using fleece::Ref;
     using fleece::RefCounted;
     using fleece::Retained;
     using fleece::RetainedConst;
@@ -80,7 +81,7 @@ namespace litecore::repl {
         ~RevToSend() override = default;
     };
 
-    typedef std::vector<Retained<RevToSend>> RevToSendList;
+    typedef std::vector<Ref<RevToSend>> RevToSendList;
 
     /** A revision to be added to the database, complete with body. */
     class RevToInsert final : public ReplicatedRev {
