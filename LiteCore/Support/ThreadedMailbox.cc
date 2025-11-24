@@ -17,10 +17,77 @@
 #    include "Error.hh"
 #    include "Timer.hh"
 #    include "Logging.hh"
+#    include "Logging_Internal.hh"
 #    include <future>
 #    include <random>
 #    include <map>
 #    include <sstream>
+
+namespace { namespace threadStats {
+        using namespace std::chrono;
+        using namespace std::chrono_literals;
+        using namespace litecore;
+
+        constexpr std::chrono::duration warningThreshold = 5s;
+        constexpr std::chrono::duration checkInterval    = warningThreshold;
+
+        struct Stats {
+            time_point<system_clock> time;
+            actor::Actor*            actor;
+        };
+
+        std::vector<Stats> enterTimes;
+
+        time_point<system_clock> lastChecked;
+        std::mutex               mutex;
+
+        void init(size_t numThreads) { enterTimes.resize(numThreads); }
+
+        void enter(size_t taskID, actor::Actor* actor) {
+            auto            time = system_clock::now();
+            std::lock_guard lock(mutex);
+            enterTimes[taskID - 1] = {time, actor};
+        }
+
+        void exit(size_t taskID) {
+            std::lock_guard lock(mutex);
+            enterTimes[taskID - 1] = {{}, nullptr};
+        }
+
+        void check() {
+            auto              time = system_clock::now();
+            std::stringstream ss;
+            unsigned          count = 0;
+            {
+                std::lock_guard lock(mutex);
+
+                if ( time - lastChecked < checkInterval ) {
+                    return;
+                } else
+                    lastChecked = time;
+
+                for ( const auto& enter : enterTimes ) {
+                    if ( enter.time.time_since_epoch() == system_clock::duration::zero() ) continue;
+                    if ( auto elapsed = time - enter.time; elapsed > warningThreshold ) {
+                        if ( count++ > 0 ) ss << "\n";
+                        std::string objPath;
+                        if ( LogObjectRef objRef = enter.actor->getObjectRef(); objRef != LogObjectRef::None ) {
+                            objPath = loginternal::sObjectMap.getObjectPath(objRef);
+                        }
+                        ss << "  actor=";
+                        if ( objPath.empty() ) ss << enter.actor;
+                        else
+                            ss << objPath;
+                        ss << " timeInThread=" << duration_cast<milliseconds>(elapsed).count() << "ms";
+                    }
+                }
+            }
+            if ( count > 0 ) {
+                LogWarn(ActorLog, "%u out of %zu threads are running for an excessive amount of time:\n%s", count,
+                        enterTimes.size(), ss.str().c_str());
+            }
+        }
+}}  // namespace ::threadStats
 
 using namespace std;
 
@@ -72,6 +139,7 @@ namespace litecore { namespace actor {
                     if ( _numThreads == 0 ) _numThreads = 2;
                 }
                 LogTo(ActorLog, "Starting Scheduler<%p> with %u threads", this, _numThreads);
+                threadStats::init(_numThreads);
                 for ( unsigned id = 1; id <= _numThreads; id++ ) _threadPool.emplace_back([this, id] { task(id); });
             }
         }
@@ -93,7 +161,11 @@ namespace litecore { namespace actor {
             ThreadedMailbox* mailbox;
             while ( (mailbox = _queue.pop()) != nullptr ) {
                 LogVerbose(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
+                threadStats::enter(taskID, mailbox->_actor);
+
                 mailbox->performNextMessage();
+
+                threadStats::exit(taskID);
                 mailbox = nullptr;
             }
             LogTo(ActorLog, "   task %d finished", taskID);
@@ -124,6 +196,7 @@ namespace litecore { namespace actor {
         void ThreadedMailbox::enqueue(const char* name, const std::function<void()>& f) {
             beginLatency();
             retain(_actor);
+            threadStats::check();
 
 #    if ACTORS_USE_MANIFESTS
             auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();
@@ -155,6 +228,7 @@ namespace litecore { namespace actor {
             beginLatency();
             _delayedEventCount++;
             retain(_actor);
+            threadStats::check();
 
 #    if ACTORS_USE_MANIFESTS
             auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();

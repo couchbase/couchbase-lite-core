@@ -143,7 +143,7 @@ namespace litecore::repl {
                 // will effectively, beside other effects, skip the changes due to Purge.
                 if ( c4change->sequence <= startingMaxSequence ) continue;
                 C4DocumentInfo info = {};
-                info.flags          = c4change->flags;
+                info.flags          = C4Document::documentFlagsFromRevFlags(c4change->flags);
                 info.docID          = c4change->docID;
                 info.revID          = c4change->revID;
                 info.sequence       = c4change->sequence;

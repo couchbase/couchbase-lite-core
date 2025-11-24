@@ -77,7 +77,7 @@ namespace litecore::repl {
         if ( flags & kC4DB_VersionVectors ) {
             // Local db may have VVs. V4 is fine. V3 is OK if I don't push anything.
             v4 = true;
-            v3 = (pushMode == kC4Disabled);
+            v3 = false;
         } else {
             // Local db does not have VVs. V3 is fine. V4 is OK if I don't pull anything.
             v3 = true;
@@ -174,7 +174,6 @@ namespace litecore::repl {
 
             if ( !_options->isActive() ) { return; }
 
-            _setMsgHandlerFor3_0_ClientDone = true;  // only needed for passive replicators
             _findExistingConflicts();
 
             bool goOn = true;
@@ -182,13 +181,7 @@ namespace litecore::repl {
                 // if any getLocalCheckpoint fails, the replicator would already be stopped.
                 goOn = goOn && getLocalCheckpoint(reset, i);
             }
-            if ( goOn ) {
-                if ( _options->collectionAware() ) {
-                    getCollections();
-                } else {
-                    getRemoteCheckpoint(false, 0);
-                }
-            }
+            if ( goOn ) { getCollections(); }
         } catch ( ... ) {
             C4Error err = C4Error::fromCurrentException();
             logError("Failed to start replicator: %s", err.description().c_str());
@@ -646,13 +639,7 @@ namespace litecore::repl {
         if ( _connectionState != Connection::kClosing ) {
             // skip this if stop() already called
             _connectionState = Connection::kConnected;
-            if ( _options->isActive() ) {
-                if ( _options->collectionAware() ) {
-                    getCollections();
-                } else {
-                    getRemoteCheckpoint(false, 0);
-                }
-            }
+            if ( _options->isActive() ) { getCollections(); }
         }
     }
 
@@ -751,12 +738,8 @@ namespace litecore::repl {
         if ( !sub.remoteCheckpointDocID ) sub.remoteCheckpointDocID = sub.checkpointer->initialCheckpointID();
         if ( !sub.remoteCheckpointDocID || _connectionState != Connection::kConnected ) return;  // not ready yet
 
-        if ( !_options->collectionAware() ) {
-            logVerbose("Requesting remote checkpoint '%.*s' of the default collection",
-                       SPLAT(sub.remoteCheckpointDocID));
-        } else {
-            cLogVerbose(coll, "Requesting remote checkpoint '%.*s'", SPLAT(sub.remoteCheckpointDocID));
-        }
+        cLogVerbose(coll, "Requesting remote checkpoint '%.*s'", SPLAT(sub.remoteCheckpointDocID));
+
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = sub.remoteCheckpointDocID;
         assignCollectionToMsg(msg, coll);
@@ -771,22 +754,14 @@ namespace litecore::repl {
             if ( response->isError() ) {
                 auto err = response->getError();
                 if ( !(err.domain == "HTTP"_sl && err.code == 404) ) return gotError(response);
-                if ( !_options->collectionAware() ) {
-                    logInfo("No remote checkpoint '%.*s' of the default collection", SPLAT(sub.remoteCheckpointDocID));
-                } else {
-                    cLogInfo(coll, "No remote checkpoint '%.*s'", SPLAT(sub.remoteCheckpointRevID));
-                }
+                cLogInfo(coll, "No remote checkpoint '%.*s'", SPLAT(sub.remoteCheckpointRevID));
+
                 sub.remoteCheckpointRevID.reset();
             } else {
                 remoteCheckpoint.readJSON(response->body());
                 sub.remoteCheckpointRevID = response->property("rev"_sl);
-                if ( !_options->collectionAware() ) {
-                    logInfo("Received remote checkpoint (rev='%.*s'): %.*s of the default collection",
-                            SPLAT(sub.remoteCheckpointRevID), SPLAT(response->body()));
-                } else {
-                    cLogInfo(coll, "Received remote checkpoint (rev='%.*s'): %.*s", SPLAT(sub.remoteCheckpointRevID),
-                             SPLAT(response->body()));
-                }
+                cLogInfo(coll, "Received remote checkpoint (rev='%.*s'): %.*s", SPLAT(sub.remoteCheckpointRevID),
+                         SPLAT(response->body()));
             }
             sub.remoteCheckpointReceived = true;
 
@@ -1058,10 +1033,6 @@ namespace litecore::repl {
 
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
-        setMsgHandlerFor3_0_Client(request);
-        // The above method may already responded with error.
-        if ( request->responded() ) return;
-
         slice checkpointID = getPeerCheckpointDocID(request, "get");
         if ( !checkpointID ) return;
 
@@ -1098,10 +1069,6 @@ namespace litecore::repl {
 
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
     void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
-        setMsgHandlerFor3_0_Client(request);
-        // The above method may already responded with error.
-        if ( request->responded() ) return;
-
         slice checkpointID = getPeerCheckpointDocID(request, "set");
         if ( !checkpointID ) return;
 
@@ -1314,10 +1281,6 @@ namespace litecore::repl {
 
     void Replicator::delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn> request) {
         // This method is NOT called on the Replicator's queue/thread! It must be thread-safe.
-        if ( !_setMsgHandlerFor3_0_ClientDone ) {
-            enqueue(FUNCTION_TO_QUEUE(Replicator::setMsgHandlerFor3_0_Client), request);
-            waitTillCaughtUp();
-        }
 
         slice profile = request->property("Profile"_sl);
         Assert(profile);
@@ -1354,38 +1317,6 @@ namespace litecore::repl {
         } else if ( !handlersCleared ) {
             returnForbidden(request);
         }
-    }
-
-    // This method is to properly initialize the passive replicator to get ready to
-    // serve 3.0 replicator, which is unaware of the collection.
-    // It is a no-op if
-    // 1. it is working in the active mode,                             or
-    // 2. the incoming meesage includes explicit "collection" property, or
-    // 3. the second time and after that this method is called.
-    void Replicator::setMsgHandlerFor3_0_Client(Retained<blip::MessageIn> request) {
-        if ( _setMsgHandlerFor3_0_ClientDone ) { return; }
-
-        if ( !_options->isActive()
-             && request->intProperty(kCollectionProperty, kNotCollectionIndex) == kNotCollectionIndex ) {
-            // At this point, we are dealing with a 3.0 style replicator which can only have exactly
-            // one collection, which is the default one.  If the default collection is not specified in
-            // the passive config, rearrangeCollectionsFor3_0_Client() will put a null collection path
-            // at the place of index 0, and then we return an error here.
-            // (If the collection does not exist in the database, prepareWorkers() will fail and an
-            //  error will be returned from there.)
-
-            _options->rearrangeCollectionsFor3_0_Client();
-            DebugAssert(!_options->collectionAware());
-            DebugAssert(_options->workingCollectionCount() == 1);
-            if ( !_options->collectionPath(0) ) {
-                logVerbose("Client is legacy 3.0, but the default collection is not in the config of this 3.1 "
-                           "replicator.");
-                request->respondWithError({"BLIP"_sl, 400, "This server is not configured for 3.0 client support"_sl});
-            } else {
-                prepareWorkers();
-            }
-        }
-        _setMsgHandlerFor3_0_ClientDone = true;
     }
 
     string Replicator::loggingKeyValuePairs() const {
