@@ -204,11 +204,7 @@ namespace litecore::repl {
         return parent->replicatorIfAny();
     }
 
-    Retained<Replicator> Worker::replicator() {
-        auto replicator = replicatorIfAny();
-        Assert(replicator != nullptr);
-        return replicator;
-    }
+    Ref<Replicator> Worker::replicator() { return replicatorIfAny().asRef(); }
 
     void Worker::finishedDocumentWithError(ReplicatedRev* rev, C4Error error, bool transient) {
         rev->error            = error;

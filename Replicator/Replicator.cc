@@ -269,7 +269,7 @@ namespace litecore::repl {
         if ( pusher ) pusher->docRemoteAncestorChanged(std::move(docID), std::move(revID));
     }
 
-    void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
+    void Replicator::returnForbidden(Ref<blip::MessageIn> request) {
         auto            collectionIn = request->intProperty(kCollectionProperty, kNotCollectionIndex);
         CollectionIndex c            = 0;
         if ( collectionIn != kNotCollectionIndex ) {
@@ -369,7 +369,7 @@ namespace litecore::repl {
     }
 
     // The status of one of the actors has changed; update mine
-    void Replicator::_childChangedStatus(Retained<Worker> task, Status taskStatus) {
+    void Replicator::_childChangedStatus(Ref<Worker> task, Status taskStatus) {
         if ( status().level == kC4Stopped )  // I've already stopped & cleared refs; ignore this
             return;
 
@@ -685,7 +685,7 @@ namespace litecore::repl {
     }
 
     // This only gets called if none of the registered handlers were triggered.
-    void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
+    void Replicator::_onRequestReceived(Ref<MessageIn> msg) {
         auto collection = (CollectionIndex)msg->intProperty(kCollectionProperty, kNotCollectionIndex);
         if ( collection == kNotCollectionIndex )
             warn("Received unrecognized BLIP request #%" PRIu64 "(collection: none) with Profile '%.*s', %zu bytes",
@@ -1031,7 +1031,7 @@ namespace litecore::repl {
     }
 
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
-    void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
+    void Replicator::handleGetCheckpoint(Ref<MessageIn> request) {
         slice checkpointID = getPeerCheckpointDocID(request, "get");
         if ( !checkpointID ) return;
 
@@ -1067,7 +1067,7 @@ namespace litecore::repl {
     }
 
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
-    void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
+    void Replicator::handleSetCheckpoint(Ref<MessageIn> request) {
         slice checkpointID = getPeerCheckpointDocID(request, "set");
         if ( !checkpointID ) return;
 
@@ -1101,7 +1101,7 @@ namespace litecore::repl {
     }
 
     // Handles a "getCollections" request by looking up a peer checkpoint of each collection.
-    void Replicator::handleGetCollections(Retained<blip::MessageIn> request) {
+    void Replicator::handleGetCollections(Ref<blip::MessageIn> request) {
         // This message only comes from 3.1+ client.
 
         if ( !_subRepls.empty() ) {
@@ -1278,7 +1278,7 @@ namespace litecore::repl {
         logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
     }
 
-    void Replicator::delegateCollectionSpecificMessageToWorker(Retained<blip::MessageIn> request) {
+    void Replicator::delegateCollectionSpecificMessageToWorker(Ref<blip::MessageIn> request) {
         // This method is NOT called on the Replicator's queue/thread! It must be thread-safe.
 
         slice profile = request->property("Profile"_sl);

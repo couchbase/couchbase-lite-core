@@ -190,7 +190,7 @@ namespace litecore {
 
     Retained<RefCounted> DataFile::sharedObject(const string& key) { return _shared->sharedObject(key); }
 
-    Retained<RefCounted> DataFile::addSharedObject(const string& key, RefCounted* object) {
+    Ref<RefCounted> DataFile::addSharedObject(const string& key, RefCounted* object) {
         return _shared->addSharedObject(key, object);
     }
 
@@ -201,7 +201,7 @@ namespace litecore {
     void DataFile::deleteDataFile() { deleteDataFile(this, nullptr, _shared, factory()); }
 
     bool DataFile::Factory::deleteFile(const FilePath& path, const Options* options) {
-        Retained<Shared> shared = Shared::forPath(path, nullptr);
+        Ref<Shared> shared = Shared::forPath(path, nullptr);
         return DataFile::deleteDataFile(nullptr, options, shared, *this);
     }
 

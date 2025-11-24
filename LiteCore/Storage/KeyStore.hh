@@ -184,7 +184,7 @@ namespace litecore {
         //////// Queries:
 
         /** A convenience that delegates to the DataFile, passing this as the defaultKeyStore. */
-        Retained<Query> compileQuery(slice expr, QueryLanguage = QueryLanguage::kJSON);
+        Ref<Query> compileQuery(slice expr, QueryLanguage = QueryLanguage::kJSON);
 
         //////// Indexing:
 

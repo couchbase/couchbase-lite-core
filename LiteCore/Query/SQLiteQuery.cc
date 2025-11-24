@@ -349,7 +349,7 @@ namespace litecore {
             , _recording(recording)
             , _iter(_recording->asArray()) {}
 
-        Retained<Doc>   _recording;
+        Ref<Doc>        _recording;
         Array::iterator _iter;
         unsigned        _1stCustomResultColumn{0};  // Column index of the 1st column declared in JSON
         bool            _hasFullText{false};
@@ -511,7 +511,7 @@ namespace litecore {
         }
 
       private:
-        Retained<SQLiteQuery>         _query;
+        Ref<SQLiteQuery>              _query;
         Query::Options                _options;
         sequence_t                    _lastSequence;  // DB's lastSequence at the time the query ran
         uint64_t                      _purgeCount;    // DB's purgeCount at the time the query ran
@@ -521,7 +521,7 @@ namespace litecore {
     };
 
     // The factory method that creates a SQLite Query.
-    Retained<Query> SQLiteDataFile::compileQuery(slice selectorExpression, QueryLanguage language, KeyStore* keyStore) {
+    Ref<Query> SQLiteDataFile::compileQuery(slice selectorExpression, QueryLanguage language, KeyStore* keyStore) {
         if ( !keyStore ) keyStore = &defaultKeyStore();
         return new SQLiteQuery(*this, selectorExpression, language, asSQLiteKeyStore(keyStore));
     }

@@ -91,7 +91,7 @@ namespace litecore::crypto {
 
         /** Creates an in-memory key-pair for temporary use. Mostly useful only for testing,
             since the private key is exposed and difficult to save securely. */
-        static fleece::Retained<PrivateKey> generateTemporaryRSA(unsigned keySizeInBits);
+        static fleece::Ref<PrivateKey> generateTemporaryRSA(unsigned keySizeInBits);
 
         bool isPrivate() override { return true; }
 
@@ -107,7 +107,7 @@ namespace litecore::crypto {
         virtual bool isPrivateKeyDataAvailable() { return true; }
 
         /** The public key. */
-        fleece::Retained<PublicKey> publicKey() { return new PublicKey(publicKeyData(KeyFormat::Raw)); }
+        fleece::Ref<PublicKey> publicKey() { return new PublicKey(publicKeyData(KeyFormat::Raw)); }
 
       protected:
         PrivateKey() = default;
@@ -159,7 +159,7 @@ namespace litecore::crypto {
       public:
         /** Generates a new RSA key-pair. The key-pair is stored persistently (e.g. in the
             iOS / macOS Keychain) associated with the given label. */
-        static fleece::Retained<PersistentPrivateKey> generateRSA(unsigned keySizeInBits);
+        static fleece::Ref<PersistentPrivateKey> generateRSA(unsigned keySizeInBits);
 
         /** Loads an existing stored key-pair that matches the given public key. */
         static fleece::Retained<PersistentPrivateKey> withPublicKey(PublicKey* NONNULL);

@@ -44,7 +44,7 @@ namespace litecore {
         // NOLINTEND(cppcoreguidelines-pro-type-member-init)
 
         QueryEnumerator* enumerator() const {
-            if ( !_enum ) error::_throw(error::InvalidParameter, "Query enumerator has been closed");
+            if ( !_enum.isValid() ) error::_throw(error::InvalidParameter, "Query enumerator has been closed");
             return _enum;
         }
 
@@ -87,15 +87,15 @@ namespace litecore {
                 return nullptr;
         }
 
-        void close() noexcept { _enum = nullptr; }
+        void close() noexcept { std::move(_enum).destroy(); }
 
         bool usesEnumerator(QueryEnumerator* e) const { return e == _enum; }
 
       private:
-        Retained<DatabaseImpl>    _database;
-        Retained<Query>           _query;
-        Retained<QueryEnumerator> _enum;
-        bool                      _hasFullText;
+        Ref<DatabaseImpl>    _database;
+        Ref<Query>           _query;
+        Ref<QueryEnumerator> _enum;
+        bool                 _hasFullText;
     };
 
     inline C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator* e) { return (C4QueryEnumeratorImpl*)e; }
@@ -103,7 +103,7 @@ namespace litecore {
     // Internal implementation of C4QueryObserver
     class C4QueryObserverImpl : public C4QueryObserver {
       public:
-        static Retained<C4QueryObserver> newQueryObserver(C4Query* query, C4Query::ObserverCallback callback) {
+        static Ref<C4QueryObserver> newQueryObserver(C4Query* query, C4Query::ObserverCallback callback) {
             return new C4QueryObserverImpl(query, callback);
         }
 
@@ -131,9 +131,9 @@ namespace litecore {
 
         C4Query::Enumerator getEnumerator(bool forget) override {
             if ( _currentError.code ) _currentError.raise();
-            Retained<QueryEnumerator> e = _currentEnumerator->enumerator();
+            Ref<QueryEnumerator> e = _currentEnumerator->enumerator();
             if ( forget ) _currentEnumerator = nullptr;
-            return C4Query::Enumerator(std::move(e));
+            return C4Query::Enumerator(_query, std::move(e));
         }
 
       private:

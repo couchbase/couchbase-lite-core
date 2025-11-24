@@ -59,7 +59,7 @@ namespace litecore {
       private:
         std::mutex mutable _mutex;
         // Sorted by increasing LogLevel: Debug, Verbose, Info, Warning, Error
-        std::vector<std::pair<fleece::Retained<LogObserver>, LogLevel>> _observers;
+        std::vector<std::pair<fleece::Ref<LogObserver>, LogLevel>> _observers;
     };
 
 }  // namespace litecore

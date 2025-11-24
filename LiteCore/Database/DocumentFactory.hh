@@ -34,8 +34,8 @@ namespace litecore {
 
         [[nodiscard]] virtual bool isFirstGenRevID(slice revID) const { return false; }
 
-        virtual Retained<C4Document> newDocumentInstance(slice docID, ContentOption) = 0;
-        virtual Retained<C4Document> newDocumentInstance(const Record&)              = 0;
+        virtual Ref<C4Document> newDocumentInstance(slice docID, ContentOption) = 0;
+        virtual Ref<C4Document> newDocumentInstance(const Record&)              = 0;
 
         virtual std::vector<alloc_slice> findAncestors(const std::vector<slice>& docIDs,
                                                        const std::vector<slice>& revIDs, unsigned maxAncestors,

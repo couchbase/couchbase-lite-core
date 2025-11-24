@@ -37,13 +37,12 @@ struct C4Query final
     , C4Base {
   public:
     /// Creates a new query on a database.
-    static Retained<C4Query> newQuery(C4Database*, C4QueryLanguage, slice queryExpression, int* C4NULLABLE outErrorPos);
+    static Ref<C4Query> newQuery(C4Database*, C4QueryLanguage, slice queryExpression, int* C4NULLABLE outErrorPos);
 
     /// Creates a new query on the collection's database.
     /// If the query does not refer to a collection by name (e.g. "FROM airlines"),
     /// it will use the given collection instead of the default one.
-    static Retained<C4Query> newQuery(C4Collection*, C4QueryLanguage, slice queryExpression,
-                                      int* C4NULLABLE outErrorPos);
+    static Ref<C4Query> newQuery(C4Collection*, C4QueryLanguage, slice queryExpression, int* C4NULLABLE outErrorPos);
 
     unsigned    columnCount() const noexcept;
     slice       columnTitle(unsigned col) const LIFETIMEBOUND;
@@ -80,10 +79,10 @@ struct C4Query final
         friend struct C4Query;
         friend class litecore::C4QueryObserverImpl;
         explicit Enumerator(C4Query*, slice encodedParameters = fleece::nullslice);
-        explicit Enumerator(Retained<litecore::QueryEnumerator> e);
+        explicit Enumerator(C4Query*, Ref<litecore::QueryEnumerator>);
 
-        Retained<litecore::QueryEnumerator> _enum;
-        Retained<litecore::Query>           _query;
+        Ref<litecore::QueryEnumerator> _enum;
+        Ref<litecore::Query>           _query;
     };
 
     /// Runs the query, returning an enumerator. Use it like this:
@@ -100,7 +99,7 @@ struct C4Query final
 
     using ObserverCallback = std::function<void(C4QueryObserver*)>;
 
-    Retained<C4QueryObserver> observe(ObserverCallback);
+    Ref<C4QueryObserver> observe(ObserverCallback);
 
   protected:
     friend class litecore::C4QueryObserverImpl;
@@ -115,32 +114,30 @@ struct C4Query final
     struct KeyCmp {
         using is_transparent = void;
 
-        bool operator()(const Retained<litecore::C4QueryObserverImpl>& r1,
-                        const Retained<litecore::C4QueryObserverImpl>& r2) const {
+        bool operator()(const Ref<litecore::C4QueryObserverImpl>& r1,
+                        const Ref<litecore::C4QueryObserverImpl>& r2) const {
             return r1.get() < r2.get();
         }
 
-        bool operator()(const Retained<litecore::C4QueryObserverImpl>& r1,
-                        const litecore::C4QueryObserverImpl*           p2) const {
+        bool operator()(const Ref<litecore::C4QueryObserverImpl>& r1, const litecore::C4QueryObserverImpl* p2) const {
             return r1.get() < p2;
         }
 
-        bool operator()(const litecore::C4QueryObserverImpl*           p1,
-                        const Retained<litecore::C4QueryObserverImpl>& r2) const {
+        bool operator()(const litecore::C4QueryObserverImpl* p1, const Ref<litecore::C4QueryObserverImpl>& r2) const {
             return p1 < r2.get();
         }
     };
 
-    using ObserverSet = std::set<Retained<litecore::C4QueryObserverImpl>, KeyCmp>;
+    using ObserverSet = std::set<Ref<litecore::C4QueryObserverImpl>, KeyCmp>;
 
-    Retained<litecore::QueryEnumerator>       _createEnumerator(slice params);
+    Ref<litecore::QueryEnumerator>            _createEnumerator(slice params);
     Retained<litecore::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator* C4NULLABLE);
     void                                      liveQuerierUpdated(litecore::QueryEnumerator* C4NULLABLE, C4Error err);
     void                                      liveQuerierStopped();
     void notifyObservers(const ObserverSet& observers, litecore::QueryEnumerator* C4NULLABLE, C4Error err);
 
-    Retained<litecore::DatabaseImpl>     _database;
-    Retained<litecore::Query>            _query;
+    Ref<litecore::DatabaseImpl>          _database;
+    Ref<litecore::Query>                 _query;
     alloc_slice                          _parameters;
     Retained<litecore::LiveQuerier>      _bgQuerier;
     std::unique_ptr<LiveQuerierDelegate> _bgQuerierDelegate;
@@ -158,7 +155,7 @@ struct C4QueryObserver
     , C4Base {
   public:
     /// Creates a new query on a database.
-    static Retained<C4QueryObserver> newQueryObserver(C4Query* query, C4Query::ObserverCallback cb, void* ctx);
+    static Ref<C4QueryObserver> newQueryObserver(C4Query* query, C4Query::ObserverCallback cb, void* ctx);
 
     virtual ~C4QueryObserver() = default;
 
@@ -177,8 +174,8 @@ struct C4QueryObserver
   protected:
     explicit C4QueryObserver(C4Query* query) : _query(query) {}
 
-    Retained<C4Query> _query;
-    C4Error           _currentError{};
+    Ref<C4Query> _query;
+    C4Error      _currentError{};
 };
 
 C4_ASSUME_NONNULL_END

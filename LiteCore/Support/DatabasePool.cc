@@ -248,7 +248,6 @@ namespace litecore {
 
     // Called by BorrowedDatabase's destructor and its reset method.
     void DatabasePool::returnDatabase(Ref<C4Database> db) {
-        DebugAssert(db);
         unique_lock lock(_mutex);
 
         Cache& cache = (db->getConfiguration().flags & kC4DB_ReadOnly) ? _readOnly : _readWrite;

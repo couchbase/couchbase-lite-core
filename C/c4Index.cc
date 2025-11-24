@@ -106,7 +106,7 @@ struct C4IndexImpl final : public C4Index {
     Retained<C4IndexUpdater> beginUpdate(size_t limit) {
         if ( !_lazy ) _lazy = new LazyIndex(asInternal(_collection)->keyStore(), _name);
         Retained<LazyIndexUpdate> update = _lazy->beginUpdate(limit);
-        if ( update ) return new C4IndexUpdater(std::move(update), _collection);
+        if ( update ) return new C4IndexUpdater(std::move(update).asRef(), _collection);
         else
             return nullptr;
     }
@@ -143,7 +143,7 @@ bool C4Index::isTrained() const { return _collection->isIndexTrained(_name); }
 
 Retained<C4IndexUpdater> C4Index::beginUpdate(size_t limit) { return asInternal(this)->beginUpdate(limit); }
 
-C4IndexUpdater::C4IndexUpdater(Retained<litecore::LazyIndexUpdate> u, C4Collection* c)
+C4IndexUpdater::C4IndexUpdater(Ref<litecore::LazyIndexUpdate> u, C4Collection* c)
     : _update(std::move(u)), _collection(c) {}
 
 C4IndexUpdater::~C4IndexUpdater() = default;
@@ -189,8 +189,8 @@ bool C4IndexUpdater::finish() {
     C4Database::Transaction txn(db);
     bool                    done = _update->finish(asInternal(db)->transaction());
     txn.commit();
-    _update     = nullptr;
-    _collection = nullptr;
+    std::move(_update).destroy();
+    std::move(_collection).destroy();
     return done;
 }
 

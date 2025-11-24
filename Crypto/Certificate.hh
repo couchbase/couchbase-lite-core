@@ -159,7 +159,7 @@ namespace litecore::crypto {
         virtual SubjectAltNames   subjectAltNames() = 0;
 
         /** The subject's public key. */
-        fleece::Retained<PublicKey> subjectPublicKey() { return new PublicKey(this); }
+        fleece::Ref<PublicKey> subjectPublicKey() { return new PublicKey(this); }
 
       protected:
         virtual fleece::slice derData()                                                = 0;
@@ -268,8 +268,8 @@ namespace litecore::crypto {
     struct Identity : public fleece::RefCounted {
         Identity(Cert* NONNULL, PrivateKey* NONNULL);
 
-        fleece::Retained<Cert> const       cert;
-        fleece::Retained<PrivateKey> const privateKey;
+        fleece::Ref<Cert> const       cert;
+        fleece::Ref<PrivateKey> const privateKey;
     };
 
     /** A request for an X.509 certificate, containing the subject's name and public key,
@@ -293,8 +293,8 @@ namespace litecore::crypto {
         SubjectAltNames subjectAltNames() override;
 
         /** Signs the request, returning the completed Cert. */
-        fleece::Retained<Cert> sign(const Cert::IssuerParameters&, PrivateKey* issuerKeyPair NONNULL,
-                                    Cert* issuerCert = nullptr);
+        fleece::Ref<Cert> sign(const Cert::IssuerParameters&, PrivateKey* issuerKeyPair NONNULL,
+                               Cert* issuerCert = nullptr);
 
       protected:
         CertSigningRequest();
