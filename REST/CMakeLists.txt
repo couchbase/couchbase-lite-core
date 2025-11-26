@@ -45,6 +45,7 @@ target_include_directories(
 
 target_compile_definitions(
     LiteCoreREST_Objects PRIVATE
+    FLEECE_STATIC
     LITECORE_CPP_API=1
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )

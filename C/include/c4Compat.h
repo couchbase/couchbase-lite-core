@@ -121,8 +121,10 @@
 #ifdef _MSC_VER
 #    ifdef LITECORE_EXPORTS
 #        define CBL_CORE_API __declspec(dllexport)
-#    else
+#    elif !defined(LITECORE_STATIC)
 #        define CBL_CORE_API __declspec(dllimport)
+#    else
+#        define CBL_CORE_API
 #    endif
 #    define CBL_CORE_API_IMPL CBL_CORE_API
 #else

@@ -223,6 +223,7 @@ add_library(LiteCoreUnitTesting OBJECT EXCLUDE_FROM_ALL ${ALL_SRC_FILES})
 set(LiteCoreObjectsDefines
     LITECORE_IMPL
     LITECORE_CPP_API=1
+    FLEECE_STATIC
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 target_compile_definitions(
@@ -297,14 +298,19 @@ set(
 )
 
 if(BUILD_ENTERPRISE)
-    set(
+    list(APPEND
         LITECORE_LIBRARIES_PRIVATE
-        ${LITECORE_LIBRARIES_PRIVATE}
         LiteCoreREST_Objects
         LiteCoreWebSocket
         LiteCoreListener_Objects
-        LiteCoreP2P
     )
+
+    if (APPLE OR ANDROID)
+        list(APPEND
+            LITECORE_LIBRARIES_PRIVATE
+            LiteCoreP2P
+        )
+    endif()
 endif()
 
 if(LITECORE_BUILD_SHARED)
@@ -420,6 +426,11 @@ target_include_directories(
     vendor/mbedtls/include
 )
 
+target_compile_definitions(
+    LiteCoreWebSocket PRIVATE
+    FLEECE_STATIC
+)
+
 target_link_libraries(
     LiteCoreWebSocket PUBLIC
     LiteCoreObjects
@@ -435,6 +446,39 @@ endif()
 
 add_subdirectory(tool_support EXCLUDE_FROM_ALL)
 
+if(LITECORE_BUILD_STATIC)
+    set(LC_MONOLITHIC_OBJECTS
+            $<TARGET_OBJECTS:LiteCoreObjects>
+            $<TARGET_OBJECTS:BLIPObjects>
+            $<TARGET_OBJECTS:FleeceObjects>
+    )
+
+    if(BUILD_ENTERPRISE)
+        list(APPEND LC_MONOLITHIC_OBJECTS
+                $<TARGET_OBJECTS:LiteCoreREST_Objects>
+                $<TARGET_OBJECTS:LiteCoreListener_Objects>
+        )
+
+        if(APPLE OR ANDROID)
+            list(APPEND LC_MONOLITHIC_OBJECTS
+                    $<TARGET_OBJECTS:LiteCoreP2P>
+            )
+        endif()
+    endif()
+
+    add_library(LiteCoreFull STATIC ${LC_MONOLITHIC_OBJECTS})
+
+    # Link external (non object) libraries
+    target_link_libraries(
+            LiteCoreFull PRIVATE
+            LiteCoreWebSocket
+            SQLite3_UnicodeSN
+            mbedcrypto
+            mbedtls
+            mbedx509
+            CouchbaseSqlite3
+    )
+endif()
 
 ### TESTS:
 
