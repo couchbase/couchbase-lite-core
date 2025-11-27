@@ -478,6 +478,14 @@ if(LITECORE_BUILD_STATIC)
             mbedx509
             CouchbaseSqlite3
     )
+
+    install(
+            TARGETS LiteCoreFull
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            ARCHIVE DESTINATION lib
+            OPTIONAL
+    )
 endif()
 
 ### TESTS:
