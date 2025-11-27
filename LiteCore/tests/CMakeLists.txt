@@ -131,6 +131,8 @@ setup_build()
 target_compile_definitions(
     CppTests PRIVATE
     -DLITECORE_CPP_TESTS=1
+    -DFLEECE_STATIC
+    -DLITECORE_STATIC
     -D_USE_MATH_DEFINES     # Define math constants like PI
     -DNOMINMAX              # Get rid of min/max macros that interfere with std::min/std::max
     -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
