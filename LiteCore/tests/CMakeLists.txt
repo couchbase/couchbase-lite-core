@@ -179,13 +179,19 @@ target_include_directories(
     ${TOP}vendor/vector_search
 )
 
+if(APPLE OR ANDROID)
+    set(ConditionalP2P $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreP2P>)
+else()
+    set(ConditionalP2P "")
+endif()
+
 target_link_libraries(
     CppTests PRIVATE
     LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
     LiteCoreREST_Objects
-    $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreP2P>
+    ${ConditionalP2P}
     $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreListener_Static>
     LiteCoreWebSocket
 )
