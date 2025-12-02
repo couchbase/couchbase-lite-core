@@ -171,22 +171,13 @@ void C4ExpectException(C4ErrorDomain domain, int code, const std::function<void(
 /// and closes & deletes it in tearDown. Also checks for leaks of classes that are InstanceCounted.
 class C4Test {
   public:
-    enum TestOptions { RevTreeOption = 0, VersionVectorOption, EncryptedRevTreeOption };
+    enum TestOptions { VersionVectorOption = 0, EncryptedVersionVectorOption };
 #if defined(COUCHBASE_ENTERPRISE)
-#    if SkipVersionVectorTest
-    static constexpr int         numberOfOptions               = 2;  // rev-tree, rev-tree encrypted
-    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "EncryptedRevTree"};
-#    else
-    static constexpr int         numberOfOptions               = 3;  // rev-tree, version vector, rev-tree encrypted
-    static constexpr const char* nameOfOption[numberOfOptions] = {"RevTree", "VersionVector", "EncryptedRevTree"};
-#    endif
+    static constexpr int         numberOfOptions               = 2;  //  See nameOfOption
+    static constexpr const char* nameOfOption[numberOfOptions] = {"VersionVector", "EncryptedVersionVector"};
 #else
-#    if SkipVersionVectorTest
     static constexpr int         numberOfOptions = 1;  // rev-tree
-#    else
-    static constexpr int numberOfOptions = 2;  // rev-tree, version vector
-#    endif
-    static constexpr const char* nameOfOption[2] = {"RevTree", "VersionVector"};
+    static constexpr const char* nameOfOption[numberOfOptions] = {"VersionVector"};
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
