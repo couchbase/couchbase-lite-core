@@ -17,7 +17,10 @@ services:
       - "18092:18092"
       - "18093:18093"
       - "18094:18094"
-
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "-u", "admin:password", "http://localhost:8091/pools/default/buckets/lite-core"]
+      interval: 5s
+      retries: 24
   lite-core-sg:
     build:
       context: ./sg
@@ -29,4 +32,9 @@ services:
       - "4984:4984"
       - "4985:4985"
     depends_on:
-      - "lite-core-cbs"
+      lite-core-cbs:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "-u", "admin:password", "http://localhost:4985/scratch"]
+      interval: 5s
+      retries: 24

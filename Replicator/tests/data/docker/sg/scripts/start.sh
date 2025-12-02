@@ -50,10 +50,6 @@ fi
 echo "Stop running sync-gateway service ..."
 systemctl stop sync_gateway
 
-wait_for_uri 200 http://lite-core-cbs:8091/pools/default/buckets/lite-core -u admin:password
-echo "Sleeping for 10 seconds to give server time to settle..."
-sleep 10
-
 # Start SG in background:
 BOOTSTRAP_CONFIG=${CONFIG_BASE_DIR}/${CONFIG_DIR}/${BOOTSTRAP_CONFIG_FILE}
 echo "Start sync-gateway with config : ${BOOTSTRAP_CONFIG} ..."
