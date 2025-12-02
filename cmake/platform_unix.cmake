@@ -178,7 +178,11 @@ function(setup_litecore_build_unix)
         )
     endforeach()
     if (BUILD_ENTERPRISE)
-        foreach(target  LiteCoreListener_Objects LiteCoreP2P)
+        set(targets LiteCoreListener_Objects)
+        if (ANDROID)
+            list(APPEND targets LiteCoreP2P)
+        endif()
+        foreach(target ${targets})
             target_compile_options(${target} PRIVATE
                     ${LITECORE_COMPILE_OPTIONS}
                     ${LITECORE_WARNINGS}
