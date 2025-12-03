@@ -105,6 +105,7 @@ namespace litecore::repl {
         }
 
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex);
+        void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex);
 
         Retained<Replicator> replicatorIfAny() override { return this; }
 
