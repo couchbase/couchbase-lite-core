@@ -168,7 +168,7 @@ TEST_CASE_METHOD(ReplicatorCollectionSGTest, "Bad Configurations SG", "[.SyncSer
     for ( auto& coll : _collections ) { importJSONLines(sFixturesDir + "names_100.json", coll, 0, false, 2, idPrefix); }
     ReplParams replParams{_collectionSpecs};
 
-    C4Error expectedError;
+    C4Error expectedError{};
     slice   expectedErrorMsg;
 
     SECTION("Mixed OneShot and Continuous Modes") {
