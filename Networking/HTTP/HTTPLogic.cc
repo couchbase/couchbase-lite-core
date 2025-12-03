@@ -19,6 +19,7 @@
 #include "Error.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
+#include "StringUtil.hh"
 #include "slice_stream.hh"
 #include "NumConversion.hh"
 #include "fleece/Fleece.hh"
@@ -354,17 +355,16 @@ namespace litecore::net {
             if ( bool isJSON = _responseHeaders["Content-Type"_sl].hasPrefix("application/json"_sl);
                  isJSON || _responseHeaders["Content-Type"_sl].hasPrefix("text/plain"_sl) ) {
                 if ( alloc_slice responseBody; socket.readHTTPBody(_responseHeaders, responseBody) ) {
+                    slice reason;
+                    Doc   json;
                     if ( isJSON ) {
-                        Doc json = Doc::fromJSON(responseBody);
-                        if ( slice reason = json["reason"].asString(); reason )
-                            _error = c4error_make(WebSocketDomain, int(_httpStatus), reason);
+                        json   = Doc::fromJSON(responseBody);
+                        reason = json["reason"].asString();
                     } else {  // text/plain
                         // trimming the ending '\n's
-                        slice reason = responseBody;
-                        while ( reason.size > 0 && reason[reason.size - 1] == '\n' )
-                            reason = reason.upTo(reason.size - 1);
-                        _error = c4error_make(WebSocketDomain, int(_httpStatus), reason);
+                        reason = trimWhitespace(responseBody);
                     }
+                    _error = c4error_make(WebSocketDomain, int(_httpStatus), (slice)reason);
                 }
             }
         }
