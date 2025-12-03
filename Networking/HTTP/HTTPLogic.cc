@@ -351,12 +351,20 @@ namespace litecore::net {
         Disposition disposition = receivedResponse(response);
         if ( disposition == kFailure && _error.domain == WebSocketDomain && _error.code == int(_httpStatus) ) {
             // Look for a more detailed HTTP error message in the response body:
-            if ( _responseHeaders["Content-Type"_sl].hasPrefix("application/json"_sl) ) {
-                alloc_slice responseBody;
-                if ( socket.readHTTPBody(_responseHeaders, responseBody) ) {
-                    Doc json = Doc::fromJSON(responseBody);
-                    if ( slice reason = json["reason"].asString(); reason )
+            if ( bool isJSON = _responseHeaders["Content-Type"_sl].hasPrefix("application/json"_sl);
+                 isJSON || _responseHeaders["Content-Type"_sl].hasPrefix("text/plain"_sl) ) {
+                if ( alloc_slice responseBody; socket.readHTTPBody(_responseHeaders, responseBody) ) {
+                    if ( isJSON ) {
+                        Doc json = Doc::fromJSON(responseBody);
+                        if ( slice reason = json["reason"].asString(); reason )
+                            _error = c4error_make(WebSocketDomain, int(_httpStatus), reason);
+                    } else {  // text/plain
+                        // trimming the ending '\n's
+                        slice reason = responseBody;
+                        while ( reason.size > 0 && reason[reason.size - 1] == '\n' )
+                            reason = reason.upTo(reason.size - 1);
                         _error = c4error_make(WebSocketDomain, int(_httpStatus), reason);
+                    }
                 }
             }
         }
