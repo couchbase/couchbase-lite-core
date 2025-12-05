@@ -216,9 +216,16 @@ namespace litecore {
             if ( rev == curRev ) {
                 nuRev = currentRevision();
             } else {
-                if ( rev->body() ) {
-                    auto props       = fleece::ValueFromData(rev->body(), kFLTrusted).asDict();
-                    nuProps          = props.mutableCopy(kFLDeepCopyImmutables);
+                if ( slice revBody = rev->body() ) {
+                    if ( extra.containsAddressRange(revBody) || body.containsAddressRange(revBody) ) {
+                        auto props = fleece::ValueFromData(revBody, kFLTrusted).asDict();
+                        nuProps    = props.mutableCopy(kFLDeepCopyImmutables);
+                    } else {
+                        // In rare cases `body` is not inside `extra`, thus not covered by `_extraDoc`,
+                        // so copy it into an alloc_slice and create a Doc on it: [CBL-7681]
+                        Doc revDoc(alloc_slice(revBody), kFLTrusted, sharedKeys());
+                        nuProps = revDoc.asDict().mutableCopy(kFLDeepCopyImmutables);
+                    }
                     nuRev.properties = nuProps;
                 }
                 nuRev.revID = rev->revID;
