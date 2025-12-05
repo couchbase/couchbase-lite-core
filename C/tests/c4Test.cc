@@ -133,14 +133,8 @@ string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 
 C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreguidelines-pro-type-member-init)
     constexpr static TestOptions numToTestOption[] = {
-#if SkipVersionVectorTest
-        RevTreeOption,
-        EncryptedRevTreeOption
-#else
-        RevTreeOption,
         VersionVectorOption,
-        EncryptedRevTreeOption
-#endif
+        EncryptedVersionVectorOption
     };
     static_assert(sizeof(numToTestOption) / sizeof(TestOptions) >= numberOfOptions);
     TestOptions testOption = numToTestOption[num];
@@ -203,7 +197,7 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
         kRev4ID          = C4STR("4-44444444");
     }
 
-    if ( testOption == EncryptedRevTreeOption ) {
+    if ( testOption == EncryptedVersionVectorOption ) {
         _dbConfig.encryptionKey.algorithm = kC4EncryptionAES256;
         memcpy(_dbConfig.encryptionKey.bytes, "this is not a random key at all.", kC4EncryptionKeySizeAES256);
     }
