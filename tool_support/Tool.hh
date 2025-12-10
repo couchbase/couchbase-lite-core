@@ -182,7 +182,11 @@ class Tool {
 
     std::string ansiItalic() { return ansi("3"); }
 
+    std::string ansiNoItalic() { return ansi("23"); }
+
     std::string ansiUnderline() { return ansi("4"); }
+
+    std::string ansiNoUnderline() { return ansi("24"); }
 
     std::string ansiRed() { return ansi("31"); }
 
