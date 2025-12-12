@@ -53,11 +53,7 @@ class ReplicatorLoopbackTest
 
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
-#if SkipVersionVectorTest
     static constexpr int numberOfOptions = 1;
-#else
-    static constexpr int numberOfOptions = 2;
-#endif
 
     ReplicatorLoopbackTest(int which) : C4Test(which), db2(createDatabase("2")) {
         // Change tuning param so that tests will actually create deltas, despite using small
