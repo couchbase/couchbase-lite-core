@@ -12,7 +12,9 @@
 
 #pragma once
 #include "LogDecoder.hh"
+#include "TextLogDecoder.hh"
 #include <algorithm>
+#include <array>
 #include <climits>
 #include <fstream>
 #include <queue>
@@ -27,22 +29,20 @@ namespace litecore {
     class MultiLogDecoder : public LogIterator {
       public:
         MultiLogDecoder() {
-            _startTime = {UINT_MAX, 0};
-            for ( unsigned i = 0; i <= kMaxLevel; i++ ) _startTimeByLevel[i] = {UINT_MAX, 0};
+            _startTime = kMaxTimestamp;
+            for ( unsigned i = 0; i <= kMaxLevel; i++ ) _startTimeByLevel[i] = kMaxTimestamp;
         }
 
         /// Adds a log iterator. Must be called before calling \ref next().
         /// The iterator is assumed to be at its start, so its \ref next() will be called first.
         void add(LogIterator* log) {
             assert(!_current);
-            if ( !log->next() ) return;
-
-            _logs.push(log);
 
             auto startTime = log->startTime();
             _startTime     = std::min(_startTime, startTime);
-            auto level     = log->level();
-            if ( level >= 0 && level <= kMaxLevel )
+            if ( !log->next() ) return;
+            _logs.push(log);
+            if ( auto level = log->level(); level >= 0 && level <= kMaxLevel )
                 _startTimeByLevel[level] = std::min(_startTimeByLevel[level], startTime);
         }
 
@@ -52,19 +52,28 @@ namespace litecore {
             if ( !in ) return false;
             in.exceptions(std::ifstream::badbit);
             _inputs.push_back(std::move(in));
-            LogDecoder decoder(_inputs.back());
+            std::unique_ptr<LogIterator> decoder;
+            if ( TextLogDecoder::looksTextual(_inputs.back()) )
+                decoder = std::make_unique<TextLogDecoder>(_inputs.back());
+            else
+                decoder = std::make_unique<LogDecoder>(_inputs.back());
             _decoders.push_back(std::move(decoder));
-            add(&_decoders.back());
+            add(_decoders.back().get());
             return true;
         }
 
         /// Time when the earliest log began
         [[nodiscard]] Timestamp startTime() const override { return _startTime; }
 
+        /// Time that earliest logs at `level` begin, or kMaxTimestamp if none.
+        [[nodiscard]] Timestamp startTimeOfLevel(unsigned level) const { return _startTimeByLevel[level]; }
+
         /// First time when logs of all levels are available
         [[nodiscard]] Timestamp fullStartTime() const {
-            Timestamp fullStartTime = {0, 0};
-            for ( unsigned i = 0; i <= kMaxLevel; i++ ) fullStartTime = std::max(fullStartTime, _startTimeByLevel[i]);
+            Timestamp fullStartTime = kMinTimestamp;
+            for ( auto& ts : _startTimeByLevel ) {
+                if ( fullStartTime < ts && ts != kMaxTimestamp ) fullStartTime = ts;
+            }
             return fullStartTime;
         }
 
@@ -116,10 +125,10 @@ namespace litecore {
         std::priority_queue<LogIterator*, std::vector<LogIterator*>, logcmp> _logs;
         LogIterator*                                                         _current{nullptr};
         Timestamp                                                            _startTime{};
-        Timestamp                                                            _startTimeByLevel[kMaxLevel + 1]{};
+        std::array<Timestamp, kMaxLevel + 1>                                 _startTimeByLevel{};
 
-        std::deque<LogDecoder>    _decoders;
-        std::deque<std::ifstream> _inputs;
+        std::vector<std::unique_ptr<LogIterator>> _decoders;
+        std::deque<std::ifstream>                 _inputs;
     };
 
 

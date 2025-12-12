@@ -16,6 +16,7 @@
 #include <map>
 #include <optional>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,9 @@ namespace litecore {
             time_t   secs;
             unsigned microsecs;
         };
+
+        static constexpr Timestamp kMinTimestamp{0, 0};
+        static constexpr Timestamp kMaxTimestamp{std::numeric_limits<time_t>::max(), 999999};
 
         virtual ~LogIterator() = default;
 
