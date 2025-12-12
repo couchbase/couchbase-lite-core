@@ -235,8 +235,6 @@ namespace litecore::repl {
 
         using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
 
-        void setMsgHandlerFor3_0_Client(Retained<blip::MessageIn>);
-
         Delegate*               _delegate;         // Delegate whom I report progress/errors to
         blip::Connection::State _connectionState;  // Current BLIP connection state
 

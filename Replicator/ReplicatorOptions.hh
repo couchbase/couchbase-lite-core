@@ -41,8 +41,6 @@ namespace litecore::repl {
         void*                                  callbackContext{nullptr};
         std::atomic<C4ReplicatorProgressLevel> progressLevel{kC4ReplProgressOverall};
 
-        bool collectionAware() const { return _mutables._collectionAware; }
-
         bool isActive() const { return _mutables._isActive; }
 
 #ifdef LITECORE_CPPTEST
@@ -53,8 +51,6 @@ namespace litecore::repl {
         void setDisableReplacementRevs(const bool disable) { _disableReplacementRevs = disable; }
 
         bool disableReplacementRevs() const { return _disableReplacementRevs; }
-
-        static bool inline sActiveIsCollectionAware = false;
 #endif
 
         const std::unordered_map<C4CollectionSpec, size_t>& collectionSpecToIndex() const {
@@ -345,12 +341,6 @@ namespace litecore::repl {
             }
         }
 
-        void rearrangeCollectionsFor3_0_Client() const {
-            _mutables._collectionAware = false;
-            std::vector<C4CollectionSpec> activeCollections{kC4DefaultCollectionSpec};
-            rearrangeCollections(activeCollections);
-        }
-
         static const std::unordered_set<slice> kWhiteListOfKeysToLog;
 
       private:
@@ -361,7 +351,6 @@ namespace litecore::repl {
 
         struct Mutables {
             mutable std::vector<CollectionOptions>               _workingCollections;
-            mutable bool                                         _collectionAware{true};
             mutable bool                                         _isActive{true};
             mutable std::unordered_map<C4CollectionSpec, size_t> _collectionSpecToIndex;
         };
@@ -463,22 +452,6 @@ namespace litecore::repl {
                                 "Invalid replicator configuration: kC4OneShot and kC4Continuous modes cannot be mixed "
                                 "in one replicator.");
                 }
-            }
-        }
-
-        // For the passive replicator, rearrangeCollectionsFor3_0_Client() will set
-        // collectionAware to false
-        if ( _mutables._isActive && collectionOpts.size() == 1 ) {
-            auto spec = collectionOpts[0].collectionSpec;
-            if ( spec == kC4DefaultCollectionSpec ) {
-#ifndef LITECORE_CPPTEST
-                _mutables._collectionAware = false;
-#else
-                // For the purpose to test clients not derived from Replicator
-                // that use 3.1 collection aware protocol even if the only collection
-                // is the default collection.
-                if ( !sActiveIsCollectionAware ) _mutables._collectionAware = false;
-#endif
             }
         }
     }

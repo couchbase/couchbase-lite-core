@@ -232,9 +232,7 @@ namespace litecore::repl {
             return fleece::narrow_cast<CollectionIndex>(msgIn.intProperty(kCollectionProperty, kNotCollectionIndex));
         }
 
-        void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const {
-            if ( _options->collectionAware() ) { msg[kCollectionProperty] = i; }
-        }
+        void assignCollectionToMsg(blip::MessageBuilder& msg, CollectionIndex i) const { msg[kCollectionProperty] = i; }
 
         // This method does two things. First it fetches the collectino index from 'msg';
         // then, it returns a pair of {collectionIndex, errorSlice} with the post-conditions:
