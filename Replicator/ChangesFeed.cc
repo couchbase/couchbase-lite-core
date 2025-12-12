@@ -94,7 +94,6 @@ namespace litecore::repl {
         // TODO: pushFilter should be collection-aware.
         if ( !_getForeignAncestors && !_options->pushFilter(_collectionIndex) ) options.flags &= ~kC4IncludeBodies;
         if ( !_skipDeleted ) options.flags |= kC4IncludeDeleted;
-        if ( _db.usingVersionVectors() ) options.flags |= kC4IncludeRevHistory;
 
         try {
             BorrowedCollection collection = _db.useCollection(_collectionSpec);
