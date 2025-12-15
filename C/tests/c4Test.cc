@@ -132,10 +132,7 @@ string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 
 
 C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreguidelines-pro-type-member-init)
-    constexpr static TestOptions numToTestOption[] = {
-        VersionVectorOption,
-        EncryptedVersionVectorOption
-    };
+    constexpr static TestOptions numToTestOption[] = {VersionVectorOption, EncryptedVersionVectorOption};
     static_assert(sizeof(numToTestOption) / sizeof(TestOptions) >= numberOfOptions);
     TestOptions testOption = numToTestOption[num];
 
@@ -183,13 +180,14 @@ C4Test::C4Test(int num) : _storage(kC4SQLiteStorageEngine) {  // NOLINT(cppcoreg
     objectCount = c4_getObjectCount();
 
     _dbConfig = {slice(TempDir()), kC4DB_Create};
-    if ( testOption == VersionVectorOption ) {
+    if ( testOption == VersionVectorOption || testOption == EncryptedVersionVectorOption ) {
         _dbConfig.flags |= kC4DB_VersionVectors | kC4DB_FakeVectorClock;
         kRev1ID = kRevID = kRev1ID_Alt = C4STR("1@*");
         kRev2ID                        = C4STR("2@*");
         kRev3ID                        = C4STR("3@*");
         kRev4ID                        = C4STR("4@*");
     } else {
+        Assert(false, "Unsupported option");
         kRev1ID = kRevID = C4STR("1-abcd");
         kRev1ID_Alt      = C4STR("1-dcba");
         kRev2ID          = C4STR("2-c001d00d");
@@ -325,6 +323,24 @@ void C4Test::upgradeToVersionVectors(C4Database*& database, bool fakeClock) {
 void C4Test::upgradeToVersionVectors(bool fakeClock) {
     upgradeToVersionVectors(db, fakeClock);
     syncDBConfig();
+}
+
+void C4Test::resetDBToRevTrees(C4Database*& database) {
+    C4DatabaseConfig2 config = dbConfig();
+    Assert((config.flags & kC4DB_VersionVectors), "db already uses Rev Trees");
+
+    alloc_slice name(c4db_getName(database));
+    REQUIRE(c4db_close(database, WITH_ERROR()));
+    c4db_release(database);
+    database = nullptr;
+    C4Error error{};
+    if ( !c4db_deleteNamed(name, config.parentDirectory, ERROR_INFO(&error)) ) Require(error.code == 0);
+
+    C4Log("---- Reopening '%.*s' with version vectors ---", FMTSLICE(name));
+    config.flags &= ~kC4DB_VersionVectors;
+    config.flags &= ~kC4DB_FakeVectorClock;
+    database = c4db_openNamed(name, &config, ERROR_INFO());
+    REQUIRE(database);
 }
 
 /*static*/ C4Collection* C4Test::createCollection(C4Database* db, C4CollectionSpec spec) {

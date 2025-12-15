@@ -176,7 +176,7 @@ class C4Test {
     static constexpr int         numberOfOptions               = 2;  //  See nameOfOption
     static constexpr const char* nameOfOption[numberOfOptions] = {"VersionVector", "EncryptedVersionVector"};
 #else
-    static constexpr int         numberOfOptions = 1;  // rev-tree
+    static constexpr int         numberOfOptions               = 1;  // rev-tree
     static constexpr const char* nameOfOption[numberOfOptions] = {"VersionVector"};
 #endif
 
@@ -231,6 +231,7 @@ class C4Test {
     /// Closes `db`, adds `kC4DB_VersionVectors` to config, and reopens.
     void upgradeToVersionVectors(bool fakeClock = false);
     void upgradeToVersionVectors(C4Database*&, bool fakeClock = false);
+    void resetDBToRevTrees(C4Database*&);
 
     static C4Collection* createCollection(C4Database* db, C4CollectionSpec spec);
     static C4Collection* getCollection(C4Database* db, C4CollectionSpec spec, bool mustExist = true);
