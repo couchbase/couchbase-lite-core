@@ -91,8 +91,23 @@ namespace litecore {
     }
 
     void Housekeeper::doExpirationAsync() {
-        logInfo("Housekeeper: enqueue _doExpiration");
-        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doExpiration));
+        // Callback function for _expiryTimer, executed in the Timer's thread.
+
+        RetainState cur = _retainState.load();
+        while ( cur != RetainState::OwnerWillRelease ) {
+            if ( _retainState.compare_exchange_strong(cur, RetainState::WillRetain) ) {
+                logInfo("Housekeeper: enqueue _doExpiration");
+                enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doExpiration));
+                if ( cur != RetainState::WillRetain ) {
+                    // Restore the previous state and notify the waitor
+                    _retainState.store(cur);
+                    _retainState.notify_one();
+                }
+                // otherwise, the first time it transitioned to WillRetain, we will restore and notify
+                return;
+            }
+        }
+        // Bailing out if the owner will release it.
     }
 
     void Housekeeper::_doExpiration() {
@@ -117,4 +132,15 @@ namespace litecore {
             logVerbose("Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
     }
 
+    // Block until _lifetimeState becomes RetainState::WillRelease
+    void Housekeeper::ownerWillRelease() {
+        RetainState cur{RetainState::Normal};
+        while ( !_retainState.compare_exchange_strong(cur, RetainState::OwnerWillRelease) ) {
+            if ( cur == RetainState::OwnerWillRelease ) break;
+            logInfo("Wait in ownerWillRelease()");
+            _retainState.wait(cur);
+            cur = RetainState::Normal;
+            logInfo("Try to transition to OwnerWillRelease");
+        }  // Post-condition: _retainState == RetainState::OwnerWillRelease
+    }
 }  // namespace litecore
