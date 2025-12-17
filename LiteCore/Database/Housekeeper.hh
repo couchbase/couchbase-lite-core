@@ -36,25 +36,20 @@ namespace litecore {
         /// reschedule its next expiration for earlier if necessary.
         void documentExpirationChanged(expiration_t exp);
 
-        void ownerWillRelease();  // blocking until safe to do it.
-
       private:
         void _start();
         void _stop();
+
+        bool _isStopped() const { return !_expiryTimer; }
+
         void _scheduleExpiration(bool onlyIfEarlier);
         void _doExpiration();
+        void _documentExpirationChanged(expiration_t exp);
         void doExpirationAsync();
-
-        enum class RetainState : unsigned {
-            Normal,
-            WillRetain,       // Normal -> WillRetain -> Normal
-            OwnerWillRelease  // Normal -> OwnerWillRelease (sink)
-        };
 
         alloc_slice                    _keyStoreName;
         BackgroundDB*                  _bgdb{nullptr};
-        actor::Timer                   _expiryTimer;
+        std::unique_ptr<actor::Timer>  _expiryTimer;
         fleece::Retained<C4Collection> _collection;  // Used for initialization only
-        std::atomic<RetainState>       _retainState{RetainState::Normal};
     };
 }  // namespace litecore

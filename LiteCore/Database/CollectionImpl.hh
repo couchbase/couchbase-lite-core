@@ -390,8 +390,6 @@ namespace litecore {
         bool stopHousekeeping() {
             if ( !_housekeeper ) return false;
             _housekeeper->stop();
-            // May block
-            _housekeeper->ownerWillRelease();
             _housekeeper = nullptr;
             return true;
         }
