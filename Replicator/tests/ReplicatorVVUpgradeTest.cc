@@ -59,6 +59,15 @@ class ReplicatorVVUpgradeTest : public ReplicatorLoopbackTest {
         upgradeToVersionVectors(db2, fakeClock);
         _collDB2 = createCollection(db2, _collSpec);
     }
+
+    /// Reopens both databases, enabling version vectors in both.
+    void resetDBsToRevTrees() {
+        resetDBToRevTrees(db);
+        _collDB1 = createCollection(db, _collSpec);
+        resetDBToRevTrees(db2);
+        _collDB2 = createCollection(db2, _collSpec);
+        syncDBConfig();
+    }
 };
 
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push][Upgrade]") {
@@ -69,6 +78,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push After VV Upgrade", "[Push][Upgra
 
     auto serverOpts = Replicator::Options::passive(_collSpec);
 
+    resetDBsToRevTrees();
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     Log("-------- First Replication --------");
@@ -94,6 +104,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull][Upgra
     //- db updates two of the docs it pushed, and creates a new one.
     //- db pushes to db2 again.
 
+    resetDBsToRevTrees();
     importJSONLines(sFixturesDir + "names_100.json", _collDB1);
     _expectedDocumentCount = 100;
     Log("-------- First Replication --------");
@@ -112,6 +123,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull After VV Upgrade", "[Pull][Upgra
 }
 
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push and Pull New Docs After VV Upgrade", "[Push][Pull][Upgrade]") {
+    resetDBsToRevTrees();
     populateAndSync();
 
     Log("-------- Create a doc in each db --------");
@@ -127,6 +139,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push and Pull New Docs After VV Upgra
 }
 
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Push and Pull Existing Docs After VV Upgrade", "[Push][Pull][Upgrade]") {
+    resetDBsToRevTrees();
     populateAndSync();
 
     Log("-------- Update existing doc in each db --------");
@@ -188,6 +201,7 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Rev-Tree Conflicts After VV U
         default:
             throw logic_error("unreachable");
     }
+    resetDBsToRevTrees();
 
     DYNAMIC_SECTION("" << sectionName) {
         createFleeceRev(_collDB1, docName, "1-1111"_sl, "{}"_sl);
@@ -234,6 +248,8 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgr
     const slice       kDoc1Rev2A  = "2-1111"_sl;
     const alloc_slice kDoc1Rev2B  = makeRealishVector("@BobBobBobBobBobBobBobA");
     const alloc_slice kDoc1RevRTE = makeRealishVector("@Revision+Tree+Encoding");
+
+    resetDBsToRevTrees();
 
     createFleeceRev(_collDB1, docName, "1-1111"_sl, "{}"_sl);
 
@@ -364,6 +380,9 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Mixed Conflicts After VV Upgr
 
 TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Conflicts After VV Upgrade", "[Conflicts][Upgrade][Pull]") {
     const auto docName = "test"_sl;
+
+    resetDBsToRevTrees();
+
     upgrade();
     syncDBConfig();
 

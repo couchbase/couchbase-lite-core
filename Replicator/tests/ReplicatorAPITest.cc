@@ -22,6 +22,8 @@
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
 #include "SequenceSet.hh"
+#include "SourceID.hh"
+#include "VersionVector.hh"
 
 using namespace fleece;
 using namespace std;
@@ -263,11 +265,14 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     c4::ref<C4Document> doc         = c4coll_getDoc(defaultColl, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 
-    CHECK(doc->revID == kRev2ID);
+    alloc_slice dbSourceID = c4db_getSourceID(db);
+    auto        pair       = split2(string_view(slice(kRev2ID)), string_view("@"));
+    REQUIRE(!pair.second.empty());
+    string rev2ID = string(pair.first) + "@" + dbSourceID.asString();
+
+    CHECK(slice(doc->revID) == slice(rev2ID));
     CHECK((doc->flags & kDocDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
-    REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == kRevID);
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Per Collection Context Documents Ended", "[Pull][Sync]") {

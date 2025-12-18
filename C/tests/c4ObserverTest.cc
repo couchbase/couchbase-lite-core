@@ -40,12 +40,6 @@ class C4ObserverTest : public C4Test {
         }
     }
 
-#if SkipVersionVectorTest
-    static constexpr int numberOfOptions = 1;
-#else
-    static constexpr int numberOfOptions = 2;  // rev-tree, vector; no need to test encryption
-#endif
-
     ~C4ObserverTest() {
         c4docobs_free(docObserver);
         c4dbobs_free(dbObserver);
