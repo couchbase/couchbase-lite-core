@@ -265,6 +265,10 @@ namespace litecore::repl {
     }
 
     void Replicator::docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex coll) {
+        enqueue(FUNCTION_TO_QUEUE(Replicator::_docRemoteAncestorChanged), std::move(docID), std::move(revID), coll);
+    }
+
+    void Replicator::_docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID, CollectionIndex coll) {
         Retained<Pusher> pusher = _subRepls[coll].pusher;
         if ( pusher ) pusher->docRemoteAncestorChanged(std::move(docID), std::move(revID));
     }
