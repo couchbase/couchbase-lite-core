@@ -26,7 +26,7 @@ namespace litecore {
     Housekeeper::Housekeeper(C4Collection* coll)
         : Actor(DBLog, stringprintf("Housekeeper for %s", asInternal(coll)->fullName().c_str()))
         , _keyStoreName(asInternal(coll)->keyStore().name())
-        , _expiryTimer(std::bind(&Housekeeper::doExpirationAsync, this))
+        , _expiryTimer(std::make_unique<actor::Timer>(std::bind(&Housekeeper::doExpirationAsync, this)))
         , _collection(coll) {}
 
     void Housekeeper::start() {
@@ -39,12 +39,18 @@ namespace litecore {
         waitTillCaughtUp();
     }
 
+    void Housekeeper::documentExpirationChanged(expiration_t exp) {
+        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_documentExpirationChanged), exp);
+    }
+
     void Housekeeper::_stop() {
-        _expiryTimer.stop();
+        _expiryTimer = nullptr;
         logVerbose("Housekeeper: stopped.");
     }
 
     void Housekeeper::_scheduleExpiration(bool onlyIfEarlier) {
+        if ( _isStopped() ) return;
+
         // CBL-3626: Opening the background database synchronously will
         // cause a deadlock when setting document expiration inside of
         // a transaction (inBatch) if it is the first time that document
@@ -81,9 +87,9 @@ namespace litecore {
             // The race is solved by using fireEarlierAfter, but any further calls
             // should continue to use fireAfter or the timer will never be rescheduled.
             if ( onlyIfEarlier ) {
-                _expiryTimer.fireEarlierAfter(chrono::milliseconds(delay));
+                _expiryTimer->fireEarlierAfter(chrono::milliseconds(delay));
             } else {
-                _expiryTimer.fireAfter(chrono::milliseconds(delay));
+                _expiryTimer->fireAfter(chrono::milliseconds(delay));
             }
         } else {
             _doExpiration();
@@ -96,6 +102,8 @@ namespace litecore {
     }
 
     void Housekeeper::_doExpiration() {
+        if ( _isStopped() ) return;
+
         logInfo("Housekeeper: expiring documents...");
         _bgdb->useInTransaction(_keyStoreName, [&](KeyStore& keyStore, SequenceTracker* sequenceTracker) -> bool {
             if ( sequenceTracker ) {
@@ -109,12 +117,12 @@ namespace litecore {
         _scheduleExpiration(false);
     }
 
-    void Housekeeper::documentExpirationChanged(expiration_t exp) {
-        // This doesn't have to be enqueued, since Timer is thread-safe.
+    void Housekeeper::_documentExpirationChanged(expiration_t exp) {
+        if ( _isStopped() ) return;
+
         if ( exp == expiration_t::None ) return;
         auto delay = exp - KeyStore::now();
-        if ( _expiryTimer.fireEarlierAfter(chrono::milliseconds(delay)) )
+        if ( _expiryTimer->fireEarlierAfter(chrono::milliseconds(delay)) )
             logVerbose("Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
     }
-
 }  // namespace litecore
