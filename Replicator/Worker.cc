@@ -309,15 +309,7 @@ namespace litecore::repl {
         constexpr static slice kErrorIndexOutOfRange       = "the collection property is out of range."_sl;
 
         slice err = nullslice;
-        if ( _options->collectionAware() ) {
-            if ( collIn == kNotCollectionIndex ) { err = kErrorIndexInappropriateUse; }
-        } else {
-            if ( collIn != kNotCollectionIndex ) {
-                err = kErrorIndexInappropriateUse;
-            } else {
-                collIn = 0;
-            }
-        }
+        if ( collIn == kNotCollectionIndex ) { err = kErrorIndexInappropriateUse; }
 
         if ( !err && collIn >= _options->workingCollectionCount() ) { err = kErrorIndexOutOfRange; }
 
