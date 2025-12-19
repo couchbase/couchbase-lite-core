@@ -32,12 +32,15 @@ C4_ASSUME_NONNULL_BEGIN
     C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
     stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
     `nativeHandle` field. */
-struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay for nativeHandle to be null
+struct C4Socket
     : public fleece::InstanceCounted
     , C4Base {
     /** One-time registration of socket callbacks. Must be called before using any socket-based
         API including the replicator. Do not call multiple times. */
     static void registerFactory(const C4SocketFactory& factory);
+
+    static bool hasRegisteredFactory();
+    static const C4SocketFactory& registeredFactory();
 
     /** Constructs a C4Socket from a "native handle", whose interpretation is up to the
         C4SocketFactory.  This is used by listeners to handle an incoming replication connection.
@@ -52,7 +55,8 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
         @param incoming  True if this is an incoming (server) connection, false for outgoing (client).
         @return  A new C4Socket initialized with the `nativeHandle`. */
     static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle, const C4Address& address,
-                                bool incoming = true);
+                                bool incoming = true,
+                                bool addTLS = false);
 
     /** Notification that a socket is making a TLS connection and has received the peer's (usually
         server's) certificate.
@@ -112,23 +116,77 @@ struct C4Socket  // NOLINT(cppcoreguidelines-pro-type-member-init) - its okay fo
 
     /** Stores an opaque value to associate with this object,
         e.g. a Unix file descriptor or C `FILE*`. */
-    void setNativeHandle(void* C4NULLABLE h) { nativeHandle = h; }
+    void setNativeHandle(void* C4NULLABLE h) { _nativeHandle = h; }
 
     /** Returns the opaque "native handle" (e.g. a Unix file descriptor or C `FILE*`) that you've
         associated with the socket. */
-    void* C4NULLABLE getNativeHandle() { return nativeHandle; }
+    void* C4NULLABLE getNativeHandle() { return _nativeHandle; }
 
   protected:
-    C4Socket() = default;
+    friend C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API;
+    friend void c4socket_release(C4Socket* C4NULLABLE socket) C4API;
+
+    C4Socket(C4SocketFactory const&, void* C4NULLABLE nativeHandle = nullptr);
     ~C4Socket() override;
 
-    void* C4NULLABLE nativeHandle;  ///< for client's use
+    // Retain/release have to be abstracted bc C4Socket does not itself inherit from RefCounted.
+    virtual void socket_retain() = 0;
+    virtual void socket_release() = 0;
+
+    C4SocketFactory const _factory;
+    void* C4NULLABLE _nativeHandle;  ///< for client's use
 };
 
 // Glue to make Retained<C4Socket> work:
-inline C4Socket* retain(C4Socket* socket) { return c4socket_retain(socket); }
+inline C4Socket* retain(C4Socket* C4NULLABLE socket) { return c4socket_retain(socket); }
 
-inline void release(C4Socket* socket) { c4socket_release(socket); }
+inline void release(C4Socket* C4NULLABLE socket) { c4socket_release(socket); }
+
+
+/** Abstract implementation of a socket factory, wrapping C4SocketFactory in a C++ API.
+ *  A convenience for protocol implementors. */
+class C4SocketFactoryImpl
+    : public fleece::RefCounted
+   , public fleece::InstanceCountedIn<C4SocketFactoryImpl>
+   , protected C4Base {
+public:
+    /// Returns a C4SocketFactory that can be used to open a C4Socket.
+    C4SocketFactory factory();
+
+    /// The C4Socket I implement. Null until opened.
+    C4Socket* socket() const FLPURE {return _socket;}
+
+protected:
+    C4SocketFactoryImpl() = default;
+
+    /// Call this from the `open` override.
+    void opened(C4Socket*);
+
+    void releaseSocket() {_socket = nullptr;}
+
+    //-------- My C4SocketFactory "methods"; called by my socket
+
+    /// Called by `C4SocketFactory::attached`. You probably don't need to override it.
+    virtual void attached();
+
+    /// Called by `C4SocketFactory::open`. Subclasses implementation must call `opened()`.
+    virtual void open(C4Socket* socket, const C4Address& address, C4Slice options) = 0;
+
+    /// Called by `C4SocketFactory::write`.
+    virtual void write(fleece::alloc_slice data) = 0;
+
+    /// Called by `C4SocketFactory::completedReceive`.
+    virtual void completedReceive(size_t byteCount) = 0;
+
+    /// Called by `C4SocketFactory::close()`.
+    virtual void close() = 0;
+
+private:
+    static const C4SocketFactory kFactory;
+    static C4SocketFactoryImpl* nativeHandle(C4Socket*);
+
+    fleece::Retained<C4Socket> _socket;
+};
 
 /** @} */
 

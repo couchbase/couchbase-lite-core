@@ -63,10 +63,10 @@ FilePath GetTempDirectory() {
     return kTempDir;
 }
 
-void InitTestLogging() {
+void InitTestLogging(int /*C4LogLevel*/ logLevel) {
     static once_flag once;
-    call_once(once, [] {
-        c4log_initConsole(kC4LogInfo);
+    call_once(once, [&] {
+        c4log_initConsole(C4LogLevel(logLevel));
 
         alloc_slice buildInfo = c4_getBuildInfo();
         alloc_slice version   = c4_getVersion();

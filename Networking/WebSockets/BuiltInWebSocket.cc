@@ -19,7 +19,7 @@
 #include "c4Database.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4ReplicatorTypes.h"
-#include "c4Socket+Internal.hh"
+#include "c4WebSocket.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
@@ -31,10 +31,10 @@ using namespace litecore::websocket;
 
 void C4RegisterBuiltInWebSocket() {
     // NOLINTBEGIN(performance-unnecessary-value-param)
-    C4SocketImpl::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
+    C4WebSocket::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
                                              std::shared_ptr<DBAccess> database,
                                              C4KeyPair*                externalKey) -> WebSocketImpl* {
-        return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options, externalKey), database);
+        return new BuiltInWebSocket(url, C4WebSocket::convertParams(options, externalKey), database);
     });
     // NOLINTEND(performance-unnecessary-value-param)
 }

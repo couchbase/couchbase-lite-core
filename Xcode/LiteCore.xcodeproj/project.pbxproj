@@ -690,7 +690,7 @@
 		93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7DE1E526CCC00CE1989 /* Puller.cc */; };
 		93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
-		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
+		93CD01111E933BE100AFB3FA /* c4WebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4WebSocket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
 		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
@@ -1339,8 +1339,8 @@
 		2747A1CF279B37E100F286AF /* SQLUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLUtil.cc; sourceTree = "<group>"; };
 		27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecordTest.cc; sourceTree = "<group>"; };
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
-		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
-		27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Socket+Internal.hh"; sourceTree = "<group>"; };
+		27491C9E1E7B2532001DC54B /* c4WebSocket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4WebSocket.cc; sourceTree = "<group>"; };
+		27491CA21E7B6A79001DC54B /* c4WebSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4WebSocket.hh"; sourceTree = "<group>"; };
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
@@ -3017,8 +3017,8 @@
 		277B956122459796005B7E79 /* API implementation */ = {
 			isa = PBXGroup;
 			children = (
-				27491C9E1E7B2532001DC54B /* c4Socket.cc */,
-				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
+				27491C9E1E7B2532001DC54B /* c4WebSocket.cc */,
+				27491CA21E7B6A79001DC54B /* c4WebSocket.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
 				2785C2682D012AA100F22817 /* c4Replicator+Pool.hh */,
 				D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */,
@@ -4921,7 +4921,7 @@
 				2743E2BE25F80102006F696D /* c4CAPI.cc in Sources */,
 				27027CD2255F4A9B00A96D7D /* VersionVector.cc in Sources */,
 				27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */,
-				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
+				93CD01111E933BE100AFB3FA /* c4WebSocket.cc in Sources */,
 				2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */,
 				42626ACC2B75B8AE006CF2B4 /* Extension.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
