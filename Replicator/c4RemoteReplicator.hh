@@ -15,7 +15,7 @@
 #pragma once
 #include "c4Private.h"
 #include "c4ReplicatorImpl.hh"
-#include "c4Socket+Internal.hh"
+#include "../Networking/WebSockets/c4WebSocket.hh"
 #include "Address.hh"
 #include "DBAccess.hh"
 #include "StringUtil.hh"

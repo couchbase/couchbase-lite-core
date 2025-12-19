@@ -26,6 +26,7 @@ function(set_litecore_source_base)
         C/c4Observer.cc
         C/c4PredictiveQuery.cc
         C/c4Query.cc
+        C/c4Socket.cc
         Crypto/SecureRandomize.cc
         Crypto/mbedUtils.cc
         Crypto/mbedSnippets.cc
@@ -96,6 +97,7 @@ function(set_litecore_source_base)
         LiteCore/Storage/SQLiteKeyStore.cc
         LiteCore/Storage/UnicodeCollator.cc
         Networking/Address.cc
+        Networking/WebSockets/c4WebSocket.cc
         Networking/HTTP/CookieStore.cc
         vendor/SQLiteCpp/src/Backup.cpp
         vendor/SQLiteCpp/src/Column.cpp
@@ -109,7 +111,6 @@ function(set_litecore_source_base)
         Replicator/c4Replicator.cc
         Replicator/c4Replicator_CAPI.cc
         Replicator/c4ReplicatorImpl.cc
-        Replicator/c4Socket.cc
         Replicator/ChangesFeed.cc
         Replicator/Checkpoint.cc
         Replicator/Checkpointer.cc
