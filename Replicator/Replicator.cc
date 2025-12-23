@@ -31,6 +31,7 @@
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "Headers.hh"
+#include "UUID.hh"
 #include "Instrumentation.hh"
 #include "fleece/Mutable.hh"
 
@@ -116,11 +117,6 @@ namespace litecore::repl {
 
             _loggingID  = string(db->useLocked()->getPath()) + " " + _loggingID;
             _importance = 2;
-
-            string dbLogName = db->useLocked([](const C4Database* db) {
-                DatabaseImpl* impl = asInternal(db);
-                return impl->dataFile()->loggingName();
-            });
 
 #ifdef LITECORE_CPPTEST
             _delayChangesResponse   = _options->delayChangesResponse();
@@ -839,7 +835,10 @@ namespace litecore::repl {
         logVerbose("Requesting get collections");
 
         MessageBuilder msg("getCollections"_sl);
-        auto&          enc = msg.jsonBody();
+        UUID           uuid = _db->useLocked([](C4Database* db) { return db->getPublicUUID(); });
+        msg["uuid"_sl]      = uuid.to_string();
+
+        auto& enc = msg.jsonBody();
         enc.beginDict();
         enc.writeKey("checkpoint_ids"_sl);
         enc.beginArray();
