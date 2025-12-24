@@ -1,5 +1,5 @@
 //
-// c4Socket+Internal.hh
+// c4WebSocket.hh
 //
 // Copyright 2017-Present Couchbase, Inc.
 //

@@ -1,7 +1,7 @@
 //
 // TCPSocketFactory.hh
 //
-// Copyright 2017-Present Couchbase, Inc.
+// Copyright 2025-Present Couchbase, Inc.
 //
 // Use of this software is governed by the Business Source License included
 // in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
