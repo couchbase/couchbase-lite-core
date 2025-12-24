@@ -31,7 +31,6 @@ using namespace litecore::net;
 using namespace litecore::repl;
 using namespace websocket;
 
-
 namespace litecore::repl {
 
     static C4WebSocket::InternalFactory sRegisteredInternalFactory;
@@ -70,11 +69,10 @@ namespace litecore::repl {
         return params;
     }
 
-    C4WebSocket::C4WebSocket(const URL& url, Role role, const alloc_slice& options,
-                               const C4SocketFactory* factory_, void* nativeHandle_)
-    :WebSocketImpl(url, role, effectiveFactory(factory_).framing != kC4NoFraming, convertParams(options))
-    ,C4Socket(effectiveFactory(factory_), nativeHandle_)
-    {}
+    C4WebSocket::C4WebSocket(const URL& url, Role role, const alloc_slice& options, const C4SocketFactory* factory_,
+                             void* nativeHandle_)
+        : WebSocketImpl(url, role, effectiveFactory(factory_).framing != kC4NoFraming, convertParams(options))
+        , C4Socket(effectiveFactory(factory_), nativeHandle_) {}
 
     WebSocket* WebSocketFrom(C4Socket* c4sock) { return dynamic_cast<C4WebSocket*>(c4sock); }
 

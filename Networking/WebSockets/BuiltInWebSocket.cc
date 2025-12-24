@@ -32,8 +32,8 @@ using namespace litecore::websocket;
 void C4RegisterBuiltInWebSocket() {
     // NOLINTBEGIN(performance-unnecessary-value-param)
     C4WebSocket::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
-                                             std::shared_ptr<DBAccess> database,
-                                             C4KeyPair*                externalKey) -> WebSocketImpl* {
+                                            std::shared_ptr<DBAccess> database,
+                                            C4KeyPair*                externalKey) -> WebSocketImpl* {
         return new BuiltInWebSocket(url, C4WebSocket::convertParams(options, externalKey), database);
     });
     // NOLINTEND(performance-unnecessary-value-param)

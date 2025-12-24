@@ -179,12 +179,12 @@ void c4Socket_setNativeHandle(C4Socket* socket, void* handle) noexcept { socket-
 void* C4NULLABLE c4Socket_getNativeHandle(C4Socket* socket) noexcept { return socket->getNativeHandle(); }
 
 C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API {
-    if (socket) socket->socket_retain();
+    if ( socket ) socket->socket_retain();
     return socket;
 }
 
 void c4socket_release(C4Socket* C4NULLABLE socket) C4API {
-    if (socket) socket->socket_release();
+    if ( socket ) socket->socket_release();
 }
 
 bool c4socket_gotPeerCertificate(C4Socket* socket, C4Slice certData, C4String hostname) C4API {
