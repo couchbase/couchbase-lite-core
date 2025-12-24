@@ -16,22 +16,17 @@
 #include "RingBuffer.hh"
 #include "TLSContext.hh"
 #include "WebSocketInterface.hh"
-#include <mutex>
-#include <utility>
-
-#include <mbedtls/base64.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/debug.h>
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
 #include <sockpp/mbedtls_context.h>
+#include <mutex>
+#include <utility>
 
 namespace litecore::net {
     using namespace std;
-    using namespace sockpp;
 
 
-    /** An adapter C4SocketFactory that adds TLS to an underlying C4SocketFactory. */
+    /** A combination C4Socket & C4SocketFactory that adds TLS to an underlying C4SocketFactory. */
     class TLSSocket final : public C4SocketFactoryImpl, public C4Socket, public Logging {
     public:
         /** Constructor.
@@ -55,8 +50,6 @@ namespace litecore::net {
                 mbedtls_ssl_free(_ssl.get());
         }
 
-        std::string loggingIdentifier() const override {return _url;}
-
         std::string_view hostname() const {
             if (!_url.empty()) {
                 C4Address addr;
@@ -68,7 +61,7 @@ namespace litecore::net {
 
         //-------- C4Socket API -- called by the "downstream" platform's socket-factory protocol code
 
-        // Note: The platform will never call these methods concurrently.
+        // Note: The platform code will never call these methods concurrently.
 
         /// Downstream platform socket opened.
         void opened() override {
@@ -117,7 +110,7 @@ namespace litecore::net {
                 _factory.close(this);
         }
 
-        /// Downstream platform socket received (ciphertext) data.
+        /// Downstream platform socket received ciphertext data.
         void received(slice data) override {
             BIO::Result ioResult;
             {
@@ -141,6 +134,9 @@ namespace litecore::net {
 
     protected:
 
+        std::string loggingIdentifier() const override {return _url;}
+
+
         //-------- My C4SocketFactory's "methods"; called by upstream C4WebSocket
 
 
@@ -150,7 +146,7 @@ namespace litecore::net {
                 unique_lock lock(_mutex);
                 C4SocketFactoryImpl::opened(socket);
                 _url = Address(addr).url();
-                logInfo("Connecting to %s ...", _url.c_str());
+                logInfo("Connecting to %.*s:%d ...", FMTSLICE(addr.hostname), addr.port);
             }
 
             // Delegate the call downstream, but convert the URL scheme to 'http' so the platform
@@ -199,7 +195,7 @@ namespace litecore::net {
         void close() override {
             logInfo("Close requested");
             BIO::Result ioResult {};
-            bool closing = false;
+            bool closeNow = false;
             {
                 unique_lock lock(_mutex);
                 if (_state < State::closing) {
@@ -207,12 +203,12 @@ namespace litecore::net {
                         check(mbedtls_ssl_close_notify(ssl));
                         ioResult = getBioResult();
                         if (_pendingDownstreamWrites == 0 && ioResult.toWrite.empty())
-                            closing = true;
+                            closeNow = true;
                     } else {
-                        closing = true;
+                        closeNow = true;
                     }
 
-                    if (closing) {
+                    if (closeNow) {
                         _state = State::closed;
                         _bio.closed();
                     } else {
@@ -221,7 +217,7 @@ namespace litecore::net {
                 }
             }
             performBIO(ioResult);
-            if (closing)
+            if (closeNow)
                 _factory.close(this);
         }
 
@@ -242,8 +238,8 @@ namespace litecore::net {
                 return false;
             if (!check(mbedtls_ssl_setup(_ssl.get(), context.get_ssl_config())))
                 return false;
-            if (string host(this->hostname()); !host.empty()) {
-                if (!check(mbedtls_ssl_set_hostname(_ssl.get(), host.c_str())))
+            if (auto host = hostname(); !host.empty()) {
+                if (!check(mbedtls_ssl_set_hostname(_ssl.get(), string(host).c_str())))
                     return false;
             }
 
@@ -267,7 +263,7 @@ namespace litecore::net {
                     check(status);
                     return;
                 }
-            } else if (_state == State::closed) {
+            } else if (_state >= State::closing) {
                 return;
             }
 
@@ -432,7 +428,8 @@ namespace litecore::net {
         }
 
 
-        /// Sends the results of BIO calls to the _factory. My _mutex must be unlocked!
+        /// Sends the results of BIO calls to the _factory.
+        /// My _mutex must be unlocked!
         void performBIO(BIO::Result& bioResult) {
             logDebug("performBIO: completed %zu bytes, writing %zu",
                 bioResult.bytesRead, bioResult.toWrite.size);
@@ -450,7 +447,7 @@ namespace litecore::net {
         ssize_t check(int mbedResult) {
             if (mbedResult >= 0) [[likely]]
                 return true;
-            C4Error error {};
+            C4Error error;
             switch (mbedResult) {
             case MBEDTLS_ERR_SSL_WANT_READ:
             case MBEDTLS_ERR_SSL_WANT_WRITE:
@@ -495,13 +492,13 @@ namespace litecore::net {
         Ref<TLSContext>                 _tlsContext;
         string                          _url;
         State                           _state = State::closed;
-        C4Error                         _error {};
         unique_ptr<mbedtls_ssl_context> _ssl;
         BIO                             _bio;
         RingBuffer                      _cleartextSendBuffer;
         std::unique_ptr<uint8_t[]>      _cleartextRecvBuffer;
         size_t                          _pendingDownstreamWrites = 0;
         size_t                          _pendingUpstreamReceived = 0;
+        C4Error                         _error {};
     };
 
 

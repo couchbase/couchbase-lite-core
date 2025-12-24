@@ -7,12 +7,15 @@
 #include "Certificate.hh"
 #include "Error.hh"
 #include "LiteCoreTest.hh"
-#include "Server.hh"
 #include "StringUtil.hh"
 #include "TCPSocketFactory.hh"
 #include "TLSCodec.hh"
 #include "TLSContext.hh"
 #include <chrono>
+
+#if COUCHBASE_ENTERPRISE
+#include "Server.hh"
+#endif
 
 using namespace fleece;
 using namespace litecore;
@@ -20,6 +23,8 @@ using namespace litecore::crypto;
 using namespace litecore::net;
 using namespace std;
 
+
+/** Utility base class that lets clients wait for properties to change. */
 class Waitable {
 public:
     C4Error error {};
@@ -50,6 +55,7 @@ protected:
 };
 
 
+/** A mock-like C4Socket that just records what happens. */
 class DummyC4Socket final : public RefCounted, public C4Socket, public Waitable {
 public:
     DummyC4Socket(C4SocketFactory const& factory, void* nativeHandle, bool isServer_)
@@ -244,6 +250,8 @@ TEST_CASE_METHOD(SocketFactoryTest, "TLSSocketFactory Client") {
 
 #pragma mark - SERVER:
 
+#if COUCHBASE_ENTERPRISE
+
 
 struct SocketFactoryTestDelegate : public REST::Server::Delegate, public Waitable {
     Retained<TLSContext> _tlsContext;
@@ -330,3 +338,5 @@ TEST_CASE_METHOD(SocketFactoryTest, "TLSSocketFactory Server") {
     c4log_setLevel(c4log_getDomain("WS", true), kC4LogDebug);
     testServerSocketFactory(true);
 }
+
+#endif

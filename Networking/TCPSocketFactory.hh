@@ -14,6 +14,7 @@
 #include "c4Socket.hh"
 #include "Logging.hh"
 #include "RingBuffer.hh"
+#include "StringUtil.hh"
 #include "TCPSocket.hh"
 #include "WebSocketInterface.hh"
 #include <mutex>
@@ -21,13 +22,16 @@
 
 namespace litecore::net {
 
-    /** A socket factory that implements a TCP client socket. */
+    /** A socket factory that uses TCPSocket to implement TCP connections.
+     *  Currently, this is only used by tests (SocketFactoryTest.cc), not the LiteCore library. */
     class TCPSocketFactory final : public C4SocketFactoryImpl, Logging {
     public:
+        /// Constructor for a client socket (to be created when `open` is called.)
         TCPSocketFactory()
         :Logging(websocket::WSLogDomain)
         { }
 
+        /// Constructor for a server-side socket.
         explicit TCPSocketFactory(std::unique_ptr<ResponderSocket> responderSocket)
         :Logging(websocket::WSLogDomain)
         ,_tcpSocket{std::move(responderSocket)}
@@ -43,8 +47,8 @@ namespace litecore::net {
         void open(C4Socket* socket, C4Address const& address, C4Slice options) override {
             std::unique_lock lock(_mutex);
             opened(socket);
-            _url = stringprintf("%.*s:%d", FMTSLICE(address.hostname), address.port);
-            logInfo("Opening on %s ...", _url.c_str());
+            _identifier = stringprintf("%.*s:%d", FMTSLICE(address.hostname), address.port);
+            logInfo("Opening on %s ...", _identifier.c_str());
 
             assert_precondition(!_tcpSocket);
             TCPSocket::initialize();
@@ -92,7 +96,7 @@ namespace litecore::net {
         }
 
     private:
-        std::string loggingIdentifier() const override { return _url; }
+        std::string loggingIdentifier() const override { return _identifier; }
 
         void openComplete() {
             logVerbose("...open completed");
@@ -187,7 +191,7 @@ namespace litecore::net {
 
         std::recursive_mutex            _mutex;
         Retained<TCPSocketFactory>      _selfRetain;
-        std::string                     _url;
+        std::string                     _identifier;
         std::unique_ptr<TCPSocket>      _tcpSocket;
         RingBuffer                      _writeBuffer {kWriteBufferInitialSize};
         size_t                          _curReadCapacity = kReadBufferSize;
