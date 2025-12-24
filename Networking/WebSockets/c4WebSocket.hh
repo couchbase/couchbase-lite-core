@@ -40,7 +40,7 @@ namespace litecore::repl {
         static Parameters convertParams(fleece::slice c4SocketOptions, C4KeyPair* externalKey = nullptr);
 
         C4WebSocket(const websocket::URL&, websocket::Role, const fleece::alloc_slice& options, const C4SocketFactory*,
-                     void* nativeHandle = nullptr);
+                    void* nativeHandle = nullptr);
 
         void closeWithException();
 
@@ -67,13 +67,14 @@ namespace litecore::repl {
         void sendBytes(fleece::alloc_slice bytes) override;
         void receiveComplete(size_t byteCount) override;
 
-        void socket_retain() override {fleece::retain(this);}
-        void socket_release() override {fleece::release(this);}
+        void socket_retain() override { fleece::retain(this); }
+
+        void socket_release() override { fleece::release(this); }
 
       private:
-        mutable std::mutex    _mutex;
-        int                   _responseStatus = 0;
-        alloc_slice           _responseHeadersFleece;
-        alloc_slice           _peerCertData;
+        mutable std::mutex _mutex;
+        int                _responseStatus = 0;
+        alloc_slice        _responseHeadersFleece;
+        alloc_slice        _peerCertData;
     };
 }  // namespace litecore::repl

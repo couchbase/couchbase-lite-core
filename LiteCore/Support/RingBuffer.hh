@@ -20,31 +20,30 @@ namespace litecore {
 
     /** A classic FIFO buffer of bytes. */
     class RingBuffer {
-    public:
+      public:
         /// Constructs a RingBuffer that can hold up to `capacity` bytes.
-        explicit RingBuffer(size_t capacity)
-        :_capacity{capacity}
-        ,_buffer{std::make_unique<std::byte[]>(capacity)}
-        { }
+        explicit RingBuffer(size_t capacity) : _capacity{capacity}, _buffer{std::make_unique<std::byte[]>(capacity)} {}
 
-        [[nodiscard]] size_t capacity() const FLPURE {return _capacity;}
-        [[nodiscard]] size_t size() const FLPURE {return _size;}
-        [[nodiscard]] bool empty() const FLPURE {return _size == 0;}
+        [[nodiscard]] size_t capacity() const FLPURE { return _capacity; }
+
+        [[nodiscard]] size_t size() const FLPURE { return _size; }
+
+        [[nodiscard]] bool empty() const FLPURE { return _size == 0; }
 
         /// The number of bytes that can be written, i.e. amount of empty space.
-        [[nodiscard]] size_t available() const FLPURE {return _capacity - _size;}
+        [[nodiscard]] size_t available() const FLPURE { return _capacity - _size; }
 
-        void clear() {_start = _size = 0;}
+        void clear() { _start = _size = 0; }
 
         /// Grows or shrinks the capacity.
         /// @throws std::invalid_argument if the new capacity is smaller than the current size.
         void setCapacity(size_t newCapacity) {
-            if (newCapacity != _capacity) {
-                if (newCapacity < _size) [[unlikely]]
+            if ( newCapacity != _capacity ) {
+                if ( newCapacity < _size ) [[unlikely]]
                     throw std::invalid_argument("capacity is too small for RingBuffer's contents");
                 RingBuffer newBuffer(newCapacity);
-                (void) newBuffer.write(this->readSome(_size));
-                (void) newBuffer.write(this->readSome(_size));
+                (void)newBuffer.write(this->readSome(_size));
+                (void)newBuffer.write(this->readSome(_size));
                 std::swap(*this, newBuffer);
             }
         }
@@ -53,24 +52,21 @@ namespace litecore {
         /// @returns the number of bytes added. */
         [[nodiscard]] size_t write(slice data) {
             size_t n = std::min(data.size, available());
-            if (n == 0) [[unlikely]]
+            if ( n == 0 ) [[unlikely]]
                 return 0;
             size_t end = _start + _size;
-            if (end >= _capacity)
-                end -= _capacity;
+            if ( end >= _capacity ) end -= _capacity;
             size_t n1 = std::min(n, _capacity - end);
             ::memcpy(&_buffer[end], data.buf, n1);
-            if (n1 > n)
-                ::memcpy(&_buffer[0], &data[n1], n - n1);
+            if ( n1 > n ) ::memcpy(&_buffer[0], &data[n1], n - n1);
             _size += n;
             return n;
         }
 
         /// Adds all of `data` to the end of the buffer, increasing capacity if necessary. */
         void growAndWrite(slice data) {
-            if (size_t cap = _size + data.size; cap > _capacity)
-                setCapacity(std::max(cap, 2 * _capacity));
-            (void) write(data);
+            if ( size_t cap = _size + data.size; cap > _capacity ) setCapacity(std::max(cap, 2 * _capacity));
+            (void)write(data);
         }
 
         /// Returns a slice pointing to contiguous bytes from the start of the buffer.
@@ -81,9 +77,7 @@ namespace litecore {
         }
 
         /// Removes up to `size` contiguous bytes from the _start_ of the buffer.
-        void discard(size_t nBytes) {
-            (void)readSome(nBytes);
-        }
+        void discard(size_t nBytes) { (void)readSome(nBytes); }
 
         /// Removes up to `size` contiguous bytes from the _start_ of the buffer.
         /// @returns a slice pointing to the bytes read.
@@ -92,11 +86,10 @@ namespace litecore {
         /// @warning  The bytes are invalidated when the RingBuffer is modified.
         [[nodiscard]] slice readSome(size_t size) {
             size_t n = std::min({size, _size, _capacity - _start});
-            slice result(&_buffer[_start], n);
+            slice  result(&_buffer[_start], n);
             _size -= n;
             _start += n;
-            if (_size == 0 || _start == _capacity)
-                _start = 0;
+            if ( _size == 0 || _start == _capacity ) _start = 0;
             return result;
         }
 
@@ -106,19 +99,18 @@ namespace litecore {
         [[nodiscard]] size_t read(void* dst, size_t size) {
             slice bytes1 = readSome(size);
             bytes1.copyTo(dst);
-            if (empty())
-                return bytes1.size;
+            if ( empty() ) return bytes1.size;
             slice bytes2 = readSome(size - bytes1.size);
             bytes2.copyTo(fleece::offsetby(dst, bytes1.size));
             return bytes1.size + bytes2.size;
         }
 
 
-    private:
-        size_t                       _capacity;     // Total size of buffer
-        size_t                       _start = 0;    // Index in _buffer of first byte
-        size_t                       _size = 0;     // Number of bytes currently stored
-        std::unique_ptr<std::byte[]> _buffer;       // Heap-allocated data buffer
+      private:
+        size_t                       _capacity;   // Total size of buffer
+        size_t                       _start = 0;  // Index in _buffer of first byte
+        size_t                       _size  = 0;  // Number of bytes currently stored
+        std::unique_ptr<std::byte[]> _buffer;     // Heap-allocated data buffer
     };
 
-}
+}  // namespace litecore

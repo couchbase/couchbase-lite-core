@@ -24,24 +24,20 @@ namespace litecore::net {
 
     /** A socket factory that uses TCPSocket to implement TCP connections.
      *  Currently, this is only used by tests (SocketFactoryTest.cc), not the LiteCore library. */
-    class TCPSocketFactory final : public C4SocketFactoryImpl, Logging {
-    public:
+    class TCPSocketFactory final
+        : public C4SocketFactoryImpl
+        , Logging {
+      public:
         /// Constructor for a client socket (to be created when `open` is called.)
-        TCPSocketFactory()
-        :Logging(websocket::WSLogDomain)
-        { }
+        TCPSocketFactory() : Logging(websocket::WSLogDomain) {}
 
         /// Constructor for a server-side socket.
         explicit TCPSocketFactory(std::unique_ptr<ResponderSocket> responderSocket)
-        :Logging(websocket::WSLogDomain)
-        ,_tcpSocket{std::move(responderSocket)}
-        { }
+            : Logging(websocket::WSLogDomain), _tcpSocket{std::move(responderSocket)} {}
 
-        ~TCPSocketFactory() override {
-            logDebug("~TCPSocketFactory");
-        }
+        ~TCPSocketFactory() override { logDebug("~TCPSocketFactory"); }
 
-    protected:
+      protected:
         // C4SocketFactory methods:
 
         void open(C4Socket* socket, C4Address const& address, C4Slice options) override {
@@ -53,7 +49,7 @@ namespace litecore::net {
             assert_precondition(!_tcpSocket);
             TCPSocket::initialize();
             auto clientSocket = std::make_unique<ClientSocket>();
-            if (clientSocket->connect(Address(address))) {
+            if ( clientSocket->connect(Address(address)) ) {
                 _tcpSocket = std::move(clientSocket);
                 openComplete();
             } else {
@@ -63,27 +59,24 @@ namespace litecore::net {
 
         void attached() override {
             C4SocketFactoryImpl::attached();
-            if (_tcpSocket)
-                openComplete();
+            if ( _tcpSocket ) openComplete();
         }
 
         void write(alloc_slice data) override {
-            if (data.size > 0) {
+            if ( data.size > 0 ) {
                 std::unique_lock lock(_mutex);
                 logDebug("Client gave me %zu bytes to write", data.size);
-                if (_writeBuffer.empty())
-                    awaitWriteable();
+                if ( _writeBuffer.empty() ) awaitWriteable();
                 _writeBuffer.growAndWrite(data);
             }
         }
 
         void completedReceive(size_t byteCount) override {
-            if (byteCount > 0) {
+            if ( byteCount > 0 ) {
                 std::unique_lock lock(_mutex);
                 logDebug("Client completed reading %zu bytes", byteCount);
                 Assert(byteCount + _curReadCapacity <= kReadBufferSize);
-                if (_curReadCapacity == 0)
-                    awaitReadable();
+                if ( _curReadCapacity == 0 ) awaitReadable();
                 _curReadCapacity += byteCount;
             }
         }
@@ -91,11 +84,10 @@ namespace litecore::net {
         void close() override {
             std::unique_lock lock(_mutex);
             logDebug("Client closing");
-            if (_tcpSocket)
-                _tcpSocket->close();
+            if ( _tcpSocket ) _tcpSocket->close();
         }
 
-    private:
+      private:
         std::string loggingIdentifier() const override { return _identifier; }
 
         void openComplete() {
@@ -103,7 +95,7 @@ namespace litecore::net {
             assert_precondition(_tcpSocket);
             _selfRetain = this;
             _tcpSocket->setNonBlocking(true);
-            _tcpSocket->onDisconnect([this] {disconnected();});
+            _tcpSocket->onDisconnect([this] { disconnected(); });
             awaitReadable();
             socket()->opened();
         }
@@ -122,13 +114,13 @@ namespace litecore::net {
             }
 
             ssize_t n = _tcpSocket->read(_readBuffer.data(), std::min(_readBuffer.size(), _curReadCapacity));
-            if (n > 0) {
+            if ( n > 0 ) {
                 // The bytes read count against the read-capacity:
                 _curReadCapacity -= n;
                 logVerbose("Read %zd bytes", n);
-                if (_curReadCapacity > 0 ) awaitReadable();
+                if ( _curReadCapacity > 0 ) awaitReadable();
                 socket()->received(slice(_readBuffer.data(), n));
-            } else if (n == 0) {
+            } else if ( n == 0 ) {
                 if ( _tcpSocket->atReadEOF() ) {
                     logVerbose("Zero-byte read: EOF from peer");
                     socket()->received(nullslice);
@@ -142,19 +134,19 @@ namespace litecore::net {
         }
 
         void awaitWriteable() {
-            _tcpSocket->onWriteable([this] {this->writeToSocket();});
+            _tcpSocket->onWriteable([this] { this->writeToSocket(); });
         }
 
         void writeToSocket() {
             std::unique_lock lock(_mutex);
-            while (!_writeBuffer.empty()) {
-                slice chunk = _writeBuffer.peek();
-                ssize_t n = _tcpSocket->write(chunk);
-                if (n >= 0) {
+            while ( !_writeBuffer.empty() ) {
+                slice   chunk = _writeBuffer.peek();
+                ssize_t n     = _tcpSocket->write(chunk);
+                if ( n >= 0 ) {
                     logDebug("Sent %zd of %zu bytes", n, chunk.size);
                     _writeBuffer.discard(n);
                     socket()->completedWrite(n);
-                    if (n < chunk.size) {
+                    if ( n < chunk.size ) {
                         awaitWriteable();
                         break;
                     }
@@ -173,9 +165,8 @@ namespace litecore::net {
 
         void closeWithError() {
             C4Error error = _tcpSocket->error();
-            if (!error)
-                logInfo("Closed");
-            else if (error == C4Error{POSIXDomain, ECONNRESET} && dynamic_cast<ResponderSocket*>(_tcpSocket.get()))
+            if ( !error ) logInfo("Closed");
+            else if ( error == C4Error{POSIXDomain, ECONNRESET} && dynamic_cast<ResponderSocket*>(_tcpSocket.get()) )
                 logInfo("Closed by client (ECONNRESET)");
             else
                 logError("Closed with error %s", error.description().c_str());
@@ -185,17 +176,16 @@ namespace litecore::net {
             _selfRetain = nullptr;  // allow myself to be freed now
         }
 
-
         static constexpr size_t kReadBufferSize         = 32 * 1024;
         static constexpr size_t kWriteBufferInitialSize = 32 * 1024;
 
-        std::recursive_mutex            _mutex;
-        Retained<TCPSocketFactory>      _selfRetain;
-        std::string                     _identifier;
-        std::unique_ptr<TCPSocket>      _tcpSocket;
-        RingBuffer                      _writeBuffer {kWriteBufferInitialSize};
-        size_t                          _curReadCapacity = kReadBufferSize;
-        std::array<std::byte,kReadBufferSize> _readBuffer;
+        std::recursive_mutex                   _mutex;
+        Retained<TCPSocketFactory>             _selfRetain;
+        std::string                            _identifier;
+        std::unique_ptr<TCPSocket>             _tcpSocket;
+        RingBuffer                             _writeBuffer{kWriteBufferInitialSize};
+        size_t                                 _curReadCapacity = kReadBufferSize;
+        std::array<std::byte, kReadBufferSize> _readBuffer;
     };
 
-}
+}  // namespace litecore::net

@@ -23,9 +23,8 @@ namespace litecore::net {
      *  @param nativeHandle  A `nativeHandle` for `factory`, if its connection is already open.
      *  @param tlsContext  A configured TLSContext.
      *  @returns  A new C4SocketFactory and nativeHandle to open a C4Socket with. */
-    std::pair<C4SocketFactory,void*> wrapSocketInTLS(const C4SocketFactory& factory,
-                                                     void* C4NULLABLE nativeHandle,
-                                                     TLSContext* tlsContext);
-}
+    std::pair<C4SocketFactory, void*> wrapSocketInTLS(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle,
+                                                      TLSContext* tlsContext);
+}  // namespace litecore::net
 
 C4_ASSUME_NONNULL_END

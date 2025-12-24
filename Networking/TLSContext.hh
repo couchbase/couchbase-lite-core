@@ -93,7 +93,7 @@ namespace litecore::net {
         std::unique_ptr<sockpp::tls_socket> wrapSocket(std::unique_ptr<sockpp::stream_socket>,
                                                        const std::string& peer_name);
 
-        sockpp::mbedtls_context& get_mbedtls_context() const FLPURE {return *_context;}
+        sockpp::mbedtls_context& get_mbedtls_context() const FLPURE { return *_context; }
 
       protected:
         ~TLSContext() override;
