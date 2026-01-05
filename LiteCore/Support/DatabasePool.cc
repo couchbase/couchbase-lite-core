@@ -24,9 +24,22 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
+
+    /// The default number of read-only C4Databases in a pool.
     static constexpr size_t kDefaultReadOnlyCapacity = 4;
 
+/// How long a thread will wait wait to borrow a C4Database, before throwing error::Busy.
+/// The exception is intended for detecting & breaking deadlocks, and should never happen in real use.
+/// 10 seconds seemed a reasonable value, but in some cases like replicating huge numbers of
+/// collections there can be enough contention that the timeout actually expires,
+/// and we don't want to turn a performance problem into a failure. [CBSE-21760]
+/// Thus we set it to a ridiculously high value in release builds.
+#if DEBUG
     static constexpr auto kTimeout = 10s;
+#else
+    static constexpr auto kTimeout = 5m;
+#endif
+
 
     static string nameOf(C4Database* db) { return asInternal(db)->dataFile()->loggingName(); }
 
