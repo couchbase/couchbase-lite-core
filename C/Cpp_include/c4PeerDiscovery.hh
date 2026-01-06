@@ -34,6 +34,7 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
+struct C4ListenerConfig;
 struct C4Socket;
 struct C4SocketFactory;
 
@@ -87,6 +88,9 @@ class C4PeerDiscovery {
 
     /// The `C4PeerDiscoveryProvider`s in use.
     std::vector<ProviderRef> const& providers() const;
+
+    /// Sets the configuration for incoming connections. Providers can access this.
+    void setListenerConfig(C4ListenerConfig const&);
 
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
     /// This factory is expected to handle normal IP-based WebSocket connections.
@@ -165,6 +169,8 @@ class C4PeerDiscovery {
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
     friend class C4Peer;
     friend class C4PeerDiscoveryProvider;
+
+    C4ListenerConfig const* listenerConfig() const;
 
     void browseStateChanged(C4PeerDiscoveryProvider*, bool state, C4Error = {});
 
@@ -358,6 +364,9 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     virtual void shutdown(std::function<void()> onComplete) = 0;
 
   protected:
+    /// Returns the listener configuration, if set, else nullptr.
+    C4ListenerConfig const* C4NULLABLE listenerConfig() const { return _discovery.listenerConfig(); }
+
     /// Reports that browsing has started, stopped or failed.
     /// If `state` is false, this method will call \ref removePeer on all online peers.
     void browseStateChanged(bool state, C4Error error = {}) {

@@ -313,18 +313,21 @@ static void testServerSocketFactory(bool withTLS) {
     SocketFactoryTestDelegate delegate(tlsContext);
     auto                      server = make_retained<REST::Server>(delegate);
     server->start(26876);
-    Log("** Server started**");
+    Log("** Server started on port 26876 -- make a connection...");
     delegate.waitFor([&] { return delegate.closedConnection; }, 9999s);
     server->stop();
 }
 
-TEST_CASE_METHOD(SocketFactoryTest, "TCPSocketFactory Server") {
+// These are not real tests! They're just a quick way to exercise TLSCodec and TCPSocketFactory.
+// They set up a server and wait for someone to connect to it.
+
+TEST_CASE_METHOD(SocketFactoryTest, "TCPSocketFactory Server", "[TLSCodec]") {
     InitTestLogging(kC4LogDebug);
     c4log_setLevel(c4log_getDomain("WS", true), kC4LogDebug);
     testServerSocketFactory(false);
 }
 
-TEST_CASE_METHOD(SocketFactoryTest, "TLSSocketFactory Server") {
+TEST_CASE_METHOD(SocketFactoryTest, "TLSSocketFactory Server", "[TLSCodec]") {
     InitTestLogging(kC4LogDebug);
     c4log_setLevel(c4log_getDomain("WS", true), kC4LogDebug);
     testServerSocketFactory(true);
