@@ -37,7 +37,7 @@ namespace litecore {
 #if DEBUG
     static constexpr auto kTimeout = 10s;
 #else
-    static constexpr auto kTimeout = 5m;
+    static constexpr auto kTimeout = 5min;
 #endif
 
 
