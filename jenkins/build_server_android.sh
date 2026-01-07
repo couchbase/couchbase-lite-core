@@ -13,7 +13,7 @@
 
 set -e
 
-NDK_VER="27.0.12077973"
+NDK_VER="27.2.12479018"
 CMAKE_VER="3.28.1"
 NINJA_VER="1.10.2"
 PKG_TYPE="zip"
@@ -113,8 +113,10 @@ function create_monolithic_static_lib() {
     { 
         echo "create libLiteCoreFull.a"
         echo "addlib libLiteCoreStatic.a"
-        echo "addlib EE_P2P/libmDNSResponder.a"
-        echo "addlib libLiteCoreWebSocket.a"
+        if [[ "$EDITION" == "enterprise" ]]; then
+            echo "addlib EE_P2P/libmDNSResponder.a"
+            echo "addlib libLiteCoreWebSocket.a"
+        fi
         echo "addlib libCouchbaseSqlite3.a"
         echo "addlib Networking/BLIP/vendor/zlib/libz.a"
         echo "addlib vendor/sqlite3-unicodesn/libSQLite3_UnicodeSN.a"
