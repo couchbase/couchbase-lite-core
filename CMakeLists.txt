@@ -390,7 +390,6 @@ set(
     Networking/NetworkInterfaces.cc
     Networking/Poller.cc
     Networking/TCPSocket.cc
-    Networking/TLSCodec.cc
     Networking/TLSContext.cc
     Networking/WebSockets/BuiltInWebSocket.cc
     vendor/sockpp/src/acceptor.cpp

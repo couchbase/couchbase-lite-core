@@ -89,7 +89,6 @@ add_executable(
     ${TOP}C/tests/c4Test.cc
     ${TOP}Crypto/CertificateTest.cc
     ${TOP}Networking/tests/CookieStoreTest.cc
-    ${TOP}Networking/tests/SocketFactoryTest.cc
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
@@ -116,6 +115,7 @@ if (BUILD_ENTERPRISE)
         ${EE_SRC}/P2P/tests/PeerMeshTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest_C.cc
+        ${EE_SRC}/P2P/tests/SocketFactoryTest.cc
     )
     target_include_directories(
         CppTests PRIVATE

@@ -54,10 +54,9 @@ struct C4Socket
             such as a file descriptor or a native object pointer.
         @param address  The address of the remote peer.
         @param incoming  True if this is an incoming (server) connection, false for outgoing (client).
-        @param incomingTLSConfig  TLS configuration to wrap this socket in.
         @return  A new C4Socket initialized with the `nativeHandle`. */
     static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle, const C4Address& address,
-                                bool incoming = true, C4TLSConfig* C4NULLABLE incomingTLSConfig = nullptr);
+                                bool incoming = true);
 
     /** Notification that a socket is making a TLS connection and has received the peer's (usually
         server's) certificate.

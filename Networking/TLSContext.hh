@@ -76,7 +76,8 @@ namespace litecore::net {
         /// @param config  The non-null C4TLSConfig from the C4ListenerConfig.
         /// @param c4Listener  The listener instance that will be passed as the first parameter
         ///                 to the config's `certAuthCallback`, if any.
-        static fleece::Ref<TLSContext> fromListenerOptions(const C4TLSConfig* config, C4Listener* c4Listener);
+        static fleece::Ref<TLSContext> fromListenerOptions(const C4TLSConfig*     config,
+                                                           C4Listener* C4NULLABLE c4Listener);
 
         /// Creates a default TLSContext with either the client or server role.
         explicit TLSContext(role_t);

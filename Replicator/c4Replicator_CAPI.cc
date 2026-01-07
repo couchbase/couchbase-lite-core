@@ -14,7 +14,7 @@
 #include "c4Replicator.hh"
 #include "c4Database.hh"
 #include "c4Socket.hh"
-#include "../Networking/WebSockets/c4WebSocket.hh"
+#include "c4WebSocket.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Replicator.h"
 #include "c4Socket.h"
