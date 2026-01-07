@@ -14,6 +14,7 @@
 #include "c4WebSocket.hh"
 #include "Address.hh"
 #include "TLSCodec.hh"
+#include "TLSContext.hh"
 #include "Error.hh"
 
 using namespace litecore;
@@ -41,13 +42,14 @@ const C4SocketFactory& C4Socket::registeredFactory() {
 }
 
 C4Socket* C4Socket::fromNative(const C4SocketFactory& factoryRef, void* nativeHandle, const C4Address& address,
-                               bool incoming, bool addTLS) {
+                               bool incoming, C4TLSConfig* incomingTLSConfig) {
     C4SocketFactory const* factoryPtr = &factoryRef;
-    // C4SocketFactory tlsFactory;
-    // if (addTLS) {    //TEMP //TODO
-    //     std::tie(tlsFactory, nativeHandle) = net::wrapSocketInTLS(factoryRef, nativeHandle, nullptr/*TEMP*/);
-    //     factoryPtr = &tlsFactory;
-    // }
+    C4SocketFactory        tlsFactory;
+    if ( incomingTLSConfig ) {
+        auto tlsContext = net::TLSContext::fromListenerOptions(incomingTLSConfig, (C4Listener*)nativeHandle);
+        std::tie(tlsFactory, nativeHandle) = net::wrapSocketFactoryInTLS(factoryRef, nativeHandle, tlsContext);
+        factoryPtr                         = &tlsFactory;
+    }
     // Note: This should be wrapped in `retain()` since `C4WebSocket` is ref-counted,
     // but doing so would cause client code to leak. Instead I added a warning to the doc-comment.
     auto socket = new repl::C4WebSocket(address.toURL(), incoming ? Role::Server : Role::Client, {}, factoryPtr,

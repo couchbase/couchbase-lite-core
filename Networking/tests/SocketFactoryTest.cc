@@ -169,7 +169,7 @@ static void testSocketFactory(string const& hostname, bool withTLS) {
     if ( withTLS ) {
         Log("-------- WITH TLS --------");
         Retained tlsContext        = new TLSContext(TLSContext::Client);
-        tie(factory, nativeHandle) = wrapSocketInTLS(factory, nativeHandle, tlsContext);
+        tie(factory, nativeHandle) = wrapSocketFactoryInTLS(factory, nativeHandle, tlsContext);
         url                        = "https://" + hostname;
     } else {
         url = "http://" + hostname;
@@ -263,7 +263,7 @@ struct SocketFactoryTestDelegate
         Retained        tcp          = new TCPSocketFactory(std::move(responder));
         C4SocketFactory factory      = tcp->factory();
         void*           nativeHandle = tcp.get();
-        if ( _tlsContext ) { tie(factory, nativeHandle) = wrapSocketInTLS(factory, nativeHandle, _tlsContext); }
+        if ( _tlsContext ) { tie(factory, nativeHandle) = wrapSocketFactoryInTLS(factory, nativeHandle, _tlsContext); }
 
         auto               socket       = new DummyC4Socket(factory, nativeHandle, true);
         Retained<C4Socket> retainSocket = socket;  // awkwardness bc Retained<DummyC4Socket> is broken

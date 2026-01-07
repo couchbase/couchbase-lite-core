@@ -16,11 +16,14 @@
 #include "RingBuffer.hh"
 #include "TLSContext.hh"
 #include "WebSocketInterface.hh"
+#include "fleece/Fleece.hh"
 #include <mbedtls/net_sockets.h>
 #include <mbedtls/ssl.h>
 #include <sockpp/mbedtls_context.h>
 #include <mutex>
 #include <utility>
+
+C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore::net {
     using namespace std;
@@ -31,16 +34,19 @@ namespace litecore::net {
         , public C4Socket
         , public Logging {
       public:
-        /** Constructor.
+        /** Constructor for a not-yet-open socket.
+         * @param platformFactory  The underlying socket factory to be wrapped. */
+        explicit TLSSocket(const C4SocketFactory& platformFactory) : TLSSocket(platformFactory, nullptr) {
+            Assert(platformFactory.context != nullptr);
+        }
+
+        /** Constructor for an already-open socket.
          * @param platformFactory  The underlying socket factory to be wrapped.
-         * @param platformNativeHandle  An existing `nativeHandle`, if any, for the platformFactory.
+         * @param platformNativeHandle  An existing `nativeHandle` for `platformFactory`.
          * @param tlsContext  The TLS context to use. */
         TLSSocket(const C4SocketFactory& platformFactory, void* platformNativeHandle, TLSContext* tlsContext)
-            : C4Socket(platformFactory, platformNativeHandle)
-            , Logging(websocket::WSLogDomain)
-            , _tlsContext(tlsContext)
-            , _cleartextSendBuffer{kBufferSize} {
-            Assert(platformNativeHandle != nullptr || platformFactory.context != nullptr);
+            : TLSSocket(platformFactory, platformNativeHandle) {
+            _tlsContext = tlsContext;
         }
 
         ~TLSSocket() override {
@@ -127,6 +133,11 @@ namespace litecore::net {
         }
 
       protected:
+        TLSSocket(const C4SocketFactory& platformFactory, void* C4NULLABLE platformNativeHandle)
+            : C4Socket(platformFactory, platformNativeHandle)
+            , Logging(websocket::WSLogDomain)
+            , _cleartextSendBuffer{kBufferSize} {}
+
         std::string loggingIdentifier() const override { return _url; }
 
         //-------- My C4SocketFactory's "methods"; called by upstream C4WebSocket
@@ -139,6 +150,14 @@ namespace litecore::net {
                 C4SocketFactoryImpl::opened(socket);
                 _url = Address(addr).url();
                 logInfo("Connecting to %.*s:%d ...", FMTSLICE(addr.hostname), addr.port);
+
+                Assert(!_tlsContext);
+                if ( options ) {
+                    Doc optDoc{alloc_slice(options)};
+                    _tlsContext = TLSContext::fromReplicatorOptions(optDoc.asDict());
+                    //TODO: What about the externalKey and authCallback parameters??
+                }
+                if ( !_tlsContext ) _tlsContext = make_retained<TLSContext>(TLSContext::Client);
             }
 
             // Delegate the call downstream, but convert the URL scheme to 'http' so the platform
@@ -214,7 +233,8 @@ namespace litecore::net {
         /// Set up my `mbedtls_ssl_context` when the platform socket opens.
         bool initTLS() {
             logDebug("initializing TLS, waiting for handshake");
-            assert_precondition(!_ssl);
+            Assert(_tlsContext);
+            Assert(!_ssl);
             _ssl = make_unique<mbedtls_ssl_context>();
             mbedtls_ssl_init(_ssl.get());
 
@@ -298,7 +318,7 @@ namespace litecore::net {
                 return check(MBEDTLS_ERR_X509_CERT_VERIFY_FAILED);
             }
 
-            if ( mbedtls_x509_crt const* cert = mbedtls_ssl_get_peer_cert(_ssl.get()) ) {
+            if ( mbedtls_x509_crt const* C4NULLABLE cert = mbedtls_ssl_get_peer_cert(_ssl.get()) ) {
                 if ( !socket()->gotPeerCertificate(slice(cert->raw.p, cert->raw.len), hostname()) ) {
                     warn("Peer cert was rejected by app");
                     return check(MBEDTLS_ERR_X509_CERT_VERIFY_FAILED);
@@ -440,7 +460,7 @@ namespace litecore::net {
 
         void setError(C4Error const& error) {
             logError("Error: %s", error.description().c_str());
-            assert_precondition(error);
+            DebugAssert(error);
             if ( !_error ) {
                 _error = error;
                 if ( _state < State::closing ) _state = State::closing;
@@ -454,7 +474,7 @@ namespace litecore::net {
         static constexpr size_t kBufferSize = 16384;
 
         recursive_mutex                 _mutex;
-        Ref<TLSContext>                 _tlsContext;
+        Retained<TLSContext>            _tlsContext;
         string                          _url;
         State                           _state = State::closed;
         unique_ptr<mbedtls_ssl_context> _ssl;
@@ -466,10 +486,17 @@ namespace litecore::net {
         C4Error                         _error{};
     };
 
-    pair<C4SocketFactory, void*> wrapSocketInTLS(const C4SocketFactory& factory, void* nativeHandle,
-                                                 TLSContext* tlsContext) {
+    C4SocketFactory wrapSocketFactoryInTLS(const C4SocketFactory& factory) {
+        auto socket = retain(new TLSSocket(factory));
+        return socket->factory();
+    }
+
+    pair<C4SocketFactory, void*> wrapSocketFactoryInTLS(const C4SocketFactory& factory, void* nativeHandle,
+                                                        TLSContext* tlsContext) {
         auto socket = retain(new TLSSocket(factory, nativeHandle, tlsContext));
         return {socket->factory(), nativeHandle ? socket : nullptr};
     }
 
 }  // namespace litecore::net
+
+C4_ASSUME_NONNULL_END
