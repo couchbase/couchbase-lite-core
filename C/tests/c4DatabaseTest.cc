@@ -30,6 +30,7 @@
 #include <cerrno>
 #include <future>
 #include <iostream>
+#include <mutex>
 #include <thread>
 
 #include "sqlite3.h"
