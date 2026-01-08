@@ -41,7 +41,7 @@ selectStatement =
         sr:selectResults _              { setAny(select, "WHAT"_sl, sr); }
         (f:from _                       { setAny(select, "FROM"_sl, f); }
             )?
-        (WHERE w:expression             { setAny(select, "WHERE"_sl, w); }
+        (WHERE w:expression _           { setAny(select, "WHERE"_sl, w); }
             )?
         (g:groupBy _                    { setAny(select, "GROUP_BY"_sl, g); }
             (h:having                   { setAny(select, "HAVING"_sl, h); }
@@ -153,7 +153,7 @@ caseExpression =
 
 
 anyEveryExpression =
-    a:anyEvery _ v:variableName _ IN _ e:expression _ SATISFIES _ s:expression END
+    a:anyEvery _ v:variableName _ IN _ e:expression _ SATISFIES _ s:expression _ END
                                         { if (s.is<MutableArray>())
                                             substituteVariable(v, s);
                                           auto oper = op(a);
@@ -259,7 +259,7 @@ OP_PREC_1 = <'||'>                      { $$ = trim(yytext);}
 
 
 inExpression =
-    x:expr5 i:IN_OR_NOT
+    x:expr5 _ i:IN_OR_NOT
         (s:selectExpr                  &{false} # TODO: Support in LiteCore   { $$ = op(i, x, s); }
         | p:parenExprs                  { $$ = op(i, x, insertAny(p, 0, string("[]"))); }
         | a:arrayLiteral                { $$ = op(i, x, a); }

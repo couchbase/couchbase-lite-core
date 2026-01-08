@@ -65,9 +65,22 @@ TEST_CASE_METHOD(N1QLParserTest, "CBL-6245", "[Query][N1QL][C]") {
 
     // This doesn't compile without brackets around the `SATISFIES` expression.
     // Should be fixed by CBL-6324.
-    //CHECK(translate("SELECT META().id FROM admindb WHERE type = 'file' AND ANY v in versions SATISFIES "
-    //                "v.docGuid IN ('docGuidExample') END")
-    //      == "q");
+    CHECK(translate("SELECT META().id FROM admindb WHERE type = 'file' AND ANY v IN versions "
+                    "SATISFIES v.docGuid IN ('docGuidExample') END")
+          == "{'FROM':[{'COLLECTION':'admindb'}],'WHAT':[['_.',['meta()'],'.id']],"
+             "'WHERE':['AND',['=',['.type'],'file'],"
+             "['ANY','v',['.versions'],['IN',['?v.docGuid'],['[]','docGuidExample']]]]}");
+
+    // CBL-7766
+    CHECK(translate(R"(SELECT * FROM _ WHERE type == "Session" AND )"
+                    R"(name IN ["session4", "session5"] ORDER BY startTime)")
+          == "{'FROM':[{'COLLECTION':'_'}],'ORDER_BY':[['.startTime']],'WHAT':[['.']],"
+             "'WHERE':['AND',['=',['.type'],'Session'],['IN',['.name'],"
+             "['[]','session4','session5']]]}");
+    CHECK(translate(R"(SELECT * FROM _ WHERE type == "Session" AND )"
+                    R"(name IN ("session4", "session5") LIMIT 1)")
+          == "{'FROM':[{'COLLECTION':'_'}],'LIMIT':1,'WHAT':[['.']],'WHERE':['AND',['=',"
+             "['.type'],'Session'],['IN',['.name'],['[]','session4','session5']]]}");
 }
 
 // NOTE: the translate() method converts `"` to `'` in its output, to make the string literals
