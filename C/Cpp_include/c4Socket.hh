@@ -118,6 +118,8 @@ struct C4Socket
         e.g. a Unix file descriptor or C `FILE*`. */
     void setNativeHandle(void* C4NULLABLE h) { _nativeHandle = h; }
 
+    C4SocketFactory const& getFactory() const {return _factory;}
+
     /** Returns the opaque "native handle" (e.g. a Unix file descriptor or C `FILE*`) that you've
         associated with the socket. */
     void* C4NULLABLE getNativeHandle() { return _nativeHandle; }

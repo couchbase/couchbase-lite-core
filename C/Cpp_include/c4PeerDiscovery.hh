@@ -41,6 +41,10 @@ struct C4SocketFactory;
 class C4Peer;
 class C4PeerDiscoveryProvider;
 
+namespace litecore::net {
+    class TLSContext;
+}
+
 /** The official logging channel of peer discovery. */
 extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
 
@@ -89,8 +93,9 @@ class C4PeerDiscovery {
     /// The `C4PeerDiscoveryProvider`s in use.
     std::vector<ProviderRef> const& providers() const;
 
-    /// Sets the configuration for incoming connections. Providers can access this.
-    void setListenerConfig(C4ListenerConfig const&);
+    /// Sets the TLS configuration for incoming connections.
+    /// Used by \ref C4PeerDiscoveryProvider::createIncomingSocketWithTLS
+    void setTLSContext(litecore::net::TLSContext const*);
 
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
     /// This factory is expected to handle normal IP-based WebSocket connections.
@@ -170,7 +175,7 @@ class C4PeerDiscovery {
     friend class C4Peer;
     friend class C4PeerDiscoveryProvider;
 
-    C4ListenerConfig const* listenerConfig() const;
+    fleece::Ref<litecore::net::TLSContext const> tlsContext() const;
 
     void browseStateChanged(C4PeerDiscoveryProvider*, bool state, C4Error = {});
 
@@ -364,9 +369,6 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     virtual void shutdown(std::function<void()> onComplete) = 0;
 
   protected:
-    /// Returns the listener configuration, if set, else nullptr.
-    C4ListenerConfig const* C4NULLABLE listenerConfig() const { return _discovery.listenerConfig(); }
-
     /// Reports that browsing has started, stopped or failed.
     /// If `state` is false, this method will call \ref removePeer on all online peers.
     void browseStateChanged(bool state, C4Error error = {}) {
@@ -404,6 +406,8 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     bool removePeer(std::string_view id, bool moreComing) { return _discovery.removePeer(id, moreComing); }
 
     void noMorePeersComing() { _discovery.noMorePeersComing(); }
+
+    fleece::Ref<C4Socket> createIncomingSocketWithTLS(C4SocketFactory const&, void* nativeHandle, C4Address const&);
 
     /// Notifies observers about an incoming connection from a peer.
     /// @note  If the connection is not accepted, caller must close the C4Socket.
