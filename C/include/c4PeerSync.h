@@ -17,6 +17,9 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
+/** Returns the English name of a C4PeerSyncProtocol, or "???" if unknown. For logging purposes. */
+CBL_CORE_API const char* c4peerSync_nameOfProtocol(C4PeerSyncProtocol) C4API;
+
 /** Creates a new C4PeerSync, but doesn't start it.
     @note You are responsible for freeing the returned reference with `c4peersync_free`.
     @note  This function is thread-safe. */

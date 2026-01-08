@@ -66,15 +66,15 @@ struct C4PeerSync
 
     /** Configuration of a C4PeerSync. */
     struct Parameters {
-        std::string_view                  peerGroupID;        ///< App identifier for peer discovery
-        std::span<const std::string_view> protocols;          ///< Which protocols to use (empty = all)
-        C4Cert*                           tlsCert;            ///< My TLS certificate (server+client)
-        C4KeyPair*                        tlsKeyPair;         ///< Certificate's key-pair
-        C4Database*                       database;           ///< Database to sync
-        std::span<C4PeerSyncCollection>   collections;        ///< Collections to sync
-        slice                             optionsDictFleece;  ///< Replicator options
-        C4ReplicatorProgressLevel         progressLevel;      ///< Level of progress notifications
-        Delegate*                         delegate;           ///< Your object that receives notifications
+        std::string_view                peerGroupID;        ///< App identifier for peer discovery
+        C4PeerSyncProtocols             protocols;          ///< Which protocol(s) to use
+        C4Cert*                         tlsCert;            ///< My TLS certificate (server+client)
+        C4KeyPair*                      tlsKeyPair;         ///< Certificate's key-pair
+        C4Database*                     database;           ///< Database to sync
+        std::span<C4PeerSyncCollection> collections;        ///< Collections to sync
+        slice                           optionsDictFleece;  ///< Replicator options
+        C4ReplicatorProgressLevel       progressLevel;      ///< Level of progress notifications
+        Delegate*                       delegate;           ///< Your object that receives notifications
     };
 
     /** @note The database passed in the parameters is only used in the constructor to obtain a new database object via openAgain. */

@@ -19,9 +19,14 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
-/* Protocol ID constants for use with `C4PeerSyncParameters.protocols`. */
-CBL_CORE_API extern const C4String kPeerSyncProtocol_DNS_SD;       ///< DNS-SD ("Bonjour") protocol over IP.
-CBL_CORE_API extern const C4String kPeerSyncProtocol_BluetoothLE;  ///< Bluetooth LE protocol with L2CAP. (UNAVAILABLE)
+/** Protocol ID constants for use with `C4PeerSyncParameters.protocols`. */
+typedef C4_OPTIONS(uint32_t, C4PeerSyncProtocols){
+        kPeerSyncProtocol_DNS_SD      = 0x01,  ///< DNS-SD ("Bonjour") protocol with TCP sockets.
+        kPeerSyncProtocol_BluetoothLE = 0x02,  ///< Bluetooth LE protocol with L2CAP sockets.
+};
+
+/** Synonym for `C4PeerSyncProtocols`, used to denote a single protocol (i.e. exactly 1 bit set) */
+typedef C4PeerSyncProtocols C4PeerSyncProtocol;
 
 /** The unique ID of a peer, derived from its X.509 certificate.
     (It's technically a SHA256 digest, not a UUID, but we sometimes call it a UUID.)
@@ -113,17 +118,16 @@ typedef struct C4PeerSyncCollection {
 
 /** Top-level configuration for creating a C4PeerSync object. */
 typedef struct C4PeerSyncParameters {
-    C4String                   peerGroupID;        ///< App identifier for peer discovery
-    C4String const* C4NULLABLE protocols;          ///< Array of protocols to use (empty means all)
-    size_t                     protocolsCount;     ///< Size of protocols array
-    C4Cert*                    tlsCert;            ///< My TLS certificate (server+client)
-    C4KeyPair*                 tlsKeyPair;         ///< Certificate's key-pair
-    C4Database*                database;           ///< Database to sync
-    C4PeerSyncCollection*      collections;        ///< Collections to sync
-    size_t                     collectionCount;    ///< Size of collections[]
-    C4Slice                    optionsDictFleece;  ///< Optional Fleece-encoded dictionary of replicator options
-    C4ReplicatorProgressLevel  progressLevel;      ///< Level of detail in replicator callbacks
-    C4PeerSyncCallbacks        callbacks;          ///< Client callbacks
+    C4String                  peerGroupID;        ///< App identifier for peer discovery
+    C4PeerSyncProtocols       protocols;          ///< Which protocols to use
+    C4Cert*                   tlsCert;            ///< My TLS certificate (server+client)
+    C4KeyPair*                tlsKeyPair;         ///< Certificate's key-pair
+    C4Database*               database;           ///< Database to sync
+    C4PeerSyncCollection*     collections;        ///< Collections to sync
+    size_t                    collectionCount;    ///< Size of collections[]
+    C4Slice                   optionsDictFleece;  ///< Optional Fleece-encoded dictionary of replicator options
+    C4ReplicatorProgressLevel progressLevel;      ///< Level of detail in replicator callbacks
+    C4PeerSyncCallbacks       callbacks;          ///< Client callbacks
 } C4PeerSyncParameters;
 
 /** Information about a peer, returned from \ref c4peersync_getPeerInfo.
