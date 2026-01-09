@@ -75,6 +75,7 @@ namespace litecore::net {
         }
     }
 
+#ifdef COUCHBASE_ENTERPRISE
     Ref<TLSContext> TLSContext::fromListenerOptions(const C4TLSConfig* tlsConfig, C4Listener* c4Listener) {
         Assert(tlsConfig->certificate);
         Retained<Cert>       cert = tlsConfig->certificate->assertSignedCert();
@@ -84,15 +85,15 @@ namespace litecore::net {
                 privateKey = tlsConfig->key->getPrivateKey();
                 break;
             case kC4PrivateKeyFromCert:
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+#    ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
                 privateKey = cert->loadPrivateKey();
                 if ( !privateKey )
                     error::_throw(error::CryptoError,
                                   "No persistent private key found matching certificate public key");
                 break;
-#else
+#    else
                 error::_throw(error::Unimplemented, "kC4PrivateKeyFromCert not implemented");
-#endif
+#    endif
         }
 
         auto tlsContext = make_retained<TLSContext>(Server);
@@ -109,6 +110,7 @@ namespace litecore::net {
 
         return tlsContext;
     }
+#endif
 
     TLSContext::TLSContext(role_t role)
         : _context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER)), _role(role) {
