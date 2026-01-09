@@ -12,7 +12,7 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4PeerSyncTypes.h"  // for C4PeerID
+#include "c4PeerSyncTypes.h"  // for C4PeerID, C4PeerSyncProtocols
 #include "c4Error.h"
 #include "Observer.hh"
 #include "fleece/InstanceCounted.hh"
@@ -40,6 +40,10 @@ struct C4SocketFactory;
 class C4Peer;
 class C4PeerDiscoveryProvider;
 
+namespace litecore::net {
+    class TLSContext;
+}
+
 /** The official logging channel of peer discovery. */
 extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
 
@@ -59,22 +63,17 @@ class C4PeerDiscovery {
     using ProviderFactory = ProviderRef (*)(C4PeerDiscovery& discovery, std::string_view peerGroupID);
 
     /// One-time registration of a provider class. The function will be called when constructing a C4PeerDiscovery.
-    static void registerProvider(std::string_view providerName, ProviderFactory);
+    static void registerProvider(C4PeerSyncProtocol, ProviderFactory);
 
-    static std::vector<std::string> registeredProviders();
+    /// The set of available protocols, those for which providers are registered.
+    static C4PeerSyncProtocols registeredProtocols();
 
-    /// Constructor. Uses all registered providers.
+    /// Constructor.
     /// @param peerGroupID  An app-specific unique identifier. Will discover other devices that use this identifier.
     ///                   It must be 63 characters or less and may not contain `.`, `,` or `\\`.
     /// @param thisPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
-    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID);
-
-    /// Constructor. Uses the named provider classes.
-    /// @param peerGroupID  An app-specific unique identifier.
-    /// @param thisPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
-    /// @param providerNames  A list of names of registered C4PeerDiscoveryProviders.
-    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID,
-                             std::span<const std::string_view> providerNames);
+    /// @param protocols  Which protocols/providers to use.
+    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID, C4PeerSyncProtocols protocols);
 
     /// The destructor shuts everything down in an orderly fashion, not returning until complete.
     ~C4PeerDiscovery();
@@ -85,8 +84,12 @@ class C4PeerDiscovery {
     /// This device's peer ID.
     C4PeerID const& peerID() const;
 
-    /// The `C4PeerDiscoveryProvider`s in use.
+    /// Which providers are configured.
     std::vector<ProviderRef> const& providers() const;
+
+    /// Sets the TLS configuration for incoming connections.
+    /// (Internal API, used by \ref C4PeerDiscoveryProvider::createIncomingSocketWithTLS)
+    void setTLSContext(litecore::net::TLSContext const*);
 
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
     /// This factory is expected to handle normal IP-based WebSocket connections.
@@ -165,6 +168,8 @@ class C4PeerDiscovery {
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
     friend class C4Peer;
     friend class C4PeerDiscoveryProvider;
+
+    fleece::Ref<litecore::net::TLSContext const> tlsContext() const;
 
     void browseStateChanged(C4PeerDiscoveryProvider*, bool state, C4Error = {});
 
@@ -287,20 +292,19 @@ class C4Peer
  *         threads, and they may issue their own calls on arbitrary threads. */
 class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
   public:
-    static constexpr std::string_view kDNS_SD      = "DNS-SD";       ///< Standard provider name
-    static constexpr std::string_view kBluetoothLE = "BluetoothLE";  ///< Standard provider name
-
-    explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery, std::string_view providerName,
+    explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery, C4PeerSyncProtocol protocol_,
                                      std::string_view peerGroupID_)
-        : name(providerName), peerGroupID(peerGroupID_), _discovery(discovery) {}
+        : protocol(protocol_), peerGroupID(peerGroupID_), _discovery(discovery) {}
 
     /// The C4PeerDiscovery instance that owns this provider.
     C4PeerDiscovery& discovery() const { return _discovery; };
 
-    /// The provider's name (e.g. "BluetoothLE") for identification/logging/debugging purposes.
-    std::string const name;
+    /// The protocol this provider implements.
+    C4PeerSyncProtocol const protocol;
 
     std::string const peerGroupID;
+
+    const char* protocolName() const;
 
     bool isBrowsing() const { return _browsing; }
 
@@ -395,6 +399,8 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     bool removePeer(std::string_view id, bool moreComing) { return _discovery.removePeer(id, moreComing); }
 
     void noMorePeersComing() { _discovery.noMorePeersComing(); }
+
+    fleece::Ref<C4Socket> createIncomingSocketWithTLS(C4SocketFactory const&, void* nativeHandle, C4Address const&);
 
     /// Notifies observers about an incoming connection from a peer.
     /// @note  If the connection is not accepted, caller must close the C4Socket.

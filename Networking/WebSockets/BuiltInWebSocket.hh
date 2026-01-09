@@ -73,7 +73,6 @@ namespace litecore::websocket {
         BuiltInWebSocket(const URL&, Role, const Parameters&);
         void                                             _bgConnect();
         void                                             setThreadName();
-        bool                                             configureClientCert(fleece::Dict auth);
         static bool                                      configureAuthHeader(net::HTTPLogic&, fleece::Dict auth);
         static bool                                      configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
         [[nodiscard]] std::unique_ptr<net::ClientSocket> _connectLoop();

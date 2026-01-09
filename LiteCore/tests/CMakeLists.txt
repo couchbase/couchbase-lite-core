@@ -86,6 +86,9 @@ add_executable(
     ${TOP}vendor/fleece/Tests/SharedKeysTests.cc
     ${TOP}vendor/fleece/Tests/SupportTests.cc
     ${TOP}vendor/fleece/Tests/ValueTests.cc
+    ${TOP}C/tests/c4Test.cc
+    ${TOP}Crypto/CertificateTest.cc
+    ${TOP}Networking/tests/CookieStoreTest.cc
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
@@ -97,9 +100,6 @@ add_executable(
     ${TOP}Replicator/tests/SG.cc
     ${TOP}Replicator/tests/SGTestUser.cc
     ${TOP}Replicator/tests/ReplParams.cc
-    ${TOP}C/tests/c4Test.cc
-    ${TOP}Replicator/tests/CookieStoreTest.cc
-    ${TOP}Crypto/CertificateTest.cc
 
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
@@ -115,6 +115,7 @@ if (BUILD_ENTERPRISE)
         ${EE_SRC}/P2P/tests/PeerMeshTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest_C.cc
+        ${EE_SRC}/P2P/tests/SocketFactoryTest.cc
     )
     target_include_directories(
         CppTests PRIVATE

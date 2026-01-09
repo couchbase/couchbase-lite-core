@@ -146,6 +146,15 @@ struct C4SocketFactory {
 
         @param socket  The socket being disposed.  */
     void (*C4NULLABLE dispose)(C4Socket* socket);
+
+    /** Called when a factory and native handle are attached to a new C4Socket by calling
+        `c4socket_fromNative` or `C4Socket::fromNative`.
+        The C4Socket's nativeHandle will already be set.
+
+        Set this to NULL if you don't need the call.
+
+        @param socket  The socket being attached.  */
+    void (*C4NULLABLE attached)(C4Socket* socket);
 };
 
 /** @} */
