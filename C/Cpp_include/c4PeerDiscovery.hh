@@ -34,7 +34,6 @@ C4_ASSUME_NONNULL_BEGIN
 // the dynamic library only exports the C API.
 // ************************************************************************
 
-struct C4ListenerConfig;
 struct C4Socket;
 struct C4SocketFactory;
 
@@ -89,7 +88,7 @@ class C4PeerDiscovery {
     std::vector<ProviderRef> const& providers() const;
 
     /// Sets the TLS configuration for incoming connections.
-    /// Used by \ref C4PeerDiscoveryProvider::createIncomingSocketWithTLS
+    /// (Internal API, used by \ref C4PeerDiscoveryProvider::createIncomingSocketWithTLS)
     void setTLSContext(litecore::net::TLSContext const*);
 
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.

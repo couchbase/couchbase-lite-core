@@ -47,6 +47,14 @@ typedef void (*C4PeerSync_DiscoveryCallback)(C4PeerSync*,              ///< Send
                                              bool             online,  ///< Is peer online?
                                              void* C4NULLABLE context);
 
+/** Callback that notifies that a peer has been discovered _on a specific protocol_,
+ *  or is no longer visible. */
+typedef void (*C4PeerSync_DiscoveryOnProtocolCallback)(C4PeerSync*,              ///< Sender
+                                                       const C4PeerID*,          ///< Peer's ID
+                                                       C4PeerSyncProtocol,       ///< Protocol discovered on
+                                                       bool             online,  ///< Is peer online?
+                                                       void* C4NULLABLE context);
+
 /** Callback that authenticates a peer based on its X.509 certificate.
     This is not called when a peer is discovered, only when making a direct connection.
     It should return `true` to allow the connection, `false` to prevent it. */
@@ -56,27 +64,30 @@ typedef bool (*C4PeerSync_AuthenticatorCallback)(C4PeerSync*,      ///< Sender
                                                  void* C4NULLABLE context);
 
 /** Callback that notifies the status of an individual replication with one peer.
-    @note This is similar to \ref C4ReplicatorStatusChangedCallback, but adds the peer's ID
-          and indicates whether I connected to the peer or vice versa (just in case you care.) */
+    @note This is similar to \ref C4ReplicatorStatusChangedCallback, but adds the peer's ID and
+          protocol and whether I connected to the peer or vice versa (just in case you care.) */
 typedef void (*C4PeerSync_ReplicatorCallback)(C4PeerSync*,                ///< Sender
                                               const C4PeerID*,            ///< Peer's ID
+                                              C4PeerSyncProtocol,         ///< Protocol of connection
                                               bool outgoing,              ///< True if I opened the socket
                                               const C4ReplicatorStatus*,  ///< Status/progress
                                               void* C4NULLABLE context);
 
 /** Callback that notifies that documents have been pushed or pulled.
-    @note This is similar to \ref C4ReplicatorDocumentsEndedCallback, but adds the peer's ID. */
+    @note This is similar to \ref C4ReplicatorDocumentsEndedCallback, but adds the peer's ID & protocol. */
 typedef void (*C4PeerSync_DocsCallback)(C4PeerSync*,                  ///< Sender
                                         const C4PeerID*,              ///< Peer ID
+                                        C4PeerSyncProtocol,           ///< Protocol of connection
                                         bool                pushing,  ///< Direction of sync
                                         size_t              numDocs,  ///< Size of docs[]
                                         C4DocumentEndedList docs,     ///< Document info
                                         void* C4NULLABLE    context);
 
 /** Callback that notifies about progress pushing or pulling a single blob.
-    @note This is similar to \ref C4ReplicatorBlobProgressCallback, but adds the peer's ID. */
+    @note This is similar to \ref C4ReplicatorBlobProgressCallback, but adds the peer's ID & protocol. */
 typedef void (*C4PeerSync_BlobCallback)(C4PeerSync*,            ///< Sender
                                         const C4PeerID*,        ///< Peer ID
+                                        C4PeerSyncProtocol,     ///< Protocol of connection
                                         bool pushing,           ///< Direction of transfer
                                         const C4BlobProgress*,  ///< Progress info
                                         void* C4NULLABLE context);
@@ -86,6 +97,7 @@ typedef struct C4PeerSyncCallbacks {
     C4PeerSync_StatusCallback                         syncStatus;
     C4PeerSync_AuthenticatorCallback                  authenticator;
     C4PeerSync_DiscoveryCallback C4NULLABLE           onPeerDiscovery;
+    C4PeerSync_DiscoveryOnProtocolCallback C4NULLABLE onPeerDiscoveryOnProtocol;
     C4PeerSync_ReplicatorCallback C4NULLABLE          onReplicatorStatusChanged;
     C4PeerSync_DocsCallback C4NULLABLE                onDocumentsEnded;
     C4PeerSync_BlobCallback C4NULLABLE                onBlobProgress;
@@ -137,7 +149,7 @@ typedef struct C4PeerInfo {
     C4PeerID* C4NULLABLE neighbors;         ///< IDs of peers this one's currently connected with
     size_t               neighborCount;     ///< Size of `neighbors` array
     C4ReplicatorStatus   replicatorStatus;  ///< Current replication status; 'stopped' if none.
-    bool                 online;            ///< True if peer is currently connected or discoverable
+    C4PeerSyncProtocols  onlineProtocols;   ///< Which protocols the peer is online at
 } C4PeerInfo;
 
 C4API_END_DECLS
