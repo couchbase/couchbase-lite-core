@@ -140,7 +140,9 @@ namespace litecore::websocket {
     unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
         // Create the TLS context if necessary:
         Retained<crypto::PrivateKey> privateKey = nullptr;
+#ifdef COUCHBASE_ENTERPRISE
         if ( auto& externalKey = parameters().externalKey ) privateKey = externalKey->getPrivateKey();
+#endif
         bool                         customValidate       = hasPeerCertValidator();
         bool                         customValidateCalled = false;
         string                       curHostname;

@@ -75,6 +75,7 @@ namespace litecore::net {
         }
     }
 
+#ifdef COUCHBASE_ENTERPRISE
     Ref<TLSContext> TLSContext::fromListenerOptions(const C4TLSConfig* tlsConfig, C4Listener* c4Listener) {
         Assert(tlsConfig->certificate);
         Retained<Cert>       cert = tlsConfig->certificate->assertSignedCert();
@@ -109,6 +110,7 @@ namespace litecore::net {
 
         return tlsContext;
     }
+#endif
 
     TLSContext::TLSContext(role_t role)
         : _context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER)), _role(role) {
