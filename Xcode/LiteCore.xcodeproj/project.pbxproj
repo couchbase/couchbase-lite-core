@@ -258,6 +258,8 @@
 		2780548C2B3214BB009630D8 /* PredictiveVectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F602FD2A968503006FA1D0 /* PredictiveVectorQueryTest.cc */; };
 		278054952B3214BF009630D8 /* VectorQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BEEE782A783A17005AD4BF /* VectorQueryTest.cc */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
+		27870D912F11A91D0061830F /* TaskMaster.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27870D8F2F11A91D0061830F /* TaskMaster.hh */; };
+		27870D922F11A91D0061830F /* TaskMaster.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27870D902F11A91D0061830F /* TaskMaster.cc */; };
 		2787D93A2DB2FC4E004F7D9B /* c4PeerSyncTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 2787D9392DB2FC4E004F7D9B /* c4PeerSyncTypes.h */; };
 		2787D93B2DB2FC4E004F7D9B /* c4PeerSync.h in Headers */ = {isa = PBXBuildFile; fileRef = 2787D9382DB2FC4E004F7D9B /* c4PeerSync.h */; };
 		2787D95C2DB30173004F7D9B /* Mesh.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2787D9402DB2FCDA004F7D9B /* Mesh.cc */; };
@@ -1517,6 +1519,8 @@
 		278054D82B321D54009630D8 /* LiteCore-IOS Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-IOS Tests.xcconfig"; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
 		2785C2682D012AA100F22817 /* c4Replicator+Pool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Replicator+Pool.hh"; sourceTree = "<group>"; };
+		27870D8F2F11A91D0061830F /* TaskMaster.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TaskMaster.hh; sourceTree = "<group>"; };
+		27870D902F11A91D0061830F /* TaskMaster.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TaskMaster.cc; sourceTree = "<group>"; };
 		2787D9372DB2FC3A004F7D9B /* c4PeerSync.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerSync.hh; sourceTree = "<group>"; };
 		2787D9382DB2FC4E004F7D9B /* c4PeerSync.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PeerSync.h; sourceTree = "<group>"; };
 		2787D9392DB2FC4E004F7D9B /* c4PeerSyncTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PeerSyncTypes.h; sourceTree = "<group>"; };
@@ -3562,6 +3566,8 @@
 				27115C8D2D83682D004FCC12 /* Server.cc */,
 				27FD72782D833D4800CC48BF /* SyncListener.hh */,
 				27FD72792D833D4800CC48BF /* SyncListener.cc */,
+				27870D8F2F11A91D0061830F /* TaskMaster.hh */,
+				27870D902F11A91D0061830F /* TaskMaster.cc */,
 				27115C872D83682D004FCC12 /* CMakeLists.txt */,
 				27115C902D83682D004FCC12 /* tests */,
 			);
@@ -3751,6 +3757,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				279246602F1189790050E494 /* TLSCodec.hh in Headers */,
+				27870D912F11A91D0061830F /* TaskMaster.hh in Headers */,
 				27115C952D83682D004FCC12 /* ListenerHarness.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -5042,6 +5049,7 @@
 				27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */,
 				27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */,
 				27115C962D83682D004FCC12 /* c4Listener.cc in Sources */,
+				27870D922F11A91D0061830F /* TaskMaster.cc in Sources */,
 				279246612F118A600050E494 /* AppleBluetoothPeer.mm in Sources */,
 				2787D95C2DB30173004F7D9B /* Mesh.cc in Sources */,
 				2787D95D2DB30173004F7D9B /* c4PeerSync.cc in Sources */,
