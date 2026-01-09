@@ -300,6 +300,11 @@
 		278F478A24C914CD00E1CA7A /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 278F478924C914CC00E1CA7A /* SystemConfiguration.framework */; };
 		278F478B24C914DE00E1CA7A /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2791EA1420326F7100BD813C /* SQLiteChooser.c in Sources */ = {isa = PBXBuildFile; fileRef = 2791EA1320326F7100BD813C /* SQLiteChooser.c */; };
+		2792465F2F1189790050E494 /* TLSCodec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2792465E2F1189790050E494 /* TLSCodec.cc */; };
+		279246602F1189790050E494 /* TLSCodec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2792465D2F1189790050E494 /* TLSCodec.hh */; };
+		279246612F118A600050E494 /* AppleBluetoothPeer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FD727C2D833D4800CC48BF /* AppleBluetoothPeer.mm */; };
+		279246622F118A700050E494 /* AppleBTSocketFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */; };
+		279246642F118C2B0050E494 /* SocketFactoryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279246632F118C2B0050E494 /* SocketFactoryTest.cc */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingRev+Blobs.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingRev+Blobs.cc */; };
@@ -364,12 +369,9 @@
 		27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */; };
 		27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */; };
 		27B8DC252EFB69500065CA31 /* TCPSocketFactory.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B8DC222EFB69500065CA31 /* TCPSocketFactory.hh */; };
-		27B8DC262EFB69500065CA31 /* TLSCodec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B8DC232EFB69500065CA31 /* TLSCodec.hh */; };
-		27B8DC272EFB69500065CA31 /* TLSCodec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8DC242EFB69500065CA31 /* TLSCodec.cc */; };
 		27B8DC2D2EFB69730065CA31 /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8DC2C2EFB69730065CA31 /* c4Socket.cc */; };
 		27B8DC302EFB6A5C0065CA31 /* c4WebSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B8DC2E2EFB6A5C0065CA31 /* c4WebSocket.hh */; };
 		27B8DC352EFB6AD40065CA31 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8DC322EFB6AD40065CA31 /* CookieStoreTest.cc */; };
-		27B8DC362EFB6AD40065CA31 /* SocketFactoryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8DC332EFB6AD40065CA31 /* SocketFactoryTest.cc */; };
 		27B8DC372EFB6B920065CA31 /* c4WebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8DC2F2EFB6A5C0065CA31 /* c4WebSocket.cc */; };
 		27B953DD239872C700C8AA90 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; settings = {ATTRIBUTES = (Required, ); }; };
 		27B953DE239872D900C8AA90 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
@@ -1556,6 +1558,9 @@
 		2791EA1320326F7100BD813C /* SQLiteChooser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = SQLiteChooser.c; sourceTree = "<group>"; };
 		2791EA192032732500BD813C /* Project_Debug_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug_EE.xcconfig; sourceTree = "<group>"; };
 		2791EA1A203273BF00BD813C /* Project_Release_EE.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Release_EE.xcconfig; sourceTree = "<group>"; };
+		2792465D2F1189790050E494 /* TLSCodec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSCodec.hh; sourceTree = "<group>"; };
+		2792465E2F1189790050E494 /* TLSCodec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSCodec.cc; sourceTree = "<group>"; };
+		279246632F118C2B0050E494 /* SocketFactoryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SocketFactoryTest.cc; sourceTree = "<group>"; };
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
 		27984E422249AEDD000FE777 /* dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib_Release.xcconfig; sourceTree = "<group>"; };
 		279976311E94AAD000B27639 /* IncomingRev+Blobs.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "IncomingRev+Blobs.cc"; sourceTree = "<group>"; };
@@ -1610,13 +1615,10 @@
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4CppUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4CppUtils.hh; sourceTree = "<group>"; };
 		27B8DC222EFB69500065CA31 /* TCPSocketFactory.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TCPSocketFactory.hh; sourceTree = "<group>"; };
-		27B8DC232EFB69500065CA31 /* TLSCodec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSCodec.hh; sourceTree = "<group>"; };
-		27B8DC242EFB69500065CA31 /* TLSCodec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSCodec.cc; sourceTree = "<group>"; };
 		27B8DC2C2EFB69730065CA31 /* c4Socket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
 		27B8DC2E2EFB6A5C0065CA31 /* c4WebSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4WebSocket.hh; sourceTree = "<group>"; };
 		27B8DC2F2EFB6A5C0065CA31 /* c4WebSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4WebSocket.cc; sourceTree = "<group>"; };
 		27B8DC322EFB6AD40065CA31 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
-		27B8DC332EFB6AD40065CA31 /* SocketFactoryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SocketFactoryTest.cc; sourceTree = "<group>"; };
 		27BA41612D680A5400FAA569 /* LogObserverTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LogObserverTest.cc; sourceTree = "<group>"; };
 		27BA41652D680A9100FAA569 /* c4Log.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Log.cc; sourceTree = "<group>"; };
 		27BC2D432F0C2F1600BEB9F4 /* RingBuffer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RingBuffer.hh; sourceTree = "<group>"; };
@@ -2212,8 +2214,6 @@
 				270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */,
 				270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */,
 				27B8DC222EFB69500065CA31 /* TCPSocketFactory.hh */,
-				27B8DC232EFB69500065CA31 /* TLSCodec.hh */,
-				27B8DC242EFB69500065CA31 /* TLSCodec.cc */,
 				27469CFC233C35EB00A1EE1A /* TLSContext.cc */,
 				27469CFB233C35EB00A1EE1A /* TLSContext.hh */,
 				271A98AB243D24FD008C032D /* NetworkInterfaces.hh */,
@@ -3155,7 +3155,6 @@
 			isa = PBXGroup;
 			children = (
 				27B8DC322EFB6AD40065CA31 /* CookieStoreTest.cc */,
-				27B8DC332EFB6AD40065CA31 /* SocketFactoryTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -3590,6 +3589,7 @@
 				2787D9622DB301B5004F7D9B /* PeerMeshTest.cc */,
 				2787D9632DB301B5004F7D9B /* PeerOMatic.cc */,
 				2787D9642DB301B5004F7D9B /* PeerOMatic.md */,
+				279246632F118C2B0050E494 /* SocketFactoryTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -3610,6 +3610,8 @@
 				2787D9442DB2FCDA004F7D9B /* PeerID.hh */,
 				2787D9452DB2FCDA004F7D9B /* PeerID.cc */,
 				2787D9462DB2FCDA004F7D9B /* PeerReplicateTask.hh */,
+				2792465D2F1189790050E494 /* TLSCodec.hh */,
+				2792465E2F1189790050E494 /* TLSCodec.cc */,
 				27FD72852D833D4800CC48BF /* CMakeLists.txt */,
 				2787D9512DB2FD0E004F7D9B /* DNS_SD */,
 				27FD72812D833D4800CC48BF /* Apple */,
@@ -3668,7 +3670,6 @@
 				27727C54230F279D0082BCC9 /* HTTPLogic.hh in Headers */,
 				27B8DC252EFB69500065CA31 /* TCPSocketFactory.hh in Headers */,
 				27B8DC302EFB6A5C0065CA31 /* c4WebSocket.hh in Headers */,
-				27B8DC262EFB69500065CA31 /* TLSCodec.hh in Headers */,
 				27D95BA9239F217A0090CE46 /* Poller.hh in Headers */,
 				27469CFD233C35EB00A1EE1A /* TLSContext.hh in Headers */,
 				270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */,
@@ -3749,6 +3750,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				279246602F1189790050E494 /* TLSCodec.hh in Headers */,
 				27115C952D83682D004FCC12 /* ListenerHarness.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4634,7 +4636,6 @@
 				EA8E8AE3291D597C002106A3 /* SG.cc in Sources */,
 				EA8E8ADB291AC7D9002106A3 /* ReplParams.cc in Sources */,
 				27B8DC352EFB6AD40065CA31 /* CookieStoreTest.cc in Sources */,
-				27B8DC362EFB6AD40065CA31 /* SocketFactoryTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4734,7 +4735,6 @@
 				27AFF3A923036B2500B4D6C4 /* exception.cpp in Sources */,
 				27727C55230F279D0082BCC9 /* HTTPLogic.cc in Sources */,
 				278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */,
-				27B8DC272EFB69500065CA31 /* TLSCodec.cc in Sources */,
 				27AFF3AA23036B2500B4D6C4 /* socket.cpp in Sources */,
 				27AFF3A823036B2500B4D6C4 /* inet_address.cpp in Sources */,
 				27ABDCC52305CB9F00274E6B /* mbedtls_context.cpp in Sources */,
@@ -5037,14 +5037,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2792465F2F1189790050E494 /* TLSCodec.cc in Sources */,
 				27FD72C42D833F6100CC48BF /* PropertyEncryption.cc in Sources */,
 				27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */,
 				27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */,
 				27115C962D83682D004FCC12 /* c4Listener.cc in Sources */,
+				279246612F118A600050E494 /* AppleBluetoothPeer.mm in Sources */,
 				2787D95C2DB30173004F7D9B /* Mesh.cc in Sources */,
 				2787D95D2DB30173004F7D9B /* c4PeerSync.cc in Sources */,
 				2787D95E2DB30173004F7D9B /* PeerID.cc in Sources */,
 				2787D95F2DB30173004F7D9B /* BonjourPeer.cc in Sources */,
+				279246622F118A700050E494 /* AppleBTSocketFactory.mm in Sources */,
 				2787D9602DB30173004F7D9B /* c4PeerDiscovery.cc in Sources */,
 				2787D9612DB30173004F7D9B /* MultiPeer.cc in Sources */,
 				27115C972D83682D004FCC12 /* HTTPListener.cc in Sources */,
@@ -5135,6 +5138,7 @@
 				27FD736F2D834B7A00CC48BF /* ReplicatorCollectionTest.cc in Sources */,
 				27FD73702D834B7A00CC48BF /* ReplicatorLoopbackTest.cc in Sources */,
 				27FD73712D834B7A00CC48BF /* ReplicatorCollectionSGTest.cc in Sources */,
+				279246642F118C2B0050E494 /* SocketFactoryTest.cc in Sources */,
 				27115C9C2D83689E004FCC12 /* SyncListenerTest.cc in Sources */,
 				27FD73722D834B7A00CC48BF /* ReplicatorVVUpgradeTest.cc in Sources */,
 				27FD73732D834B7A00CC48BF /* ReplicatorAPITest.cc in Sources */,
