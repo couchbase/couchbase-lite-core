@@ -58,18 +58,23 @@ struct C4Socket
     static C4Socket* fromNative(const C4SocketFactory& factory, void* C4NULLABLE nativeHandle, const C4Address& address,
                                 bool incoming = true);
 
+    /** Returns true if the C4Socket wants to do its own certificate validation.
+     *  If so, the factory should disable all of its own certificate validation. */
+    [[nodiscard]] virtual bool hasCustomPeerCertValidation() const { return false; }
+
     /** Notification that a socket is making a TLS connection and has received the peer's (usually
         server's) certificate.
         This notification occurs only after any other TLS validation options have passed
         (`kC4ReplicatorOptionRootCerts`, `kC4ReplicatorOptionPinnedServerCert`,
         `kC4ReplicatorOptionOnlySelfSignedServerCert`).
+        This notification occurs before \ref gotHTTPResponse() or \ref opened().
         @param certData  The DER-encoded form of the peer's TLS certificate.
         @param hostname  The DNS hostname of the peer. (This may be different from the original
                          Address given, if there were HTTP redirects.)
         @returns  True to proceed, false to abort the connection. */
-    virtual bool gotPeerCertificate(slice certData, std::string_view hostname) = 0;
+    [[nodiscard]] virtual bool gotPeerCertificate(slice certData, std::string_view hostname) = 0;
 
-    /** Notification that a socket has received an HTTP response, with the given headers (encoded
+    /** Notification that a client socket has received an HTTP response, with the given headers (encoded
         as a Fleece dictionary.) This should be called just before \ref opened() or \ref closed().
         @param httpStatus  The HTTP/WebSocket status code from the peer; expected to be 200 if the
             connection is successful, else an HTTP status >= 300 or WebSocket status >= 1000.

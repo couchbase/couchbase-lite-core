@@ -80,10 +80,22 @@ namespace litecore::repl {
 
     void C4WebSocket::connect() {
         WebSocketImpl::connect();
-        if ( _factory.open ) {
-            net::Address c4addr(url());
-            _factory.open(this, (C4Address*)c4addr, options().data(), _factory.context);
+
+        if ( _nativeHandle ) {
+            // In a server socket, since gotHTTPResponse wasn't called, notify the delegate now:
+            try {
+                notifyPeerCertificate();
+            }
+            catchAndWarn()
         }
+
+        net::Address c4addr(url());
+        _factory.open(this, (C4Address*)c4addr, options().data(), _factory.context);
+    }
+
+    alloc_slice C4WebSocket::peerTLSCertificateData() const {
+        unique_lock lock(_mutex);
+        return _peerCertData;
     }
 
     std::pair<int, Headers> C4WebSocket::httpResponse() const {
@@ -110,31 +122,48 @@ namespace litecore::repl {
 
 #pragma mark - C4SOCKET C++ API:
 
+    bool C4WebSocket::hasCustomPeerCertValidation() const { return hasPeerCertValidator(); }
+
     bool C4WebSocket::gotPeerCertificate(slice certData, std::string_view hostname) {
         try {
-            _peerCertData = certData;
+            {
+                unique_lock lock(_mutex);
+                _peerCertData = certData;
+                _tlsHandshakeCondition.notify_all();
+            }
             // Call WebSocket's registered validator function, if any:
             return validatePeerCert(certData, hostname);
         }
         catchAndWarn() return false;
     }
 
+    bool C4WebSocket::waitForTLSHandshake() {
+        unique_lock lock(_mutex);
+        _tlsHandshakeCondition.wait(lock, [this] { return _peerCertData != nullslice && !_closed; });
+        return _peerCertData != nullslice;
+    }
+
+    bool C4WebSocket::notifyPeerCertificate() {
+        if ( auto peerCertData = peerTLSCertificateData() ) {
+            delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, peerCertData);
+        } else if ( hasPeerCertValidator() ) {
+            const char* message = "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
+            WarnError("%s", message);
+            close(kCodeUnexpectedCondition, message);
+            return false;
+        }
+        return true;
+    }
+
     void C4WebSocket::gotHTTPResponse(int status, slice responseHeadersFleece) {
         try {
+            Assert(status >= 0);
             {
                 unique_lock lock(_mutex);
                 _responseStatus        = status;
                 _responseHeadersFleece = responseHeadersFleece;
             }
-            if ( _peerCertData ) {
-                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, _peerCertData);
-            } else if ( hasPeerCertValidator() ) {
-                const char* message =
-                        "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
-                WarnError("%s", message);
-                close(kCodeUnexpectedCondition, message);
-                return;
-            }
+            notifyPeerCertificate();
         } catch ( ... ) { closeWithException(); }
     }
 
@@ -166,6 +195,12 @@ namespace litecore::repl {
 
             WebSocketImpl::onClose(status);
         } catch ( ... ) { closeWithException(); }
+
+        {
+            unique_lock lock(_mutex);
+            _closed = true;
+            _tlsHandshakeCondition.notify_all();
+        }
     }
 
     void C4WebSocket::completedWrite(size_t byteCount) {

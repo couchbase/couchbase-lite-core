@@ -101,7 +101,7 @@ namespace litecore::net {
         if ( tlsConfig->requireClientCerts ) tlsContext->requirePeerCert(true);
         if ( tlsConfig->rootClientCerts ) tlsContext->setRootCerts(tlsConfig->rootClientCerts->assertSignedCert());
 
-        if ( auto callback = tlsConfig->certAuthCallback; callback ) {
+        if ( auto callback = tlsConfig->certAuthCallback ) {
             auto context = tlsConfig->tlsCallbackContext;
             tlsContext->setCertAuthCallback([callback, c4Listener, context](slice certData) {
                 return callback(c4Listener, certData, context);

@@ -142,6 +142,8 @@ namespace litecore::websocket {
 
         bool hasPeerCertValidator() const { return _hasPeerCertValidator; }
 
+        virtual alloc_slice peerTLSCertificateData() const = 0;
+
         /** The HTTP response status and headers.
             Available after a client socket connects. Otherwise zero status and empty headers. */
         virtual std::pair<int, Headers> httpResponse() const = 0;

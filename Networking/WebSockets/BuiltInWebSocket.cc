@@ -82,6 +82,10 @@ namespace litecore::websocket {
         _connectThread.detach();
     }
 
+    alloc_slice BuiltInWebSocket::peerTLSCertificateData() const {
+        return alloc_slice(_socket->peerTLSCertificateData());
+    }
+
     std::pair<int, Headers> BuiltInWebSocket::httpResponse() const { return {_responseStatus, _responseHeaders}; }
 
     void BuiltInWebSocket::closeSocket() {
@@ -99,11 +103,12 @@ namespace litecore::websocket {
         setThreadName();
 
         if ( _socket ) {
+            // Server socket is already connected:
             if ( string certData = _socket->peerTLSCertificateData(); !certData.empty() )
                 delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
         } else {
+            // Client-side; actually connect now:
             try {
-                // Connect:
                 auto socket = _connectLoop();
                 _database   = nullptr;
                 if ( !socket ) {

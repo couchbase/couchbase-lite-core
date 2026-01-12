@@ -13,6 +13,8 @@
 #pragma once
 #include "c4Socket.hh"
 #include "WebSocketImpl.hh"
+#include <condition_variable>
+#include <mutex>
 
 struct c4Database;
 
@@ -44,13 +46,20 @@ namespace litecore::repl {
 
         void closeWithException();
 
+        /** Blocks until the TLS handshake completes or the socket closes. Returns true on success. */
+        [[nodiscard]] bool waitForTLSHandshake();
+
         // WebSocket public API:
         void connect() override;
+
+        alloc_slice peerTLSCertificateData() const override;
 
         std::pair<int, websocket::Headers> httpResponse() const override;
 
         // C4Socket API:
-        bool gotPeerCertificate(slice certData, std::string_view hostname) override;
+        [[nodiscard]] bool hasCustomPeerCertValidation() const override;
+        [[nodiscard]] bool gotPeerCertificate(slice certData, std::string_view hostname) override;
+
         void gotHTTPResponse(int httpStatus, slice responseHeadersFleece) override;
         void opened() override;
         void closed(C4Error errorIfAny) override;
@@ -72,9 +81,13 @@ namespace litecore::repl {
         void socket_release() override { fleece::release(this); }
 
       private:
-        mutable std::mutex _mutex;
-        int                _responseStatus = 0;
-        alloc_slice        _responseHeadersFleece;
-        alloc_slice        _peerCertData;
+        bool notifyPeerCertificate();
+
+        mutable std::mutex      _mutex;
+        std::condition_variable _tlsHandshakeCondition;
+        int                     _responseStatus = -1;
+        alloc_slice             _responseHeadersFleece;
+        alloc_slice             _peerCertData;
+        bool                    _closed = false;
     };
 }  // namespace litecore::repl

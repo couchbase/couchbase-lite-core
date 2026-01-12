@@ -84,6 +84,8 @@ namespace litecore::net {
         /// Creates a default TLSContext with either the client or server role.
         explicit TLSContext(role_t);
 
+        role_t role() const FLPURE { return _role; }
+
         /// Use the specified root certificates as a trust store, ignoring the system
         /// provided one.  This will override any previous calls to allowOnlySelfSigned
         /// or setCertAuthCallback.
