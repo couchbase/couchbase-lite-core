@@ -534,6 +534,7 @@
 		27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FB0C3C205B18A500987D9C /* Instrumentation.cc */; };
 		27FC8DB622135BCE0083B033 /* ChangesFeed.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DB522135BCE0083B033 /* ChangesFeed.cc */; };
 		27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DBC22135BDA0083B033 /* RevFinder.cc */; };
+		27FD021D2F15CD6100CC45EE /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */; };
 		27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72772D833D4800CC48BF /* ReplicateTask.cc */; };
 		27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72792D833D4800CC48BF /* SyncListener.cc */; };
 		27FD72C42D833F6100CC48BF /* PropertyEncryption.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FD728C2D833D4800CC48BF /* PropertyEncryption.cc */; };
@@ -1969,6 +1970,7 @@
 				272910812DBC59ED00F92B04 /* libEnterpriseBits.a in Frameworks */,
 				2729105E2DBC59C900F92B04 /* libc++.tbd in Frameworks */,
 				2729105F2DBC59C900F92B04 /* libz.tbd in Frameworks */,
+				27FD021D2F15CD6100CC45EE /* CoreBluetooth.framework in Frameworks */,
 				272910602DBC59C900F92B04 /* CoreFoundation.framework in Frameworks */,
 				272910612DBC59C900F92B04 /* Foundation.framework in Frameworks */,
 				272910622DBC59C900F92B04 /* Security.framework in Frameworks */,
