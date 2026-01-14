@@ -83,7 +83,7 @@ namespace litecore::websocket {
     }
 
     alloc_slice BuiltInWebSocket::peerTLSCertificateData() const {
-        return alloc_slice(_socket->peerTLSCertificateData());
+        return _socket->peerTLSCertificateData();
     }
 
     std::pair<int, Headers> BuiltInWebSocket::httpResponse() const { return {_responseStatus, _responseHeaders}; }
@@ -104,8 +104,8 @@ namespace litecore::websocket {
 
         if ( _socket ) {
             // Server socket is already connected:
-            if ( string certData = _socket->peerTLSCertificateData(); !certData.empty() )
-                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
+            if ( alloc_slice certData = _socket->peerTLSCertificateData() )
+                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, certData);
         } else {
             // Client-side; actually connect now:
             try {
@@ -208,7 +208,7 @@ namespace litecore::websocket {
         bool                     usedAuth = false;
         unique_ptr<ClientSocket> socket;
         HTTPLogic::Disposition   lastDisposition = HTTPLogic::kFailure;
-        string                   certData;
+        alloc_slice              certData;
         C4Error                  error = {};
         bool                     done  = false;
         do {
@@ -264,7 +264,7 @@ namespace litecore::websocket {
             }
         }
 
-        if ( !certData.empty() ) delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
+        if ( certData ) delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, certData);
 
         if ( logic.status() != HTTPStatus::undefined ) {
             _responseStatus  = int(logic.status());

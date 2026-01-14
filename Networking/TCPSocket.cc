@@ -130,14 +130,17 @@ namespace litecore::net {
         return "";
     }
 
-    string TCPSocket::peerTLSCertificateData() {
-        auto tlsSock = dynamic_cast<tls_socket*>(_socket.get());
-        return tlsSock ? tlsSock->peer_certificate() : "";
+    alloc_slice TCPSocket::peerTLSCertificateData() {
+        if (auto tlsSock = dynamic_cast<tls_socket*>(_socket.get())) {
+            if (string data = tlsSock->peer_certificate(); !data.empty())
+                return alloc_slice(data);
+        }
+        return nullslice;
     }
 
     Retained<crypto::Cert> TCPSocket::peerTLSCertificate() {
-        string certData = peerTLSCertificateData();
-        return certData.empty() ? nullptr : new crypto::Cert(slice(certData));
+        alloc_slice certData = peerTLSCertificateData();
+        return certData ? new crypto::Cert(slice(certData)) : nullptr;
     }
 
 #pragma mark - CLIENT SOCKET:
