@@ -142,6 +142,8 @@ namespace litecore::websocket {
 
         bool hasPeerCertValidator() const { return _hasPeerCertValidator; }
 
+        /// The peer's TLS certificate, if any. This property is valid at any time after the
+        /// delegate's `onWebSocketConnect` has been called.
         virtual alloc_slice peerTLSCertificateData() const = 0;
 
         /** The HTTP response status and headers.

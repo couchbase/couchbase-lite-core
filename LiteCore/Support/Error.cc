@@ -616,9 +616,7 @@ namespace litecore {
             fprintf(stderr, "%s (%s:%u, in %s)", messageStr.c_str(), file, line, fn);
         auto err = error(LiteCore, AssertionFailed, messageStr);
         err.captureBacktrace(1);  // always get backtrace of assertion failure
-        if ( sWarnOnError ) {
-            WarnError("%s (%s:%u, in %s)\n%s", messageStr.c_str(), file, line, fn, err.backtrace->toString().c_str());
-        }
+        WarnError("%s (%s:%u, in %s)\n%s", messageStr.c_str(), file, line, fn, err.backtrace->toString().c_str());
         throw error(LiteCore, AssertionFailed, messageStr, err.backtrace);
     }
 

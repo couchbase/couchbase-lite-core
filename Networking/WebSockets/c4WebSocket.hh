@@ -81,13 +81,14 @@ namespace litecore::repl {
         void socket_release() override { fleece::release(this); }
 
       private:
-        bool notifyPeerCertificate();
+        void notifyPeerCertificate();
 
         mutable std::mutex      _mutex;
         std::condition_variable _tlsHandshakeCondition;
         int                     _responseStatus = -1;
         alloc_slice             _responseHeadersFleece;
         alloc_slice             _peerCertData;
+        bool                    _notifiedPeerCert = false;
         bool                    _closed = false;
     };
 }  // namespace litecore::repl
