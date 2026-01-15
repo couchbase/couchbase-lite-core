@@ -237,6 +237,17 @@
 		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
 		276993E625390C3300FDF699 /* VectorRecord.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276993E525390C3300FDF699 /* VectorRecord.cc */; };
+		276CC1012F187800003C12B6 /* LiteCoreBTCentral.mm in Sources */ = {isa = PBXBuildFile; fileRef = 276CC1002F187800003C12B6 /* LiteCoreBTCentral.mm */; };
+		276CC1022F187800003C12B6 /* LiteCoreBTCentral.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CC0FF2F187800003C12B6 /* LiteCoreBTCentral.hh */; };
+		276CC1112F196D48003C12B6 /* LiteCoreBTSocket.mm in Sources */ = {isa = PBXBuildFile; fileRef = 276CC1102F196D48003C12B6 /* LiteCoreBTSocket.mm */; };
+		276CC1122F196D48003C12B6 /* BluetoothProvider.mm in Sources */ = {isa = PBXBuildFile; fileRef = 276CC10C2F196D48003C12B6 /* BluetoothProvider.mm */; };
+		276CC1132F196D48003C12B6 /* LiteCoreBTPeripheral.mm in Sources */ = {isa = PBXBuildFile; fileRef = 276CC10E2F196D48003C12B6 /* LiteCoreBTPeripheral.mm */; };
+		276CC1142F196D48003C12B6 /* Bluetooth.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CC1082F196D48003C12B6 /* Bluetooth.hh */; };
+		276CC1152F196D48003C12B6 /* LiteCoreBTPeripheral.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CC10D2F196D48003C12B6 /* LiteCoreBTPeripheral.hh */; };
+		276CC1162F196D48003C12B6 /* BluetoothProvider.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CC10B2F196D48003C12B6 /* BluetoothProvider.hh */; };
+		276CC1172F196D48003C12B6 /* LiteCoreBTSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CC10F2F196D48003C12B6 /* LiteCoreBTSocket.hh */; };
+		276CC1182F196D48003C12B6 /* Bluetooth+Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CC1092F196D48003C12B6 /* Bluetooth+Internal.hh */; };
+		276CC1192F196D48003C12B6 /* BluetoothPeer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CC10A2F196D48003C12B6 /* BluetoothPeer.hh */; };
 		276CE6832267991500B681AC /* n1ql.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE67C2267991400B681AC /* n1ql.cc */; settings = {COMPILER_FLAGS = "-Wno-unreachable-code"; }; };
 		276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
 		276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
@@ -304,8 +315,6 @@
 		2791EA1420326F7100BD813C /* SQLiteChooser.c in Sources */ = {isa = PBXBuildFile; fileRef = 2791EA1320326F7100BD813C /* SQLiteChooser.c */; };
 		2792465F2F1189790050E494 /* TLSCodec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2792465E2F1189790050E494 /* TLSCodec.cc */; };
 		279246602F1189790050E494 /* TLSCodec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2792465D2F1189790050E494 /* TLSCodec.hh */; };
-		279246612F118A600050E494 /* AppleBluetoothPeer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FD727C2D833D4800CC48BF /* AppleBluetoothPeer.mm */; };
-		279246622F118A700050E494 /* AppleBTSocketFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */; };
 		279246642F118C2B0050E494 /* SocketFactoryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279246632F118C2B0050E494 /* SocketFactoryTest.cc */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -1471,6 +1480,17 @@
 		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
 		276993E125390C3300FDF699 /* VectorRecord.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VectorRecord.hh; sourceTree = "<group>"; };
 		276993E525390C3300FDF699 /* VectorRecord.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecord.cc; sourceTree = "<group>"; };
+		276CC0FF2F187800003C12B6 /* LiteCoreBTCentral.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LiteCoreBTCentral.hh; sourceTree = "<group>"; };
+		276CC1002F187800003C12B6 /* LiteCoreBTCentral.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LiteCoreBTCentral.mm; sourceTree = "<group>"; };
+		276CC1082F196D48003C12B6 /* Bluetooth.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Bluetooth.hh; sourceTree = "<group>"; };
+		276CC1092F196D48003C12B6 /* Bluetooth+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "Bluetooth+Internal.hh"; sourceTree = "<group>"; };
+		276CC10A2F196D48003C12B6 /* BluetoothPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BluetoothPeer.hh; sourceTree = "<group>"; };
+		276CC10B2F196D48003C12B6 /* BluetoothProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BluetoothProvider.hh; sourceTree = "<group>"; };
+		276CC10C2F196D48003C12B6 /* BluetoothProvider.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = BluetoothProvider.mm; sourceTree = "<group>"; };
+		276CC10D2F196D48003C12B6 /* LiteCoreBTPeripheral.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LiteCoreBTPeripheral.hh; sourceTree = "<group>"; };
+		276CC10E2F196D48003C12B6 /* LiteCoreBTPeripheral.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LiteCoreBTPeripheral.mm; sourceTree = "<group>"; };
+		276CC10F2F196D48003C12B6 /* LiteCoreBTSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LiteCoreBTSocket.hh; sourceTree = "<group>"; };
+		276CC1102F196D48003C12B6 /* LiteCoreBTSocket.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = LiteCoreBTSocket.mm; sourceTree = "<group>"; };
 		276CE67C2267991400B681AC /* n1ql.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = n1ql.cc; sourceTree = "<group>"; };
 		276CE67D2267991400B681AC /* Any.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Any.hh; sourceTree = "<group>"; };
 		276CE67E2267991500B681AC /* n1ql.leg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = n1ql.leg; sourceTree = "<group>"; };
@@ -1854,10 +1874,6 @@
 		27FD72772D833D4800CC48BF /* ReplicateTask.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicateTask.cc; sourceTree = "<group>"; };
 		27FD72782D833D4800CC48BF /* SyncListener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SyncListener.hh; sourceTree = "<group>"; };
 		27FD72792D833D4800CC48BF /* SyncListener.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListener.cc; sourceTree = "<group>"; };
-		27FD727B2D833D4800CC48BF /* AppleBluetoothPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AppleBluetoothPeer.hh; sourceTree = "<group>"; };
-		27FD727C2D833D4800CC48BF /* AppleBluetoothPeer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBluetoothPeer.mm; sourceTree = "<group>"; };
-		27FD727D2D833D4800CC48BF /* AppleBluetoothPeer+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "AppleBluetoothPeer+Internal.hh"; sourceTree = "<group>"; };
-		27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AppleBTSocketFactory.mm; sourceTree = "<group>"; };
 		27FD72822D833D4800CC48BF /* PeerDiscoveryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PeerDiscoveryTest.cc; sourceTree = "<group>"; };
 		27FD72852D833D4800CC48BF /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		27FD72882D833D4800CC48BF /* MeshManager.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MeshManager.hh; sourceTree = "<group>"; };
@@ -3579,10 +3595,17 @@
 		27FD72812D833D4800CC48BF /* Apple */ = {
 			isa = PBXGroup;
 			children = (
-				27FD727B2D833D4800CC48BF /* AppleBluetoothPeer.hh */,
-				27FD727C2D833D4800CC48BF /* AppleBluetoothPeer.mm */,
-				27FD727D2D833D4800CC48BF /* AppleBluetoothPeer+Internal.hh */,
-				27FD72802D833D4800CC48BF /* AppleBTSocketFactory.mm */,
+				276CC1082F196D48003C12B6 /* Bluetooth.hh */,
+				276CC1092F196D48003C12B6 /* Bluetooth+Internal.hh */,
+				276CC10A2F196D48003C12B6 /* BluetoothPeer.hh */,
+				276CC10B2F196D48003C12B6 /* BluetoothProvider.hh */,
+				276CC10C2F196D48003C12B6 /* BluetoothProvider.mm */,
+				276CC0FF2F187800003C12B6 /* LiteCoreBTCentral.hh */,
+				276CC1002F187800003C12B6 /* LiteCoreBTCentral.mm */,
+				276CC10D2F196D48003C12B6 /* LiteCoreBTPeripheral.hh */,
+				276CC10E2F196D48003C12B6 /* LiteCoreBTPeripheral.mm */,
+				276CC10F2F196D48003C12B6 /* LiteCoreBTSocket.hh */,
+				276CC1102F196D48003C12B6 /* LiteCoreBTSocket.mm */,
 			);
 			path = Apple;
 			sourceTree = "<group>";
@@ -3759,8 +3782,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				279246602F1189790050E494 /* TLSCodec.hh in Headers */,
+				276CC1142F196D48003C12B6 /* Bluetooth.hh in Headers */,
+				276CC1152F196D48003C12B6 /* LiteCoreBTPeripheral.hh in Headers */,
+				276CC1162F196D48003C12B6 /* BluetoothProvider.hh in Headers */,
+				276CC1172F196D48003C12B6 /* LiteCoreBTSocket.hh in Headers */,
+				276CC1182F196D48003C12B6 /* Bluetooth+Internal.hh in Headers */,
+				276CC1192F196D48003C12B6 /* BluetoothPeer.hh in Headers */,
 				27870D912F11A91D0061830F /* TaskMaster.hh in Headers */,
 				27115C952D83682D004FCC12 /* ListenerHarness.hh in Headers */,
+				276CC1022F187800003C12B6 /* LiteCoreBTCentral.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -5051,17 +5081,19 @@
 				27FD72C22D833F5200CC48BF /* ReplicateTask.cc in Sources */,
 				27FD72C32D833F5500CC48BF /* SyncListener.cc in Sources */,
 				27115C962D83682D004FCC12 /* c4Listener.cc in Sources */,
+				276CC1112F196D48003C12B6 /* LiteCoreBTSocket.mm in Sources */,
+				276CC1122F196D48003C12B6 /* BluetoothProvider.mm in Sources */,
+				276CC1132F196D48003C12B6 /* LiteCoreBTPeripheral.mm in Sources */,
 				27870D922F11A91D0061830F /* TaskMaster.cc in Sources */,
-				279246612F118A600050E494 /* AppleBluetoothPeer.mm in Sources */,
 				2787D95C2DB30173004F7D9B /* Mesh.cc in Sources */,
 				2787D95D2DB30173004F7D9B /* c4PeerSync.cc in Sources */,
 				2787D95E2DB30173004F7D9B /* PeerID.cc in Sources */,
 				2787D95F2DB30173004F7D9B /* BonjourPeer.cc in Sources */,
-				279246622F118A700050E494 /* AppleBTSocketFactory.mm in Sources */,
 				2787D9602DB30173004F7D9B /* c4PeerDiscovery.cc in Sources */,
 				2787D9612DB30173004F7D9B /* MultiPeer.cc in Sources */,
 				27115C972D83682D004FCC12 /* HTTPListener.cc in Sources */,
 				27115C982D83682D004FCC12 /* Server.cc in Sources */,
+				276CC1012F187800003C12B6 /* LiteCoreBTCentral.mm in Sources */,
 				27115C992D83682D004FCC12 /* DatabaseRegistry.cc in Sources */,
 				27115C9B2D83682D004FCC12 /* c4Listener_CAPI.cc in Sources */,
 				27FD72C92D833F8E00CC48BF /* MeshManager.cc in Sources */,
