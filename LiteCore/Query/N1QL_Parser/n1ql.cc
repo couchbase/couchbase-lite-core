@@ -4551,7 +4551,7 @@ YY_RULE(int) yyrlikeExpression(yycontext *yy)
 }
 YY_RULE(int) yyrinExpression(yycontext *yy)
 {  int yypos0= yy->_pos, yythunkpos0= yy->_thunkpos;  yyDo(yy, yyPush, 5, 0);
-  yyprintf((stderr, "%s\n", "inExpression"));  if (!yyrexpr5(yy)) goto l233;  yyDo(yy, yySet, -5, 0);  if (!yyrIN_OR_NOT(yy)) goto l233;  yyDo(yy, yySet, -4, 0);
+  yyprintf((stderr, "%s\n", "inExpression"));  if (!yyrexpr5(yy)) goto l233;  yyDo(yy, yySet, -5, 0);  if (!yyr_(yy)) goto l233;  if (!yyrIN_OR_NOT(yy)) goto l233;  yyDo(yy, yySet, -4, 0);
   {  int yypos234= yy->_pos, yythunkpos234= yy->_thunkpos;  if (!yyrselectExpr(yy)) goto l235;  yyDo(yy, yySet, -3, 0);  yyText(yy, yy->_begin, yy->_end);  {
 #define yytext yy->_text
 #define yyleng yy->_textlen
@@ -4821,7 +4821,7 @@ YY_RULE(int) yyranyEvery(yycontext *yy)
 }
 YY_RULE(int) yyranyEveryExpression(yycontext *yy)
 {  int yypos0= yy->_pos, yythunkpos0= yy->_thunkpos;  yyDo(yy, yyPush, 4, 0);
-  yyprintf((stderr, "%s\n", "anyEveryExpression"));  if (!yyranyEvery(yy)) goto l289;  yyDo(yy, yySet, -4, 0);  if (!yyr_(yy)) goto l289;  if (!yyrvariableName(yy)) goto l289;  yyDo(yy, yySet, -3, 0);  if (!yyr_(yy)) goto l289;  if (!yyrIN(yy)) goto l289;  if (!yyr_(yy)) goto l289;  if (!yyrexpression(yy)) goto l289;  yyDo(yy, yySet, -2, 0);  if (!yyr_(yy)) goto l289;  if (!yyrSATISFIES(yy)) goto l289;  if (!yyr_(yy)) goto l289;  if (!yyrexpression(yy)) goto l289;  yyDo(yy, yySet, -1, 0);  if (!yyrEND(yy)) goto l289;  yyDo(yy, yy_1_anyEveryExpression, yy->_begin, yy->_end);
+  yyprintf((stderr, "%s\n", "anyEveryExpression"));  if (!yyranyEvery(yy)) goto l289;  yyDo(yy, yySet, -4, 0);  if (!yyr_(yy)) goto l289;  if (!yyrvariableName(yy)) goto l289;  yyDo(yy, yySet, -3, 0);  if (!yyr_(yy)) goto l289;  if (!yyrIN(yy)) goto l289;  if (!yyr_(yy)) goto l289;  if (!yyrexpression(yy)) goto l289;  yyDo(yy, yySet, -2, 0);  if (!yyr_(yy)) goto l289;  if (!yyrSATISFIES(yy)) goto l289;  if (!yyr_(yy)) goto l289;  if (!yyrexpression(yy)) goto l289;  yyDo(yy, yySet, -1, 0);  if (!yyr_(yy)) goto l289;  if (!yyrEND(yy)) goto l289;  yyDo(yy, yy_1_anyEveryExpression, yy->_begin, yy->_end);
   yyprintf((stderr, "  ok   %s @ %s\n", "anyEveryExpression", yy->_buf+yy->_pos));  yyDo(yy, yyPop, 4, 0);
   return 1;
   l289:;	  yy->_pos= yypos0; yy->_thunkpos= yythunkpos0;
@@ -5416,7 +5416,7 @@ YY_RULE(int) yyrselectStatement(yycontext *yy)
   l396:;	  yy->_pos= yypos396; yy->_thunkpos= yythunkpos396;
   }
   l397:;	
-  {  int yypos398= yy->_pos, yythunkpos398= yy->_thunkpos;  if (!yyrWHERE(yy)) goto l398;  if (!yyrexpression(yy)) goto l398;  yyDo(yy, yySet, -6, 0);  yyDo(yy, yy_5_selectStatement, yy->_begin, yy->_end);  goto l399;
+  {  int yypos398= yy->_pos, yythunkpos398= yy->_thunkpos;  if (!yyrWHERE(yy)) goto l398;  if (!yyrexpression(yy)) goto l398;  yyDo(yy, yySet, -6, 0);  if (!yyr_(yy)) goto l398;  yyDo(yy, yy_5_selectStatement, yy->_begin, yy->_end);  goto l399;
   l398:;	  yy->_pos= yypos398; yy->_thunkpos= yythunkpos398;
   }
   l399:;	
