@@ -1,6 +1,5 @@
 #include "DateFormat.hh"
 #include "ParseDate.hh"
-#include "date/date.h"
 #include "fleece/slice.hh"
 #include <optional>
 #include <slice_stream.hh>
@@ -19,8 +18,7 @@ namespace fleece {
 
     const DateFormat DateFormat::kISO8601 = DateFormat{YMD::kISO8601, Separator::T, HMS::kISO8601, {Timezone::NoColon}};
 
-    /** This parses a subset of the formatting tokens from "date.h", found 
-     * here: https://howardhinnant.github.io/date/date.html#to_stream_formatting.
+    /** This parses a subset of the formatting tokens of std::format
      * The valid tokens are:
      * %Y: Year (YYYY), %m: Month (MM), %d: Day (DD).
      * %F == %Y-%m-%d
@@ -326,31 +324,31 @@ namespace fleece {
         std::ostringstream stream;
 
         const milliseconds millis{milliseconds{timestamp} + duration_cast<milliseconds>(tzoffset)};
-        const auto         tm = date::local_time<milliseconds>{millis};
-
-        const seconds offset_seconds{tzoffset};
+        const auto         tm = local_time<milliseconds>{millis};
 
         const DateFormat f = fmt.has_value() ? fmt.value() : kISO8601;
 
-        if ( f.ymd.has_value() ) { stream << date::format("%F", tm); }
+        if ( f.ymd.has_value() ) { stream << std::format("{:%F}", tm); }
 
         if ( f.hms.has_value() ) {
             if ( f.ymd.has_value() ) { stream << (char)f.separator.value(); }
 
             if ( f.hms.value().millis && timestamp % 1000 ) {
-                stream << date::format("%T", tm);
+                stream << std::format("{:%T}", tm);
             } else {
                 const auto secs = duration_cast<seconds>(millis);
-                stream << date::format("%T", date::local_seconds(secs));
+                stream << std::format("{:%T}", local_seconds(secs));
             }
 
             if ( f.tz.has_value() ) {
-                if ( offset_seconds.count() == 0 ) {
+                if ( tzoffset.count() == 0 ) {
                     stream << 'Z';
                 } else {
-                    if ( f.tz.value() == Timezone::Colon ) to_stream(stream, "%Ez", tm, nullptr, &offset_seconds);
-                    else
-                        to_stream(stream, "%z", tm, nullptr, &offset_seconds);
+                    char     sign = tzoffset.count() < 0 ? '-' : '+';
+                    hh_mm_ss hms{sign == '-' ? -tzoffset : tzoffset};
+                    stream << std::format("{}{:02}", sign, hms.hours().count());
+                    if ( f.tz.value() == Timezone::Colon ) stream << ":";
+                    stream << std::format("{:02}", hms.minutes().count());
                 }
             }
         }
