@@ -364,16 +364,10 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
   protected:
     /// Reports that browsing has started, stopped or failed.
     /// If `state` is false, this method will call \ref removePeer on all online peers.
-    void browseStateChanged(bool state, C4Error error = {}) {
-        _browsing = state;
-        _discovery.browseStateChanged(this, state, error);
-    }
+    void browseStateChanged(bool state, C4Error error = {});
 
     /// Reports that publishing has started, stopped or failed.
-    void publishStateChanged(bool state, C4Error error = {}) {
-        _publishing = state;
-        _discovery.publishStateChanged(this, state, error);
-    }
+    void publishStateChanged(bool state, C4Error error = {});
 
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
