@@ -601,7 +601,7 @@ namespace litecore::repl {
 #pragma mark - BLIP DELEGATE:
 
     void Replicator::onTLSCertificate(slice certData) {
-        logInfo("**** onTLSCertificate: %zu bytes", certData.size);    //TEMP
+        logInfo("**** onTLSCertificate: %zu bytes", certData.size);  //TEMP
         if ( _delegate ) _delegate->replicatorGotTLSCertificate(certData);
     }
 

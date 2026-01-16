@@ -79,7 +79,7 @@ namespace litecore::repl {
 #pragma mark - WEBSOCKETIMPL OVERRIDES:
 
     void C4WebSocket::connect() {
-        logInfo("**** connect");//TEMP
+        logInfo("**** connect");  //TEMP
         WebSocketImpl::connect();
 
         net::Address c4addr(url());
@@ -118,16 +118,15 @@ namespace litecore::repl {
     bool C4WebSocket::hasCustomPeerCertValidation() const { return hasPeerCertValidator(); }
 
     bool C4WebSocket::gotPeerCertificate(slice certData, std::string_view hostname) {
-        logInfo("**** gotPeerCertificate: %zu bytes", certData.size);//TEMP
+        logInfo("**** gotPeerCertificate: %zu bytes", certData.size);  //TEMP
         try {
             {
                 unique_lock lock(_mutex);
                 _peerCertData = certData;
-                _tlsHandshakeCondition.notify_all();    // wakes up waitForTLSHandshake()
+                _tlsHandshakeCondition.notify_all();  // wakes up waitForTLSHandshake()
             }
             // Call WebSocket's registered validator function, if any:
-            if (!validatePeerCert(certData, hostname))
-                return false;
+            if ( !validatePeerCert(certData, hostname) ) return false;
 
             // If `connect` has been called, notify the delegate now.
             // Otherwise there's no delegate yet, so wait until `opened` is called.
@@ -145,18 +144,18 @@ namespace litecore::repl {
 
     void C4WebSocket::notifyPeerCertificate() {
         // Can't call `Delegate::onWebSocketGotTLSCertificate` until we have a delegate.
-        if (auto delegate = delegateWeak()) {
+        if ( auto delegate = delegateWeak() ) {
             {
                 unique_lock lock(_mutex);
-                if (_notifiedPeerCert)
-                    return;
+                if ( _notifiedPeerCert ) return;
                 _notifiedPeerCert = true;
             }
-            if (auto peerCertData = peerTLSCertificateData()) {
-                logInfo("**** notifying delegate of peer cert, %zu bytes", peerCertData.size);//TEMP
+            if ( auto peerCertData = peerTLSCertificateData() ) {
+                logInfo("**** notifying delegate of peer cert, %zu bytes", peerCertData.size);  //TEMP
                 try {
                     delegate->invoke(&Delegate::onWebSocketGotTLSCertificate, peerCertData);
-                } catchAndWarn()
+                }
+                catchAndWarn()
             }
         }
     }
@@ -171,10 +170,11 @@ namespace litecore::repl {
     }
 
     void C4WebSocket::opened() {
-        logInfo("**** opened");//TEMP
+        logInfo("**** opened");  //TEMP
         try {
             if ( hasPeerCertValidator() && !peerTLSCertificateData() ) {
-                const char* message = "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
+                const char* message =
+                        "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
                 WarnError("%s", message);
                 close(kCodeUnexpectedCondition, message);
                 return;

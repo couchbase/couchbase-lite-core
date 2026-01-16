@@ -131,9 +131,8 @@ namespace litecore::net {
     }
 
     alloc_slice TCPSocket::peerTLSCertificateData() {
-        if (auto tlsSock = dynamic_cast<tls_socket*>(_socket.get())) {
-            if (string data = tlsSock->peer_certificate(); !data.empty())
-                return alloc_slice(data);
+        if ( auto tlsSock = dynamic_cast<tls_socket*>(_socket.get()) ) {
+            if ( string data = tlsSock->peer_certificate(); !data.empty() ) return alloc_slice(data);
         }
         return nullslice;
     }

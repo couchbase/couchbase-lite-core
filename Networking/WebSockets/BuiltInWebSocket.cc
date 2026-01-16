@@ -82,9 +82,7 @@ namespace litecore::websocket {
         _connectThread.detach();
     }
 
-    alloc_slice BuiltInWebSocket::peerTLSCertificateData() const {
-        return _socket->peerTLSCertificateData();
-    }
+    alloc_slice BuiltInWebSocket::peerTLSCertificateData() const { return _socket->peerTLSCertificateData(); }
 
     std::pair<int, Headers> BuiltInWebSocket::httpResponse() const { return {_responseStatus, _responseHeaders}; }
 
