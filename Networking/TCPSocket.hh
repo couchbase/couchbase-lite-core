@@ -63,7 +63,7 @@ namespace litecore::net {
         std::string peerAddress();
 
         /// Raw X.509 data of peer's TLS certificate (if it has one)
-        std::string peerTLSCertificateData();
+        fleece::alloc_slice peerTLSCertificateData();
 
         /// Peer's TLS certificate (if it has one)
         fleece::Retained<crypto::Cert> peerTLSCertificate();

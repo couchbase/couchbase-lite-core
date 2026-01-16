@@ -19,7 +19,7 @@
 #include "c4Database.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4ReplicatorTypes.h"
-#include "c4Socket+Internal.hh"
+#include "c4WebSocket.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
@@ -31,10 +31,10 @@ using namespace litecore::websocket;
 
 void C4RegisterBuiltInWebSocket() {
     // NOLINTBEGIN(performance-unnecessary-value-param)
-    C4SocketImpl::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
-                                             std::shared_ptr<DBAccess> database,
-                                             C4KeyPair*                externalKey) -> WebSocketImpl* {
-        return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options, externalKey), database);
+    C4WebSocket::registerInternalFactory([](websocket::URL url, fleece::alloc_slice options,
+                                            std::shared_ptr<DBAccess> database,
+                                            C4KeyPair*                externalKey) -> WebSocketImpl* {
+        return new BuiltInWebSocket(url, C4WebSocket::convertParams(options, externalKey), database);
     });
     // NOLINTEND(performance-unnecessary-value-param)
 }
@@ -82,6 +82,8 @@ namespace litecore::websocket {
         _connectThread.detach();
     }
 
+    alloc_slice BuiltInWebSocket::peerTLSCertificateData() const { return _socket->peerTLSCertificateData(); }
+
     std::pair<int, Headers> BuiltInWebSocket::httpResponse() const { return {_responseStatus, _responseHeaders}; }
 
     void BuiltInWebSocket::closeSocket() {
@@ -99,11 +101,12 @@ namespace litecore::websocket {
         setThreadName();
 
         if ( _socket ) {
-            if ( string certData = _socket->peerTLSCertificateData(); !certData.empty() )
-                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
+            // Server socket is already connected:
+            if ( alloc_slice certData = _socket->peerTLSCertificateData() )
+                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, certData);
         } else {
+            // Client-side; actually connect now:
             try {
-                // Connect:
                 auto socket = _connectLoop();
                 _database   = nullptr;
                 if ( !socket ) {
@@ -138,39 +141,29 @@ namespace litecore::websocket {
     }
 
     unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
-        Dict   authDict = options()[kC4ReplicatorOptionAuthentication].asDict();
-        slice  authType = authDict[kC4ReplicatorAuthType].asString();
-        string curHostname;
-
-        // Custom TLS context:
-        slice rootCerts            = options()[kC4ReplicatorOptionRootCerts].asData();
-        slice pinnedCert           = options()[kC4ReplicatorOptionPinnedServerCert].asData();
-        bool  selfSignedOnly       = options()[kC4ReplicatorOptionOnlySelfSignedServerCert].asBool();
-        bool  customValidate       = hasPeerCertValidator();
-        bool  customValidateCalled = false;
-        if ( rootCerts || pinnedCert || selfSignedOnly || customValidate || authType == slice(kC4AuthTypeClientCert) ) {
-            if ( selfSignedOnly && rootCerts ) {
-                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                            "Cannot specify root certs in self signed mode"_sl));
-                return nullptr;
-            }
-
-            _tlsContext = new TLSContext(TLSContext::Client);
-            _tlsContext->allowOnlySelfSigned(selfSignedOnly);
-            if ( rootCerts ) _tlsContext->setRootCerts(rootCerts);
-            if ( pinnedCert ) _tlsContext->allowOnlyCert(pinnedCert);
-            if ( customValidate ) {
-                _tlsContext->setCertAuthCallback([&](slice certData) {
-                    customValidateCalled = true;
-                    try {
-                        return this->validatePeerCert(certData, curHostname);
-                    }
-                    catchAndWarn() return false;
-                });
-            }
-            if ( authType == slice(kC4AuthTypeClientCert) ) {
-                if ( !configureClientCert(authDict) ) return nullptr;
-            }
+        // Create the TLS context if necessary:
+        Retained<crypto::PrivateKey> privateKey = nullptr;
+#ifdef COUCHBASE_ENTERPRISE
+        if ( auto& externalKey = parameters().externalKey ) privateKey = externalKey->getPrivateKey();
+#endif
+        bool                         customValidate       = hasPeerCertValidator();
+        bool                         customValidateCalled = false;
+        string                       curHostname;
+        TLSContext::CertAuthCallback authCallback;
+        if ( customValidate ) {
+            authCallback = [&](slice certData) {
+                customValidateCalled = true;
+                try {
+                    return this->validatePeerCert(certData, curHostname);
+                }
+                catchAndWarn() return false;
+            };
+        }
+        try {
+            _tlsContext = TLSContext::fromReplicatorOptions(options(), privateKey, authCallback);
+        } catch ( exception const& ) {
+            closeWithError(C4Error::fromCurrentException());
+            return nullptr;
         }
 
         // Create the HTTPLogic object:
@@ -199,6 +192,8 @@ namespace litecore::websocket {
             return nullptr;
         }
 
+        Dict  authDict = options()[kC4ReplicatorOptionAuthentication].asDict();
+        slice authType = authDict[kC4ReplicatorAuthType].asString();
         if ( authType == slice(kC4AuthTypeBasic) ) {
             bool enableChallengeAuth = authDict[kC4ReplicatorAuthEnableChallengeAuth].asBool();
             logic.enableChallengeAuth(enableChallengeAuth);
@@ -211,7 +206,7 @@ namespace litecore::websocket {
         bool                     usedAuth = false;
         unique_ptr<ClientSocket> socket;
         HTTPLogic::Disposition   lastDisposition = HTTPLogic::kFailure;
-        string                   certData;
+        alloc_slice              certData;
         C4Error                  error = {};
         bool                     done  = false;
         do {
@@ -267,7 +262,7 @@ namespace litecore::websocket {
             }
         }
 
-        if ( !certData.empty() ) delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, slice(certData));
+        if ( certData ) delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, certData);
 
         if ( logic.status() != HTTPStatus::undefined ) {
             _responseStatus  = int(logic.status());
@@ -279,47 +274,6 @@ namespace litecore::websocket {
         } else {
             closeWithError(error);
             return nullptr;
-        }
-    }
-
-    bool BuiltInWebSocket::configureClientCert(Dict auth) {
-        try {
-            slice certData = auth[kC4ReplicatorAuthClientCert].asData();
-            if ( !certData ) {
-                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                            "Missing TLS client cert in C4Replicator config"_sl));
-                return false;
-            }
-#ifdef COUCHBASE_ENTERPRISE
-            if ( parameters().externalKey ) {
-                Retained<crypto::Cert> cert = make_retained<crypto::Cert>(certData);
-                _tlsContext->setIdentity(new crypto::Identity(cert, parameters().externalKey->getPrivateKey()));
-                return true;
-            }
-#endif
-            if ( slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData ) {
-                _tlsContext->setIdentity(certData, keyData);
-                return true;
-            } else {
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-                Retained<crypto::Cert>       cert = new crypto::Cert(certData);
-                Retained<crypto::PrivateKey> key  = cert->loadPrivateKey();
-                if ( !key ) {
-                    closeWithError(c4error_make(LiteCoreDomain, kC4ErrorCrypto,
-                                                "Couldn't find private key for identity cert"_sl));
-                    return false;
-                }
-                _tlsContext->setIdentity(new crypto::Identity(cert, key));
-                return true;
-#else
-                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                            "Missing TLS private key in C4Replicator config"_sl));
-                return false;
-#endif
-            }
-        } catch ( const std::exception& x ) {
-            closeWithException(x, "configuring TLS client certificate");
-            return false;
         }
     }
 

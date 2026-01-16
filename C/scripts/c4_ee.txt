@@ -77,7 +77,5 @@ c4peersync_stop
 c4peersync_getOnlinePeers
 c4peersync_getPeerInfo
 c4peersync_free
-kPeerSyncProtocol_DNS_SD
-kPeerSyncProtocol_BluetoothLE
 
 c4socket_fromNative2

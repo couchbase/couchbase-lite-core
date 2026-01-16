@@ -76,7 +76,7 @@ namespace litecore::websocket {
     void WebSocketImpl::onConnect() {
         int expected = SOCKET_OPENING;
         if ( !atomic_compare_exchange_strong(&_socketLCState, &expected, (int)SOCKET_OPENED) ) {
-            logInfo("WebSocket not in 'Openning' state, ignoring onConnect...");
+            logInfo("WebSocket not in 'Opening' state, ignoring onConnect...");
             return;
         }
 
@@ -243,6 +243,7 @@ namespace litecore::websocket {
             case CLOSE:
                 return receivedClose(message);
             case PING:
+                logInfo("Received PING -- sending PONG");
                 _opToSend  = PONG;
                 _msgToSend = message ? message : alloc_slice(size_t(0));
                 return true;
@@ -343,21 +344,20 @@ namespace litecore::websocket {
 
 
     void WebSocketImpl::callCloseSocket() {
-        int expected[] = {SOCKET_OPENING, SOCKET_OPENED};
-        int i          = 0;
-        for ( ; i < 2; ++i ) {
-            if ( atomic_compare_exchange_strong(&_socketLCState, &expected[i], (int)SOCKET_CLOSING) ) {
-                if ( i == 0 ) { logVerbose("Calling closeSocket before the socket is connected"); }
-                // else: This is the usual case: from OPENED to CLOSING
-                break;
+        while ( true ) {
+            int state = _socketLCState.load();
+            if ( state <= SOCKET_OPENED ) {
+                if ( _socketLCState.compare_exchange_strong(state, SOCKET_CLOSING) ) {
+                    if ( state != SOCKET_OPENED ) { logVerbose("Calling closeSocket before the socket is open"); }
+                    startResponseTimer(kCloseTimeout);
+                    closeSocket();
+                    return;
+                }
+            } else {
+                logVerbose("Calling closeSocket when the socket is %s",
+                           state == SOCKET_CLOSING ? "pending close" : "already closed");
+                return;
             }
-        }
-        if ( i < 2 ) {
-            startResponseTimer(kCloseTimeout);
-            closeSocket();
-        } else {
-            logVerbose("Calling closeSocket when the socket is %s",
-                       expected[1] == SOCKET_CLOSING ? "pending close" : "already closed");
         }
     }
 
@@ -427,6 +427,7 @@ namespace litecore::websocket {
                 }
                 return;
             case SOCKET_UNINIT:
+                callCloseSocket();
                 return;
             default:
                 DebugAssert(false);
@@ -471,7 +472,7 @@ namespace litecore::websocket {
 
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
-        switch ( atomic_exchange(&_socketLCState, (int)SOCKET_CLOSED) ) {
+        switch ( auto prevState = atomic_exchange(&_socketLCState, (int)SOCKET_CLOSED) ) {
             case SOCKET_OPENING:
                 logVerbose("Calling onClose before the socket is connected");
                 break;
@@ -485,7 +486,8 @@ namespace litecore::websocket {
                 logVerbose("Calling of onClose is ignored because it is already called.");
                 return;
             default:
-                DebugAssert(false);
+                warn("Unexpected _socketLCState %d", int(prevState));
+                return;
         }
 
         auto logErrorForStatus = [this](const char* msg, const CloseStatus& cstatus) {
@@ -560,7 +562,7 @@ namespace litecore::websocket {
                 logErrorForStatus("WebSocket failed to connect!", status);
             }
         }
-        delegateWeak()->invoke(&Delegate::onWebSocketClose, status);
+        if ( auto delegate = delegateWeak() ) delegate->invoke(&Delegate::onWebSocketClose, status);
     }
 
 }  // namespace litecore::websocket

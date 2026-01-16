@@ -61,6 +61,8 @@ namespace litecore::websocket {
             _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_connect));
         }
 
+        alloc_slice peerTLSCertificateData() const override { return nullslice; }
+
         std::pair<int, Headers> httpResponse() const override { return {200, _driver->responseHeaders()}; }
 
         bool send(fleece::slice msg, bool binary) override {

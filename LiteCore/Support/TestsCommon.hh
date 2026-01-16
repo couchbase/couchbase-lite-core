@@ -43,7 +43,7 @@ litecore::FilePath GetTempDirectory();
 bool ReadFileByLines(const std::string& path, fleece::function_ref<bool(FLSlice)> callback, size_t maxLines);
 
 /** Initializes logging for tests, both binary and console. */
-void InitTestLogging();
+void InitTestLogging(int /*C4LogLevel*/ level = 2);
 
 
 std::string sliceToHex(fleece::pure_slice);

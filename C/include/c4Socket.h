@@ -49,9 +49,9 @@ CBL_CORE_API void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
     `kC4ReplicatorOptionOnlySelfSignedServerCert`. If any of those fail, close the socket.
     (But if `kC4ReplicatorOptionAcceptAllCerts` is set, none of the above checks are done.)
 
-    After other validation succeeds, call this function. If it returns true, proceed.
-    If it returns false, the certificate is rejected and you should close the socket immediately
-    with error `kC4NetErrTLSCertUntrusted`.
+    After other validation succeeds, call this function -- before \ref gotHTTPResponse() or
+    \ref opened(). If it returns true, proceed. If it returns false, the certificate is rejected
+    and you should close the socket immediately with error `kC4NetErrTLSCertUntrusted`.
 
     \note The caller must use a lock for Socket when this function is called.
     @param socket  The socket being opened.
@@ -61,16 +61,19 @@ CBL_CORE_API void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
     @returns  True to proceed, false to abort the connection. */
 CBL_CORE_API bool c4socket_gotPeerCertificate(C4Socket* socket, C4Slice certData, C4String hostname) C4API;
 
-/** Notification that a socket has received an HTTP response, with the given headers (encoded
-        as a Fleece dictionary.) This should be called just before c4socket_opened or
-        c4socket_closed.
-        \note The caller must use a lock for Socket when this function is called.
-        @param socket  The socket being opened.
-        @param httpStatus  The HTTP/WebSocket status code from the peer; expected to be 200 if the
-            connection is successful, else an HTTP status >= 300 or WebSocket status >= 1000.
-        @param responseHeadersFleece  The HTTP response headers, encoded as a Fleece dictionary
-            whose keys are the header names (with normalized case) and values are header values
-            as strings. */
+/** Notification that a client socket has received an HTTP response, with the headers encoded
+    as a Fleece dictionary.
+    This call is required for a client socket (where the socket factory's `open` function was called.)
+    It should not be called on a server/incoming socket (where \ref c4socket_fromNative was called.)
+
+    This should be called just before \ref c4socket_opened or \ref c4socket_closed.
+    \note The caller must use a lock for Socket when this function is called.
+    @param socket  The socket being opened.
+    @param httpStatus  The HTTP/WebSocket status code from the peer; expected to be 200 if the
+        connection is successful, else an HTTP status >= 300 or WebSocket status >= 1000.
+    @param responseHeadersFleece  The HTTP response headers, encoded as a Fleece dictionary
+        whose keys are the header names (with normalized case) and values are header values
+        as strings. */
 CBL_CORE_API void c4socket_gotHTTPResponse(C4Socket* socket, int httpStatus, C4Slice responseHeadersFleece) C4API;
 
 /** Notifies LiteCore that a socket has opened, i.e. a C4SocketFactory.open request has completed

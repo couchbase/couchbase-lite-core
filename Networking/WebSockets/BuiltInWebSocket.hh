@@ -54,6 +54,7 @@ namespace litecore::websocket {
         /** Starts the TCP connection for a client socket. */
         void connect() override;
 
+        alloc_slice             peerTLSCertificateData() const override;
         std::pair<int, Headers> httpResponse() const override;
 
       protected:
@@ -73,7 +74,6 @@ namespace litecore::websocket {
         BuiltInWebSocket(const URL&, Role, const Parameters&);
         void                                             _bgConnect();
         void                                             setThreadName();
-        bool                                             configureClientCert(fleece::Dict auth);
         static bool                                      configureAuthHeader(net::HTTPLogic&, fleece::Dict auth);
         static bool                                      configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
         [[nodiscard]] std::unique_ptr<net::ClientSocket> _connectLoop();
