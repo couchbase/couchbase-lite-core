@@ -79,7 +79,6 @@ namespace litecore::repl {
 #pragma mark - WEBSOCKETIMPL OVERRIDES:
 
     void C4WebSocket::connect() {
-        logInfo("**** connect");  //TEMP
         WebSocketImpl::connect();
 
         net::Address c4addr(url());
@@ -118,7 +117,6 @@ namespace litecore::repl {
     bool C4WebSocket::hasCustomPeerCertValidation() const { return hasPeerCertValidator(); }
 
     bool C4WebSocket::gotPeerCertificate(slice certData, std::string_view hostname) {
-        logInfo("**** gotPeerCertificate: %zu bytes", certData.size);  //TEMP
         try {
             {
                 unique_lock lock(_mutex);
@@ -151,7 +149,6 @@ namespace litecore::repl {
                 _notifiedPeerCert = true;
             }
             if ( auto peerCertData = peerTLSCertificateData() ) {
-                logInfo("**** notifying delegate of peer cert, %zu bytes", peerCertData.size);  //TEMP
                 try {
                     delegate->invoke(&Delegate::onWebSocketGotTLSCertificate, peerCertData);
                 }
@@ -170,7 +167,6 @@ namespace litecore::repl {
     }
 
     void C4WebSocket::opened() {
-        logInfo("**** opened");  //TEMP
         try {
             if ( hasPeerCertValidator() && !peerTLSCertificateData() ) {
                 const char* message =

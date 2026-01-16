@@ -208,7 +208,6 @@ namespace litecore {
                 _peerTLSCertificateData = nullptr;
             }
         }
-        logInfo("**** getPeerTLSCertificate: returning %p", _peerTLSCertificate.get());  //TEMP
         return _peerTLSCertificate;
     }
 
@@ -320,7 +319,6 @@ namespace litecore {
     }
 
     void C4ReplicatorImpl::replicatorGotTLSCertificate(slice certData) {
-        logInfo("**** gotTLSCertificate: %zu bytes", certData.size);  //TEMP
 #ifdef COUCHBASE_ENTERPRISE
         LOCK(_mutex);
         _peerTLSCertificateData = certData;
