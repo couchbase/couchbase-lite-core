@@ -22,7 +22,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include <atomic>
-#include <variant>
+#include <optional>
 #include <vector>
 
 namespace litecore {
@@ -172,8 +172,8 @@ namespace litecore {
         std::string _loggingName;
         alloc_slice _responseHeaders;
 #ifdef COUCHBASE_ENTERPRISE
-        mutable alloc_slice      _peerTLSCertificateData;
-        mutable Retained<C4Cert> _peerTLSCertificate;
+        mutable std::optional<alloc_slice>              _peerTLSCertificateData; // nullopt = unknown, nullslice = none
+        mutable Retained<C4Cert>                        _peerTLSCertificate; // Created on demand
 #endif
         Retained<C4ReplicatorImpl>                      _selfRetain;  // Keeps me from being deleted
         std::atomic<C4ReplicatorStatusChangedCallback>  _onStatusChanged;
