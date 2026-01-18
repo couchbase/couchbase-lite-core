@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ParseDate.hh"
-#include "date/date.h"
 #include <chrono>
 #include <cmath>
 #include <ratio>
@@ -9,25 +8,27 @@
 #include "SQLiteFleeceUtil.hh"
 #include "DateFormat.hh"
 
-namespace date {
+using namespace std::chrono;
 
-    using namespace std::chrono;
+using quarters    = duration<int, std::ratio_multiply<std::ratio<3>, months::period>>;
+using decades     = duration<int, std::ratio_multiply<std::ratio<10>, years::period>>;
+using centuries   = duration<int, std::ratio_multiply<std::ratio<100>, years::period>>;
+using millenniums = duration<int, std::ratio_multiply<std::ratio<1000>, years::period>>;
 
-    using quarters    = duration<int, detail::ratio_multiply<std::ratio<3>, months::period>>;
-    using decades     = duration<int, detail::ratio_multiply<std::ratio<10>, years::period>>;
-    using centuries   = duration<int, detail::ratio_multiply<std::ratio<100>, years::period>>;
-    using millenniums = duration<int, detail::ratio_multiply<std::ratio<1000>, years::period>>;
+typedef struct {
+    int64_t year;
+    int64_t doy;
+    int64_t hour;
+    int64_t minute;
+    int64_t second;
+    int64_t millisecond;
+} DateDiff;
 
-    typedef struct {
-        int64_t year;
-        int64_t doy;
-        int64_t hour;
-        int64_t minute;
-        int64_t second;
-        int64_t millisecond;
-    } DateDiff;
+constexpr year_month_day& operator+=(year_month_day& ymd, decades d) noexcept { return ymd += years(d); }
 
-}  // namespace date
+constexpr year_month_day& operator+=(year_month_day& ymd, centuries c) noexcept { return ymd += years(c); }
+
+constexpr year_month_day& operator+=(year_month_day& ymd, millenniums m) noexcept { return ymd += years(m); }
 
 namespace litecore {
     using namespace fleece;
@@ -64,10 +65,10 @@ namespace litecore {
 
     // The Day Of Year for the given time_point. This is the number of days since the start of the year.
     inline int64_t doy(const date_time_point& t) {
-        const auto daypoint = floor<date::days>(t);
-        const auto ymd      = date::year_month_day{daypoint};
+        const auto daypoint = floor<days>(t);
+        const auto ymd      = year_month_day{daypoint};
         const auto year     = ymd.year();
-        const auto year_day = daypoint - date::sys_days{year / date::January / 0};
+        const auto year_day = daypoint - sys_days{year / std::chrono::January / 0};
         return year_day.count();
     }
 
@@ -110,8 +111,7 @@ namespace litecore {
         setResultTextFromSlice(ctx, DateFormat::format(buf, millis, asUTC, format));
     }
 
-    inline int64_t diffPart(const DateTime& t1, const DateTime& t2, const date::DateDiff& diff,
-                            const DateComponent part) {
+    inline int64_t diffPart(const DateTime& t1, const DateTime& t2, const DateDiff& diff, const DateComponent part) {
         switch ( part ) {
             case kDateComponentMillisecond:
                 {
@@ -184,12 +184,12 @@ namespace litecore {
             sign = -1;
         }
 
-        const date::DateDiff diff{left.Y - right.Y,
-                                  doy(tp_left) - doy(tp_right),
-                                  left.h - right.h,
-                                  left.m - right.m,
-                                  static_cast<int64_t>(left.s) - static_cast<int64_t>(right.s),
-                                  static_cast<int64_t>((frac(left.s) - frac(right.s)) * 1000)};
+        const DateDiff diff{left.Y - right.Y,
+                            doy(tp_left) - doy(tp_right),
+                            left.h - right.h,
+                            left.m - right.m,
+                            static_cast<int64_t>(left.s) - static_cast<int64_t>(right.s),
+                            static_cast<int64_t>((frac(left.s) - frac(right.s)) * 1000)};
 
         auto result = diffPart(left, right, diff, date_component);
         result *= sign;
@@ -201,7 +201,7 @@ namespace litecore {
         DateComponent date_component;
         if ( !part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid ) { return -1; }
 
-        date::year_month_day      ymd = date::year(start.Y) / start.M / start.D;
+        year_month_day            ymd = year(start.Y) / start.M / start.D;
         std::chrono::milliseconds tod = std::chrono::hours(start.h) + std::chrono::minutes(start.m - start.tz)
                                         + std::chrono::milliseconds(static_cast<int64_t>(start.s * 1000));
 
@@ -219,34 +219,34 @@ namespace litecore {
                 tod += std::chrono::hours(amount);
                 break;
             case kDateComponentDay:
-                tod += date::days(amount);
+                tod += days(amount);
                 break;
             case kDateComponentWeek:
-                tod += date::weeks(amount);
+                tod += weeks(amount);
                 break;
             case kDateComponentMonth:
-                ymd += date::months(amount);
+                ymd += months(amount);
                 break;
             case kDateComponentQuarter:
-                ymd += date::quarters(amount);
+                ymd += quarters(amount);
                 break;
             case kDateComponentYear:
-                ymd += date::years(amount);
+                ymd += years(amount);
                 break;
             case kDateComponentDecade:
-                ymd += date::decades(amount);
+                ymd += decades(amount);
                 break;
             case kDateComponentCentury:
-                ymd += date::centuries(amount);
+                ymd += centuries(amount);
                 break;
             case kDateComponentMillennium:
-                ymd += date::millenniums(amount);
+                ymd += millenniums(amount);
                 break;
             case kDateComponentInvalid:
                 return -1;
         }
 
-        return (date::sys_days(ymd) + tod).time_since_epoch().count();
+        return (sys_days(ymd) + tod).time_since_epoch().count();
     }
 
 }  // namespace litecore
