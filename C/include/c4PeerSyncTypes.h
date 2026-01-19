@@ -28,6 +28,10 @@ typedef C4_OPTIONS(uint32_t, C4PeerSyncProtocols){
 /** Synonym for `C4PeerSyncProtocols`, used to denote a single protocol (i.e. exactly 1 bit set) */
 typedef C4PeerSyncProtocols C4PeerSyncProtocol;
 
+typedef C4_OPTIONS(uint32_t, C4PeerSyncFlags) {
+    kPeerSyncNeverConnect = 0x01,
+};
+
 /** The unique ID of a peer, derived from its X.509 certificate.
     (It's technically a SHA256 digest, not a UUID, but we sometimes call it a UUID.)
     A `C4PeerID` is not tied to a single discovery protocol but is shared across them. */
@@ -140,6 +144,7 @@ typedef struct C4PeerSyncParameters {
     C4Slice                   optionsDictFleece;  ///< Optional Fleece-encoded dictionary of replicator options
     C4ReplicatorProgressLevel progressLevel;      ///< Level of detail in replicator callbacks
     C4PeerSyncCallbacks       callbacks;          ///< Client callbacks
+    C4PeerSyncFlags           flags;
 } C4PeerSyncParameters;
 
 /** Information about a peer, returned from \ref c4peersync_getPeerInfo.

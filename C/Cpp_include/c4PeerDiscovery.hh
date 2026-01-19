@@ -170,7 +170,7 @@ class C4PeerDiscovery {
     void shutdown();
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 13;
+    static constexpr int kAPIVersion = 14;
 
   protected:
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call

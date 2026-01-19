@@ -80,6 +80,7 @@ struct C4PeerSync
         slice                           optionsDictFleece;  ///< Replicator options
         C4ReplicatorProgressLevel       progressLevel;      ///< Level of progress notifications
         Delegate*                       delegate;           ///< Your object that receives notifications
+        C4PeerSyncFlags                 flags;
     };
 
     /** @note The database passed in the parameters is only used in the constructor to obtain a new database object via openAgain. */
