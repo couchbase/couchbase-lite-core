@@ -133,6 +133,9 @@ class C4PeerDiscovery {
     /// Returns a copy of the current known set of peers.
     std::unordered_map<std::string, fleece::Ref<C4Peer>> peers();
 
+    /// Returns the set of peers with the given provider.
+    std::vector<fleece::Ref<C4Peer>> peersWithProvider(C4PeerDiscoveryProvider*);
+
     /// Returns the peer (if any) with the given ID.
     fleece::Retained<C4Peer> peerWithID(std::string_view id);
 
@@ -173,7 +176,7 @@ class C4PeerDiscovery {
     void shutdown();
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 14;
+    static constexpr int kAPIVersion = 15;
 
   protected:
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
