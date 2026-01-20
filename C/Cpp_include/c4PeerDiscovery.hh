@@ -64,13 +64,13 @@ class C4PeerDiscovery {
     using ProviderFactory = ProviderRef (*)(C4PeerDiscovery& discovery, std::string_view peerGroupID);
 
     /// Identifies the browsing or publishing activity.
-    enum class Mode {browse, publish};
+    enum class Mode { browse, publish };
 
     /** Status of browse or publish Mode. (`error` may only be set if `online` is false.) */
     struct Status {
-        bool    online = false;
-        C4Error error = {};
-        bool operator==(Status const&) const = default;
+        bool    online                          = false;
+        C4Error error                           = {};
+        bool    operator==(Status const&) const = default;
     };
 
     /// One-time registration of a provider class. The function will be called when constructing a C4PeerDiscovery.
@@ -122,7 +122,10 @@ class C4PeerDiscovery {
     void stop(Mode);
 
     /// Stops both browsing and publishing.
-    void stop()     {stop(Mode::browse); stop(Mode::publish);}
+    void stop() {
+        stop(Mode::browse);
+        stop(Mode::publish);
+    }
 
     /// Updates my published metadata, notifying interested peers.
     void updateMetadata(Metadata const&);
@@ -298,7 +301,7 @@ class C4Peer
  *         threads, and they may issue their own calls on arbitrary threads. */
 class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
   public:
-    using Mode = C4PeerDiscovery::Mode;
+    using Mode   = C4PeerDiscovery::Mode;
     using Status = C4PeerDiscovery::Status;
 
     explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery, C4PeerSyncProtocol protocol_,
@@ -411,8 +414,8 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     C4PeerDiscovery& _discovery;
 
   private:
-    std::mutex mutable      _mutex;
-    std::array<Status,2>    _status;
+    std::mutex mutable _mutex;
+    std::array<Status, 2> _status;
 };
 
 #    pragma mark - STANDARD UUIDs AND IDS:

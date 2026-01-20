@@ -99,10 +99,11 @@ const C4SocketFactory C4SocketFactoryImpl::kFactory{
                     C4SliceResult allocatedData) { nativeHandle(socket)->write(alloc_slice(allocatedData)); },
         .completedReceive = [](C4Socket* socket,
                                size_t    byteCount) { nativeHandle(socket)->completedReceive(byteCount); },
-        .close            = [](C4Socket* socket) {
-            if (auto handle = nativeHandle(socket)) handle->close();
-        },
-        .dispose          = [](C4Socket* socket) { release(nativeHandle(socket)); },
+        .close =
+                [](C4Socket* socket) {
+                    if ( auto handle = nativeHandle(socket) ) handle->close();
+                },
+        .dispose = [](C4Socket* socket) { release(nativeHandle(socket)); },
         .attached =
                 [](C4Socket* socket) {
                     auto impl     = nativeHandle(socket);

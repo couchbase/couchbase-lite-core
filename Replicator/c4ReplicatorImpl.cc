@@ -199,7 +199,7 @@ namespace litecore {
     C4Cert* C4ReplicatorImpl::getPeerTLSCertificate() const {
         LOCK(_mutex);
         if ( !_peerTLSCertificate && _peerTLSCertificateData.has_value() ) {
-            if (alloc_slice const& data = _peerTLSCertificateData.value())
+            if ( alloc_slice const& data = _peerTLSCertificateData.value() )
                 _peerTLSCertificate = C4Cert::fromData(data);
             _peerTLSCertificateData = nullopt;
         }
@@ -293,7 +293,7 @@ namespace litecore {
 
 #ifdef COUCHBASE_ENTERPRISE
         _peerTLSCertificateData = nullopt;
-        _peerTLSCertificate = nullptr;
+        _peerTLSCertificate     = nullptr;
         _registerBLIPHandlersNow(std::move(_pendingHandlers));
         _pendingHandlers.clear();
 #endif
@@ -336,8 +336,8 @@ namespace litecore {
                 // Connected! By now we know the HTTP headers and (optional) peer cert:
                 _responseHeaders = _replicator->httpResponse().second.encode();
 #ifdef COUCHBASE_ENTERPRISE
-                if (!_peerTLSCertificateData.has_value())
-                    _peerTLSCertificateData = nullslice;    // definitely no peer cert
+                if ( !_peerTLSCertificateData.has_value() )
+                    _peerTLSCertificateData = nullslice;  // definitely no peer cert
 #endif
                 handleConnected();
             }

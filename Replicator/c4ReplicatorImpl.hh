@@ -172,8 +172,8 @@ namespace litecore {
         std::string _loggingName;
         alloc_slice _responseHeaders;
 #ifdef COUCHBASE_ENTERPRISE
-        mutable std::optional<alloc_slice>              _peerTLSCertificateData; // nullopt = unknown, nullslice = none
-        mutable Retained<C4Cert>                        _peerTLSCertificate; // Created on demand
+        mutable std::optional<alloc_slice> _peerTLSCertificateData;  // nullopt = unknown, nullslice = none
+        mutable Retained<C4Cert>           _peerTLSCertificate;      // Created on demand
 #endif
         Retained<C4ReplicatorImpl>                      _selfRetain;  // Keeps me from being deleted
         std::atomic<C4ReplicatorStatusChangedCallback>  _onStatusChanged;

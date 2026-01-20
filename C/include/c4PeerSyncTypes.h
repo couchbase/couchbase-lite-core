@@ -28,8 +28,8 @@ typedef C4_OPTIONS(uint32_t, C4PeerSyncProtocols){
 /** Synonym for `C4PeerSyncProtocols`, used to denote a single protocol (i.e. exactly 1 bit set) */
 typedef C4PeerSyncProtocols C4PeerSyncProtocol;
 
-typedef C4_OPTIONS(uint32_t, C4PeerSyncFlags) {
-    kPeerSyncNeverConnect = 0x01,
+typedef C4_OPTIONS(uint32_t, C4PeerSyncFlags){
+        kPeerSyncNeverConnect = 0x01,
 };
 
 /** The unique ID of a peer, derived from its X.509 certificate.
