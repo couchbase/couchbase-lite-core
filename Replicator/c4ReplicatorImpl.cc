@@ -335,8 +335,10 @@ namespace litecore {
             if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) {
                 // Connected! By now we know the HTTP headers and (optional) peer cert:
                 _responseHeaders = _replicator->httpResponse().second.encode();
+#ifdef COUCHBASE_ENTERPRISE
                 if (!_peerTLSCertificateData.has_value())
                     _peerTLSCertificateData = nullslice;    // definitely no peer cert
+#endif
                 handleConnected();
             }
             if ( _status.level == kC4Stopped ) {
