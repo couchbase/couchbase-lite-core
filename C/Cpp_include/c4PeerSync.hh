@@ -83,6 +83,9 @@ struct C4PeerSync
         C4PeerSyncFlags                 flags;
     };
 
+    /// The set of available protocols, those for which providers are registered.
+    static C4PeerSyncProtocols registeredProtocols();
+
     /** @note The database passed in the parameters is only used in the constructor to obtain a new database object via openAgain. */
     explicit C4PeerSync(Parameters const&);
     explicit C4PeerSync(C4PeerSyncParameters const*);

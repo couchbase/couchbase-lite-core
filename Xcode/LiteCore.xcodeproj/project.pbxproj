@@ -1627,7 +1627,6 @@
 		27AFF3A423036B2500B4D6C4 /* connector.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = connector.cpp; sourceTree = "<group>"; };
 		27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = stream_socket.cpp; sourceTree = "<group>"; };
 		27AFF3A623036B2500B4D6C4 /* datagram_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = datagram_socket.cpp; sourceTree = "<group>"; };
-		27B0751F2D6D0ED100AA6BFF /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
 		27B075222D6D22AB00AA6BFF /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		27B075432D7236E600AA6BFF /* ObserverList.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ObserverList.hh; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
@@ -1741,6 +1740,8 @@
 		27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocumentKeysTest.cc; sourceTree = "<group>"; };
 		27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DocumentKeys.hh; sourceTree = "<group>"; };
 		27E19D652316EDEA00E031F8 /* RESTClientTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RESTClientTest.cc; sourceTree = "<group>"; };
+		27E2BAEB2F23FFE400B6A8AC /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
+		27E2BAEC2F23FFE400B6A8AC /* P2P Architecture.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "P2P Architecture.md"; sourceTree = "<group>"; };
 		27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingRev.cc; sourceTree = "<group>"; };
 		27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingRev.hh; sourceTree = "<group>"; };
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
@@ -2391,7 +2392,6 @@
 				27D62A572B7BF403004C0787 /* c4Index.hh */,
 				274D184C261683F40018D39C /* c4Listener.hh */,
 				2743E20825F6BC88006F696D /* c4Observer.hh */,
-				27B0751F2D6D0ED100AA6BFF /* c4PeerDiscovery.hh */,
 				2787D9372DB2FC3A004F7D9B /* c4PeerSync.hh */,
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
 				2758E0A725F30A37007C7487 /* c4Replicator.hh */,
@@ -3628,6 +3628,8 @@
 		27FD728A2D833D4800CC48BF /* P2P */ = {
 			isa = PBXGroup;
 			children = (
+				27E2BAEC2F23FFE400B6A8AC /* P2P Architecture.md */,
+				27E2BAEB2F23FFE400B6A8AC /* c4PeerDiscovery.hh */,
 				2787D93C2DB2FCDA004F7D9B /* c4PeerDiscovery.cc */,
 				2787D93D2DB2FCDA004F7D9B /* c4PeerSync.cc */,
 				2787D93E2DB2FCDA004F7D9B /* ExamplePeerDiscoveryProvider.cc */,
