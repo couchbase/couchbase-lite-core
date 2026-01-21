@@ -1,5 +1,5 @@
 //
-// c4Socket+Internal.hh
+// c4WebSocket.hh
 //
 // Copyright 2017-Present Couchbase, Inc.
 //
@@ -13,6 +13,8 @@
 #pragma once
 #include "c4Socket.hh"
 #include "WebSocketImpl.hh"
+#include <condition_variable>
+#include <mutex>
 
 struct c4Database;
 
@@ -29,32 +31,35 @@ namespace litecore::repl {
     websocket::WebSocket* WebSocketFrom(C4Socket* c4sock);
 
     /** Implementation of C4Socket */
-    class C4SocketImpl final
+    class C4WebSocket final
         : public websocket::WebSocketImpl
         , public C4Socket {
       public:
-        static const C4SocketFactory& registeredFactory();
-
         using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL, fleece::alloc_slice   options,
                                                               std::shared_ptr<DBAccess>, C4KeyPair* externalKey);
         static void registerInternalFactory(InternalFactory);
 
         static Parameters convertParams(fleece::slice c4SocketOptions, C4KeyPair* externalKey = nullptr);
 
-        C4SocketImpl(const websocket::URL&, websocket::Role, const fleece::alloc_slice& options, const C4SocketFactory*,
-                     void* nativeHandle = nullptr);
-
-        ~C4SocketImpl() override;
+        C4WebSocket(const websocket::URL&, websocket::Role, const fleece::alloc_slice& options, const C4SocketFactory*,
+                    void* nativeHandle = nullptr);
 
         void closeWithException();
+
+        /** Blocks until the TLS handshake completes or the socket closes. Returns true on success. */
+        [[nodiscard]] bool waitForTLSHandshake();
 
         // WebSocket public API:
         void connect() override;
 
+        alloc_slice peerTLSCertificateData() const override;
+
         std::pair<int, websocket::Headers> httpResponse() const override;
 
         // C4Socket API:
-        bool gotPeerCertificate(slice certData, std::string_view hostname) override;
+        [[nodiscard]] bool hasCustomPeerCertValidation() const override;
+        [[nodiscard]] bool gotPeerCertificate(slice certData, std::string_view hostname) override;
+
         void gotHTTPResponse(int httpStatus, slice responseHeadersFleece) override;
         void opened() override;
         void closed(C4Error errorIfAny) override;
@@ -71,11 +76,19 @@ namespace litecore::repl {
         void sendBytes(fleece::alloc_slice bytes) override;
         void receiveComplete(size_t byteCount) override;
 
+        void socket_retain() override { fleece::retain(this); }
+
+        void socket_release() override { fleece::release(this); }
+
       private:
-        C4SocketFactory const _factory;
-        mutable std::mutex    _mutex;
-        int                   _responseStatus = 0;
-        alloc_slice           _responseHeadersFleece;
-        alloc_slice           _peerCertData;
+        void notifyPeerCertificate();
+
+        mutable std::mutex      _mutex;
+        std::condition_variable _tlsHandshakeCondition;
+        int                     _responseStatus = -1;
+        alloc_slice             _responseHeadersFleece;
+        alloc_slice             _peerCertData;
+        bool                    _notifiedPeerCert = false;
+        bool                    _closed           = false;
     };
 }  // namespace litecore::repl

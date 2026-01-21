@@ -1,5 +1,5 @@
 //
-// c4Socket.cc
+// c4WebSocket.cc
 //
 // Copyright 2017-Present Couchbase, Inc.
 //
@@ -12,7 +12,7 @@
 
 #include "fleece/Fleece.hh"
 #include "c4Socket.hh"
-#include "c4Socket+Internal.hh"
+#include "c4WebSocket.hh"
 #include "Address.hh"
 #include "Error.hh"
 #include "Headers.hh"
@@ -31,44 +31,19 @@ using namespace litecore::net;
 using namespace litecore::repl;
 using namespace websocket;
 
-
-static C4SocketFactory*              sRegisteredFactory;
-static C4SocketImpl::InternalFactory sRegisteredInternalFactory;
-
-
-C4Socket::~C4Socket() = default;
-
-void C4Socket::registerFactory(const C4SocketFactory& factory) {
-    Assert(factory.write != nullptr && factory.completedReceive != nullptr);
-    if ( factory.framing == kC4NoFraming ) Assert(factory.close == nullptr && factory.requestClose != nullptr);
-    else
-        Assert(factory.close != nullptr && factory.requestClose == nullptr);
-
-    if ( sRegisteredFactory ) throw std::logic_error("c4socket_registerFactory can only be called once");
-    sRegisteredFactory = new C4SocketFactory(factory);
-}
-
-C4Socket* C4Socket::fromNative(const C4SocketFactory& factory, void* nativeHandle, const C4Address& address,
-                               bool incoming) {
-    // Note: This should be wrapped in `retain()` since `C4SocketImpl` is ref-counted,
-    // but doing so would cause client code to leak. Instead I added a warning to the doc-comment.
-    return new C4SocketImpl(address.toURL(), incoming ? Role::Server : Role::Client, {}, &factory, nativeHandle);
-}
-
-#pragma mark - C4SOCKETIMPL:
-
 namespace litecore::repl {
 
+    static C4WebSocket::InternalFactory sRegisteredInternalFactory;
 
-    void C4SocketImpl::registerInternalFactory(C4SocketImpl::InternalFactory f) { sRegisteredInternalFactory = f; }
+    void C4WebSocket::registerInternalFactory(C4WebSocket::InternalFactory f) { sRegisteredInternalFactory = f; }
 
     Retained<WebSocket> CreateWebSocket(const websocket::URL& url, const alloc_slice& options,
                                         shared_ptr<DBAccess> database, const C4SocketFactory* factory,
                                         void* nativeHandle, C4KeyPair* externalKey) {
-        if ( !factory ) factory = sRegisteredFactory;
+        if ( !factory && C4Socket::hasRegisteredFactory() ) factory = &C4Socket::registeredFactory();
 
         if ( factory ) {
-            auto ret = new C4SocketImpl(url, Role::Client, options, factory, nativeHandle);
+            auto ret = new C4WebSocket(url, Role::Client, options, factory, nativeHandle);
             return ret;
         } else if ( sRegisteredInternalFactory ) {
             Assert(!nativeHandle);
@@ -79,10 +54,10 @@ namespace litecore::repl {
     }
 
     static const C4SocketFactory& effectiveFactory(const C4SocketFactory* f) {
-        return f ? *f : C4SocketImpl::registeredFactory();
+        return f ? *f : C4WebSocket::registeredFactory();
     }
 
-    WebSocketImpl::Parameters C4SocketImpl::convertParams(slice c4SocketOptions, C4KeyPair* externalKey) {
+    WebSocketImpl::Parameters C4WebSocket::convertParams(slice c4SocketOptions, C4KeyPair* externalKey) {
         WebSocketImpl::Parameters params = {};
         params.options                   = AllocedDict(c4SocketOptions);
         params.webSocketProtocols        = params.options[kC4SocketOptionWSProtocols].asString();
@@ -94,101 +69,130 @@ namespace litecore::repl {
         return params;
     }
 
-    C4SocketImpl::C4SocketImpl(const websocket::URL& url, Role role, const alloc_slice& options,
-                               const C4SocketFactory* factory_, void* nativeHandle_)
+    C4WebSocket::C4WebSocket(const URL& url, Role role, const alloc_slice& options, const C4SocketFactory* factory_,
+                             void* nativeHandle_)
         : WebSocketImpl(url, role, effectiveFactory(factory_).framing != kC4NoFraming, convertParams(options))
-        , _factory(effectiveFactory(factory_)) {
-        nativeHandle = nativeHandle_;
-    }
+        , C4Socket(effectiveFactory(factory_), nativeHandle_) {}
 
-    C4SocketImpl::~C4SocketImpl() {
-        if ( _factory.dispose ) _factory.dispose(this);
-    }
-
-    WebSocket* WebSocketFrom(C4Socket* c4sock) { return dynamic_cast<C4SocketImpl*>(c4sock); }
-
-    const C4SocketFactory& C4SocketImpl::registeredFactory() {
-        if ( !sRegisteredFactory )
-            throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
-        return *sRegisteredFactory;
-    }
+    WebSocket* WebSocketFrom(C4Socket* c4sock) { return dynamic_cast<C4WebSocket*>(c4sock); }
 
 #pragma mark - WEBSOCKETIMPL OVERRIDES:
 
-    void C4SocketImpl::connect() {
+    void C4WebSocket::connect() {
         WebSocketImpl::connect();
-        if ( _factory.open ) {
-            net::Address c4addr(url());
-            _factory.open(this, (C4Address*)c4addr, options().data(), _factory.context);
-        }
+
+        net::Address c4addr(url());
+        _factory.open(this, (C4Address*)c4addr, options().data(), _factory.context);
     }
 
-    std::pair<int, Headers> C4SocketImpl::httpResponse() const {
+    alloc_slice C4WebSocket::peerTLSCertificateData() const {
+        unique_lock lock(_mutex);
+        return _peerCertData;
+    }
+
+    std::pair<int, Headers> C4WebSocket::httpResponse() const {
         unique_lock lock(_mutex);
         if ( _responseHeadersFleece ) return {_responseStatus, Headers(_responseHeadersFleece)};
         else
             return {_responseStatus, Headers()};
     }
 
-    void C4SocketImpl::requestClose(int status, fleece::slice message) { _factory.requestClose(this, status, message); }
+    void C4WebSocket::requestClose(int status, fleece::slice message) { _factory.requestClose(this, status, message); }
 
-    void C4SocketImpl::closeSocket() { _factory.close(this); }
+    void C4WebSocket::closeSocket() { _factory.close(this); }
 
-    void C4SocketImpl::closeWithException() {
+    void C4WebSocket::closeWithException() {
         C4Error error = C4Error::fromCurrentException();
         WarnError("Closing socket due to C++ exception: %s\n%s", error.description().c_str(),
                   error.backtrace().c_str());
         close(kCodeUnexpectedCondition, "Internal exception"_sl);
     }
 
-    void C4SocketImpl::sendBytes(alloc_slice bytes) { _factory.write(this, C4SliceResult(bytes)); }
+    void C4WebSocket::sendBytes(alloc_slice bytes) { _factory.write(this, C4SliceResult(bytes)); }
 
-    void C4SocketImpl::receiveComplete(size_t byteCount) { _factory.completedReceive(this, byteCount); }
+    void C4WebSocket::receiveComplete(size_t byteCount) { _factory.completedReceive(this, byteCount); }
 
 #pragma mark - C4SOCKET C++ API:
 
-    bool C4SocketImpl::gotPeerCertificate(slice certData, std::string_view hostname) {
+    bool C4WebSocket::hasCustomPeerCertValidation() const { return hasPeerCertValidator(); }
+
+    bool C4WebSocket::gotPeerCertificate(slice certData, std::string_view hostname) {
         try {
-            _peerCertData = certData;
+            {
+                unique_lock lock(_mutex);
+                _peerCertData = certData;
+                _tlsHandshakeCondition.notify_all();  // wakes up waitForTLSHandshake()
+            }
             // Call WebSocket's registered validator function, if any:
-            return validatePeerCert(certData, hostname);
+            if ( !validatePeerCert(certData, hostname) ) return false;
+
+            // If `connect` has been called, notify the delegate now.
+            // Otherwise there's no delegate yet, so wait until `opened` is called.
+            notifyPeerCertificate();
+            return true;
         }
         catchAndWarn() return false;
     }
 
-    void C4SocketImpl::gotHTTPResponse(int status, slice responseHeadersFleece) {
-        try {
+    bool C4WebSocket::waitForTLSHandshake() {
+        unique_lock lock(_mutex);
+        _tlsHandshakeCondition.wait(lock, [this] { return _peerCertData != nullslice && !_closed; });
+        return _peerCertData != nullslice;
+    }
+
+    void C4WebSocket::notifyPeerCertificate() {
+        // Can't call `Delegate::onWebSocketGotTLSCertificate` until we have a delegate.
+        if ( auto delegate = delegateWeak() ) {
             {
                 unique_lock lock(_mutex);
-                _responseStatus        = status;
-                _responseHeadersFleece = responseHeadersFleece;
+                if ( _notifiedPeerCert ) return;
+                _notifiedPeerCert = true;
             }
-            if ( _peerCertData ) {
-                delegateWeak()->invoke(&Delegate::onWebSocketGotTLSCertificate, _peerCertData);
-            } else if ( hasPeerCertValidator() ) {
+            if ( auto peerCertData = peerTLSCertificateData() ) {
+                try {
+                    delegate->invoke(&Delegate::onWebSocketGotTLSCertificate, peerCertData);
+                }
+                catchAndWarn()
+            }
+        }
+    }
+
+    void C4WebSocket::gotHTTPResponse(int status, slice responseHeadersFleece) {
+        Assert(status >= 0);
+        {
+            unique_lock lock(_mutex);
+            _responseStatus        = status;
+            _responseHeadersFleece = responseHeadersFleece;
+        }
+    }
+
+    void C4WebSocket::opened() {
+        try {
+            if ( hasPeerCertValidator() && !peerTLSCertificateData() ) {
                 const char* message =
                         "WebSocket has peer cert validator but SocketFactory did not call gotPeerCertificate";
                 WarnError("%s", message);
                 close(kCodeUnexpectedCondition, message);
                 return;
             }
-        } catch ( ... ) { closeWithException(); }
-    }
+            // Tell the delegate about the peer cert, if we didn't have a chance earlier:
+            notifyPeerCertificate();
 
-    void C4SocketImpl::opened() {
-        try {
             WebSocketImpl::onConnect();
         } catch ( ... ) { closeWithException(); }
     }
 
-    void C4SocketImpl::closeRequested(int status, slice message) {
+    void C4WebSocket::closeRequested(int status, slice message) {
         try {
             WebSocketImpl::onCloseRequested(status, message);
         } catch ( ... ) { closeWithException(); }
     }
 
-    void C4SocketImpl::closed(C4Error error) {
+    void C4WebSocket::closed(C4Error error) {
         try {
+            // Tell delegate about cert in the case where opened() was never called:
+            notifyPeerCertificate();
+
             alloc_slice message = c4error_getMessage(error);
             CloseStatus status{kUnknownError, error.code, message};
             if ( error.code == 0 ) {
@@ -203,15 +207,21 @@ namespace litecore::repl {
 
             WebSocketImpl::onClose(status);
         } catch ( ... ) { closeWithException(); }
+
+        {
+            unique_lock lock(_mutex);
+            _closed = true;
+            _tlsHandshakeCondition.notify_all();
+        }
     }
 
-    void C4SocketImpl::completedWrite(size_t byteCount) {
+    void C4WebSocket::completedWrite(size_t byteCount) {
         try {
             WebSocketImpl::onWriteComplete(byteCount);
         } catch ( ... ) { closeWithException(); }
     }
 
-    void C4SocketImpl::received(slice data) {
+    void C4WebSocket::received(slice data) {
         try {
             WebSocketImpl::onReceive(data);
         } catch ( ... ) { closeWithException(); }

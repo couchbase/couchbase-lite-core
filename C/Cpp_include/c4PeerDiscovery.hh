@@ -12,11 +12,12 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4PeerSyncTypes.h"  // for C4PeerID
+#include "c4PeerSyncTypes.h"  // for C4PeerID, C4PeerSyncProtocols
 #include "c4Error.h"
 #include "Observer.hh"
 #include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
+#include <array>
 #include <functional>
 #include <mutex>
 #include <optional>
@@ -40,6 +41,10 @@ struct C4SocketFactory;
 class C4Peer;
 class C4PeerDiscoveryProvider;
 
+namespace litecore::net {
+    class TLSContext;
+}
+
 /** The official logging channel of peer discovery. */
 extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
 
@@ -58,23 +63,28 @@ class C4PeerDiscovery {
     using ProviderRef     = std::unique_ptr<C4PeerDiscoveryProvider, ProviderDeleter>;
     using ProviderFactory = ProviderRef (*)(C4PeerDiscovery& discovery, std::string_view peerGroupID);
 
+    /// Identifies the browsing or publishing activity.
+    enum class Mode { browse, publish };
+
+    /** Status of browse or publish Mode. (`error` may only be set if `online` is false.) */
+    struct Status {
+        bool    online                          = false;
+        C4Error error                           = {};
+        bool    operator==(Status const&) const = default;
+    };
+
     /// One-time registration of a provider class. The function will be called when constructing a C4PeerDiscovery.
-    static void registerProvider(std::string_view providerName, ProviderFactory);
+    static void registerProvider(C4PeerSyncProtocol, ProviderFactory);
 
-    static std::vector<std::string> registeredProviders();
+    /// The set of available protocols, those for which providers are registered.
+    static C4PeerSyncProtocols registeredProtocols();
 
-    /// Constructor. Uses all registered providers.
+    /// Constructor.
     /// @param peerGroupID  An app-specific unique identifier. Will discover other devices that use this identifier.
     ///                   It must be 63 characters or less and may not contain `.`, `,` or `\\`.
     /// @param thisPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
-    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID);
-
-    /// Constructor. Uses the named provider classes.
-    /// @param peerGroupID  An app-specific unique identifier.
-    /// @param thisPeerID  This device's unique PeerID (generally a digest of an X.509 certificate.)
-    /// @param providerNames  A list of names of registered C4PeerDiscoveryProviders.
-    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID,
-                             std::span<const std::string_view> providerNames);
+    /// @param protocols  Which protocols/providers to use.
+    explicit C4PeerDiscovery(std::string_view peerGroupID, C4PeerID const& thisPeerID, C4PeerSyncProtocols protocols);
 
     /// The destructor shuts everything down in an orderly fashion, not returning until complete.
     ~C4PeerDiscovery();
@@ -85,8 +95,12 @@ class C4PeerDiscovery {
     /// This device's peer ID.
     C4PeerID const& peerID() const;
 
-    /// The `C4PeerDiscoveryProvider`s in use.
+    /// Which providers are configured.
     std::vector<ProviderRef> const& providers() const;
+
+    /// Sets the TLS configuration for incoming connections.
+    /// (Internal API, used by \ref C4PeerDiscoveryProvider::createIncomingSocketWithTLS)
+    void setTLSContext(litecore::net::TLSContext const*);
 
     /// Registers a default C4SocketFactory to be used when a Provider doesn't have a custom one.
     /// This factory is expected to handle normal IP-based WebSocket connections.
@@ -96,9 +110,6 @@ class C4PeerDiscovery {
     /// Tells providers to start looking for peers.
     void startBrowsing();
 
-    /// Tells providers to stop looking for peers.
-    void stopBrowsing();
-
     using Metadata = std::unordered_map<std::string, fleece::alloc_slice>;
 
     /// Tells providers to advertise themselves so other devices can discover them.
@@ -107,14 +118,23 @@ class C4PeerDiscovery {
     /// @param metadata  The peer metadata to advertise.
     void startPublishing(std::string_view displayName, uint16_t port, Metadata const& metadata);
 
-    /// Stops publishing.
-    void stopPublishing();
+    /// Stops browsing or publishing.
+    void stop(Mode);
+
+    /// Stops both browsing and publishing.
+    void stop() {
+        stop(Mode::browse);
+        stop(Mode::publish);
+    }
 
     /// Updates my published metadata, notifying interested peers.
     void updateMetadata(Metadata const&);
 
     /// Returns a copy of the current known set of peers.
     std::unordered_map<std::string, fleece::Ref<C4Peer>> peers();
+
+    /// Returns the set of peers with the given provider.
+    std::vector<fleece::Ref<C4Peer>> peersWithProvider(C4PeerDiscoveryProvider*);
 
     /// Returns the peer (if any) with the given ID.
     fleece::Retained<C4Peer> peerWithID(std::string_view id);
@@ -127,8 +147,8 @@ class C4PeerDiscovery {
      *           to prevent receiving notifications after the observer is destructed! */
     class Observer : public litecore::Observer {
       public:
-        /// Notification that a provider has started/stopped browsing for peers.
-        virtual void browsing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
+        /// Notification that a provider has started/stopped browsing or publishing.
+        virtual void statusChanged(C4PeerDiscoveryProvider*, Mode, Status) {}
 
         /// Notification that one or more online peers have been discovered.
         virtual void addedPeers(std::span<fleece::Ref<C4Peer> const>) {}
@@ -138,9 +158,6 @@ class C4PeerDiscovery {
 
         /// Notification that a peer's metadata has changed.
         virtual void peerMetadataChanged(C4Peer*) {}
-
-        /// Notification that a provider has made this app discoverable by peers, or stopped.
-        virtual void publishing(C4PeerDiscoveryProvider*, bool active, C4Error) {}
 
         /// Notification of an incoming socket connection from a peer. (Only occurs while publishing is enabled.)
         /// @returns  True to accept the connection, false to reject it.
@@ -159,16 +176,16 @@ class C4PeerDiscovery {
     void shutdown();
 
     // Version number of c4PeerDiscovery.hh API. Incremented on incompatible changes.
-    static constexpr int kAPIVersion = 10;
+    static constexpr int kAPIVersion = 15;
 
   protected:
     //---- Internal API for C4PeerDiscoveryProvider & C4Peer to call
     friend class C4Peer;
     friend class C4PeerDiscoveryProvider;
 
-    void browseStateChanged(C4PeerDiscoveryProvider*, bool state, C4Error = {});
+    fleece::Ref<litecore::net::TLSContext const> tlsContext() const;
 
-    void publishStateChanged(C4PeerDiscoveryProvider*, bool state, C4Error = {});
+    void statusChanged(C4PeerDiscoveryProvider*, Mode, Status);
 
     fleece::Ref<C4Peer> addPeer(C4Peer*, bool moreComing);
 
@@ -287,24 +304,28 @@ class C4Peer
  *         threads, and they may issue their own calls on arbitrary threads. */
 class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
   public:
-    static constexpr std::string_view kDNS_SD      = "DNS-SD";       ///< Standard provider name
-    static constexpr std::string_view kBluetoothLE = "BluetoothLE";  ///< Standard provider name
+    using Mode   = C4PeerDiscovery::Mode;
+    using Status = C4PeerDiscovery::Status;
 
-    explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery, std::string_view providerName,
+    explicit C4PeerDiscoveryProvider(C4PeerDiscovery& discovery, C4PeerSyncProtocol protocol_,
                                      std::string_view peerGroupID_)
-        : name(providerName), peerGroupID(peerGroupID_), _discovery(discovery) {}
+        : protocol(protocol_), peerGroupID(peerGroupID_), _discovery(discovery) {}
 
     /// The C4PeerDiscovery instance that owns this provider.
     C4PeerDiscovery& discovery() const { return _discovery; };
 
-    /// The provider's name (e.g. "BluetoothLE") for identification/logging/debugging purposes.
-    std::string const name;
+    /// The protocol this provider implements.
+    C4PeerSyncProtocol const protocol;
 
     std::string const peerGroupID;
 
-    bool isBrowsing() const { return _browsing; }
+    const char* protocolName() const;
 
-    bool isPublishing() const { return _publishing; }
+    /// Status of browse or publish.
+    Status status(Mode) const;
+
+    /// True if browse & publish are both online.
+    bool isOnline() const;
 
     //-------- Abstract API for subclasses to implement:
 
@@ -313,10 +334,10 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// While browsing, the implementation must call \ref addPeer and \ref removePeer as necessary.
     virtual void startBrowsing() = 0;
 
-    /// Stops browsing for peers.
-    /// Implementation must call \ref browseStateChanged when stopped.
+    /// Stops browsing or publishing, depending on the mode.
+    /// Implementation must call \ref statusChanged when stopped.
     /// It doesn't need to call \ref removePeer; that will be done for it.
-    virtual void stopBrowsing() = 0;
+    virtual void stop(Mode) = 0;
 
     /// Starts/stops monitoring the metadata of a peer.
     /// Implementation must call \ref C4Peer::setMetadata whenever it receives metadata.
@@ -345,10 +366,6 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     /// @param metadata  The peer metadata to advertise.
     virtual void startPublishing(std::string_view displayName, uint16_t port, C4Peer::Metadata const& metadata) = 0;
 
-    /// Stops publishing.
-    /// Implementation must call \ref publishStateChanged on completion.
-    virtual void stopPublishing() = 0;
-
     /// Changes the published metadata. (No completion call needed.)
     virtual void updateMetadata(C4Peer::Metadata const&) = 0;
 
@@ -358,18 +375,9 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     virtual void shutdown(std::function<void()> onComplete) = 0;
 
   protected:
-    /// Reports that browsing has started, stopped or failed.
-    /// If `state` is false, this method will call \ref removePeer on all online peers.
-    void browseStateChanged(bool state, C4Error error = {}) {
-        _browsing = state;
-        _discovery.browseStateChanged(this, state, error);
-    }
-
-    /// Reports that publishing has started, stopped or failed.
-    void publishStateChanged(bool state, C4Error error = {}) {
-        _publishing = state;
-        _discovery.publishStateChanged(this, state, error);
-    }
+    /// Reports that browsing or publishing has started, stopped or failed.
+    /// If browsing stops, this method will call \ref removePeer on all online peers.
+    void statusChanged(Mode, Status);
 
     /// Registers a newly discovered peer with to C4PeerDiscovery's set of peers, and returns it.
     /// If there is already a peer with this id, returns the existing one instead of registering the new one.
@@ -394,7 +402,11 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     ///                    into one `addedPeers` notification.
     bool removePeer(std::string_view id, bool moreComing) { return _discovery.removePeer(id, moreComing); }
 
+    /// If your last call to \ref addPeer had `moreComing = true`, this call informs C4PeerDiscovery
+    /// that there actually aren't any more, so it can post pending notifications.
     void noMorePeersComing() { _discovery.noMorePeersComing(); }
+
+    fleece::Ref<C4Socket> createIncomingSocketWithTLS(C4SocketFactory const&, void* nativeHandle, C4Address const&);
 
     /// Notifies observers about an incoming connection from a peer.
     /// @note  If the connection is not accepted, caller must close the C4Socket.
@@ -405,8 +417,8 @@ class C4PeerDiscoveryProvider : public fleece::InstanceCounted {
     C4PeerDiscovery& _discovery;
 
   private:
-    std::atomic<bool> _browsing   = false;
-    std::atomic<bool> _publishing = false;
+    std::mutex mutable _mutex;
+    std::array<Status, 2> _status;
 };
 
 #    pragma mark - STANDARD UUIDs AND IDS:
