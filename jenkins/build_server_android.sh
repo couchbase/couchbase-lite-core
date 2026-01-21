@@ -13,7 +13,7 @@
 
 set -e
 
-NDK_VER="27.0.12077973"
+NDK_VER="27.2.12479018"
 CMAKE_VER="3.28.1"
 NINJA_VER="1.10.2"
 PKG_TYPE="zip"
@@ -100,13 +100,37 @@ if [ ! -f ${NINJA} ]; then
     .tools/cbdep install -d .tools ninja ${NINJA_VER}
 fi
 
-ARCH_VERSION="22"
+ARCH_VERSION="24"
 
 #create artifacts dir for publishing to latestbuild
 ARTIFACTS_SHA_DIR=${WORKSPACE}/artifacts/couchbase-lite-core/sha/${SHA_VERSION:0:2}/${SHA_VERSION}
 ARTIFACTS_BUILD_DIR=${WORKSPACE}/artifacts/couchbase-lite-core/${VERSION}/${BLD_NUM}
 mkdir -p ${ARTIFACTS_SHA_DIR}
 mkdir -p ${ARTIFACTS_BUILD_DIR}
+
+function create_monolithic_static_lib() {
+    tmp_mri=$(mktemp)
+    { 
+        echo "create libLiteCoreFull.a"
+        echo "addlib libLiteCoreStatic.a"
+        if [[ "$EDITION" == "enterprise" ]]; then
+            echo "addlib EE_P2P/libmDNSResponder.a"
+            echo "addlib libLiteCoreWebSocket.a"
+        fi
+        echo "addlib libCouchbaseSqlite3.a"
+        echo "addlib Networking/BLIP/vendor/zlib/libz.a"
+        echo "addlib vendor/sqlite3-unicodesn/libSQLite3_UnicodeSN.a"
+        echo "addlib vendor/mbedtls/library/libmbedx509.a"
+        echo "addlib vendor/mbedtls/library/libmbedcrypto.a"
+        echo "addlib vendor/mbedtls/library/libmbedtls.a"
+        echo "save"
+        echo "end"
+    } > "${tmp_mri}"
+    ar -M < "${tmp_mri}"
+    rm -f "${tmp_mri}"
+    ranlib libLiteCoreFull.a
+    cp libLiteCoreFull.a install/lib/
+}
 
 echo "====  Building Android $ARCH_VERSION Release binary  ==="
 cd "${SOURCE_PATH}/${BUILD_REL_TARGET}"
@@ -125,6 +149,8 @@ ${CMAKE} \
     -S ../couchbase-lite-core
 
 ${NINJA} install
+create_monolithic_static_lib
+
 
 echo "====  Building Android $ARCH_VERSION Debug binary  ==="
 cd ${SOURCE_PATH}/${BUILD_DEBUG_TARGET}
@@ -143,6 +169,7 @@ ${CMAKE} \
     -S ../couchbase-lite-core
 
 ${NINJA} install
+create_monolithic_static_lib
 
 # Create zip package
 for FLAVOR in release debug;

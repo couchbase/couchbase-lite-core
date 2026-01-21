@@ -12,7 +12,7 @@ FleeceObjects - The Fleece serialization library for saving data to a binary for
 FleeceBase - A subset of the above for linking into non LiteCore targets
 LiteCoreObjects - The precompiled object files containing the logic of LiteCore
 LiteCoreUnitTesting - The precompiled object files containing the logic of LiteCore for unit testing.
-LiteCoreStatic - The static LiteCore library (LiteCoreObjects linked statically)
+LiteCoreStatic - The static LiteCore library (LiteCoreObjects and other compiled deps linked statically)
 LiteCore - The shared LiteCore library (LiteCoreObjects linked dynamically)
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 LiteCoreWebSocket - An implementation of websockets in C++ (Used for EE library, and can be used downstream by other projects)
@@ -347,11 +347,6 @@ if(LITECORE_BUILD_SHARED)
     install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
 endif()
 
-if(LITECORE_BUILD_STATIC)
-    add_library(LiteCoreStatic STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:LiteCoreObjects>)
-    target_link_libraries(LiteCoreStatic PRIVATE LiteCoreObjects)
-endif()
-
 
 target_link_libraries(
     LiteCoreObjects INTERFACE
@@ -466,26 +461,7 @@ if(LITECORE_BUILD_STATIC)
         endif()
     endif()
 
-    add_library(LiteCoreFull STATIC ${LC_MONOLITHIC_OBJECTS})
-
-    # Link external (non object) libraries
-    target_link_libraries(
-            LiteCoreFull PRIVATE
-            LiteCoreWebSocket
-            SQLite3_UnicodeSN
-            mbedcrypto
-            mbedtls
-            mbedx509
-            CouchbaseSqlite3
-    )
-
-    install(
-            TARGETS LiteCoreFull
-            RUNTIME DESTINATION bin
-            LIBRARY DESTINATION lib
-            ARCHIVE DESTINATION lib
-            OPTIONAL
-    )
+    add_library(LiteCoreStatic STATIC ${LC_MONOLITHIC_OBJECTS})
 endif()
 
 ### TESTS:
