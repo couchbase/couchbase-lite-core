@@ -33,7 +33,7 @@ namespace litecore::websocket {
     static constexpr auto kDefaultHeartbeatInterval = chrono::seconds(5 * 60);
 
     // Timeout for disconnecting if no PONG response received
-    static constexpr auto kPongTimeout = 10s;
+    static constexpr auto kPongTimeout = 20s;
 
     // Timeout for disconnecting if no CLOSE response received
     static constexpr auto kCloseTimeout = 5s;
