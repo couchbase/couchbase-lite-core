@@ -66,3 +66,9 @@ target_include_directories(
     ${LITECORE_LOCATION}/C/include
     ${LITECORE_LOCATION}/C/Cpp_include
 )
+
+target_compile_definitions(
+    BLIPObjects PRIVATE
+    -DFLEECE_STATIC
+    -DLITECORE_STATIC
+)

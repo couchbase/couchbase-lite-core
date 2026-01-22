@@ -28,8 +28,9 @@
 #include <functional>
 #include <iostream>
 #include <limits>
-#include <string>
+#include <optional>
 #include <stdexcept>
+#include <string>
 
 #if defined(CMAKE) && __has_include("config.h")
 #    include "config.h"
@@ -182,7 +183,11 @@ class Tool {
 
     std::string ansiItalic() { return ansi("3"); }
 
+    std::string ansiNoItalic() { return ansi("23"); }
+
     std::string ansiUnderline() { return ansi("4"); }
+
+    std::string ansiNoUnderline() { return ansi("24"); }
 
     std::string ansiRed() { return ansi("31"); }
 
@@ -241,6 +246,12 @@ class Tool {
 
     /** Returns & consumes the next arg, or fails if there are none. */
     std::string nextArg(const char* what) {
+        if ( _flagArg ) {
+            // This is the part after the `=` while handling a flag of the form `--flag=value`
+            std::string arg = std::move(*_flagArg);
+            _flagArg        = std::nullopt;
+            return arg;
+        }
         if ( !_argTokenizer.hasArgument() ) failMisuse(litecore::stringprintf("Missing argument: expected %s", what));
         std::string arg = _argTokenizer.argument();
         _argTokenizer.next();
@@ -290,31 +301,46 @@ class Tool {
     virtual void processFlags(std::initializer_list<FlagSpec> specs) {
         while ( true ) {
             std::string flag = peekNextArg();
-            if ( !flag.starts_with('-') || flag.size() > 20 ) return;
+            if ( !flag.starts_with('-') ) return;
             _argTokenizer.next();
 
             if ( flag == "--" ) return;  // marks end of flags
 
-            bool handled;
             try {
-                handled = processFlag(flag, specs);
-            } catch ( std::exception const& x ) { fail("in flag " + flag + ": " + x.what()); }
-
-            if ( !handled ) {
-                // Flags all subcommands accept:
-                if ( flag == "--help" ) {
-                    usage();
-                    exit(0);
-                } else if ( flag == "--verbose" || flag == "-v" ) {
-                    ++_verbose;
-                } else if ( flag == "--color" ) {
-                    enableColor();
-                } else if ( flag == "--version" ) {
-                    std::cout << _name << " " << TOOLS_VERSION_STRING << std::endl << std::endl;
-                    exit(0);
-                } else {
-                    fail(std::string("Unknown flag ") + flag);
+                if ( auto [f, arg] = litecore::split2(flag, "="); !arg.empty() ) {
+                    // Flag of the form `--flag=value`; treat `value` as the next arg during parsing
+                    flag     = f;
+                    _flagArg = arg;
                 }
+
+                bool handled;
+                try {
+                    handled = processFlag(flag, specs);
+                } catch ( std::exception const& x ) { fail("in flag " + flag + ": " + x.what()); }
+
+                if ( !handled ) {
+                    // Flags all subcommands accept:
+                    if ( flag == "--help" ) {
+                        usage();
+                        exit(0);
+                    } else if ( flag == "--verbose" || flag == "-v" ) {
+                        ++_verbose;
+                    } else if ( flag == "--color" ) {
+                        enableColor();
+                    } else if ( flag == "--version" ) {
+                        std::cout << _name << " " << TOOLS_VERSION_STRING << std::endl << std::endl;
+                        exit(0);
+                    } else {
+                        fail(std::string("Unknown flag ") + flag);
+                    }
+                }
+
+                if ( _flagArg )  // arg portion of flag wasn't consumed by handler
+                    fail("Flag " + flag + " does not take an argument");
+
+            } catch ( ... ) {
+                _flagArg = std::nullopt;
+                throw;
             }
         }
     }
@@ -322,7 +348,7 @@ class Tool {
     /** Subroutine of processFlags; looks up one flag and calls its handler, or returns false. */
     virtual bool processFlag(const std::string& flag, const std::initializer_list<FlagSpec>& specs) {
         for ( auto& spec : specs ) {
-            if ( flag == std::string(spec.flag) ) {
+            if ( flag == spec.flag ) {
                 spec.handler();
                 return true;
             }
@@ -356,7 +382,8 @@ class Tool {
     void        enableColor();
     static void initReadLine();
 
-    std::string       _toolPath;
-    std::string       _name;
-    ArgumentTokenizer _argTokenizer;
+    std::string                _toolPath;
+    std::string                _name;
+    ArgumentTokenizer          _argTokenizer;
+    std::optional<std::string> _flagArg;
 };

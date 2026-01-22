@@ -11,8 +11,14 @@
 //
 
 #include "TLSContext.hh"
+
+#include "c4Certificate.hh"
+#include "c4ListenerTypes.h"
+#include "c4ReplicatorTypes.h"
 #include "Certificate.hh"
+#include "Error.hh"
 #include "Logging.hh"
+#include "fleece/Fleece.hh"
 #include "sockpp/mbedtls_context.h"
 #include <string>
 
@@ -22,6 +28,89 @@ using namespace fleece;
 
 namespace litecore::net {
     using namespace crypto;
+
+    Retained<TLSContext> TLSContext::fromReplicatorOptions(Dict options, PrivateKey* externalKey,
+                                                           const CertAuthCallback& certAuthCallback) {
+        if ( !options ) return nullptr;
+        Dict  authDict       = options[kC4ReplicatorOptionAuthentication].asDict();
+        slice authType       = authDict[kC4ReplicatorAuthType].asString();
+        slice rootCerts      = options[kC4ReplicatorOptionRootCerts].asData();
+        slice pinnedCert     = options[kC4ReplicatorOptionPinnedServerCert].asData();
+        bool  selfSignedOnly = options[kC4ReplicatorOptionOnlySelfSignedServerCert].asBool();
+        if ( rootCerts || pinnedCert || selfSignedOnly || certAuthCallback
+             || authType == slice(kC4AuthTypeClientCert) ) {
+            if ( selfSignedOnly && rootCerts )
+                error::_throw(error::InvalidParameter, "Cannot specify root certs in self signed mode");
+
+            auto tlsContext = make_retained<TLSContext>(Client);
+            tlsContext->allowOnlySelfSigned(selfSignedOnly);
+            if ( rootCerts ) tlsContext->setRootCerts(rootCerts);
+            if ( pinnedCert ) tlsContext->allowOnlyCert(pinnedCert);
+            if ( certAuthCallback ) tlsContext->setCertAuthCallback(certAuthCallback);
+
+            if ( authType == slice(kC4AuthTypeClientCert) ) {
+                slice certData = authDict[kC4ReplicatorAuthClientCert].asData();
+                if ( !certData )
+                    error::_throw(error::InvalidParameter, "Missing TLS client cert in C4Replicator config");
+                if ( externalKey ) {
+                    Retained<Cert> cert = make_retained<Cert>(certData);
+                    tlsContext->setIdentity(new Identity(cert, externalKey));
+                } else if ( slice keyData = authDict[kC4ReplicatorAuthClientCertKey].asData(); keyData ) {
+                    tlsContext->setIdentity(certData, keyData);
+                } else {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+                    Retained<Cert>       cert = new Cert(certData);
+                    Retained<PrivateKey> key  = cert->loadPrivateKey();
+                    if ( !key ) error::_throw(error::CryptoError, "Couldn't find private key for identity cert");
+                    tlsContext->setIdentity(new Identity(cert, key));
+#else
+                    error::_throw(error::InvalidParameter, "Missing TLS private key in C4Replicator config");
+#endif
+                }
+            }
+            return tlsContext;
+
+        } else {
+            return nullptr;
+        }
+    }
+
+#ifdef COUCHBASE_ENTERPRISE
+    Ref<TLSContext> TLSContext::fromListenerOptions(const C4TLSConfig* tlsConfig, C4Listener* c4Listener) {
+        Assert(tlsConfig->certificate);
+        Retained<Cert>       cert = tlsConfig->certificate->assertSignedCert();
+        Retained<PrivateKey> privateKey;
+        switch ( tlsConfig->privateKeyRepresentation ) {
+            case kC4PrivateKeyFromKey:
+                privateKey = tlsConfig->key->getPrivateKey();
+                break;
+            case kC4PrivateKeyFromCert:
+#    ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+                privateKey = cert->loadPrivateKey();
+                if ( !privateKey )
+                    error::_throw(error::CryptoError,
+                                  "No persistent private key found matching certificate public key");
+                break;
+#    else
+                error::_throw(error::Unimplemented, "kC4PrivateKeyFromCert not implemented");
+#    endif
+        }
+
+        auto tlsContext = make_retained<TLSContext>(Server);
+        tlsContext->setIdentity(new Identity(cert, privateKey));
+        if ( tlsConfig->requireClientCerts ) tlsContext->requirePeerCert(true);
+        if ( tlsConfig->rootClientCerts ) tlsContext->setRootCerts(tlsConfig->rootClientCerts->assertSignedCert());
+
+        if ( auto callback = tlsConfig->certAuthCallback ) {
+            auto context = tlsConfig->tlsCallbackContext;
+            tlsContext->setCertAuthCallback([callback, c4Listener, context](slice certData) {
+                return callback(c4Listener, certData, context);
+            });
+        }
+
+        return tlsContext;
+    }
+#endif
 
     TLSContext::TLSContext(role_t role)
         : _context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER)), _role(role) {

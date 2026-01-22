@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Single CppTest" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="--break &quot;TCPSocketFactory Client&quot;" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://$ProjectFileDir$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="LiteCore" TARGET_NAME="CppTests" CONFIG_NAME="Debug CE" RUN_TARGET_PROJECT_NAME="LiteCore" RUN_TARGET_NAME="CppTests">
+    <envs>
+      <env name="LiteCoreLog_Color" value="" />
+      <env name="LiteCoreLog_Highlight" value="FastRevsDiff" />
+      <env name="LiteCoreLogDB" value="warning" />
+      <env name="LiteCoreLogDefault" value="info" />
+      <env name="LiteCoreLogSync" value="info" />
+      <env name="LiteCoreLogSyncBusy" value="error" />
+    </envs>
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>

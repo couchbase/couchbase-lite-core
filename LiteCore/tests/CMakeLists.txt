@@ -86,6 +86,9 @@ add_executable(
     ${TOP}vendor/fleece/Tests/SharedKeysTests.cc
     ${TOP}vendor/fleece/Tests/SupportTests.cc
     ${TOP}vendor/fleece/Tests/ValueTests.cc
+    ${TOP}C/tests/c4Test.cc
+    ${TOP}Crypto/CertificateTest.cc
+    ${TOP}Networking/tests/CookieStoreTest.cc
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
@@ -97,9 +100,6 @@ add_executable(
     ${TOP}Replicator/tests/SG.cc
     ${TOP}Replicator/tests/SGTestUser.cc
     ${TOP}Replicator/tests/ReplParams.cc
-    ${TOP}C/tests/c4Test.cc
-    ${TOP}Replicator/tests/CookieStoreTest.cc
-    ${TOP}Crypto/CertificateTest.cc
 
     ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}vendor/fleece/vendor/catch/catch_amalgamated.cpp
@@ -115,6 +115,7 @@ if (BUILD_ENTERPRISE)
         ${EE_SRC}/P2P/tests/PeerMeshTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest_C.cc
+        ${EE_SRC}/P2P/tests/SocketFactoryTest.cc
     )
     target_include_directories(
         CppTests PRIVATE
@@ -131,6 +132,8 @@ setup_build()
 target_compile_definitions(
     CppTests PRIVATE
     -DLITECORE_CPP_TESTS=1
+    -DFLEECE_STATIC
+    -DLITECORE_STATIC
     -D_USE_MATH_DEFINES     # Define math constants like PI
     -DNOMINMAX              # Get rid of min/max macros that interfere with std::min/std::max
     -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
@@ -177,13 +180,19 @@ target_include_directories(
     ${TOP}vendor/vector_search
 )
 
+if(APPLE OR ANDROID)
+    set(ConditionalP2P $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreP2P>)
+else()
+    set(ConditionalP2P "")
+endif()
+
 target_link_libraries(
     CppTests PRIVATE
     LiteCoreUnitTesting
     FleeceObjects
     BLIPObjects
     LiteCoreREST_Objects
-    $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreP2P>
+    ${ConditionalP2P}
     $<$<BOOL:${BUILD_ENTERPRISE}>:LiteCoreListener_Static>
     LiteCoreWebSocket
 )

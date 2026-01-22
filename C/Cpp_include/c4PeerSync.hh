@@ -45,6 +45,9 @@ struct C4PeerSync
         /// A peer has come online or gone offline.
         virtual void peerDiscovery(C4PeerID const&, bool online) {}
 
+        /// A peer has come online or gone offline on a single protocol.
+        virtual void peerDiscoveryOnProtocol(C4PeerID const&, C4PeerSyncProtocol, bool online) {}
+
         /// Authenticate a TLS connection to/from a peer, based on properties of its certificate.
         virtual bool authenticatePeer(C4PeerID const&, C4Cert*) = 0;
 
@@ -53,28 +56,31 @@ struct C4PeerSync
 
         /// A replication with a peer has changed status.
         /// The `incoming` flag is true if this connection was made by the other peer.
-        virtual void peerReplicationStatus(C4PeerID const&, C4ReplicatorStatus const&, bool incoming) {}
+        virtual void peerReplicationStatus(C4PeerID const&, C4PeerSyncProtocol, C4ReplicatorStatus const&,
+                                           bool incoming) {}
 
         /// A replication with a peer has transferred documents.
         /// @note  This will only be called if you configured Parameters::progressLevel accordingly.
-        virtual void peerDocumentsEnded(C4PeerID const&, bool pushing, std::span<const C4DocumentEnded*>) {}
+        virtual void peerDocumentsEnded(C4PeerID const&, C4PeerSyncProtocol, bool pushing,
+                                        std::span<const C4DocumentEnded*>) {}
 
         /// A replication with a peer is transferring a blob.
         /// @note  This will only be called if you configured Parameters::progressLevel accordingly.
-        virtual void peerBlobProgress(C4PeerID const&, bool pushing, C4BlobProgress const&) {}
+        virtual void peerBlobProgress(C4PeerID const&, C4PeerSyncProtocol, bool pushing, C4BlobProgress const&) {}
     };
 
     /** Configuration of a C4PeerSync. */
     struct Parameters {
-        std::string_view                  peerGroupID;        ///< App identifier for peer discovery
-        std::span<const std::string_view> protocols;          ///< Which protocols to use (empty = all)
-        C4Cert*                           tlsCert;            ///< My TLS certificate (server+client)
-        C4KeyPair*                        tlsKeyPair;         ///< Certificate's key-pair
-        C4Database*                       database;           ///< Database to sync
-        std::span<C4PeerSyncCollection>   collections;        ///< Collections to sync
-        slice                             optionsDictFleece;  ///< Replicator options
-        C4ReplicatorProgressLevel         progressLevel;      ///< Level of progress notifications
-        Delegate*                         delegate;           ///< Your object that receives notifications
+        std::string_view                peerGroupID;        ///< App identifier for peer discovery
+        C4PeerSyncProtocols             protocols;          ///< Which protocol(s) to use
+        C4Cert*                         tlsCert;            ///< My TLS certificate (server+client)
+        C4KeyPair*                      tlsKeyPair;         ///< Certificate's key-pair
+        C4Database*                     database;           ///< Database to sync
+        std::span<C4PeerSyncCollection> collections;        ///< Collections to sync
+        slice                           optionsDictFleece;  ///< Replicator options
+        C4ReplicatorProgressLevel       progressLevel;      ///< Level of progress notifications
+        Delegate*                       delegate;           ///< Your object that receives notifications
+        C4PeerSyncFlags                 flags;
     };
 
     /** @note The database passed in the parameters is only used in the constructor to obtain a new database object via openAgain. */
@@ -109,7 +115,7 @@ struct C4PeerSync
         Retained<C4Cert>      certificate;         ///< Its identity; nullptr if unverified
         std::vector<C4PeerID> neighbors;           ///< Peers it's directly connected to
         C4ReplicatorStatus    replicatorStatus{};  ///< Status of my connection to it, if any
-        bool                  online = false;      ///< True if it's currently online/visible
+        C4PeerSyncProtocols   onlineProtocols{};   ///< Protocols where it's discovered
     };
 
     /// Returns a list of all peers currently online, including this one.

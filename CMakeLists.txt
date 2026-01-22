@@ -12,7 +12,7 @@ FleeceObjects - The Fleece serialization library for saving data to a binary for
 FleeceBase - A subset of the above for linking into non LiteCore targets
 LiteCoreObjects - The precompiled object files containing the logic of LiteCore
 LiteCoreUnitTesting - The precompiled object files containing the logic of LiteCore for unit testing.
-LiteCoreStatic - The static LiteCore library (LiteCoreObjects linked statically)
+LiteCoreStatic - The static LiteCore library (LiteCoreObjects and other compiled deps linked statically)
 LiteCore - The shared LiteCore library (LiteCoreObjects linked dynamically)
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 LiteCoreWebSocket - An implementation of websockets in C++ (Used for EE library, and can be used downstream by other projects)
@@ -223,6 +223,7 @@ add_library(LiteCoreUnitTesting OBJECT EXCLUDE_FROM_ALL ${ALL_SRC_FILES})
 set(LiteCoreObjectsDefines
     LITECORE_IMPL
     LITECORE_CPP_API=1
+    FLEECE_STATIC
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 target_compile_definitions(
@@ -297,14 +298,19 @@ set(
 )
 
 if(BUILD_ENTERPRISE)
-    set(
+    list(APPEND
         LITECORE_LIBRARIES_PRIVATE
-        ${LITECORE_LIBRARIES_PRIVATE}
         LiteCoreREST_Objects
         LiteCoreWebSocket
         LiteCoreListener_Objects
-        LiteCoreP2P
     )
+
+    if (APPLE OR ANDROID)
+        list(APPEND
+            LITECORE_LIBRARIES_PRIVATE
+            LiteCoreP2P
+        )
+    endif()
 endif()
 
 if(LITECORE_BUILD_SHARED)
@@ -339,11 +345,6 @@ if(LITECORE_BUILD_SHARED)
 
     install(FILES ${LITECORE_HEADERS} DESTINATION include)
     install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
-endif()
-
-if(LITECORE_BUILD_STATIC)
-    add_library(LiteCoreStatic STATIC EXCLUDE_FROM_ALL $<TARGET_OBJECTS:LiteCoreObjects>)
-    target_link_libraries(LiteCoreStatic PRIVATE LiteCoreObjects)
 endif()
 
 
@@ -420,6 +421,11 @@ target_include_directories(
     vendor/mbedtls/include
 )
 
+target_compile_definitions(
+    LiteCoreWebSocket PRIVATE
+    FLEECE_STATIC
+)
+
 target_link_libraries(
     LiteCoreWebSocket PUBLIC
     LiteCoreObjects
@@ -435,6 +441,28 @@ endif()
 
 add_subdirectory(tool_support EXCLUDE_FROM_ALL)
 
+if(LITECORE_BUILD_STATIC)
+    set(LC_MONOLITHIC_OBJECTS
+            $<TARGET_OBJECTS:LiteCoreObjects>
+            $<TARGET_OBJECTS:BLIPObjects>
+            $<TARGET_OBJECTS:FleeceObjects>
+    )
+
+    if(BUILD_ENTERPRISE)
+        list(APPEND LC_MONOLITHIC_OBJECTS
+                $<TARGET_OBJECTS:LiteCoreREST_Objects>
+                $<TARGET_OBJECTS:LiteCoreListener_Objects>
+        )
+
+        if(APPLE OR ANDROID)
+            list(APPEND LC_MONOLITHIC_OBJECTS
+                    $<TARGET_OBJECTS:LiteCoreP2P>
+            )
+        endif()
+    endif()
+
+    add_library(LiteCoreStatic STATIC ${LC_MONOLITHIC_OBJECTS})
+endif()
 
 ### TESTS:
 

@@ -14,7 +14,7 @@
 #include "c4Replicator.hh"
 #include "c4Database.hh"
 #include "c4Socket.hh"
-#include "c4Socket+Internal.hh"
+#include "c4WebSocket.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Replicator.h"
 #include "c4Socket.h"
@@ -178,14 +178,14 @@ void c4Socket_setNativeHandle(C4Socket* socket, void* handle) noexcept { socket-
 
 void* C4NULLABLE c4Socket_getNativeHandle(C4Socket* socket) noexcept { return socket->getNativeHandle(); }
 
-static repl::C4SocketImpl* internal(C4Socket* s) { return (repl::C4SocketImpl*)s; }
-
 C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API {
-    retain((RefCounted*)internal(socket));
+    if ( socket ) socket->socket_retain();
     return socket;
 }
 
-void c4socket_release(C4Socket* C4NULLABLE socket) C4API { release((RefCounted*)internal(socket)); }
+void c4socket_release(C4Socket* C4NULLABLE socket) C4API {
+    if ( socket ) socket->socket_release();
+}
 
 bool c4socket_gotPeerCertificate(C4Socket* socket, C4Slice certData, C4String hostname) C4API {
     return socket->gotPeerCertificate(certData, slice(hostname));
