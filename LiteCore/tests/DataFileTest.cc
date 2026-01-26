@@ -651,14 +651,11 @@ TEST_CASE("CanonicalPath") {
     string      endPath   = "C:\\subfolder\\";
 #else
     auto tmpPath   = TestFixture::sTempDir.path();
-    auto startPath = tmpPath + "folder/";
+    auto startPath = tmpPath + "/folder/";
     ::mkdir(startPath.c_str(), 777);
     startPath += "../subfolder/";
-    auto endPath = tmpPath + "subfolder";
+    auto endPath = tmpPath + "/subfolder";
     ::mkdir(endPath.c_str(), 777);
-#    if __APPLE__ && !TARGET_OS_IPHONE
-    endPath   = "/private" + endPath;
-#    endif
 #endif
 
     FilePath path(startPath);
@@ -671,9 +668,6 @@ TEST_CASE("CanonicalPath") {
     startPath = tmpPath + (const char*)u8"日本語";
     ::mkdir(startPath.c_str(), 777);
     endPath = startPath;
-#    if __APPLE__ && !TARGET_OS_IPHONE
-    endPath = "/private" + endPath;
-#    endif
 #endif
 
     path = FilePath(startPath);
@@ -688,17 +682,17 @@ TEST_CASE("ParentDir") {
     CHECK(FilePath("C:\\folder\\file").parentDir().path() == "C:\\folder\\");
 #else
     CHECK(FilePath("/").parentDir().path() == "/");
-    CHECK(FilePath("/folder/subfolder/file").parentDir().path() == "/folder/subfolder/");
-    CHECK(FilePath("/folder/subfolder/").parentDir().path() == "/folder/");
-    CHECK(FilePath("/folder/file").parentDir().path() == "/folder/");
+    CHECK(FilePath("/folder/subfolder/file").parentDir().path() == "/folder/subfolder");
+    CHECK(FilePath("/folder/subfolder/").parentDir().path() == "/folder");
+    CHECK(FilePath("/folder/file").parentDir().path() == "/folder");
 #endif
 
-    check_parent("folder/subfolder/", "folder/");
-    check_parent("folder/file", "folder/");
-    check_parent("./file", "./");
-    check_parent("./folder/", "./");
-    check_parent("file", "./");
-    check_parent("folder/", "./");
+    check_parent("folder/subfolder", "folder");
+    check_parent("folder/file", "folder");
+    check_parent("./file", ".");
+    check_parent("./folder/", ".");
+    check_parent("file", ".");
+    check_parent("folder/", ".");
     ExpectException(error::POSIX, EINVAL, [&] {
         stringstream ss;
         ss << "." << FilePath::kSeparator;

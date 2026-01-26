@@ -86,7 +86,7 @@ namespace litecore {
         logInfo("...all databases closed!");
     }
 
-    FilePath DatabasePool::databasePath() const { return FilePath{_dbDir, _dbName + kC4DatabaseFilenameExtension}; }
+    FilePath DatabasePool::databasePath() const { return filesystem::path(_dbDir.asString()) / (_dbName + kC4DatabaseFilenameExtension); }
 
     unsigned DatabasePool::capacity() const noexcept {
         unique_lock lock(_mutex);

@@ -40,11 +40,11 @@ FilePath GetSystemTempDirectory() {
     GetTempPathW(MAX_PATH, pathBuffer);
     GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
     CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
-    return litecore::FilePath(convertedPath.m_psz, "");
+    return litecore::FilePath(convertedPath.m_psz);
 #else   // _MSC_VER
     const char* tmp = getenv("TMPDIR");
     if ( !tmp ) tmp = "/tmp";
-    return {tmp, ""};
+    return {tmp};
 #endif  // _MSC_VER
 }
 
