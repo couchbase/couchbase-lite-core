@@ -18,7 +18,6 @@
 #include <cstring>
 #include <chrono>
 #include <algorithm>
-#include "date/date.h"
 #include "ParseDate.hh"
 #include "NumConversion.hh"
 
@@ -51,27 +50,29 @@ namespace litecore {
     }
 
     void LogIterator::writeTimestamp(Timestamp t, ostream& out, bool inUtcTime) {
-        date::local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
-        const char*                    fmt = "%FT%TZ ";
-        if ( !inUtcTime ) {
-            struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        if ( inUtcTime ) {
+            writeISO8601DateTime(t, out);
+            out << " ";
+        } else {
+            local_time<microseconds> tp{seconds(t.secs) + microseconds(t.microsecs)};
+            struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+            // Updates tp to the local time.
             tp += GetLocalTZOffset(&tmpTime, true);
-            fmt = "%FT%T ";
+            out << std::format("{:%FT%T }", tp);
         }
-        out << date::format(fmt, tp);
     }
 
     void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream& out) {
-        date::sys_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
-        out << date::format("%FT%TZ", tp);
+        sys_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
+        out << std::format("{:%FT%TZ}", tp);
     }
 
     string LogIterator::formatDate(Timestamp t) {
-        date::local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
-        struct tm                      tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
+        struct tm                tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
         tp += GetLocalTZOffset(&tmpTime, true);
         stringstream out;
-        out << date::format("%c", tp);
+        out << std::format("%c", tp);
         return out.str();
     }
 
@@ -148,8 +149,8 @@ namespace litecore {
                               std::optional<Timestamp> startingAt) {
         if ( !startingAt || *startingAt < Timestamp{_startTime, 0} ) {
             writeTimestamp({_startTime, 0}, out, true);
-            date::local_time<seconds> tp{seconds(_startTime)};
-            out << "---- Logging begins on " << date::format("%A %FT%TZ", tp) << " ----" << endl;
+            local_time<seconds> tp{seconds(_startTime)};
+            out << "---- Logging begins on " << std::format("{:%A %FT%TZ}", tp) << " ----" << endl;
         }
 
         LogIterator::decodeTo(out, levelNames, startingAt);
