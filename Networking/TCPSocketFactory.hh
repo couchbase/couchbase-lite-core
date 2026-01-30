@@ -31,6 +31,8 @@ namespace litecore::net {
         /// Constructor for a client socket (to be created when `open` is called.)
         TCPSocketFactory() : Logging(websocket::WSLogDomain) {}
 
+        explicit TCPSocketFactory(C4Socket* socket) : C4SocketFactoryImpl(socket), Logging(websocket::WSLogDomain) {}
+
         /// Constructor for a server-side socket.
         explicit TCPSocketFactory(std::unique_ptr<ResponderSocket> responderSocket)
             : Logging(websocket::WSLogDomain), _tcpSocket{std::move(responderSocket)} {}
@@ -40,9 +42,8 @@ namespace litecore::net {
       protected:
         // C4SocketFactory methods:
 
-        void open(C4Socket* socket, C4Address const& address, C4Slice options) override {
+        void open(C4Address const& address, C4Slice options) override {
             std::unique_lock lock(_mutex);
-            opened(socket);
             _identifier = stringprintf("%.*s:%d", FMTSLICE(address.hostname), address.port);
             logInfo("Opening on %s ...", _identifier.c_str());
 

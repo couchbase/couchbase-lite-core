@@ -17,6 +17,12 @@
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
+/** The official logging channel of peer discovery. */
+CBL_CORE_API extern struct c4LogDomain* C4NONNULL const kC4DiscoveryLog;
+
+/** The official logging channel of P2P sync. */
+CBL_CORE_API extern struct c4LogDomain* C4NONNULL const kC4P2PLog;
+
 /** Returns the English name of a C4PeerSyncProtocol, or "???" if unknown. For logging purposes. */
 CBL_CORE_API const char* c4peerSync_nameOfProtocol(C4PeerSyncProtocol) C4API;
 
