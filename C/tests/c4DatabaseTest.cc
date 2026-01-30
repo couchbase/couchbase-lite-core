@@ -32,6 +32,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <filesystem>
 
 #include "sqlite3.h"
 
@@ -181,7 +182,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
     REQUIRE(bundle);
     CHECK(c4db_getName(bundle) == kTestBundleName);
     C4SliceResult path = c4db_getPath(bundle);
-    CHECK(path == TEMPDIR("cbl_core_test_bundle.cblite2" kPathSeparator));  // note trailing '/'
+    CHECK(path == TEMPDIR("cbl_core_test_bundle.cblite2")); 
     c4slice_free(path);
     REQUIRE(c4db_close(bundle, WITH_ERROR()));
     c4db_release(bundle);
@@ -861,21 +862,22 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
 
     createRev(doc1ID, kRevID, kFleeceBody);
     createRev(doc2ID, kRevID, kFleeceBody);
-    string srcPathStr = toString(c4db_getPath(db));
+    string srcPathStr = toString(c4db_getPath(db)) + "/";
 
     C4DatabaseConfig2 config = *c4db_getConfig2(db);
 
-    string nuPath = string(slice(config.parentDirectory)) + string(kNuName) + ".cblite2" + kPathSeparator;
+    auto nuPath = filesystem::path(string(slice(config.parentDirectory))) / (string(kNuName) + ".cblite2");
+    auto nuPathStr = nuPath.string() + "/";
 
     C4Error error;
 
     SECTION("WITH SLASH") {}
     SECTION("WITHOUT SLASH") {
         srcPathStr.pop_back();
-        nuPath.pop_back();
+        nuPathStr.pop_back();
     }
 
-    if ( !c4db_deleteNamed(kNuName, slice(nuPath), &error) ) { REQUIRE(error.code == 0); }
+    if ( !c4db_deleteNamed(kNuName, slice(nuPathStr), &error) ) { REQUIRE(error.code == 0); }
 
     REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, WITH_ERROR()));
     auto nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
@@ -1056,8 +1058,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
 
     closeDB();
 
-    litecore::FilePath fixturePath(C4DatabaseTest::sFixturesDir + kVersionedFixturesSubDir + filename, "");
-    litecore::FilePath(string(path), "").moveToReplacingDir(fixturePath, false);
+    litecore::FilePath fixturePath(C4DatabaseTest::sFixturesDir + kVersionedFixturesSubDir + filename);
+    litecore::FilePath(string(path)).moveToReplacingDir(fixturePath, false);
     C4Log("New fixture is at %s", string(fixturePath).c_str());
 }
 

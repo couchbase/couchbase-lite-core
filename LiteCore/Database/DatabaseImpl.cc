@@ -67,7 +67,7 @@ namespace litecore {
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath DatabaseImpl::findOrCreateBundle(const string& path, bool canCreate,
                                                          C4StorageEngine& storageEngine) {
-        FilePath bundle(path, "");
+        FilePath bundle(path);
         bool     createdDir = (canCreate && bundle.mkdir());
         if ( !createdDir ) bundle.mustExistAsDir();
 
@@ -117,7 +117,7 @@ namespace litecore {
                         if ( bundlePath.isDir() ) {
                             bundlePath.delRecursive();
                         } else {
-                            FilePath{bundlePath.path(), ""}.delRecursive();
+                            FilePath{bundlePath.path()}.delRecursive();
                         }
                     }
                 } catch ( ... ) {

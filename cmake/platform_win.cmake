@@ -16,9 +16,6 @@ function(set_litecore_source)
         ${WIN_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_winapi.cc
-        MSVC/mkstemp.cc
-        MSVC/mkdtemp.cc
-        MSVC/strlcat.c
         LiteCore/Support/StringUtil_winapi.cc
         Crypto/PublicKey+Windows.cc
         PARENT_SCOPE
