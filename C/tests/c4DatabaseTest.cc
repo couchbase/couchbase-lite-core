@@ -182,7 +182,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
     REQUIRE(bundle);
     CHECK(c4db_getName(bundle) == kTestBundleName);
     C4SliceResult path = c4db_getPath(bundle);
-    CHECK(path == TEMPDIR("cbl_core_test_bundle.cblite2")); 
+    CHECK(path == TEMPDIR("cbl_core_test_bundle.cblite2"));
     c4slice_free(path);
     REQUIRE(c4db_close(bundle, WITH_ERROR()));
     c4db_release(bundle);
@@ -866,7 +866,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
 
     C4DatabaseConfig2 config = *c4db_getConfig2(db);
 
-    auto nuPath = filesystem::path(string(slice(config.parentDirectory))) / (string(kNuName) + ".cblite2");
+    auto nuPath    = filesystem::path(string(slice(config.parentDirectory))) / (string(kNuName) + ".cblite2");
     auto nuPathStr = nuPath.string() + "/";
 
     C4Error error;

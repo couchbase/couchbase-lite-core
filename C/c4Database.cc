@@ -72,7 +72,8 @@ void C4Database::enableExtension(slice name, slice path) {
 
 static FilePath dbPath(slice name, slice parentDir) {
     if ( name.size == 0 || parentDir.size == 0 ) C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter);
-    return FilePath(filesystem::path(parentDir.asString()) / name.asString()).addingExtension(kC4DatabaseFilenameExtension);
+    return FilePath(filesystem::path(parentDir.asString()) / name.asString())
+            .addingExtension(kC4DatabaseFilenameExtension);
 }
 
 static void ensureConfigDirExists(const C4DatabaseConfig2& config) {

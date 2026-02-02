@@ -53,17 +53,19 @@ namespace litecore {
 
         [[nodiscard]] FilePath dir() const { return isDir() ? *this : parentDir(); }
 
-        [[nodiscard]] const std::string dirName() const { return isDir() ? _path.filename() : _path.parent_path().filename(); }
+        [[nodiscard]] const std::string dirName() const {
+            return isDir() ? _path.filename().string() : _path.parent_path().filename().string();
+        }
 
-        [[nodiscard]] const std::string fileName() const { return !isDir() ? _path.filename() : ""; }
+        [[nodiscard]] const std::string fileName() const { return !isDir() ? _path.filename().string() : ""; }
 
-        [[nodiscard]] std::string fileOrDirName() const { return _path.filename(); }
+        [[nodiscard]] std::string fileOrDirName() const { return _path.filename().string(); }
 
-        [[nodiscard]] std::string path() const { return _path; }
+        [[nodiscard]] std::string path() const { return _path.string(); }
 
         /** Returns a canonical standard form of the path by resolving symbolic links, normalizing
             capitalization (in case-insensitive filesystems), etc. */
-        [[nodiscard]] std::string canonicalPath() const { return _path.lexically_normal(); }
+        [[nodiscard]] std::string canonicalPath() const { return _path.lexically_normal().string(); }
 
         explicit operator std::string() const { return path(); }
 
@@ -77,8 +79,9 @@ namespace litecore {
 
         //////// FILENAME EXTENSIONS:
 
-        [[nodiscard]] std::string unextendedName() const { return _path.stem(); }
-        [[nodiscard]] std::string extension() const { return _path.extension(); }
+        [[nodiscard]] std::string unextendedName() const { return _path.stem().string(); }
+
+        [[nodiscard]] std::string extension() const { return _path.extension().string(); }
 
         /** Adds a filename extension. `ext` may or may not start with '.'.
             Cannot be called on directories. */
@@ -110,24 +113,22 @@ namespace litecore {
 
         /////// FILESYSTEM OPERATIONS:
 
-        [[nodiscard]] bool exists() const noexcept {
-            return std::filesystem::exists(_path);
-        }
-        [[nodiscard]] bool existsAsDir() const noexcept {
-            return std::filesystem::is_directory(_path);
-        }
+        [[nodiscard]] bool exists() const noexcept { return std::filesystem::exists(_path); }
 
-        void               mustExistAsDir() const;
+        [[nodiscard]] bool existsAsDir() const noexcept { return std::filesystem::is_directory(_path); }
+
+        void mustExistAsDir() const;
 
         /** Returns the size of the file in bytes, or -1 if the file does not exist. */
-        [[nodiscard]] int64_t dataSize() const { 
+        [[nodiscard]] int64_t dataSize() const {
             return exists() ? fleece::narrow_cast<int64_t>(std::filesystem::file_size(_path)) : -1;
         }
 
         /** Returns the date at which this file was last modified, or -1 if the file does not exist */
         [[nodiscard]] time_t lastModified() const {
-            return exists() ?
-                   fleece::narrow_cast<time_t>(std::filesystem::last_write_time(_path).time_since_epoch().count()) : -1;
+            return exists() ? fleece::narrow_cast<time_t>(
+                                      std::filesystem::last_write_time(_path).time_since_epoch().count())
+                            : -1;
         }
 
         /**
