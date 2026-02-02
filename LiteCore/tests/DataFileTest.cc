@@ -648,7 +648,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 TEST_CASE("CanonicalPath") {
 #ifdef _MSC_VER
     const char* startPath = "C:\\folder\\..\\subfolder\\";
-    string      endPath   = "C:\\subfolder\\";
+    string      endPath   = "C:\\subfolder";
 #else
     auto tmpPath   = TestFixture::sTempDir.path();
     auto startPath = tmpPath + "/folder/";
@@ -662,7 +662,7 @@ TEST_CASE("CanonicalPath") {
     CHECK(path.canonicalPath() == endPath);
 
 #ifdef _MSC_VER
-    startPath = (const char*)u8"C:\\日本語\\";
+    startPath = (const char*)u8"C:\\日本語";
     endPath   = startPath;
 #else
     startPath = tmpPath + (const char*)u8"日本語";
@@ -676,10 +676,10 @@ TEST_CASE("CanonicalPath") {
 
 TEST_CASE("ParentDir") {
 #ifdef _MSC_VER
-    CHECK(FilePath("C:\\").parentDir().path() == "C:\\");
-    CHECK(FilePath("D:\\folder\\subfolder\\file").parentDir().path() == "D:\\folder\\subfolder\\");
-    CHECK(FilePath("C:\\folder\\subfolder\\").parentDir().path() == "C:\\folder\\");
-    CHECK(FilePath("C:\\folder\\file").parentDir().path() == "C:\\folder\\");
+    CHECK(FilePath("C:\\").parentDir().path() == "C:");
+    CHECK(FilePath("D:\\folder\\subfolder\\file").parentDir().path() == "D:\\folder\\subfolder");
+    CHECK(FilePath("C:\\folder\\subfolder\\").parentDir().path() == "C:\\folder");
+    CHECK(FilePath("C:\\folder\\file").parentDir().path() == "C:\\folder");
 #else
     CHECK(FilePath("/").parentDir().path() == "/");
     CHECK(FilePath("/folder/subfolder/file").parentDir().path() == "/folder/subfolder");

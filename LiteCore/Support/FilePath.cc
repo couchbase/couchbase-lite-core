@@ -47,42 +47,37 @@ namespace litecore {
         return perms;
     }
 
-    static int to_errno(const std::error_code &ec) {
-        if (ec.category() == std::generic_category()) {
-            return ec.value();
-        }
+    static int to_errno(const std::error_code& ec) {
+        if ( ec.category() == std::generic_category() ) { return ec.value(); }
 
         return ec.default_error_condition().value();
     }
 
     static std::string randomSuffix(size_t len = 12) {
-        static const char kChars[] =
-            "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        static const char         kChars[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         thread_local std::mt19937 rng{std::random_device{}()};
         std::uniform_int_distribution<size_t> dist(0, sizeof(kChars) - 2);
-        std::string s;
+        std::string                           s;
         s.reserve(len);
-        for (size_t i = 0; i < len; ++i) s.push_back(kChars[dist(rng)]);
+        for ( size_t i = 0; i < len; ++i ) s.push_back(kChars[dist(rng)]);
         return s;
     }
 
 #ifdef _MSC_VER
-    const string                FilePath::kSeparator = "\\";
-    static const char           kSeparatorChar       = '\\';
-    static const char           kQuotedSeparatorChar = ':';
-    static filesystem::path     kCurrentDir          = ".";
-    typedef struct _stat64 lc_stat_t;
+    const string            FilePath::kSeparator = "\\";
+    static const char       kSeparatorChar       = '\\';
+    static const char       kQuotedSeparatorChar = ':';
+    static filesystem::path kCurrentDir          = ".";
+    typedef struct _stat64  lc_stat_t;
 #else
-    const string                FilePath::kSeparator = "/";
-    static const char           kSeparatorChar       = '/';
-    static const char           kQuotedSeparatorChar = ':';
-    static filesystem::path     kCurrentDir          = ".";
-    typedef struct stat lc_stat_t;
+    const string            FilePath::kSeparator = "/";
+    static const char       kSeparatorChar       = '/';
+    static const char       kQuotedSeparatorChar = ':';
+    static filesystem::path kCurrentDir          = ".";
+    typedef struct stat     lc_stat_t;
 #endif
 
-    FilePath::FilePath(std::filesystem::path&& path)
-        : _path(std::move(path))
-    {
+    FilePath::FilePath(std::filesystem::path&& path) : _path(std::move(path)) {
         auto pathStr = _path.string();
 
         // Trim off ending separator unless it's root because otherwise it
@@ -92,9 +87,7 @@ namespace litecore {
         }
     }
 
-    FilePath::FilePath(const std::filesystem::path& path)
-        : _path(path)
-    {
+    FilePath::FilePath(const std::filesystem::path& path) : _path(path) {
         auto pathStr = _path.string();
 
         // Trim off ending separator unless it's root because otherwise it
@@ -102,22 +95,17 @@ namespace litecore {
         if ( pathStr.size() > 1 && pathStr.ends_with(kSeparator) ) {
             _path = filesystem::path(pathStr.substr(0, pathStr.size() - 1));
         }
-
     }
 
     FilePath::FilePath() : FilePath(kCurrentDir) {}
 
-    FilePath::operator alloc_slice() const { return alloc_slice(_path); }
+    FilePath::operator alloc_slice() const { return alloc_slice(_path.string()); }
 
     pair<string, string> FilePath::splitPath(string_view path) {
         filesystem::path fsPath(path);
-        if ( !fsPath.has_root_path() ) {
-            return {kCurrentDir, string(path)};
-        }
+        if ( !fsPath.has_root_path() ) { return {kCurrentDir.string(), string(path)}; }
 
-        if ( filesystem::is_directory(fsPath) ) {
-            return {fsPath.string(), ""};
-        }
+        if ( filesystem::is_directory(fsPath) ) { return {fsPath.string(), ""}; }
 
         return {fsPath.parent_path().string(), fsPath.filename().string()};
     }
@@ -167,33 +155,27 @@ namespace litecore {
         return FilePath(_path / name);
     }
 
-    FilePath FilePath::fileNamed(const std::string& filename) const { 
+    FilePath FilePath::fileNamed(const std::string& filename) const {
         assert_precondition(isDir());
         auto retVal = _path / filename;
-        if(filesystem::exists(retVal)) {
-            assert_postcondition(!filesystem::is_directory(retVal));
-        }
+        if ( filesystem::exists(retVal) ) { assert_postcondition(!filesystem::is_directory(retVal)); }
         return FilePath(std::move(retVal));
     }
 
-    FilePath FilePath::subdirectoryNamed(const std::string& dirname) const { 
+    FilePath FilePath::subdirectoryNamed(const std::string& dirname) const {
         assert_precondition(isDir());
         auto retVal = _path / dirname;
-        if(filesystem::exists(retVal)) {
-            assert_postcondition(filesystem::is_directory(retVal));
-        }
+        if ( filesystem::exists(retVal) ) { assert_postcondition(filesystem::is_directory(retVal)); }
         return FilePath(std::move(retVal));
     }
 
     FilePath FilePath::parentDir() const {
         auto parent = _path.parent_path();
         if ( parent == _path ) {
-            return *this; // root directory
+            return *this;  // root directory
         }
         if ( parent.string().empty() ) {
-            if(_path.string() == kCurrentDir) {
-                error::_throw(error::POSIX, EINVAL);
-            }
+            if ( _path.string() == kCurrentDir ) { error::_throw(error::POSIX, EINVAL); }
 
             // relative path with no parent
             return FilePath(kCurrentDir);
@@ -216,17 +198,17 @@ namespace litecore {
 
     void FilePath::forEachMatch(function_ref<void(const FilePath&)> fn) const {
         auto dir = isDir() ? _path : _path.parent_path();
-        for(const auto& entry : filesystem::directory_iterator(dir)) {
-            if(entry.path().filename() == "." || entry.path().filename() == "..") continue;
+        for ( const auto& entry : filesystem::directory_iterator(dir) ) {
+            if ( entry.path().filename() == "." || entry.path().filename() == ".." ) continue;
             if ( !isDir() && entry.path().filename().string().find(_path.filename().string()) != 0 ) continue;
             fn(FilePath(dir / entry));
         }
     }
 
-    void FilePath::forEachFile(function_ref<void(const FilePath&)> fn) const { 
+    void FilePath::forEachFile(function_ref<void(const FilePath&)> fn) const {
         auto dir = isDir() ? _path : _path.parent_path();
-        for(const auto& entry : filesystem::directory_iterator(dir)) {
-            if(entry.path().filename() == "." || entry.path().filename() == "..") continue;
+        for ( const auto& entry : filesystem::directory_iterator(dir) ) {
+            if ( entry.path().filename() == "." || entry.path().filename() == ".." ) continue;
             fn(FilePath(dir / entry));
         }
     }
@@ -238,48 +220,36 @@ namespace litecore {
     }
 
     bool FilePath::mkdir(int mode) const {
-        if(filesystem::exists(_path)) {
-            return true;
-        }
+        if ( filesystem::exists(_path) ) { return true; }
 
         error_code ec;
-        if(!filesystem::create_directory(_path, ec)) {
-            error::_throw(error::POSIX, to_errno(ec));
-        }
+        if ( !filesystem::create_directory(_path, ec) ) { error::_throw(error::POSIX, to_errno(ec)); }
 
         filesystem::permissions(_path, perms_from_mode(mode), ec);
-        if ( ec ) {
-            error::_throw(error::POSIX, to_errno(ec));
-        }
+        if ( ec ) { error::_throw(error::POSIX, to_errno(ec)); }
 
         return true;
     }
 
     static string makePathTemplate(const FilePath* fp) {
-        string      path     = fp->path();
+        string path = fp->path();
         return path + randomSuffix();
     }
 
     FilePath FilePath::mkTempFile(FILE** outHandle) const {
-        for(int i = 0; i < numeric_limits<int>::max(); i++) {
+        for ( int i = 0; i < numeric_limits<int>::max(); i++ ) {
             auto pathTemplate = makePathTemplate(this);
-            if(filesystem::exists(pathTemplate)) {
-                continue;
-            }
+            if ( filesystem::exists(pathTemplate) ) { continue; }
 
             ofstream f(pathTemplate, ios::out | ios::binary | ios::trunc);
-            if(!f) {
-                error(error::POSIX, EIO, "Unable to create temporary file")._throw(1);
-            }
+            if ( !f ) { error(error::POSIX, EIO, "Unable to create temporary file")._throw(1); }
 
-            if(outHandle) {
+            if ( outHandle ) {
                 int fd = open(pathTemplate.c_str(), O_RDWR | O_TRUNC);
-                if (fd < 0) {
-                    error(error::POSIX, errno, "Unable to open temporary file")._throw(1);
-                }
+                if ( fd < 0 ) { error(error::POSIX, errno, "Unable to open temporary file")._throw(1); }
 
                 *outHandle = fdopen(fd, "wb");
-                if( !*outHandle ) {
+                if ( !*outHandle ) {
                     close(fd);
                     error(error::POSIX, errno, "Unable to fdopen temporary file")._throw(1);
                 }
@@ -292,16 +262,12 @@ namespace litecore {
     }
 
     FilePath FilePath::mkTempDir() const {
-        for(int i = 0; i < numeric_limits<int>::max(); i++) {
+        for ( int i = 0; i < numeric_limits<int>::max(); i++ ) {
             auto pathTemplate = makePathTemplate(this);
-            if(filesystem::exists(pathTemplate)) {
-                continue;
-            }
+            if ( filesystem::exists(pathTemplate) ) { continue; }
 
             error_code ec;
-            if(!filesystem::create_directory(pathTemplate, ec)) {
-                error::_throw(error::POSIX, to_errno(ec));
-            }
+            if ( !filesystem::create_directory(pathTemplate, ec) ) { error::_throw(error::POSIX, to_errno(ec)); }
 
             return FilePath(pathTemplate);
         }
@@ -311,10 +277,8 @@ namespace litecore {
 
     bool FilePath::del() const {
         error_code ec;
-        auto result = filesystem::remove(_path, ec);
-        if(result) {
-            return true;
-        }
+        auto       result = filesystem::remove(_path, ec);
+        if ( result ) { return true; }
 
         int err = to_errno(ec);
         if ( err == 0 ) return false;
@@ -343,23 +307,17 @@ namespace litecore {
         return true;
     }
 
-    void FilePath::copyTo(const string& to) const {
-        filesystem::copy(_path, to, filesystem::copy_options::recursive);
-    }
+    void FilePath::copyTo(const string& to) const { filesystem::copy(_path, to, filesystem::copy_options::recursive); }
 
     void FilePath::moveTo(const string& to) const {
         error_code ec;
-        if(filesystem::exists(to)) {
+        if ( filesystem::exists(to) ) {
             filesystem::permissions(to, filesystem::perms::owner_write, filesystem::perm_options::add, ec);
-            if( ec ) {
-                error::_throw(error::POSIX, to_errno(ec));
-            }
+            if ( ec ) { error::_throw(error::POSIX, to_errno(ec)); }
         }
 
         filesystem::rename(_path, to, ec);
-        if( ec ) {
-            error::_throw(error::POSIX, to_errno(ec));
-        }
+        if ( ec ) { error::_throw(error::POSIX, to_errno(ec)); }
     }
 
     void FilePath::moveToReplacingDir(const FilePath& to, bool asyncCleanup) const {
@@ -400,13 +358,12 @@ namespace litecore {
         }
     }
 
-    void FilePath::setReadOnly(bool readOnly) const { 
-        filesystem::perms p = readOnly ? filesystem::perms::owner_read : (filesystem::perms::owner_read | filesystem::perms::owner_write);
-        error_code ec;
+    void FilePath::setReadOnly(bool readOnly) const {
+        filesystem::perms p = readOnly ? filesystem::perms::owner_read
+                                       : (filesystem::perms::owner_read | filesystem::perms::owner_write);
+        error_code        ec;
         filesystem::permissions(_path, p, ec);
-        if ( ec ) {
-            error::_throw(error::POSIX, to_errno(ec));
-        }
+        if ( ec ) { error::_throw(error::POSIX, to_errno(ec)); }
     }
 
 
