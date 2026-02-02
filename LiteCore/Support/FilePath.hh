@@ -127,7 +127,7 @@ namespace litecore {
         /** Returns the date at which this file was last modified, or -1 if the file does not exist */
         [[nodiscard]] time_t lastModified() const {
             return exists() ? fleece::narrow_cast<time_t>(
-                                      std::filesystem::last_write_time(_path).time_since_epoch().count())
+                           std::filesystem::last_write_time(_path).time_since_epoch().count())
                             : -1;
         }
 
