@@ -328,6 +328,7 @@ if(LITECORE_BUILD_SHARED)
         LiteCore INTERFACE
         C/include
         C/Cpp_include
+        $<$<BOOL:${BUILD_ENTERPRISE}>:${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P>
         PRIVATE ${GENERATED_HEADERS_DIR}
     ) 
     target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
@@ -340,8 +341,21 @@ if(LITECORE_BUILD_SHARED)
         OPTIONAL
     )
 
-    file(GLOB LITECORE_HEADERS ${PROJECT_SOURCE_DIR}/C/include/*.h ${PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh)
-    file(GLOB FLEECE_HEADERS ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.hh)
+    file(GLOB LITECORE_HEADERS 
+        ${PROJECT_SOURCE_DIR}/C/include/*.h $
+        {PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh
+    )
+
+    if(BUILD_ENTERPRISE)
+        list(APPEND LITECORE_HEADERS
+            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/c4PeerDiscovery.hh
+        )
+    endif()
+
+    file(GLOB FLEECE_HEADERS 
+        ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.h 
+        ${PROJECT_SOURCE_DIR}/vendor/fleece/API/fleece/*.hh
+    )
 
     install(FILES ${LITECORE_HEADERS} DESTINATION include)
     install(FILES ${FLEECE_HEADERS} DESTINATION include/fleece)
