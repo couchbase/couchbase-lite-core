@@ -84,15 +84,17 @@ namespace litecore::websocket {
         _didConnect = true;
         _responseTimer->stop();
         _timeConnected.start();
+        _lastReceiveTime = Timer::clock::now();
         delegateWeak()->invoke(&Delegate::onWebSocketConnect);
 
         // Initialize ping timer. (This is the first time it's accessed, and this method is only
         // called once, so no locking is needed.)
         if ( _framing ) {
-            if ( heartbeatInterval() > 0 ) {
-                logVerbose("Setting ping timer to %d...", heartbeatInterval());
+            if ( heartbeatInterval() > 0s ) {
+                logVerbose("Setting ping timer to %lld...",
+                           duration_cast<chrono::seconds>(heartbeatInterval()).count());
                 _pingTimer = std::make_unique<actor::Timer>([this] { sendPing(); });
-                schedulePing();
+                (void)schedulePing();
             }
         }
     }
@@ -173,6 +175,7 @@ namespace litecore::websocket {
                 return;
             }
 
+            _lastReceiveTime = Timer::clock::now();
             _bytesReceived += data.size;
             if ( _framing ) {
                 _deliveredBytes          = 0;
@@ -236,7 +239,7 @@ namespace litecore::websocket {
         switch ( opCode ) {
             case TEXT:
                 if ( !ClientProtocol::isValidUtf8((unsigned char*)message.buf, message.size) ) return false;
-                // fall through:
+                [[fallthrough]];
             case BINARY:
                 deliverMessageToDelegate(message, (opCode == BINARY));
                 return true;
@@ -270,16 +273,24 @@ namespace litecore::websocket {
 
 #pragma mark - HEARTBEAT:
 
-    int WebSocketImpl::heartbeatInterval() const {
-        if ( !_framing ) return 0;
+    chrono::seconds WebSocketImpl::heartbeatInterval() const {
+        if ( !_framing ) return 0s;
         else if ( _parameters.heartbeatSecs > 0 )
-            return _parameters.heartbeatSecs;
+            return chrono::seconds(_parameters.heartbeatSecs);
         else
-            return (int)kDefaultHeartbeatInterval.count();
+            return kDefaultHeartbeatInterval;
     }
 
-    void WebSocketImpl::schedulePing() {
-        if ( !_closeSent ) _pingTimer->fireAfter(chrono::seconds(heartbeatInterval()));
+    // returns false, instead of scheduling, if a PING should be sent immediately.
+    bool WebSocketImpl::schedulePing() {
+        if ( _closeSent ) return true;
+
+        auto interval = heartbeatInterval();
+        if ( interval <= 0s ) return true;  // No PINGs
+        Timer::duration delay = _lastReceiveTime + interval - Timer::clock::now();
+        if ( delay <= 0s ) return false;  // PING is needed immediately
+        _pingTimer->fireAfter(delay);
+        return true;
     }
 
     // timer callback
@@ -296,8 +307,9 @@ namespace litecore::websocket {
                 return;
             }
 
-            schedulePing();
-            startResponseTimer(min(kPongTimeout, chrono::seconds(heartbeatInterval() - 1)));
+            if ( schedulePing() ) return;  // No PING is needed yet
+
+            startResponseTimer(min(kPongTimeout, heartbeatInterval() - 1s));
             // exit scope to release the lock -- this is needed before calling sendOp,
             // which acquires the lock itself
         }
@@ -308,6 +320,7 @@ namespace litecore::websocket {
     void WebSocketImpl::receivedPong() {
         logInfo("Received PONG");
         _responseTimer->stop();
+        Assert(schedulePing());
     }
 
     void WebSocketImpl::startResponseTimer(chrono::seconds timeoutSecs) {
@@ -315,11 +328,17 @@ namespace litecore::websocket {
         _responseTimer->fireAfter(timeoutSecs);
     }
 
+    // timer callback
     void WebSocketImpl::timedOut() {
-        if ( _timerDisabled ) return;
+        {
+            lock_guard lock(_mutex);
+            if ( _timerDisabled ) return;
+            if ( Timer::clock::now() - _lastReceiveTime < _curTimeout ) return;
+            logError("No response received after %lld sec -- disconnecting", (long long)_curTimeout.count());
+            _timedOut = true;
+        }
+        //FIXME: The rest of this method should be locked too, but currently that would create deadlocks.
 
-        logError("No response received after %lld sec -- disconnecting", (long long)_curTimeout.count());
-        _timedOut = true;
         switch ( _socketLCState.load() ) {
             case SOCKET_OPENING:
             case SOCKET_OPENED:
