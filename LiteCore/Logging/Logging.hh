@@ -198,6 +198,7 @@ namespace litecore {
 
       private:
         friend class LogDomain;
+        friend class LoggingProxy;
 
         mutable LogObjectRef _objectRef{};
     };
@@ -215,5 +216,27 @@ namespace litecore {
 #else
 #    define logDebug(FMT, ...)
 #endif
+
+    /** A class that delegates logging methods to an instance of Logging. */
+    class LoggingProxy {
+      public:
+        explicit LoggingProxy(Logging* logging) : _logging(logging) {}
+
+      protected:
+        bool willLog(LogLevel level = LogLevel::Info) const { return _logging->willLog(level); }
+
+        void warn(const char* format, ...) const __printflike(2, 3) { LOGBODY(Warning) }
+
+        void logError(const char* format, ...) const __printflike(2, 3) { LOGBODY(Error) }
+
+        void _log(LogLevel level, const char* format, ...) const __printflike(3, 4) { LOGBODY_(level) }
+
+        void _logv(LogLevel level, const char* format, va_list args) const __printflike(3, 0) {
+            _logging->_logv(level, format, args);
+        }
+
+      private:
+        Logging* const _logging;
+    };
 
 }  // namespace litecore
