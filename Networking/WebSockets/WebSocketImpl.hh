@@ -12,22 +12,10 @@
 
 #pragma once
 #include "WebSocketInterface.hh"
-#include "Logging.hh"
-#include "Stopwatch.hh"
-#include "Timer.hh"
 #include "c4Certificate.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
-#include <atomic>
-#include <chrono>
-#include <cstdlib>
+#include "Logging.hh"
 #include <memory>
-#include <mutex>
-#include <string>
-
-namespace uWS {
-    template <const bool isServer>
-    class WebSocketProtocol;
-}
 
 namespace litecore::websocket {
 
@@ -39,10 +27,10 @@ namespace litecore::websocket {
         , public Logging {
       public:
         struct Parameters {
-            fleece::alloc_slice webSocketProtocols;  ///< Sec-WebSocket-Protocol value
-            int                 heartbeatSecs;       ///< WebSocket heartbeat interval in seconds (default if 0)
-            fleece::alloc_slice networkInterface;    ///< Network interface
-            fleece::AllocedDict options;             ///< Other options
+            alloc_slice webSocketProtocols;  ///< Sec-WebSocket-Protocol value
+            int         heartbeatSecs;       ///< WebSocket heartbeat interval in seconds (default if 0)
+            alloc_slice networkInterface;    ///< Network interface
+            AllocedDict options;             ///< Other options
 #ifdef COUCHBASE_ENTERPRISE
             Retained<C4KeyPair> externalKey;  ///< Client cert uses external key..
 #endif
@@ -51,89 +39,43 @@ namespace litecore::websocket {
         WebSocketImpl(const URL& url, Role role, bool framing, Parameters);
 
         void connect() override;
-        bool send(fleece::slice message, bool binary = true) override;
-        void close(int status = kCodeNormal, fleece::slice message = fleece::nullslice) override;
+        bool send(slice message, bool binary = true) override;
+        void close(int status = kCodeNormal, slice message = nullslice) override;
 
-        // Concrete socket implementation needs to call these:
-        void onConnect();
-        void onCloseRequested(int status, fleece::slice message);
-        void onClose(int posixErrno);
-        void onClose(CloseStatus);
-        void onReceive(fleece::slice);
-        void onWriteComplete(size_t);
+        const Parameters& parameters() const;
 
-        const Parameters& parameters() const { return _parameters; }
+        const AllocedDict& options() const;
 
-        const fleece::AllocedDict& options() const { return _parameters.options; }
+        struct impl;
 
       protected:
         // Timeout for WebSocket connection (until HTTP response received)
         static constexpr long kConnectTimeoutSecs = 15;
 
+        ~WebSocketImpl() override;
+
         std::string loggingClassName() const override { return "WebSocket"; }
 
-        ~WebSocketImpl() override;
         std::string loggingIdentifier() const override;
-        void        protocolError(slice message = nullslice);
+
+        // Subclasses need to call these:
+        void onConnect();
+        void onCloseRequested(int status, slice message);
+        void onClose(int posixErrno);
+        void onClose(CloseStatus);
+        void onReceive(slice);
+        void onWriteComplete(size_t);
 
         // These methods have to be implemented in subclasses:
-        virtual void closeSocket()                                   = 0;
-        virtual void sendBytes(fleece::alloc_slice)                  = 0;
-        virtual void receiveComplete(size_t byteCount)               = 0;
-        virtual void requestClose(int status, fleece::slice message) = 0;
-
-        enum SocketLifecycleState : int { SOCKET_UNINIT, SOCKET_OPENING, SOCKET_OPENED, SOCKET_CLOSING, SOCKET_CLOSED };
+        virtual void closeSocket()                           = 0;
+        virtual void sendBytes(alloc_slice)                  = 0;
+        virtual void receiveComplete(size_t byteCount)       = 0;
+        virtual void requestClose(int status, slice message) = 0;
 
       private:
-        template <const bool isServer>
-        friend class uWS::WebSocketProtocol;
         friend class MessageImpl;
 
-        using ClientProtocol = uWS::WebSocketProtocol<false>;
-        using ServerProtocol = uWS::WebSocketProtocol<true>;
-        using Timer          = actor::Timer;
-
-        bool sendOp(fleece::slice, uint8_t opcode);
-        bool handleFragment(std::byte* data, size_t length, size_t remainingBytes, uint8_t opCode, bool fin);
-        bool receivedMessage(uint8_t opCode, const fleece::alloc_slice& message);
-        bool receivedClose(fleece::slice);
-        void deliverMessageToDelegate(fleece::slice data, bool binary);
-        std::chrono::seconds heartbeatInterval() const;
-        [[nodiscard]] bool   schedulePing();
-        void                 sendPing();
-        void                 receivedPong();
-        void                 startResponseTimer(std::chrono::seconds timeout);
-        void                 timedOut();
-        void                 callCloseSocket();
-        void                 callRequestClose(int status, fleece::slice message);
-
-        Parameters const                _parameters;
-        bool                            _framing;
-        std::unique_ptr<ClientProtocol> _clientProtocol;       // 3rd party class that does the framing
-        std::unique_ptr<ServerProtocol> _serverProtocol;       // 3rd party class that does the framing
-        std::mutex                      _mutex;                //
-        fleece::alloc_slice             _curMessage;           // Message being received
-        uint8_t                         _curOpCode{};          // Opcode of msg in _curMessage
-        size_t                          _curMessageLength{0};  // # of valid bytes in _curMessage
-        size_t                          _bufferedBytes{0};     // # bytes written but not yet completed
-        size_t                          _deliveredBytes{};     // Temporary count of bytes sent to delegate
-        bool                            _closeSent{false}, _closeReceived{false};  // Close message sent or received?
-        fleece::alloc_slice             _closeMessage;                             // The encoded close request message
-        Timer::time                     _lastReceiveTime{};                        // Time I last received a message
-        std::unique_ptr<Timer>          _pingTimer;
-        std::unique_ptr<Timer>          _responseTimer;
-        std::atomic<bool>               _timerDisabled{false};
-        std::chrono::seconds            _curTimeout{};
-        bool                            _timedOut{false};
-        alloc_slice                     _protocolError;
-        bool                            _didConnect{false};
-        uint8_t                         _opToSend{};
-        fleece::alloc_slice             _msgToSend;
-        std::atomic_int                 _socketLCState{SOCKET_UNINIT};
-
-        // Connection diagnostics, logged on close:
-        fleece::Stopwatch _timeConnected{false};             // Time since socket opened
-        uint64_t          _bytesSent{0}, _bytesReceived{0};  // Total byte count sent/received
+        std::unique_ptr<impl> _impl;
     };
 
 }  // namespace litecore::websocket
