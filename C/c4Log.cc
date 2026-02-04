@@ -302,7 +302,11 @@ C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     if ( !name ) return kC4DefaultLog;
     auto domain = LogDomain::named(name);
     // LogDomain instances are never deleted, so it's fine to use `new` and `strdup`.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     if ( !domain && create ) domain = new LogDomain(strdup(name));
+#pragma clang diagnostic pop
+
     return asExternal(domain);
 }
 

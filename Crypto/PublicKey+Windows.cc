@@ -48,8 +48,8 @@ namespace litecore::crypto {
     }
 
     [[noreturn]] void throwWincryptError(DWORD err, const char* fnName, const char* what) {
-        LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, err);
-        error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, err);
+        LogError(TLSLogDomain, "%s (%s returned %lu)", what, fnName, err);
+        error::_throw(error::CryptoError, "%s (%s returned %lu)", what, fnName, err);
     }
 
     inline void checkSecurityStatus(SECURITY_STATUS err, const char* fnName, const char* what,
