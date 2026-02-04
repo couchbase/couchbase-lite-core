@@ -18,7 +18,7 @@ using namespace std;
 using namespace litecore;
 using namespace fleece;
 
-inline alloc_slice operator"" _asl(const char* str, size_t length) { return {str, length}; }
+inline alloc_slice operator""_asl(const char* str, size_t length) { return {str, length}; }
 
 namespace litecore {
 

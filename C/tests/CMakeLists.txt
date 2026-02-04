@@ -139,3 +139,18 @@ target_include_directories(
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(COPY ../../LiteCore/tests/data/replacedb/ios120/iosdb.cblite2
   DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests/data/replacedb/ios120)
+
+if(WIN32)
+    add_custom_command(TARGET C4Tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:LiteCore>
+                $<TARGET_FILE_DIR:C4Tests>
+    )
+
+    add_custom_command(TARGET C4Tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_PDB_FILE:LiteCore>
+                $<TARGET_FILE_DIR:C4Tests>
+        VERBATIM
+    )
+endif()

@@ -34,12 +34,4 @@ function(setup_build)
         mbedcrypto
         mbedx509
     )
-
-    add_custom_command(
-        TARGET C4Tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        -DFilesToCopy="${FilesToCopy}"
-        -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
-        -P ${TOP}MSVC/copy_artifacts.cmake
-    )
 endfunction()

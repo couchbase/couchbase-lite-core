@@ -122,7 +122,7 @@ void C4ExpectException(C4ErrorDomain domain, int code, const std::function<void(
 
 #pragma mark - C4TEST CLASS
 
-#if defined(CMAKE) && defined(_MSC_VER)
+#if defined(CMAKE) && defined(_MSC_VER) && !defined(__clang__)
 string C4Test::sFixturesDir           = "../C/tests/data/";
 string C4Test::sReplicatorFixturesDir = "../Replicator/tests/data/";
 #else

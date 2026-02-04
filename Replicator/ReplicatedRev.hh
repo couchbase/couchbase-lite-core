@@ -76,15 +76,11 @@ namespace litecore::repl {
         ~ReplicatedRev() override = default;
     };
 
-#ifdef __GNUC__
-#    pragma GCC diagnostic push
-#    pragma GCC diagnostic ignored "-Winvalid-offsetof"
-#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
     static_assert(offsetof(ReplicatedRev, errorIsTransient) - offsetof(ReplicatedRev, docID)
                           == offsetof(C4DocumentEnded, errorIsTransient) - offsetof(C4DocumentEnded, docID),
                   "ReplicatedRev doesn't match C4DocumentEnded");
-#ifdef __GNUC__
-#    pragma GCC diagnostic pop
-#endif
+#pragma GCC diagnostic pop
 
 }  // namespace litecore::repl

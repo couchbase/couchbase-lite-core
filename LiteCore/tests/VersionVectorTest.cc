@@ -50,16 +50,16 @@ namespace litecore {
 }  // namespace litecore
 
 // `_ht` suffix after a numeric literal makes it a hybrid time.
-static logicalTime operator"" _ht(unsigned long long i) { return logicalTime{i}; }
+static logicalTime operator""_ht(unsigned long long i) { return logicalTime{i}; }
 
 // `_vv` suffix after a string literal makes it a VersionVector.
-static VersionVector operator"" _vv(const char* str NONNULL, size_t length) {
+static VersionVector operator""_vv(const char* str NONNULL, size_t length) {
     if ( length == 0 ) return {};
     return VersionVector::fromASCII(slice(str, length));
 }
 
 // `_pid` suffix after a base64 string literal makes it a SourceID.
-static SourceID operator"" _pid(const char* str NONNULL, size_t length) {
+static SourceID operator""_pid(const char* str NONNULL, size_t length) {
     if ( length == 1 && str[0] == '*' ) return kMeSourceID;
     SourceID id;
     if ( !id.readASCII(slice(str, length)) ) throw std::invalid_argument("invalid SourceID");

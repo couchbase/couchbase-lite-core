@@ -21,10 +21,6 @@
 #include <thread>
 #include <utility>
 
-#if defined(__clang__) && !defined(__ANDROID__)
-#    include <cxxabi.h>
-#endif
-
 using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
