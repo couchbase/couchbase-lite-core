@@ -246,6 +246,11 @@ typedef struct C4ReplicatorParameters {
 #define kC4ReplicatorOptionAutoPurge                 "autoPurge"         ///< Enables auto purge; default is true (bool)
 #define kC4ReplicatorOptionAcceptParentDomainCookies "acceptParentDomainCookies"
 
+// Performance tuning: (For more detail see related constants in ReplicatorTuning.hh)
+#define kC4ReplicatorOptionMaxRevsBeingRequested "maxRevsBeingRequested"  ///< Max # of unhandled incoming revs
+#define kC4ReplicatorOptionMaxIncomingRevs       "maxIncomingRevs"  ///< Max # of incoming revs being handled/parsed
+#define kC4ReplicatorOptionMaxRevsInFlight       "maxRevsInFlight"  ///< Max # of rev messages to be sending at once
+
 // TLS options:
 #define kC4ReplicatorOptionRootCerts        "rootCerts"   ///< Trusted root certs (data)
 #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
