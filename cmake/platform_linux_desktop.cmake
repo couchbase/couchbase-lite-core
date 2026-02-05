@@ -1,35 +1,5 @@
 include("${CMAKE_CURRENT_LIST_DIR}/platform_linux.cmake")
 
-MACRO (_install_gcc_file GCCFILENAME)
-  IF (UNIX AND NOT APPLE)
-    EXECUTE_PROCESS(
-      COMMAND "${CMAKE_CXX_COMPILER}" ${CMAKE_CXX_FLAGS} -print-file-name=${GCCFILENAME}
-      OUTPUT_VARIABLE _gccfile OUTPUT_STRIP_TRAILING_WHITESPACE
-      ERROR_VARIABLE _errormsg
-      RESULT_VARIABLE _failure)
-    IF (_failure)
-      MESSAGE (FATAL_ERROR "Error (${_failure}) determining path to ${GCCFILENAME}: ${_errormsg}")
-    ENDIF ()
-    # We actually need to copy any files with longer filenames - this can be eg.
-    # libstdc++.so.6, or libgcc_s.so.1.
-    # Note: RPM demands that .so files be executable or else it won't
-    # extract debug info from them.
-    FILE (GLOB _gccfiles "${_gccfile}*")
-    FOREACH (_gccfile ${_gccfiles})
-      # Weird extraneous file not desired
-      IF (_gccfile MATCHES ".py$")
-        CONTINUE ()
-      ENDIF ()
-      INSTALL (FILES "${_gccfile}" DESTINATION lib
-               PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                  GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-    ENDFOREACH ()
-  ENDIF ()
-ENDMACRO (_install_gcc_file)
-
-_install_gcc_file(libstdc++.so.6)
-_install_gcc_file(libgcc_s.so.1)
-
 IF (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     SET(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/install" CACHE STRING
         "The install location" FORCE)
@@ -84,14 +54,6 @@ function(set_litecore_source)
 
 function(setup_litecore_build)
     setup_litecore_build_linux()
-
-    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
-    foreach(target ${LITECORE_TARGETS})
-        target_compile_options(
-            ${target} PRIVATE
-            "$<$<COMPILE_LANGUAGE:CXX>:-Wno-psabi;-Wno-odr>"
-        )
-    endforeach()
 
     foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_link_libraries(
