@@ -108,7 +108,6 @@ namespace litecore::repl {
 
     vector<C4String> RevToInsert::history() {
         vector<C4String> history;
-        history.reserve(10);
 
         // For version vector, the merged versions if exists will appear
         // in the history property of the rev message. The VersionVector class
@@ -117,27 +116,33 @@ namespace litecore::repl {
         // This code below will check for the merge versions from the history
         // and put them together with the current version (revID).
 
-        const void* pos = historyBuf.buf;
-        auto        sc  = historyBuf.findByte(';');  // RevTree will not have ';'.
-        if ( sc ) {
-            while ( pos < sc && *(char*)pos == ' ' ) pos = (char*)pos + 1;
-            _curVersAlloc = revID;
-            _curVersAlloc.append(", ");
-            _curVersAlloc.append(slice(pos, sc + 1));
-            history.push_back(_curVersAlloc);
-            pos = (char*)sc + 1;
-        } else {
+        if ( RevIDType::Tree == C4Document::typeOfRevID(revID) ) {
+            history.reserve(10);
             history.push_back(revID);
-        }
+            const void* pos = historyBuf.buf;
+            for ( const void* end = historyBuf.end(); pos < end; ) {
+                while ( pos < end && *(char*)pos == ' ' ) pos = (char*)pos + 1;
+                auto comma = slice(pos, end).findByteOrEnd(',');
+                history.push_back(slice(pos, comma));
+                pos = comma + 1;
+            }
+        } else {
+            // If revID is a Version, it may lead a Version Vector. The rest would be
+            // in histortBuf. We juxtapose them to one history item and it will be unpacked
+            // by VersionVecWithLegacy::parse
 
-        for ( const void* end = historyBuf.end(); pos < end; ) {
-            while ( pos < end && *(char*)pos == ' ' ) pos = (char*)pos + 1;
-            auto comma = slice(pos, end).findByteOrEnd(',');
-            history.push_back(slice(pos, comma));
-            pos = comma + 1;
+            std::stringstream ss;
+            ss << revID;
+            if ( !historyBuf.empty() ) {
+                if ( historyBuf.findByte(';') == nullptr ) ss << "; ";
+                else
+                    ss << ", ";
+                ss << historyBuf;
+            }
+            _curVersAlloc = ss.str();
+            history.push_back(_curVersAlloc);
         }
         return history;
     }
-
 
 }  // namespace litecore::repl
