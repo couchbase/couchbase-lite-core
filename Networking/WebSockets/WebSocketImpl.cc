@@ -11,12 +11,12 @@
 //
 
 #include "WebSocketImpl.hh"
-#include "Stopwatch.hh"
-#include "WebSocketProtocol.hh"
 #include "Error.hh"
+#include "NumConversion.hh"
+#include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
-#include "NumConversion.hh"
+#include "WebSocketProtocol.hh"
 #include <chrono>
 #include <cstdlib>
 #include <functional>
@@ -71,6 +71,8 @@ namespace litecore::websocket {
      *   non-underscored methods, and only when not locked.
      */
     struct WebSocketImpl::impl : LoggingProxy {
+        class LockWithDefer;
+
         enum SocketLifecycleState : int { SOCKET_UNINIT, SOCKET_OPENING, SOCKET_OPENED, SOCKET_CLOSING, SOCKET_CLOSED };
 
         // Immutable state:
@@ -99,22 +101,20 @@ namespace litecore::websocket {
         bool                       _timedOut{false};       // True if _responseTimer timed out
         alloc_slice                _protocolError;         // Error message from WebSocketProtocol
         bool                       _didConnect{false};     // True if I've connected
-        uint8_t                    _opToSend{};            // Opcode for _msgToSend
-        alloc_slice                _msgToSend;             // Stores a message to send during onReceive
-        vector<Ref<Message>>       _msgsReceived;          // Stores messages received during onReceive
         SocketLifecycleState       _socketLCState{};       // Lifecycle state
+        LockWithDefer*             _lockWithDefer{};
 
         // Connection diagnostics, logged on close:
         Stopwatch _timeConnected{false};             // Time since socket opened
         uint64_t  _bytesSent{0}, _bytesReceived{0};  // Total byte count sent/received
 
         impl(WebSocketImpl& webSocket, bool framing, Parameters parameters)
-           : LoggingProxy(&webSocket)
-           , _parameters(std::move(parameters))
-           , _webSocket{webSocket}
-        , _framing(framing)
-        , _heartbeatInterval{computeHeartbeatInterval(_framing, _parameters)}
-        , _responseTimer(new actor::Timer([this] { timedOut(); })) {
+            : LoggingProxy(&webSocket)
+            , _parameters(std::move(parameters))
+            , _webSocket{webSocket}
+            , _framing(framing)
+            , _heartbeatInterval{computeHeartbeatInterval(_framing, _parameters)}
+            , _responseTimer(new actor::Timer([this] { timedOut(); })) {
             if ( framing ) {
                 if ( webSocket.role() == Role::Server ) _serverProtocol = make_unique<ServerProtocol>();
                 else
@@ -210,7 +210,7 @@ namespace litecore::websocket {
 
         // Protected API. Called when an async write has completed.
         void onWriteComplete(size_t size) {
-            unique_lock lock(_mutex);
+            LockWithDefer lock(this);
 
             _bytesSent += size;
             bool notify = (_bufferedBytes > kSendBufferSize);
@@ -229,14 +229,11 @@ namespace litecore::websocket {
 
         // Protected API. Called when a WebSocket frame is received.
         void onReceive(slice data) {
-            ssize_t              completedBytes = 0;
-            uint8_t              opToSend       = 0;
-            alloc_slice          msgToSend;
-            vector<Ref<Message>> msgsReceived;
+            ssize_t completedBytes = 0;
             {
                 // Lock the mutex; this protects all methods (below) involved in receiving,
                 // since they're called from this one.
-                unique_lock lock(_mutex);
+                LockWithDefer lock(this);
 
                 if ( data.empty() && !_closeReceived ) {
                     // We assume empty data means a zero-length read, i.e. EOF
@@ -254,8 +251,6 @@ namespace litecore::websocket {
                     if ( _clientProtocol ) _clientProtocol->consume((byte*)data.buf, data.size, this);
                     else
                         _serverProtocol->consume((byte*)data.buf, data.size, this);
-                    opToSend  = _opToSend;
-                    msgToSend = std::move(_msgToSend);
                     // Compute # of bytes consumed: just the framing data, not any partial or
                     // delivered messages. (Trust me, the math works.)
                     completedBytes =
@@ -263,17 +258,10 @@ namespace litecore::websocket {
                 } else {
                     _deliverMessageToDelegate(alloc_slice(data));
                 }
-                msgsReceived = std::move(_msgsReceived);
             }
 
             // After unlocking, tell subclass how many incoming bytes have been handled:
             if ( completedBytes > 0 ) _webSocket.receiveComplete(completedBytes);
-
-            // Send any message that was generated during the locked block above:
-            if ( msgToSend ) sendOp(msgToSend, opToSend);
-
-            // Similarly, deliver any messages received:
-            for ( auto& msg : msgsReceived ) _webSocket.delegateWeak()->invoke(&Delegate::onWebSocketMessage, msg);
         }
 
         // Called from inside _protocol->consume(), with the _mutex locked
@@ -318,10 +306,12 @@ namespace litecore::websocket {
                 case CLOSE:
                     return _receivedClose(message);
                 case PING:
-                    logInfo("Received PING -- sending PONG");
-                    _opToSend  = PONG;
-                    _msgToSend = message ? message : alloc_slice(size_t(0));
-                    return true;
+                    {
+                        logInfo("Received PING -- sending PONG");
+                        alloc_slice msgToSend = message ? message : alloc_slice(size_t(0));
+                        defer([=, this] { sendOp(msgToSend, PONG); });
+                        return true;
+                    }
                 case PONG:
                     _receivedPong();
                     return true;
@@ -337,13 +327,11 @@ namespace litecore::websocket {
             _callCloseSocket();
         }
 
-        void _deliverMessageToDelegate(alloc_slice message) {
-            logVerbose("Received %zu-byte message", message.size);
-            _deliveredBytes += message.size;
-            // We can't call the delegate now because the mutex is locked and from here there's no
-            // way to unlock it. Instead, we store the message in `_msgsReceived`, and my caller
-            // `onReceive()` will unlock the mutex and then deliver it.
-            _msgsReceived.emplace_back(new MessageImpl(&_webSocket, std::move(message), true));
+        void _deliverMessageToDelegate(alloc_slice messageBody) {
+            logVerbose("Received %zu-byte message", messageBody.size);
+            _deliveredBytes += messageBody.size;
+            auto message = make_retained<MessageImpl>(&_webSocket, std::move(messageBody), true);
+            defer([=, this] { _webSocket.delegateWeak()->invoke(&Delegate::onWebSocketMessage, message); });
         }
 
 #pragma mark - HEARTBEAT:
@@ -395,7 +383,7 @@ namespace litecore::websocket {
 
         // timer callback
         void timedOut() {
-            unique_lock lock(_mutex);
+            LockWithDefer lock(this);
 
             if ( _timerDisabled ) return;
             if ( Timer::clock::now() - _lastReceiveTime < _curTimeout ) return;
@@ -428,7 +416,7 @@ namespace litecore::websocket {
                 if ( state != SOCKET_OPENED ) { logVerbose("Calling closeSocket before the socket is open"); }
                 _socketLCState = SOCKET_CLOSING;
                 _startResponseTimer(kCloseTimeout);
-                _webSocket.closeSocket();
+                defer([this] { _webSocket.closeSocket(); });
             } else {
                 logVerbose("Calling closeSocket when the socket is %s",
                            state == SOCKET_CLOSING ? "pending close" : "already closed");
@@ -442,10 +430,13 @@ namespace litecore::websocket {
                     logVerbose("Calling requestClose before the socket is connected");
                     [[fallthrough]];
                 case SOCKET_OPENED:
-                    _socketLCState = SOCKET_CLOSING;
-                    _startResponseTimer(kCloseTimeout);
-                    _webSocket.requestClose(status, message);
-                    break;
+                    {
+                        _socketLCState = SOCKET_CLOSING;
+                        _startResponseTimer(kCloseTimeout);
+                        alloc_slice allocedMessage(message);
+                        defer([=, this] { _webSocket.requestClose(status, allocedMessage); });
+                        break;
+                    }
                 case SOCKET_CLOSING:
                     logVerbose("Calling requestClose when the socket is pending close");
                     break;
@@ -457,15 +448,15 @@ namespace litecore::websocket {
 
         // Public API. Initiates a request to close the connection cleanly.
         void close(int status, slice message) {
-            unique_lock lock(_mutex);
+            LockWithDefer lock(this);
 
             switch ( _socketLCState ) {
                 case SOCKET_CLOSING:
                     logVerbose("Calling close when the socket is pending close");
-                    return;
+                    break;
                 case SOCKET_CLOSED:
                     logVerbose("Calling close when the socket is already closed");
-                    return;
+                    break;
                 case SOCKET_OPENED:
                     logInfo("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
                     if ( _framing ) {
@@ -473,7 +464,7 @@ namespace litecore::websocket {
                             logVerbose("Close already processed (_closeSent: %d, _closeReceived: %d), exiting "
                                        "WebSocketImpl::close()",
                                        (int)_closeSent, (int)_closeReceived);
-                            return;
+                            break;
                         }
 
                         auto closeMsg = alloc_slice(2 + message.size);
@@ -483,13 +474,11 @@ namespace litecore::websocket {
                         _closeSent    = true;
                         _closeMessage = closeMsg;
                         _startResponseTimer(kCloseTimeout);
-
-                        lock.unlock();  // UNLOCK MUTEX to call sendOp()
-                        sendOp(closeMsg, CLOSE);
+                        defer([=, this] { sendOp(closeMsg, CLOSE); });
                     } else {
                         _callRequestClose(status, message);
                     }
-                    return;
+                    break;
                 case SOCKET_OPENING:
                     logInfo("Closing socket before connection established...");
                     if ( _framing ) {
@@ -499,10 +488,10 @@ namespace litecore::websocket {
                     } else {
                         _callRequestClose(status, message);
                     }
-                    return;
+                    break;
                 case SOCKET_UNINIT:
                     _callCloseSocket();
-                    return;
+                    break;
             }
         }
 
@@ -523,9 +512,7 @@ namespace litecore::websocket {
                 }
                 _closeSent    = true;
                 _closeMessage = message;
-                // Don't send the message now or I'll deadlock; remember to do it later in onReceive:
-                _msgToSend = message;
-                _opToSend  = CLOSE;
+                defer([=, this] { sendOp(_closeMessage, CLOSE); });
             }
             _timerDisabled = true;
             return true;
@@ -640,6 +627,54 @@ namespace litecore::websocket {
                 delegate->invoke(&Delegate::onWebSocketClose, status);
             }
         }
+
+        /** Utility class that locks `_mutex` and enables use of the `defer()` function below.
+         *  It should be instantiated as `LockWithDefer lock(this);`. */
+        class LockWithDefer {
+          public:
+            explicit LockWithDefer(impl* owner) : _owner(owner), _lock(owner->_mutex) {
+                DebugAssert(owner->_lockWithDefer == nullptr);
+                owner->_lockWithDefer = this;
+            }
+
+            void defer(function<void()> action) {
+                DebugAssert(_lock.owns_lock());
+                _actions.emplace_back(std::move(action));
+            }
+
+            void unlock() {
+                DebugAssert(_lock.owns_lock());
+                _owner->_lockWithDefer = nullptr;
+                _lock.unlock();
+            }
+
+            ~LockWithDefer() {
+                if ( _lock.owns_lock() ) _owner->_lockWithDefer = nullptr;
+                if ( !_actions.empty() ) {
+                    _lock.unlock();
+                    for ( auto& action : _actions ) {
+                        try {
+                            action();
+                        } catch ( ... ) {
+#ifdef _MSC_VER
+                            C4Error::warnCurrentException(__FUNCSIG__);
+#else
+                            C4Error::warnCurrentException(__PRETTY_FUNCTION__);
+#endif
+                        }
+                    }
+                }
+            }
+
+          private:
+            impl* const              _owner;
+            unique_lock<mutex>       _lock;
+            vector<function<void()>> _actions;  // can't use smallVector: std::function is not trivially moveable
+        };
+
+        /// Schedules a function to be called immediately after the current lock is released.
+        /// Precondition: Some caller must have a local `LockWithDefer` instance.
+        void defer(function<void()> fn) { _lockWithDefer->defer(std::move(fn)); }
     };
 
 #pragma mark - WEBSOCKET IMPL:
