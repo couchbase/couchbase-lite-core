@@ -12,11 +12,6 @@ function(setup_build)
         Threads::Threads
     )
 
-    target_link_options(
-        C4Tests PRIVATE
-        "-export-dynamic"
-    )
-
     target_include_directories(
         C4Tests PRIVATE
         ${TOP}LiteCore/Unix

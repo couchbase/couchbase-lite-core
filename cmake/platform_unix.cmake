@@ -32,13 +32,8 @@ function(setup_litecore_build_unix)
     endif()
     if(LTOAvailable)
         message("Link-time optimization enabled")
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-            # GNU and Linux clang LTO can't seem to handle any of this...at least not with the versions I tried.  
-            # Unexplained linker errors occur.
-            set_property(TARGET LiteCoreObjects LiteCoreUnitTesting PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-            set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-        endif()
-
+        set_property(TARGET LiteCoreObjects LiteCoreUnitTesting PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        set_property(TARGET FleeceStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         if(LITECORE_BUILD_SHARED)
             set_property(TARGET LiteCore       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         endif()

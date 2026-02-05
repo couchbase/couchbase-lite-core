@@ -23,7 +23,7 @@ This project is built for the following platforms at Couchbase:
 - Windows 10
 - UWP
 - macOS 13.0
-- CentOS 7 (gcc 7.x+)
+- Debian 11+ and compatible Linux distributions
 - Android API 22+
 
 Platform logic is largely separated into the cmake/platform_*.cmake files.  Platforms are conglomerated together as follows
