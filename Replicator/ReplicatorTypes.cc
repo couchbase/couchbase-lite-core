@@ -128,7 +128,7 @@ namespace litecore::repl {
             }
         } else {
             // If revID is a Version, it may lead a Version Vector. The rest would be
-            // in histortBuf. We juxtapose them to one history item and it will be unpacked
+            // in historyBuf. We juxtapose them to one history item and it will be unpacked
             // by VersionVecWithLegacy::parse
 
             std::stringstream ss;
