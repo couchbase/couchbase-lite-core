@@ -1484,7 +1484,7 @@ TEST_CASE("VersionVecWithLegacy") {
         // Check revToInsert.history()
         auto history = revToInsert->history();
         CHECK(history.size() == test.historyOut.size());
-        auto iter = test.historyOut.begin();
+        auto iter = test.historyOut.cbegin();
         CHECK(std::all_of(history.begin(), history.end(),
                           [&iter](const auto& hist) { return string(hist) == *iter++; }));
 
