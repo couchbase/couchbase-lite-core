@@ -19,6 +19,7 @@ function(set_litecore_source)
         MSVC/mkstemp.cc
         MSVC/mkdtemp.cc
         MSVC/strlcat.c
+        MSVC/mbedThreading.cc
         LiteCore/Support/StringUtil_winapi.cc
         Crypto/PublicKey+Windows.cc
         PARENT_SCOPE
@@ -26,6 +27,20 @@ function(set_litecore_source)
 endfunction()
 
 function(setup_globals)
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    message(STATUS "Configuring mbedTLS for Windows threading model")
+    set(_mbedtls_config_py "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../vendor/mbedtls/scripts/config.py")
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "${_mbedtls_config_py}" unset MBEDTLS_THREADING_PTHREAD
+        WORKING_DIRECTORY "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/.."
+    )
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" "${_mbedtls_config_py}" set MBEDTLS_THREADING_ALT
+        WORKING_DIRECTORY "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/.."
+    )
+    file(COPY ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../MSVC/threading_alt.h
+         DESTINATION ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../vendor/mbedtls/include/mbedtls)
+
     add_compile_options(/MP)
     add_link_options(/CGTHREADS:8)
     set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
