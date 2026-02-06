@@ -342,8 +342,8 @@ if(LITECORE_BUILD_SHARED)
     )
 
     file(GLOB LITECORE_HEADERS 
-        ${PROJECT_SOURCE_DIR}/C/include/*.h $
-        {PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh
+        ${PROJECT_SOURCE_DIR}/C/include/*.h 
+        ${PROJECT_SOURCE_DIR}/C/Cpp_include/*.hh
     )
 
     if(BUILD_ENTERPRISE)
