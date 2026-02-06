@@ -15,25 +15,25 @@
 #define MBEDTLS_THREADING_ALT_H
 
 #ifdef _WIN32
-#include "mbedtls/private_access.h"
+#    include "mbedtls/private_access.h"
 
-#include "mbedtls/build_info.h"
-#include <windows.h>
+#    include "mbedtls/build_info.h"
+#    include <windows.h>
 
-#ifdef __cplusplus
+#    ifdef __cplusplus
 extern "C" {
-#endif
+#    endif
 
-#if defined(MBEDTLS_THREADING_ALT)
+#    if defined(MBEDTLS_THREADING_ALT)
 typedef struct mbedtls_threading_mutex_t {
     CRITICAL_SECTION MBEDTLS_PRIVATE(mutex);
 } mbedtls_threading_mutex_t;
 
-#endif // MBEDTLS_THREADING_ALT
-#endif //_WIN32
+#    endif  // MBEDTLS_THREADING_ALT
+#endif      //_WIN32
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // MBEDTLS_THREADING_ALT_H
+#endif  // MBEDTLS_THREADING_ALT_H
