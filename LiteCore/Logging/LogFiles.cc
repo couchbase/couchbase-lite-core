@@ -128,7 +128,7 @@ namespace litecore {
         }
 
         void purgeOldLogs() {
-            FilePath logDir(_options.directory, "");
+            FilePath logDir(_options.directory);
             if ( !logDir.existsAsDir() ) { return; }
 
             multimap<time_t, FilePath> logFiles;
