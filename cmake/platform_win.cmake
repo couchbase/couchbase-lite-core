@@ -19,6 +19,7 @@ function(set_litecore_source)
         MSVC/mkstemp.cc
         MSVC/mkdtemp.cc
         MSVC/strlcat.c
+        MSVC/mbedThreading.cc
         LiteCore/Support/StringUtil_winapi.cc
         Crypto/PublicKey+Windows.cc
         PARENT_SCOPE
