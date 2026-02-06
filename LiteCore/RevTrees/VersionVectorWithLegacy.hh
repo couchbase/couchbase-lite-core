@@ -122,7 +122,7 @@ namespace litecore {
 
                     slice list = history[0];
                     if ( nullptr != semi ) {
-                        list.moveStart(semi - (uint8_t*)list.buf + 1);
+                        list.setStart(semi + 1);
                         // The substring of list upto, and including the semicolon
                         slice vv1{history[0].buf, list.buf};
                         versionVector = vv1.asString();
@@ -134,7 +134,7 @@ namespace litecore {
                     std::vector<string_view> splitted = split(list, ",");
                     auto                     riter    = splitted.rbegin();
                     for ( ; riter != splitted.rend(); ++riter ) {
-                        while ( riter->size() > 0 && riter->at(0) == ' ' ) riter->remove_prefix(1);
+                        while ( riter->starts_with(' ') ) riter->remove_prefix(1);
                         if ( RevIDType::Tree != C4Document::typeOfRevID(*riter) ) break;
                     }
                     auto treeCount = riter - splitted.rbegin();
@@ -142,13 +142,11 @@ namespace litecore {
                     splitHistory.push_back(versionVector);
                     if ( riter != splitted.rbegin() )
                         for ( auto iter = riter.base(); iter != splitted.end(); ++iter ) splitHistory.push_back(*iter);
-                }  // if isList
-            }
 
-            // Note: the input arguments, history and historyCount, are modified
-            if ( !splitHistory.empty() ) {
-                history      = splitHistory.data();
-                historyCount = splitHistory.size();
+                    // !!Note!! the input arguments, history and historyCount, are modified
+                    history      = splitHistory.data();
+                    historyCount = splitHistory.size();
+                }  // if isList
             }
 
             // The last history item(s) may be legacy tree-based revids:

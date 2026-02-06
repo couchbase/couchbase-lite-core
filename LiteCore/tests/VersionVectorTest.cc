@@ -14,7 +14,7 @@
 #include "VersionVectorWithLegacy.hh"
 #include "Endian.hh"
 #include "HybridClock.hh"
-#include "Replicator.hh"
+#include "ReplicatorTypes.hh"
 #include "RevTree.hh"
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
@@ -1477,14 +1477,14 @@ TEST_CASE("VersionVecWithLegacy") {
                         {"3-3f", "1-ab", "2-dc"}}};
 
     for ( const auto& test : tests ) {
-        Retained<repl::RevToInsert> revToInsert = make_retained<repl::RevToInsert>(
-                slice{}, test.revID, repl::RevocationMode::kNone, C4CollectionSpec{}, nullptr);
+        auto revToInsert        = make_retained<repl::RevToInsert>(slice{}, test.revID, repl::RevocationMode::kNone,
+                                                            C4CollectionSpec{}, nullptr);
         revToInsert->historyBuf = test.historyIn;
 
         // Check revToInsert.history()
         auto history = revToInsert->history();
         CHECK(history.size() == test.historyOut.size());
-        std::vector<string>::const_iterator iter = test.historyOut.begin();
+        auto iter = test.historyOut.begin();
         CHECK(std::all_of(history.begin(), history.end(),
                           [&iter](const auto& hist) { return string(hist) == *iter++; }));
 
