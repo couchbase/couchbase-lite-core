@@ -5,10 +5,13 @@
 //
 
 #pragma once
+#include "c4Document.hh"
+#include "StringUtil.hh"
 #include "VersionVector.hh"
 #include "VectorRecord.hh"
 #include "Error.hh"
 #include <iostream>
+#include <span>
 #include <vector>
 
 namespace litecore {
@@ -103,6 +106,49 @@ namespace litecore {
       private:
         /// Common code in constructor to initialize from a history array.
         void parse(const slice history[], size_t historyCount, SourceID mySourceID) {
+            std::vector<slice> splitHistory;
+            string             versionVector;
+            if ( historyCount == 1 ) {
+                const uint8_t* semi   = history[0].findByte(';');
+                bool           isList = semi || history[0].findByte(',');
+                if ( isList ) {
+                    // A history list consists multile revisions, where a revision
+                    // is either a Version or a legacy Tree revision ID, separated
+                    // by commas or semicolons, with the following constraints:
+                    // 1. All Versions must be ahead of the legacy revisions
+                    // 2. The semicolon, if present may only appear once after a Version.
+                    // Semantically, the leading Versions will be parsed to vector and the rest
+                    // will be parsed to legacy.
+
+                    slice list = history[0];
+                    if ( nullptr != semi ) {
+                        list.setStart(semi + 1);
+                        // The substring of list upto, and including the semicolon
+                        slice vv1{history[0].buf, list.buf};
+                        versionVector = vv1.asString();
+                    }
+
+                    // vv has the semicolon if there is one in history[0]
+                    // list now does not contain semicolon
+
+                    std::vector<string_view> splitted = split(list, ",");
+                    auto                     riter    = splitted.rbegin();
+                    for ( ; riter != splitted.rend(); ++riter ) {
+                        while ( riter->starts_with(' ') ) riter->remove_prefix(1);
+                        if ( RevIDType::Tree != C4Document::typeOfRevID(*riter) ) break;
+                    }
+                    auto treeCount = riter - splitted.rbegin();
+                    versionVector += join(std::span{splitted.begin(), splitted.size() - treeCount}, ",");
+                    splitHistory.push_back(versionVector);
+                    if ( riter != splitted.rbegin() )
+                        for ( auto iter = riter.base(); iter != splitted.end(); ++iter ) splitHistory.push_back(*iter);
+
+                    // !!Note!! the input arguments, history and historyCount, are modified
+                    history      = splitHistory.data();
+                    historyCount = splitHistory.size();
+                }  // if isList
+            }
+
             // The last history item(s) may be legacy tree-based revids:
             while ( historyCount > 0 ) {
                 revidBuffer lastHistory(history[historyCount - 1]);

@@ -11,14 +11,17 @@
 //
 
 #include "VersionVector.hh"
+#include "VersionVectorWithLegacy.hh"
 #include "Endian.hh"
 #include "HybridClock.hh"
+#include "ReplicatorTypes.hh"
 #include "RevTree.hh"
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
 #include "slice_stream.hh"
 #include <iomanip>
 #include <thread>
+
 
 using namespace litecore;
 using namespace std;
@@ -1424,5 +1427,78 @@ TEST_CASE("merge vs MergeWithIncomingHLV") {
         auto          mergedWithFinalSrcID = padTo22(toGlobalSourceID(merged, finalSrcID));
 
         CHECK(mergedWithFinalSrcID == expectedHLV.asASCII().asString());
+    }
+}
+
+TEST_CASE("VersionVecWithLegacy") {
+    struct Test {
+        alloc_slice    revID;
+        alloc_slice    historyIn;
+        vector<string> historyOut;
+        alloc_slice    vectorResult;
+        vector<string> legacyResult;
+    };
+
+    static const string ab = "AliceAliceAliceAliceAA";
+    static const string cd = "BobBobBobBobBobBobBobA";
+    static const string ef = "DaveDaveDaveDaveDaveDA";
+    static const string xy = "ZegpoldZegpoldZegpoldA";
+
+    vector<Test> tests{{alloc_slice("100@" + ab),
+                        alloc_slice("4@" + cd + ", 5@" + ef + "; 3@" + xy + ", 1-ab, 2-dc"),
+                        {"100@" + ab + ", 4@" + cd + ", 5@" + ef + "; 3@" + xy + ", 1-ab, 2-dc"},
+                        alloc_slice("100@AliceAliceAliceAliceAA, 4@BobBobBobBobBobBobBobA, 5@DaveDaveDaveDaveDaveDA; "
+                                    "3@ZegpoldZegpoldZegpoldA"),
+                        {"1-ab", "2-dc"}},
+
+                       {alloc_slice("100@" + ab),
+                        alloc_slice("4@" + cd + ", 5@" + ef + ", 3@" + xy + ", 1-ab, 2-dc"),
+                        {"100@" + ab + "; 4@" + cd + ", 5@" + ef + ", 3@" + xy + ", 1-ab, 2-dc"},
+                        alloc_slice("100@AliceAliceAliceAliceAA; 4@BobBobBobBobBobBobBobA, 5@DaveDaveDaveDaveDaveDA, "
+                                    "3@ZegpoldZegpoldZegpoldA"),
+                        {"1-ab", "2-dc"}},
+
+                       {alloc_slice("100@" + ab),
+                        alloc_slice("1-ab, 2-dc"),
+                        {"100@" + ab + "; 1-ab, 2-dc"},
+                        alloc_slice("100@AliceAliceAliceAliceAA"),
+                        {"1-ab", "2-dc"}},
+
+                       {alloc_slice("100@" + ab),                   // revID
+                        alloc_slice(""),                            // historyBuf
+                        {"100@" + ab},                              // RevToInsert::history()
+                        alloc_slice("100@AliceAliceAliceAliceAA"),  // VersionVecWithLegacy::vector
+                        {}},                                        //VersionVecWithLegacy::legacy
+
+                       {alloc_slice("3-3f"),
+                        alloc_slice("1-ab, 2-dc"),
+                        {"3-3f", "1-ab", "2-dc"},
+                        alloc_slice(""),
+                        {"3-3f", "1-ab", "2-dc"}}};
+
+    for ( const auto& test : tests ) {
+        auto revToInsert        = make_retained<repl::RevToInsert>(slice{}, test.revID, repl::RevocationMode::kNone,
+                                                            C4CollectionSpec{}, nullptr);
+        revToInsert->historyBuf = test.historyIn;
+
+        // Check revToInsert.history()
+        auto history = revToInsert->history();
+        CHECK(history.size() == test.historyOut.size());
+        auto iter = test.historyOut.cbegin();
+        CHECK(std::all_of(history.begin(), history.end(),
+                          [&iter](const auto& hist) { return string(hist) == *iter++; }));
+
+        // Prepare for VersionVecWithLegacy which requires array of slices.
+        vector<slice> historySlice;
+        std::transform(history.cbegin(), history.cend(), std::back_inserter(historySlice),
+                       [](const auto& hist) { return slice(hist); });
+
+        VersionVecWithLegacy vvl(historySlice.data(), historySlice.size(), kMeSourceID);
+        CHECK(vvl.vector.asASCII() == test.vectorResult);
+
+        vector<string> legacy;
+        std::transform(vvl.legacy.cbegin(), vvl.legacy.cend(), std::back_inserter(legacy),
+                       [](const auto& rev) { return revid(rev).str(); });
+        CHECK(legacy == test.legacyResult);
     }
 }
