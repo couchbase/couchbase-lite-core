@@ -21,7 +21,6 @@
 #include <chrono>
 #include <limits>
 #include <numeric>
-#include "date/date.h"
 #include "ParseDate.hh"
 #include "SecureDigest.hh"
 #include <functional>
@@ -1818,40 +1817,42 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
-    constexpr date::local_seconds localtime      = date::local_days{date::year(2018) / 10 / 23};
-    tm                            tmpTime        = FromTimestamp(localtime.time_since_epoch());
-    const seconds                 offset_seconds = GetLocalTZOffset(&tmpTime, false);
-    date::local_seconds           utc_time       = localtime - offset_seconds;
+    constexpr local_seconds localtime      = local_days{year(2018) / 10 / 23};
+    tm                      tmpTime        = FromTimestamp(localtime.time_since_epoch());
+    const seconds           offset_seconds = GetLocalTZOffset(&tmpTime, false);
+    local_seconds           utc_time       = localtime - offset_seconds;
 
     // MILLIS_TO_STR() result should be in localtime.
-    stringstream                  mil_to_str;
-    constexpr date::local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
-    mil_to_str << date::format("%FT%T", mil_to_str_time + offset_seconds);
+    stringstream            mil_to_str;
+    constexpr local_seconds mil_to_str_time = localtime + 18h + 33min + 1s;
+    mil_to_str << std::format("{:%FT%T}", mil_to_str_time + offset_seconds);
     if ( offset_seconds.count() == 0 ) {
         mil_to_str << "Z";
     } else {
-        to_stream(mil_to_str, "%z", mil_to_str_time, nullptr, &offset_seconds);
+        char     sign = offset_seconds.count() < 0 ? '-' : '+';
+        hh_mm_ss hms{sign == '-' ? -offset_seconds : offset_seconds};
+        mil_to_str << std::format("{}{:02}{:02}", sign, hms.hours().count(), hms.minutes().count());
     }
     const auto mil_to_str_expected = mil_to_str.str();
 
     // These are all for STR_TO_UTC
     stringstream s1, s2, s3, s5;
     stringstream s1iso, s2iso, s3iso;
-    s1 << date::format("%F", utc_time);
-    s1iso << date::format("%FT%TZ", utc_time);
+    s1 << std::format("{:%F}", utc_time);
+    s1iso << std::format("{:%FT%TZ}", utc_time);
     utc_time += 18h + 33min;
-    s2 << date::format("%FT%TZ", utc_time);
-    s2iso << date::format("%FT%TZ", utc_time);
+    s2 << std::format("{:%FT%TZ}", utc_time);
+    s2iso << std::format("{:%FT%TZ}", utc_time);
     utc_time += 1s;
-    s3 << date::format("%FT%T", utc_time);
-    s3iso << date::format("%FT%TZ", utc_time);
-    s5 << date::format("%FT%TZ", utc_time);
+    s3 << std::format("{:%FT%T}", utc_time);
+    s3iso << std::format("{:%FT%TZ}", utc_time);
+    s5 << std::format("{:%FT%TZ}", utc_time);
 
-    constexpr date::local_seconds localtime2 = date::local_days{date::year(1944) / 6 / 6} + 6h + 30min;
-    tmpTime                                  = FromTimestamp(localtime2.time_since_epoch());
-    utc_time                                 = localtime2 - GetLocalTZOffset(&tmpTime, false);
+    constexpr local_seconds localtime2 = local_days{year(1944) / 6 / 6} + 6h + 30min;
+    tmpTime                            = FromTimestamp(localtime2.time_since_epoch());
+    utc_time                           = localtime2 - GetLocalTZOffset(&tmpTime, false);
     stringstream s4;
-    s4 << date::format("%FT%TZ", utc_time);
+    s4 << std::format("{:%FT%TZ}", utc_time);
 
     auto expected1    = s1.str();
     auto expected2    = s2.str();
