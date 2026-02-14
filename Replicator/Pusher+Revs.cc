@@ -63,7 +63,7 @@ namespace {
 namespace litecore::repl {
 
     void Pusher::maybeSendMoreRevs() {
-        while ( _revisionsInFlight < tuning::kMaxRevsInFlight
+        while ( _revisionsInFlight < _options->maxRevsInFlight()
                 && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply && !_revQueue.empty() ) {
             Retained<RevToSend> first = std::move(_revQueue.front());
             _revQueue.pop_front();
@@ -82,7 +82,7 @@ namespace litecore::repl {
         if ( !connected() ) return;
 
         logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%u/%u]", SPLAT(request->docID), SPLAT(request->revID),
-                   (uint64_t)request->sequence, _revisionsInFlight, tuning::kMaxRevsInFlight);
+                   (uint64_t)request->sequence, _revisionsInFlight, _options->maxRevsInFlight());
 
         // Get the document & revision:
         C4Error              c4err = {};

@@ -19,6 +19,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include "NumConversion.hh"
+#include "ReplicatorTuning.hh"
 #include <unordered_map>
 
 namespace litecore::repl {
@@ -138,6 +139,18 @@ namespace litecore::repl {
             return boolProperty(kC4ReplicatorOptionAcceptParentDomainCookies);
         }
 
+        unsigned maxRevsBeingRequested() const {
+            return uintProperty(kC4ReplicatorOptionMaxRevsBeingRequested, tuning::kDefaultMaxRevsBeingRequested);
+        }
+
+        unsigned maxIncomingRevs() const {
+            return uintProperty(kC4ReplicatorOptionMaxIncomingRevs, tuning::kDefaultMaxIncomingRevs);
+        }
+
+        unsigned maxRevsInFlight() const {
+            return uintProperty(kC4ReplicatorOptionMaxRevsInFlight, tuning::kDefaultMaxRevsInFlight);
+        }
+
         /** Returns a string that uniquely identifies the remote database; by default its URL,
             or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */
         fleece::slice remoteDBIDString(fleece::slice remoteURL) const {
@@ -190,6 +203,11 @@ namespace litecore::repl {
         Options& setNoPropertyDecryption() { return setProperty(kC4ReplicatorOptionDisablePropertyDecryption, true); }
 
         bool boolProperty(slice property) const { return properties[property].asBool(); }
+
+        unsigned uintProperty(slice property, unsigned dflt) const {
+            auto val = properties[property];
+            return val.isInteger() ? unsigned(val.asUnsigned()) : dflt;
+        }
 
         explicit operator std::string() const;
 

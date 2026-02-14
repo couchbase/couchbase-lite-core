@@ -43,7 +43,8 @@ namespace litecore::repl {
         , _revMailbox(nullptr, "Puller revisions")
 #endif
         , _inserter(new Inserter(replicator, coll))
-        , _revFinder(new RevFinder(replicator, this, coll)) {
+        , _revFinder(new RevFinder(replicator, this, coll))
+        , _maxIncomingRevs(_options->maxIncomingRevs()) {
         setParentObjectRef(replicator->getObjectRef());
         replicator->registerWorkerHandler(this, "rev", &Puller::handleRev);
         replicator->registerWorkerHandler(this, "norev", &Puller::handleNoRev);
@@ -146,7 +147,7 @@ namespace litecore::repl {
     void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
         for ( auto& rev : revs ) {
             if ( _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
-                 && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
+                 && _unfinishedIncomingRevoked < _maxIncomingRevs ) {
                 startRevoked(rev);
             } else {
                 logDebug("Delaying handling revocation for '%.*s' [%zu waiting]", SPLAT(rev->docID),
@@ -159,8 +160,7 @@ namespace litecore::repl {
 
     // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
-        if ( _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-             && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs ) {
+        if ( _activeIncomingRevs < tuning::kMaxActiveIncomingRevs && _unfinishedIncomingRevs < _maxIncomingRevs ) {
             startIncomingRev(msg);
         } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]", SPLAT(msg->property("id"_sl)),
@@ -231,7 +231,7 @@ namespace litecore::repl {
 
     void Puller::maybeStartIncomingRevs() {
         while ( connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-                && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs && !_waitingRevMessages.empty() ) {
+                && _unfinishedIncomingRevs < _maxIncomingRevs && !_waitingRevMessages.empty() ) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
             if ( _waitingRevMessages.empty() ) {
@@ -241,7 +241,7 @@ namespace litecore::repl {
             startIncomingRev(msg);
         }
         while ( !_waitingRevoked.empty() && _activeIncomingRevoked < tuning::kMaxActiveIncomingRevs
-                && _unfinishedIncomingRevoked < tuning::kMaxIncomingRevs ) {
+                && _unfinishedIncomingRevoked < _maxIncomingRevs ) {
             auto rev = _waitingRevoked.front();
             _waitingRevoked.pop_front();
             if ( _waitingRevMessages.empty() ) { logVerbose("Back pressure ended for revocations"); }
@@ -298,7 +298,7 @@ namespace litecore::repl {
             _revFinder->revokedHandled(numRevoked);
         }
 
-        ssize_t capacity = tuning::kMaxIncomingRevs - narrow_cast<ssize_t>(_spareIncomingRevs.size());
+        ssize_t capacity = _maxIncomingRevs - narrow_cast<ssize_t>(_spareIncomingRevs.size());
         if ( capacity > 0 )
             _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(),
                                       revs->begin() + min(capacity, narrow_cast<ssize_t>(revs->size())));

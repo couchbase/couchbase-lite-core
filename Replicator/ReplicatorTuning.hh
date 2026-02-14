@@ -48,17 +48,19 @@ namespace litecore::repl::tuning {
     constexpr bool kChangesReplacementRevs = true;
 
     /* Maximum desirable number of incoming `rev` messages that aren't being handled yet.
-            Past this number, the puller will stop handling or responding to `changes` messages,
-            to attempt to stop getting more `revs`. */
-    constexpr unsigned kMaxRevsBeingRequested = 200;
+        Past this number, the puller will stop handling or responding to `changes` messages,
+        to attempt to stop getting more `revs`.
+        Can be overridden by the replicator option \ref kC4ReplicatorOptionMaxRevsBeingRequested */
+    constexpr unsigned kDefaultMaxRevsBeingRequested = 200;
 
     /* Maximum number of simultaneous incoming revisions.
-           Each one is assigned an IncomingRev actor, so larger values increase memory usage
-           and also parallelism. */
-    constexpr unsigned kMaxIncomingRevs = 200;
+        Each one is assigned an IncomingRev actor, so larger values increase memory usage
+        and also parallelism.
+        Can be overridden by the replicator option \ref kC4ReplicatorOptionMaxIncomingRevs */
+    constexpr unsigned kDefaultMaxIncomingRevs = 200;
 
     /* Maximum number of incoming revisions that haven't yet been inserted into the database
-           (and are thus holding onto the document bodies in memory.) */
+        (and are thus holding onto the document bodies in memory.) */
     constexpr unsigned kMaxActiveIncomingRevs = 100;
 
 
@@ -76,8 +78,9 @@ namespace litecore::repl::tuning {
             stop querying for more lists of changes. */
     constexpr unsigned kMaxRevsQueued = 600;
 
-    /* Max # of `rev` messages to be transmitting at once. */
-    constexpr unsigned kMaxRevsInFlight = 10;
+    /* Max # of `rev` messages to be transmitting at once.
+        Can be overridden by the replicator option \ref kC4ReplicatorOptionMaxRevsInFlight */
+    constexpr unsigned kDefaultMaxRevsInFlight = 10;
 
     /* Max desirable number of bytes of revisions that have been sent but not replied to
             yet. This is limited to avoid flooding the peer with too much JSON data. */

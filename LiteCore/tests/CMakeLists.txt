@@ -110,18 +110,20 @@ if (BUILD_ENTERPRISE)
     set(EE_SRC ../../../couchbase-lite-core-EE)
     target_sources(
         CppTests PRIVATE
-        ${EE_SRC}/Listener/tests/SyncListenerTest.cc
+        ${EE_SRC}/P2P/tests/BonjourTest.cc
         ${EE_SRC}/P2P/tests/PeerDiscoveryTest.cc
-        ${EE_SRC}/P2P/tests/PeerMeshTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest.cc
         ${EE_SRC}/P2P/tests/MultipeerTest_C.cc
+        ${EE_SRC}/P2P/tests/PeerMeshTest.cc
         ${EE_SRC}/P2P/tests/SocketFactoryTest.cc
+        ${EE_SRC}/Listener/tests/SyncListenerTest.cc
     )
     target_include_directories(
         CppTests PRIVATE
         ${EE_SRC}/Listener
         ${EE_SRC}/P2P
         ${EE_SRC}/P2P/Apple
+        ${EE_SRC}/P2P/DNS_SD
     )
 endif()
 
