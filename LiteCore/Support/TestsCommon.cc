@@ -22,6 +22,7 @@
 #include <fstream>
 #include <mutex>
 #include <thread>
+#include <filesystem>
 
 #ifdef _MSC_VER
 #    include <atlbase.h>
@@ -34,20 +35,6 @@ using namespace std;
 using namespace litecore;
 using namespace fleece;
 
-FilePath GetSystemTempDirectory() {
-#ifdef _MSC_VER
-    WCHAR pathBuffer[MAX_PATH + 1];
-    GetTempPathW(MAX_PATH, pathBuffer);
-    GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
-    CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
-    return litecore::FilePath(convertedPath.m_psz);
-#else   // _MSC_VER
-    const char* tmp = getenv("TMPDIR");
-    if ( !tmp ) tmp = "/tmp";
-    return {tmp};
-#endif  // _MSC_VER
-}
-
 FilePath GetTempDirectory() {
     static FilePath  kTempDir;
     static once_flag f;
@@ -56,7 +43,7 @@ FilePath GetTempDirectory() {
         char             folderName[bufSize];
         snprintf(folderName, bufSize, "LiteCore_Tests_%" PRIms ".cblite2/",
                  chrono::milliseconds(time(nullptr)).count());
-        kTempDir = GetSystemTempDirectory()[folderName];
+        kTempDir = filesystem::temp_directory_path() / folderName;
         (void)kTempDir.mkdir();  // it's OK if it already exists
     });
 
