@@ -16,7 +16,7 @@ pipeline {
                     }
                 }
                 stage("iOS") {
-                    agent { label 'sonoma' }
+                    agent { label 'sequoia' }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
                         KEYCHAIN_PWD = credentials("keychain-password")
@@ -40,7 +40,7 @@ pipeline {
                    }
                 }
                 stage("macOS") {
-                    agent { label 'sonoma'  }
+                    agent { label 'sequoia'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
                         GH_PAT = credentials("cbl-bot-github-pat")
