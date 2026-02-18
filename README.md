@@ -1,45 +1,9 @@
-**Couchbase Lite Core** (aka **LiteCore**) is the core storage and query engine for [Couchbase Lite][CBL]. It provides a cross-platform implementation of the database CRUD and query features, document versioning, and replication/sync.
+**Couchbase Lite Core** (aka **LiteCore**) is the core engine for [Couchbase Lite][CBL]. It provides a cross-platform implementation of the database CRUD and query features, document versioning, and replication/sync.
 
-All platform implementations of Couchbase Lite (from 2.0 onward) are built atop this core, adding higher-level language & platform bindings.
+All platform implementations of Couchbase Lite are built atop this core, adding higher-level language & platform bindings.
 
-**IMPORTANT:** We do _not_ recommend (or support) using LiteCore directly in other projects. Its API is unstable and can be tricky to use. Instead, use [Couchbase Lite for C][CBL_C], a cross-platform version of Couchbase Lite with a C (and C++) API.
-
-# Features
-
-* Database CRUD (Create, Read, Update, Delete) operations:
-    * Fast key-value storage, where keys and values are both opaque blobs
-    * Iteration by key order
-    * Iteration by _sequence_, reflecting the order in which changes were made to the database. (This is useful for tasks like updating indexes and replication)
-    * Multi-version document format that tracks history using a revision tree (as in CouchDB)
-    * Timed document expiration (as in Couchbase Server)
-    * API support for database encryption (as provided by SQLCipher or SQLite's Encryption Extension)
-    * Highly efficient [Fleece][FLEECE] binary data encoding: supports JSON data types but
-      requires no parsing, making it extremely efficient to read
-* Direct querying of schemaless JSON documents:
-    * Semantics based on SQL; supports most [N1QL][N1QL] functionality
-    * JSON query syntax, similar to a parse tree; easy to generate from platform APIs like NSPredicate
-    * N1QL parser that translates to the above JSON syntax
-    * Can search and index arbitrary document properties without requiring any schema
-    * Can index arrays in documents, enabling efficient denormalized one-to-many relations
-    * Queries compile into SQL and from there into SQLite compiled bytecode
-    * Parameters can be substituted without having to recompile the query
-    * Queries don't require indexes, but will run faster if indexes are created on the document
-      properties being searched
-    * Supports full-text search, using SQLite's FTS4 module
-* Replicator:
-    * Multi-master bidirectional document sync
-    * Replicator detects conflicts; temporarily stores both revisions, and notifies app-level handlers to resolve them
-    * Replicator transfers document deltas, saving bandwidth when updating large documents
-    * Uses [BLIP][BLIP] multiplexing protocol over WebSockets
-    * Pluggable transports mean it could run over Bluetooth or other protocols
-* REST API:
-    * Implements a _subset_ of the CouchDB / Sync Gateway / Couchbase Lite REST API
-    * Currently incomplete; not ready for prime time
-* Pluggable storage engines:
-    * SQLite is available by default
-    * Others could be added by implementing C++ `DataFile`, `KeyStore`, `Query` interfaces
-* C and C++ APIs (rather low-level; not considered "public" APIs yet.)
-* Bindings to C# and Java (via Couchbase Lite)
+> [!CAUTION]
+> **We do _not_ recommend (or support) using LiteCore directly in other projects.** Its API is unstable and can be tricky to use. Instead, use [Couchbase Lite for C][CBL_C], a cross-platform version of Couchbase Lite with a C (and C++) API.
 
 # Platform Support
 
@@ -47,11 +11,7 @@ LiteCore runs on Mac OS, iOS, Android, various other flavors of Unix, and Window
 
 It is written in C++ (using C++20 features) and compiles with Clang, G++ and MSVC.
 
-It has been experimentally built and run on the Raspberry Pi but this is not an actively maintained use.
-
-# Status
-
-**As of June 2020:** LiteCore is in active use as the engine of Couchbase Lite 2! Development continues...
+# Branches and CI
 
 * Active development usually happens on the `master` branch, which may therefore be temporarily broken.
 * There are various `release` branches (prefixed with `release/`, *except* for `release/master` which will be in the next point) which track along with releases of Couchbase Lite in the following manner until 3.1.x, which will start using `release/x.y`:
@@ -62,37 +22,47 @@ It has been experimentally built and run on the Raspberry Pi but this is not an 
   * `release/lithium` : 3.0.x
 * `release/master` tracks the latest stable master commit (with integration tests into Couchbase Lite), and `staging/master` is a place for candidates for a stable master build.
 * PR validation ensures that things keep building and passing tests (where possible) on all supported platforms.
-* CMake is available and used for all platforms except for iOS.  There is also an Xcode project that is independently maintained in the `Xcode` folder.
+* GitHub CI builds the Community Edition (CE). The "continuous-integration/jenkins/pr-head" check is an external one that runs on our Jenkins servers. This is actually multiple checks that build the Enterprise Edition (EE).
+* CMake is available and used for all platforms except for iOS. The CLion IDE is supported. There is also an Xcode project in the `Xcode` folder.
 
 # Building It
 
-We do _not_ recommend (or support) using LiteCore directly in other projects. Its API is unstable and can be tricky to use. (Instead see [Couchbase Lite for C][CBL_C], a cross-platform version of Couchbase Lite with a C (and C++) API.) The build instructions here are for the benefit of developers who want to debug or extend Couchbase Lite at the LiteCore level.
+> [!CAUTION]
+> Again, we do _not_ recommend (or support) using LiteCore directly in other projects. Its API is unstable and can be tricky to use. (Instead see [Couchbase Lite for C][CBL_C], a cross-platform version of Couchbase Lite with a C (and C++) API.) The build instructions here are for the benefit of developers who want to debug or extend Couchbase Lite at the LiteCore level.
 
-**Very Important:**
+> [!IMPORTANT]
+> This repo has **submodules**. Make sure they're checked out. Either use `git clone --recursive` to download LiteCore, or else after the clone run `git submodule update --init --recursive`.
 
-* This repo has **submodules**. Make sure they're checked out. Either use `git clone --recursive` to download LiteCore, or else after the clone run `git submodule update --init --recursive`.
+Building the Enterprise Edition (EE) requires the separate `couchbase-lite-core-EE` repo, which is private and available only to Couchbase employees. This must be checked out _next to_ `couchbase-lite-core` so that relative paths between them work correctly.
 
 Once you've cloned or downloaded the source tree...
 
 ## macOS, iOS
 
-If you want to use Objective-C or Swift APIs, you should use Couchbase Lite instead — check out and build the [couchbase-lite-ios][CBL_iOS_2] repo, which itself includes LiteCore as a submodule.
+### With CLion:
 
-The following instructions are to build just LiteCore on its own:
+* Open the repo's root directory with CLion.
+* Choose CMake as the build system if asked.
+* CLion should run the CMake scripts.
+* Select the appropriate CMake profile, usually "Debug CE", from the menu at the top of the window.
+* Choose "CppTests" or "C4Tests" from the configurations menu at the top of the window.
+* Choose _Run>Run CppTests_.
+
+### With Xcode
+
+> [!TIP]
+> Xcode's UI is pretty flaky with large C++ projects like this. It builds correctly, but you may see errors that don't exist, especially if you're building EE. CLion is more stable.
 
 * Make sure you have Xcode **15** or later.
 * Open **Xcode/LiteCore.xcodeproj**. 
 * Select the scheme **LiteCore static** or **LiteCore dylib**. 
 * Choose _Product>Build_ (for a debug build) or _Product>Build For>Profiling_ (for a release/optimized build).
-* Link the build product `libLiteCoreStatic.a` or `libLiteCore.dylib` into your target.
-
-### Testing
-
-In the Xcode project, choose the scheme **CppTests** and run it. Then run **C4Tests** too.
+* To run unit tests, choose the scheme **CppTests** and run it. Then run **C4Tests** too.
 
 ## Linux
 
-**Important!** LiteCore uses a couple of external libraries, which may or may not be installed in your system already. If not, please install the appropriate development packages via your package manager. You must have the following libraries present:
+> [!IMPORTANT]
+> LiteCore uses a couple of external libraries, which may or may not be installed in your system already. If not, please install the appropriate development packages via your package manager. You must have the following libraries present:
     
 - libz
 - libicu
@@ -144,7 +114,8 @@ make C4Tests
 (cd C/tests && ./C4Tests -r quiet)
 ```
 
-> Note: If you encounter a failure in one of the Fleece encoder tests, it's likely because your system doesn't have the French locale installed. Run `sudo localedef -v -c -i fr_FR -f UTF-8 fr_FR`.
+> [!TIP]
+> If you encounter a failure in one of the Fleece encoder tests, it's likely because your system doesn't have the French locale installed. Run `sudo localedef -v -c -i fr_FR -f UTF-8 fr_FR`.
 
 ## Android
 
@@ -195,36 +166,43 @@ Open the Visual Studio 2022 Developer Command Prompt and navigate to the repo ro
     
 This will create `LiteCore.sln` in the directory that you can open with Visual Studio.  Swap `x64` with `ARM64` in the above to get a 64-bit ARM build.  `Win32` and `ARM` will also build but are no longer supported.  
 
-# Git Blame
+# Working On LiteCore
 
-If you are inspecting the Blame of this project, you may find it useful to run:
+There are several [overview documentation files][DOCS] in the repo, and more in the [LiteCore wiki][WIKI].
+
+If you use `git blame`, you may find it useful to run:
 ```shell
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
-This will ignore any commits that we have marked as such in that file (formatting, etc.)
+This will ignore any commits that we have marked as such in that file, such as ones that make global formatting changes.
 
-# Documentation
+## Unit Tests
 
-## API
+We use the Catch2 framework for unit tests. If it's new to you, you can pick up the basics by looking at existing tests, but you might also want to [RTFM][CATCH2]. We also have a bunch of test-related utilities in `c4Test.hh` and `TestsCommon.hh`.
 
-The C API headers are in `C/include/`. Generally you just need to include `c4.h`.
+> [!TIP]
+> To run a single test, add its name to the command line. Or to run all tests with a particular tag, add the tag name in square brackets. In Xcode, you can edit the command line in the scheme editor's "Arguments" tab. In CLion you can just click the green arrow in the left margin next to the test's first line.
 
-We have [online C API documentation](https://couchbase.github.io/couchbase-lite-core/C/html/modules.html), generated by Doxygen from the headers.
+## Development Workflow
 
-If this is out of date, or you want a local copy, you can generate your own by running the following commands from a shell at the root directory of the repo:
-
-    cd C
-    doxygen
-    
-The main page is then located at `../docs/C/html/modules.html`.
-
-**The C API is considered unstable** and may change without notice, since it's considered an internal API of Couchbase Lite.
-
-**Do not call any C++ APIS**, nor include any headers not in `C/include/` -- these are the underlying implementation beneath the C API. They are even more unstable, expose internal functionality we don't support, and may blow up if used incorrectly. The exception is `c4.hh`, which provides some handy C++ wrappers around the C API and will make your life more pleasant if you code in C++.
-
-## Internal Implementation
-
-For those interested in diving into the implementation, there is [an overview of the major classes](https://github.com/couchbase/couchbase-lite-core/blob/master/docs/overview/index.md).
+- Create a branch from the appropriate source branch, such as `master` or a release branch. If appropriate, use a name prefix like `fix/` for bug fixes or `feature/` for new functionality. If there is a JIRA ticket associated with this work, it's customary to put its ID in the branch name.
+- Make your changes. Add or modify unit tests if appropriate.
+- Making WIP commits and pushing to GitHub periodically is a good way to back up your work!
+- Run both CppTests and C4Tests in debug mode; both must pass. (Note: we sometimes have flaky tests. If a test unrelated to your changes fails, ask on the #mobile-litecore Slack channel.)
+- If your PR creates, renames or moves `.cc` files, both the CMake scripts _and_ the Xcode project need to be updated. CMake usually doesn't care about `.hh` files, but Xcode does. Remember to update whichever build system you didn't use, or CI will report build errors! If you need help, ask on #mobile-litecore.
+- Run `./build_cmake/scripts/run-clang-format.sh` to reformat your changes.
+- Commit the changes. If you've got intermediate WIP commits, flatten them into one with interactive rebase. (Multiple commits are OK if you've made several changes that might be easier to review separately.) Make the commit title and message descriptive, and append the Jira ticket ID if any to the title.
+- If by now there are newer commits on the parent branch, pull them in 'rebase' mode; then reformat, rebuild and re-test.
+- Push your branch to GitHub and create a pull request. Please make the PR title and description, um, descriptive. Include the Jira ticket ID.
+- If there's a Jira ticket, add a comment with a link to the PR.
+- Wait for the CI checks to finish.
+  - You did remember to run clang-format, right?
+  - If a platform build fails, drill into the logs to see what went wrong. Searching for "error" or "error:" is often useful.
+  - The "continuous-integration/jenkins/pr-head" check is an external one that runs on our Jenkins servers. This is actually multiple checks that build Enterprise Edition (EE). The Jenkins page will show a flowchart at the top with red for failed builds; click on those to show their logs. If a problem appears here but not in the GitHub CI checks, it might be specific to EE builds, i.e. code inside `#ifdef COUCHBASE_ENTERPRISE` blocks.
+  - Many compile errors are caused by missing `#include`s; the various C++ library implementations vary in which headers include which other ones, so sometimes your local compiler lets you get away without explicitly including a header you need, but another compiler won't.
+  - Other build errors may be caused by warnings from a different compiler. In general, Clang is the strictest because we've turned on nearly all warnings and `-Werror`. Hopefully the warning will make sense.
+- Once CI is green, request a code review from an appropriate senior engineer.
+- When the PR is approved, rebase & merge it!
 
 # Current Authors
 
@@ -239,3 +217,6 @@ The source code in this repo is governed by the [BSL 1.1](LICENSE.txt) license.
 [N1QL]: https://www.couchbase.com/n1ql
 [FLEECE]: https://github.com/couchbaselabs/fleece
 [BLIP]: https://github.com/couchbase/couchbase-lite-core/blob/master/Networking/BLIP/README.md
+[DOCS]: https://github.com/couchbase/couchbase-lite-core/blob/master/docs/overview/index.md
+[WIKI]: https://github.com/couchbase/couchbase-lite-core/wiki
+[CATCH2]: https://catch2-temp.readthedocs.io/en/latest/
