@@ -23,12 +23,14 @@ var searchData=
   ['c4listenertypes_2eh_20',['c4ListenerTypes.h',['../c4_listener_types_8h.html',1,'']]],
   ['c4log_2eh_21',['c4Log.h',['../c4_log_8h.html',1,'']]],
   ['c4observer_2eh_22',['c4Observer.h',['../c4_observer_8h.html',1,'']]],
-  ['c4predictivequery_2eh_23',['c4PredictiveQuery.h',['../c4_predictive_query_8h.html',1,'']]],
-  ['c4query_2eh_24',['c4Query.h',['../c4_query_8h.html',1,'']]],
-  ['c4querytypes_2eh_25',['c4QueryTypes.h',['../c4_query_types_8h.html',1,'']]],
-  ['c4replicator_2eh_26',['c4Replicator.h',['../c4_replicator_8h.html',1,'']]],
-  ['c4replicatortypes_2eh_27',['c4ReplicatorTypes.h',['../c4_replicator_types_8h.html',1,'']]],
-  ['c4socket_2eh_28',['c4Socket.h',['../c4_socket_8h.html',1,'']]],
-  ['c4sockettypes_2eh_29',['c4SocketTypes.h',['../c4_socket_types_8h.html',1,'']]],
-  ['compilersupport_2eh_30',['CompilerSupport.h',['../_compiler_support_8h.html',1,'']]]
+  ['c4peersync_2eh_23',['c4PeerSync.h',['../c4_peer_sync_8h.html',1,'']]],
+  ['c4peersynctypes_2eh_24',['c4PeerSyncTypes.h',['../c4_peer_sync_types_8h.html',1,'']]],
+  ['c4predictivequery_2eh_25',['c4PredictiveQuery.h',['../c4_predictive_query_8h.html',1,'']]],
+  ['c4query_2eh_26',['c4Query.h',['../c4_query_8h.html',1,'']]],
+  ['c4querytypes_2eh_27',['c4QueryTypes.h',['../c4_query_types_8h.html',1,'']]],
+  ['c4replicator_2eh_28',['c4Replicator.h',['../c4_replicator_8h.html',1,'']]],
+  ['c4replicatortypes_2eh_29',['c4ReplicatorTypes.h',['../c4_replicator_types_8h.html',1,'']]],
+  ['c4socket_2eh_30',['c4Socket.h',['../c4_socket_8h.html',1,'']]],
+  ['c4sockettypes_2eh_31',['c4SocketTypes.h',['../c4_socket_types_8h.html',1,'']]],
+  ['compilersupport_2eh_32',['CompilerSupport.h',['../_compiler_support_8h.html',1,'']]]
 ];
