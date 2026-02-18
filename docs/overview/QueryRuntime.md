@@ -1,6 +1,6 @@
 # How Queries Are Run
 
-After [translating](./QueryTranslator.md) a N1QL (or JSON) query to SQL, there are still several differences between the query languages that have to be handled at runtime:
+After [translating](QueryTranslator.md) a N1QL (or JSON) query to SQL, there are still several differences between the query languages that have to be handled at runtime:
 
 - Extracting property values from the document body
 - Representing runtime values of N1QL/Fleece data types not known to SQL: `null` (not the same as SQL `NULL`!), booleans, arrays and dicts/objects

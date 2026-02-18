@@ -33,7 +33,7 @@ namespace litecore {
 #ifdef COUCHBASE_ENTERPRISE
 
     // Vector search index for ML / predictive query, using the vectorsearch extension.
-    // https://github.com/couchbaselabs/mobile-vector-search/blob/main/README_Extension.md
+    // https://github.com/couchbaselabs/mobile-vector-search/blob/main/docs/Extension.md
 
     // Creates a vector-similarity index.
     bool SQLiteKeyStore::createVectorIndex(const IndexSpec& spec) {

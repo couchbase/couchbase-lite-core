@@ -1560,7 +1560,6 @@
 		2787D9392DB2FC4E004F7D9B /* c4PeerSyncTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PeerSyncTypes.h; sourceTree = "<group>"; };
 		2787D93C2DB2FCDA004F7D9B /* c4PeerDiscovery.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerDiscovery.cc; sourceTree = "<group>"; };
 		2787D93D2DB2FCDA004F7D9B /* c4PeerSync.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerSync.cc; sourceTree = "<group>"; };
-		2787D93E2DB2FCDA004F7D9B /* ExamplePeerDiscoveryProvider.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ExamplePeerDiscoveryProvider.cc; sourceTree = "<group>"; };
 		2787D93F2DB2FCDA004F7D9B /* Mesh.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Mesh.hh; sourceTree = "<group>"; };
 		2787D9402DB2FCDA004F7D9B /* Mesh.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Mesh.cc; sourceTree = "<group>"; };
 		2787D9412DB2FCDA004F7D9B /* MultiPeer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultiPeer.hh; sourceTree = "<group>"; };
@@ -1753,7 +1752,6 @@
 		27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DocumentKeys.hh; sourceTree = "<group>"; };
 		27E19D652316EDEA00E031F8 /* RESTClientTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RESTClientTest.cc; sourceTree = "<group>"; };
 		27E2BAEB2F23FFE400B6A8AC /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
-		27E2BAEC2F23FFE400B6A8AC /* P2P Architecture.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "P2P Architecture.md"; sourceTree = "<group>"; };
 		27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingRev.cc; sourceTree = "<group>"; };
 		27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingRev.hh; sourceTree = "<group>"; };
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
@@ -1775,6 +1773,11 @@
 		27E89BA51D679542002C32B3 /* FilePath.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FilePath.hh; sourceTree = "<group>"; };
 		27ECCB011D89DCDB00FA8C4A /* Doxyfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Doxyfile; sourceTree = "<group>"; };
 		27EDA9451FB2B9700023FBB9 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		27EE2C212F4543FA00E84664 /* ExamplePeerDiscoveryProvider.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ExamplePeerDiscoveryProvider.cc; sourceTree = "<group>"; };
+		27EE2C222F4543FA00E84664 /* index.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = index.md; sourceTree = "<group>"; };
+		27EE2C232F4543FA00E84664 /* P2P Architecture.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "P2P Architecture.md"; sourceTree = "<group>"; };
+		27EE2C242F4543FA00E84664 /* Peer Discovery.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Peer Discovery.md"; sourceTree = "<group>"; };
+		27EE2C252F4543FA00E84664 /* PeerOMatic.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PeerOMatic.md; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
 		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
 		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; };
@@ -2493,10 +2496,7 @@
 			isa = PBXGroup;
 			children = (
 				2745B7CB26825F970012A17A /* index.html */,
-				277911C92C6D632F0044E660 /* QueryRuntime.md */,
-				277911CA2C6D632F0044E660 /* QueryTranslator.md */,
 				2745B7CC26825F970012A17A /* overview */,
-				277911B22C6188190044E660 /* Result.md */,
 			);
 			name = docs;
 			path = ../docs;
@@ -2507,9 +2507,12 @@
 			children = (
 				2745B7D226825F970012A17A /* index.md */,
 				2745B7CE26825F970012A17A /* Classes.md */,
+				277911C92C6D632F0044E660 /* QueryRuntime.md */,
+				277911CA2C6D632F0044E660 /* QueryTranslator.md */,
+				277911B22C6188190044E660 /* Result.md */,
 				2745B7D426825F970012A17A /* Replicator.md */,
-				2752C6AC27BC3A2E001C1B76 /* replication-protocol.adoc */,
 				27DF3BBC268672F700A57A1E /* Schema.md */,
+				2752C6AC27BC3A2E001C1B76 /* replication-protocol.adoc */,
 				2745B7D526825F970012A17A /* Block Diagram.pdf */,
 				2745B7D326825F970012A17A /* Block Diagram.png */,
 				2745B7CF26825F970012A17A /* Block Diagram.t2d */,
@@ -3387,6 +3390,18 @@
 			path = ../LiteCore;
 			sourceTree = "<group>";
 		};
+		27EE2C262F4543FA00E84664 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				27EE2C212F4543FA00E84664 /* ExamplePeerDiscoveryProvider.cc */,
+				27EE2C222F4543FA00E84664 /* index.md */,
+				27EE2C232F4543FA00E84664 /* P2P Architecture.md */,
+				27EE2C242F4543FA00E84664 /* Peer Discovery.md */,
+				27EE2C252F4543FA00E84664 /* PeerOMatic.md */,
+			);
+			path = docs;
+			sourceTree = "<group>";
+		};
 		27EF7FAB1914296D00A327B9 /* include */ = {
 			isa = PBXGroup;
 			children = (
@@ -3646,11 +3661,9 @@
 		27FD728A2D833D4800CC48BF /* P2P */ = {
 			isa = PBXGroup;
 			children = (
-				27E2BAEC2F23FFE400B6A8AC /* P2P Architecture.md */,
 				27E2BAEB2F23FFE400B6A8AC /* c4PeerDiscovery.hh */,
 				2787D93C2DB2FCDA004F7D9B /* c4PeerDiscovery.cc */,
 				2787D93D2DB2FCDA004F7D9B /* c4PeerSync.cc */,
-				2787D93E2DB2FCDA004F7D9B /* ExamplePeerDiscoveryProvider.cc */,
 				2787D93F2DB2FCDA004F7D9B /* Mesh.hh */,
 				2787D9402DB2FCDA004F7D9B /* Mesh.cc */,
 				2787D9412DB2FCDA004F7D9B /* MultiPeer.hh */,
@@ -3664,6 +3677,7 @@
 				2792465D2F1189790050E494 /* TLSCodec.hh */,
 				2792465E2F1189790050E494 /* TLSCodec.cc */,
 				27FD72852D833D4800CC48BF /* CMakeLists.txt */,
+				27EE2C262F4543FA00E84664 /* docs */,
 				2787D9512DB2FD0E004F7D9B /* DNS_SD */,
 				27FD72812D833D4800CC48BF /* Apple */,
 				27FD72842D833D4800CC48BF /* tests */,

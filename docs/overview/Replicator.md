@@ -30,11 +30,15 @@ From top to bottom, the full layering looks like:
 
 ## Concurrency
 
-The replicator is definitely the most complex part of LiteCore, and the largest source of issues. That’s primarily because of concurrency. Most of LiteCore is single-threaded by design, but the replicator needs concurrency to work efficiently, interleaving network I/O, computation, and file I/O. 
+The replicator is definitely the most complex part of LiteCore, and the largest source of issues. That’s primarily because of concurrency. Most of LiteCore is single-threaded by design, but the replicator needs concurrency to work efficiently, interleaving network I/O, computation, and SQLite calls (file I/O). 
 
 Unfortunately, concurrency is really hard. Taming it is an unsolved problem in computer science.
 
 For the most part, the replicator is based on [Actors](../../Networking/BLIP/docs/Actors.md). This allows subcomponents to run single-threaded, which simplifies their logic. Our Actor implementation schedules each method-call on a private thread pool, or on Apple platforms it uses the system `dispatch_queue` API that’s backed by an OS-managed thread pool.
+
+Some other concurrency tools:
+
+`DatabasePool` owns multiple connections to a single SQLite database file and hands them out to callers on request. A thread that needs to access the database requests a `BorrowedDatabase` instance from the pool and uses its `C4Database`. When the `BorrowedDatabase` instance goes out of scope its destructor returns the `C4Database` back to the pool. This allows multiple threads to access the database concurrently.
 
 `Batcher` is a utility used by some Actors to allow them to group multiple requests into one. A Batcher has a queue to which objects can be added very efficiently. Periodically — when the queue grows large enough, or at some interval after the first item was added — the Batcher notifies its owner, which then pops the queue’s contents as a `vector`, then processes them together.
 
@@ -83,7 +87,7 @@ The replicator implementation consists of a number of classes that work together
 		- **IncomingRev**
 		- **Inserter**
 
-There’s a single instance of these per replicator, except for IncomingRev.
+In the olden days there was a single instance of these per replicator, except for IncomingRev. But now we support replicating multiple collections. There's still only a single Replicator and DBAccess, but all the other objects are now per-collection.
 
 Even though these are internal classes, they use the LiteCore API classes instead of the lower-level implementation ones, e.g. `C4Database` instead of `litecore::DataFile`. (But they do use some private API functions found in `c4Private.h.`) This keeps the architecture cleaner.
 
@@ -104,9 +108,7 @@ As the root of the Worker tree, it gets notified about all progress changes and 
 
 ### DBAccess
 
-`DBAccess` arbitrates access to a single database instance by the other classes. Using `access_lock`, it allows only one thread at a time to obtain a reference to the `C4Database`.
-
-It also maintains a second database instance that’s used only for writes. This improves performance, since the main database instance is still available while a write transaction is in progress.
+`DBAccess` arbitrates the other classes' access to the database, using a `DatabasePool` (described above.)
 
 DBAccess also implements some higher-level operations used by the other classes, to keep those classes’ implementations simpler.
 
@@ -199,7 +201,7 @@ The sending loop is sensitive to back-pressure: if it’s writing data faster th
 
 ## WebSockets
 
-The WebSocket code is pretty independent of most of LiteCore, using only low-level support classes and Fleece. (But `C4SocketImpl` does use the C4Socket API, for obvious reasons.)
+The WebSocket code is pretty independent of most of LiteCore, using only low-level support classes and Fleece. (But `C4WebSocket` does use the C4Socket API, for obvious reasons.)
 
 ### WebSocket
 
@@ -211,11 +213,15 @@ Semi-abstract subclass of `WebSocket` that knows how to serialize and deserializ
 
 This class can operate in two different modes. In one mode it sends and receives raw bytes, and does its own WebSocket frame parsing and generation. In the other mode, it assumes someone else is doing the WebSocket parsing, so it just sends and receives the bodies of WebSocket messages.
 
-### C4SocketImpl
+### C4SocketFactory, C4Socket
 
-A concrete subclass of `WebSocketImpl` that acts as glue between `WebSocketImpl` and the `C4SocketFactory` C API which provides the platform's actual network operations.
+Public C API for custom WebSocket or HTTP implementations. A `C4SocketFactory` is a struct of function pointers, kind of like a vtable, that describes how to perform the basic operations like opening, closing, reading and writing a socket. A `C4Socket` is an opaque wrapper around an open socket using a `C4SocketFactory`.
 
-This class is used by most of the Couchbase Lite platforms, so that they can use their platform WebSocket or HTTP libraries to do the actual networking.
+Platforms use C4SocketFactory instead of relying on BuiltinWebSocket because their OS's high-level networking libraries have some beneficial features that aren't available with POSIX sockets; for example, on iOS & macOS the NSURLSession API is able to transparently move a connection between cellular and WiFi as connectivity changes.
+
+### C4WebSocket
+
+A concrete subclass of `WebSocketImpl` and `C4Socket` that acts as glue between `WebSocketImpl` and the public `C4SocketFactory` C API which provides the platform's actual network operations.
 
 ### BuiltInWebSocket
 
@@ -223,10 +229,17 @@ A batteries-included subclass of `WebSocketImpl` that does its own networking, u
 
 It supports POSIX and Windows socket APIs, thanks to a 3rd party library called `sockpp`. For TLS it uses `mbedTLS`.
 
-This class is used by Couchbase Lite For C and by the `cblite` CLI tool.
+This class is used for incoming socket connections in the replication listener. It's also used for all connections by Couchbase Lite For C and the `cblite` CLI tool.
 
 ### LoopbackWebSocket
 
-An entirely different implementation of the `WebSocket` interface that simply passes the messages in memory between two instances of itself. 
+An entirely different, trivial implementation of the `WebSocket` interface that simply passes the messages in memory between two instances of itself. 
 
 This class is used for database-to-database replication, connecting two `Replicator` instances in the same process. It’s also used in replicator unit tests: see `ReplicatorLoopbackTest.cc`.
+
+
+## The Listener
+
+The replication listener is the lowest level component of LiteCore's peer-to-peer (P2P) support. It's a lightweight TCP socket server that accepts incoming connections, performs the HTTP-to-WebSocket handshake, wraps them in `BuiltInWebSocket` objects, and starts C4IncomingReplicators on them. 
+
+Its source code is in the `couchbase-lite-core-EE` repo's Listener subdirectory. 

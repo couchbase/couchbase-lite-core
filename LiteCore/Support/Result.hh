@@ -22,7 +22,7 @@ namespace litecore {
     template <typename T>
     class Result;
 
-    // !!! Documentation is at docs/Result.md !!!
+    // !!! Documentation is at docs/overview/Result.md !!!
 
     namespace {
         // Magic template gunk. `unwrap_Result<T>` removes a layer of `Result<...>` from type T
