@@ -49,8 +49,8 @@ CBL_CORE_API void* C4NULLABLE c4Socket_getNativeHandle(C4Socket*) C4API;
     `kC4ReplicatorOptionOnlySelfSignedServerCert`. If any of those fail, close the socket.
     (But if `kC4ReplicatorOptionAcceptAllCerts` is set, none of the above checks are done.)
 
-    After other validation succeeds, call this function -- before \ref gotHTTPResponse() or
-    \ref opened(). If it returns true, proceed. If it returns false, the certificate is rejected
+    After other validation succeeds, call this function -- before \ref c4socket_gotHTTPResponse() or
+    \ref c4socket_opened(). If it returns true, proceed. If it returns false, the certificate is rejected
     and you should close the socket immediately with error `kC4NetErrTLSCertUntrusted`.
 
     \note The caller must use a lock for Socket when this function is called.
