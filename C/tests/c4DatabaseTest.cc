@@ -20,6 +20,7 @@
 #include "c4Index.h"
 #include "c4Query.h"
 #include "c4Collection.h"
+#include "Defer.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "HybridClock.hh"
@@ -1394,6 +1395,67 @@ TEST_CASE("Database Upgrade to WithIndexesWhereColumn", "[Database][Upgrade][C]"
     REQUIRE(c4index_getOptions(index, &outOptions));
     CHECK(string(outOptions.where) == options.where);
     c4index_release(index);
+}
+
+TEST_CASE("Migrate Deleted Documents", "[Database][Upgrade][C]") {
+    InitTestLogging(kC4LogDebug);
+
+    string dbPath = "db_3_0_0_names_100_with_deleted.cblite2";
+
+    // Copy the db from the repo to TempDir
+    auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
+    C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
+
+    struct LogEntry {
+        C4Timestamp timestamp;
+        C4LogLevel  level;
+        C4LogDomain domain;
+        string      message;
+
+        LogEntry(const C4LogEntry* entry)
+            : timestamp(entry->timestamp), level(entry->level), domain(entry->domain), message(entry->message) {}
+    };
+
+    struct LogContext {
+        std::vector<LogEntry> hklogs;
+        std::mutex            mutex;
+    } logContext;
+
+    C4DomainLevel       domlev{kC4DatabaseLog, kC4LogInfo};
+    C4LogObserverConfig logConfig{kC4LogNone, &domlev, 1,
+                                  [](const C4LogEntry* entry, void* ctx) {
+                                      LogContext*                   logCtx = (LogContext*)ctx;
+                                      std::lock_guard               lock(logCtx->mutex);
+                                      std::vector<std::string_view> split =
+                                              litecore::split(string_view(slice(entry->message)), " ");
+                                      if ( split.size() > 0 && split[0].find("/Housekeeper#") != string::npos )
+                                          logCtx->hklogs.emplace_back(entry);
+                                  },
+                                  &logContext};
+    C4Error             c4error{};
+    C4LogObserver*      logObs = c4log_newObserver(logConfig, &c4error);
+    REQUIRE(c4error.code == 0);
+    REQUIRE(logObs);
+
+    C4DatabaseConfig2 config      = {slice(TempDir()), 0};
+    c4error                       = C4Error{};
+    c4::ref<C4Database> migrateDb = REQUIRED(c4db_openNamed(name, &config, WITH_ERROR(&c4error)));
+    REQUIRE(c4error.code == 0);
+    REQUIRE(migrateDb);
+
+    using namespace litecore;
+    DEFER {
+        c4log_removeObserver(logObs);
+        c4logobserver_release(logObs);
+    };
+
+    CHECK(WaitUntil(1s, [&logContext]() {
+        std::lock_guard lock(logContext.mutex);
+        for ( const auto& log : logContext.hklogs ) {
+            if ( log.message.find("Next rowid to start from 0 down.") != string::npos ) return true;
+        }
+        return false;
+    }));
 }
 
 static void setRemoteRev(C4Database* db, slice docID, slice revID, C4RemoteID remote) {

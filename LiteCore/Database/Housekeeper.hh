@@ -26,8 +26,10 @@ namespace litecore {
         /// Creates a Housekeeper for a Collection.
         explicit Housekeeper(C4Collection* NONNULL);
 
+        enum class Task : short { kExpiry, kMigrate };
+
         /// Asynchronously starts the Housekeeper task.
-        void start();
+        void start(Task task);
 
         /// Synchronously stops the Housekeeper task. After this returns it will do nothing.
         void stop();
@@ -37,7 +39,8 @@ namespace litecore {
         void documentExpirationChanged(expiration_t exp);
 
       private:
-        void _start();
+        bool initBackgroundDB();
+
         void _stop();
 
         bool _isStopped() const { return !_expiryTimer; }
@@ -47,9 +50,12 @@ namespace litecore {
         void _documentExpirationChanged(expiration_t exp);
         void doExpirationAsync();
 
+        void _doMigrate();
+
         alloc_slice                    _keyStoreName;
         BackgroundDB*                  _bgdb{nullptr};
         std::unique_ptr<actor::Timer>  _expiryTimer;
+        std::unique_ptr<actor::Timer>  _migrateTimer;
         fleece::Retained<C4Collection> _collection;  // Used for initialization only
     };
 }  // namespace litecore

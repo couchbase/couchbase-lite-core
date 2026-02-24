@@ -29,9 +29,19 @@ namespace litecore {
         , _expiryTimer(std::make_unique<actor::Timer>(std::bind(&Housekeeper::doExpirationAsync, this)))
         , _collection(coll) {}
 
-    void Housekeeper::start() {
-        logInfo("Housekeeper: started.");
-        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration), true);
+    void Housekeeper::start(Task task) {
+        switch ( task ) {
+            case Task::kExpiry:
+                logInfo("Housekeeper: started expiry.");
+                enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration), true);
+                break;
+            case Task::kMigrate:
+                logInfo("Housekeeper: started migrate.");
+                _migrateTimer = std::make_unique<actor::Timer>(
+                        [this]() { enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doMigrate)); });
+                enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doMigrate));
+                break;
+        }
     }
 
     void Housekeeper::stop() {
@@ -44,7 +54,10 @@ namespace litecore {
     }
 
     void Housekeeper::_stop() {
-        _expiryTimer = nullptr;
+        // _expiryTimer is nulled only when stopped.
+        // _migrateTimer may be nulled when the task is finished.
+        _expiryTimer  = nullptr;
+        _migrateTimer = nullptr;
         logVerbose("Housekeeper: stopped.");
     }
 
@@ -58,16 +71,7 @@ namespace litecore {
         // an exclusive transaction.  I wanted to do this in the constructor
         // but calling enqueue there appears to corrupt the whole object, giving
         // it a garbage ref count
-        if ( !_bgdb && _collection && _collection->isValid() ) {
-            _bgdb       = asInternal(_collection->getDatabase())->backgroundDatabase();
-            _collection = nullptr;  // No longer needed, release the retain
-            logInfo("Housekeeper: opening background database to monitor expiration...");
-        }
-
-        if ( !_bgdb ) {
-            logError("Housekeeping unable to start, collection is closed and/or deleted!");
-            return;
-        }
+        if ( !initBackgroundDB() ) return;
 
         auto nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile* df) {
             if ( !df ) { return expiration_t::None; }
@@ -125,4 +129,81 @@ namespace litecore {
         if ( _expiryTimer->fireEarlierAfter(chrono::milliseconds(delay)) )
             logVerbose("Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
     }
+
+    // Following two constants are subject to performance adjustment
+    static constexpr unsigned kBatch           = 20;
+    static constexpr int      kBatchIntervalMS = 100;
+
+    void Housekeeper::_doMigrate() {
+        if ( _isStopped() ) return;
+        if ( !initBackgroundDB() ) return;
+
+        int64_t nextMaxRowid = _bgdb->dataFile().useLocked<int64_t>([this](DataFile* dataFile) -> int64_t {
+            // return -1 if error.
+            if ( !dataFile ) {
+                warn("dataFile is NULL in _scheduleMigrate");
+                return -1;
+            }
+            SQLiteDataFile* sqlDataFile = dynamic_cast<SQLiteDataFile*>(dataFile);
+            if ( !sqlDataFile ) {
+                logError("Internal error: Housekeeper::_scheduleMigrate() encounters non SQLDataFile");
+                return -1;
+            }
+
+            uint64_t             rowidLow = 1;
+            ExclusiveTransaction t(dataFile);
+            try {
+                auto&  infoStore = dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
+                Record rec       = infoStore.get(DataFile::kMaxRowidWithDeletedInDefault);
+                Assert(rec.exists());
+                uint64_t rowidHigh = (uint64_t)rec.bodyAsUInt();
+
+                // Invariant: rowidHigh == 0 || _migrateTimer != nullptr
+                if ( rowidHigh == 0 ) {
+                    logInfo("All deleted docs are migrated to deleted table");
+                    return 0;
+                }
+                rowidLow = (rowidHigh >= kBatch) ? rowidHigh - kBatch + 1 : 1;
+
+                logInfo("Migrate deleted docs. Starts from %" PRIu64 " down.", rowidHigh);
+                sqlDataFile->migrateDeletedDocs(_keyStoreName, rowidLow, rowidHigh);
+                // Update MaxRowid
+                Record putRec(DataFile::kMaxRowidWithDeletedInDefault);
+                putRec.setBodyAsUInt(rowidLow - 1);
+                infoStore.setKV(putRec, t);
+            } catch ( const exception& exc ) {
+                warn("Migration of deleted docs hit an exception %s", exc.what());
+                t.abort();
+                return -1;
+            }
+            t.commit();
+
+            // Invariant: rowidLow >= 1
+            return (int64_t)(rowidLow - 1);
+        });
+
+        if ( nextMaxRowid < 0 ) return;  // Error: already logged in the above catch.
+        else {
+            if ( nextMaxRowid > 0 ) _migrateTimer->fireAfter(chrono::milliseconds(kBatchIntervalMS));
+            else
+                _migrateTimer = nullptr;
+
+            logInfo("Migrate deleted docs. Next rowid to start from %" PRIu64 " down.", nextMaxRowid);
+        }
+    }
+
+    bool Housekeeper::initBackgroundDB() {
+        if ( !_bgdb && _collection && _collection->isValid() ) {
+            _bgdb       = asInternal(_collection->getDatabase())->backgroundDatabase();
+            _collection = nullptr;  // No longer needed, release the retain
+            logInfo("Housekeeper: opening background database for the Housekeeper...");
+        }
+        if ( !_bgdb ) {
+            logError("Housekeeping unable to start, collection is closed and/or deleted!");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
 }  // namespace litecore

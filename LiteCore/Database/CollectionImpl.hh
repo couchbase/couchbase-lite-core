@@ -348,7 +348,7 @@ namespace litecore {
             if ( expiration > C4Timestamp::None ) {
                 if ( _housekeeper ) _housekeeper->documentExpirationChanged(expiration);
                 else
-                    startHousekeeping();
+                    startHousekeeping(Housekeeper::Task::kExpiry);
             }
             return true;
         }
@@ -376,13 +376,13 @@ namespace litecore {
             return count;
         }
 
-        void startHousekeeping() {
+        void startHousekeeping(Housekeeper::Task task) {
             if ( !_housekeeper && isValid() ) {
                 auto flags = _database->getConfiguration().flags;
                 if ( (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) == 0 ) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->setParentObjectRef(getObjectRef());
-                    _housekeeper->start();
+                    _housekeeper->start(task);
                 }
             }
         }

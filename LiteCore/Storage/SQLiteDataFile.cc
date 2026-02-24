@@ -355,6 +355,35 @@ namespace litecore {
                 error::_throw(error::CantUpgradeDatabase);
             }
 
+            if ( !upgradeSchema(SchemaVersion::WithDeletedTable, "Migrating deleted docs to `del_` tables", [&] {
+                     // Migrate deleted docs to separate table:
+                     _schemaVersion = SchemaVersion::WithDeletedTable;  // enable creating _del keystores
+                     for ( const string& keyStoreName : allKeyStoreNames() ) {
+                         if ( keyStoreNameIsCollection(keyStoreName) ) {
+                             Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
+                             (void)getKeyStore(keyStoreName);  // creates the `_del` keystore
+
+                             // CBL-4377 :
+                             // Do not move the deleted docs from the default collection to the deleted table
+                             // as moving deleted doc operation could take several seconds or mins depending on
+                             // the database and platform. This means that the deleted docs of the default collection
+                             // could exists in both live an deleted keystore's table.
+                             //
+                             // Note: As we don't have collection support prior 3.1, this change only affects
+                             // the default collection.
+                             if ( keyStoreName != kDefaultKeyStoreName ) {
+                                 _exec(stringprintf("INSERT INTO \"kv_%s%s\" "
+                                                    "SELECT * FROM \"kv_%s\" WHERE (flags&1)!=0; "
+                                                    "DELETE FROM \"kv_%s\" WHERE (flags&1)!=0;",
+                                                    kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
+                                                    keyStoreName.c_str(), keyStoreName.c_str()));
+                             }
+                         }
+                     }
+                 }) ) {
+                error::_throw(error::CantUpgradeDatabase);
+            }
+
             (void)upgradeSchema(SchemaVersion::WithIndexesLastSeq, "Adding indexes.lastSeq column", [&] {
                 string sql;
                 if ( getSchema("indexes", "table", "indexes", sql) ) {
@@ -410,36 +439,6 @@ namespace litecore {
         // Load vector search extension if present:
         LoadVectorSearchExtension(sqlite);
 
-        withFileLock([this] {
-            if ( !upgradeSchema(SchemaVersion::WithDeletedTable, "Migrating deleted docs to `del_` tables", [&] {
-                     // Migrate deleted docs to separate table:
-                     _schemaVersion = SchemaVersion::WithDeletedTable;  // enable creating _del keystores
-                     for ( const string& keyStoreName : allKeyStoreNames() ) {
-                         if ( keyStoreNameIsCollection(keyStoreName) ) {
-                             Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
-                             (void)getKeyStore(keyStoreName);  // creates the `_del` keystore
-
-                             // CBL-4377 :
-                             // Do not move the deleted docs from the default collection to the deleted table
-                             // as moving deleted doc operation could take several seconds or mins depending on
-                             // the database and platform. This means that the deleted docs of the default collection
-                             // could exists in both live an deleted keystore's table.
-                             //
-                             // Note: As we don't have collection support prior 3.1, this change only affects
-                             // the default collection.
-                             if ( keyStoreName != kDefaultKeyStoreName ) {
-                                 _exec(stringprintf("INSERT INTO \"kv_%s%s\" "
-                                                    "SELECT * FROM \"kv_%s\" WHERE (flags&1)!=0; "
-                                                    "DELETE FROM \"kv_%s\" WHERE (flags&1)!=0;",
-                                                    kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
-                                                    keyStoreName.c_str(), keyStoreName.c_str()));
-                             }
-                         }
-                     }
-                 }) ) {
-                error::_throw(error::CantUpgradeDatabase);
-            }
-        });
         // Enable some security features:
         sqlite3_db_config(sqlite, SQLITE_DBCONFIG_DEFENSIVE, 1, NULL);
     }
@@ -1137,4 +1136,13 @@ namespace litecore {
 
     int SQLiteDataFile::defaultMmapSize() { return kMMapSize; }
 
+    void SQLiteDataFile::migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh) {
+        _exec(stringprintf("INSERT INTO \"kv_%s%.*s\" "
+                           "SELECT * FROM \"kv_%.*s\" WHERE rowid BETWEEN %" PRIu64 " "
+                           "AND %" PRIu64 " AND (flags&1)!=0; "
+                           "DELETE FROM \"kv_%.*s\" WHERE rowid BETWEEN %" PRIu64 " "
+                           "AND %" PRIu64 " AND (flags&1)!=0;",
+                           kDeletedKeyStorePrefix.c_str(), SPLAT(keyStoreName), SPLAT(keyStoreName), rowidLow,
+                           rowidHigh, SPLAT(keyStoreName), rowidLow, rowidHigh));
+    }
 }  // namespace litecore

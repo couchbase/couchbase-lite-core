@@ -24,6 +24,7 @@
 #include "FleeceImpl.hh"
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
+#include "SQLiteKeyStore.hh"
 #include "StringUtil.hh"
 #include "UUID.hh"
 #include "Version.hh"
@@ -372,7 +373,31 @@ namespace litecore {
         for ( const string& name : _dataFile->allKeyStoreNames() ) {
             if ( CollectionSpec collSpec = keyStoreNameToCollectionSpec(name); collSpec.name ) {
                 if ( _dataFile->getKeyStore(name).nextExpiration() > C4Timestamp::None ) {
-                    asInternal(getCollection(collSpec))->startHousekeeping();
+                    asInternal(getCollection(collSpec))->startHousekeeping(Housekeeper::Task::kExpiry);
+                }
+                if ( collSpec == kC4DefaultCollectionSpec ) {
+                    Record rec = getInfo(DataFile::kMaxRowidWithDeletedInDefault);
+                    if ( !rec.exists() ) {
+                        auto&           keystore = _dataFile->getKeyStore(name);
+                        SQLiteKeyStore* sqlks    = SQLiteDataFile::asSQLiteKeyStore(&keystore);
+                        // sqlks is asserted in asSQLiteKeyStore
+                        uint64_t maxrowid = sqlks->maxRowid();
+                        Record   putRec{DataFile::kMaxRowidWithDeletedInDefault};
+                        putRec.setBodyAsUInt(maxrowid);
+                        {
+                            Transaction t{this};
+                            setInfo(putRec);
+                            t.commit();
+                        }
+                    }
+                    rec = getInfo(DataFile::kMaxRowidWithDeletedInDefault);
+                    if ( rec.exists() ) {
+                        uint64_t maxrowid = rec.bodyAsUInt();
+                        if ( maxrowid > 0 )
+                            asInternal(getCollection(collSpec))->startHousekeeping(Housekeeper::Task::kMigrate);
+                    } else
+                        DebugAssert(false,
+                                    "Fail to put record of \"maxRowidWithDeletedInDefault\" into the Info store.");
                 }
             }
         }

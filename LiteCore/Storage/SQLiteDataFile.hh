@@ -123,6 +123,8 @@ namespace litecore {
                                     string_view metricName) const override;
 #endif
 
+        void migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh);
+
       protected:
         std::string loggingClassName() const override { return "DB"; }
 
@@ -186,7 +188,6 @@ namespace litecore {
         void reopenSQLiteHandle();
         void ensureSchemaVersionAtLeast(SchemaVersion);
         bool upgradeSchema(SchemaVersion minVersion, const char* what, function_ref<void()>);
-        void migrateDeletedDocs();
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
         int  _exec(const std::string& sql);

@@ -128,6 +128,14 @@ namespace litecore {
         _sequencesOwner = dynamic_cast<SQLiteKeyStore*>(&source);
     }
 
+    uint64_t SQLiteKeyStore::maxRowid() const {
+        uint64_t       ret  = 0;
+        auto&          stmt = compileCached("SELECT max(rowid) FROM kv_@");
+        UsingStatement u(stmt);
+        if ( stmt.executeStep() ) ret = (int64_t)stmt.getColumn(0);
+        return ret;
+    }
+
     sequence_t SQLiteKeyStore::lastSequence() const {
         if ( _sequencesOwner ) {
             return _sequencesOwner->lastSequence();

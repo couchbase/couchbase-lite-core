@@ -92,6 +92,9 @@ namespace litecore {
 
         void shareSequencesWith(KeyStore&) override;
 
+        // Max rowid as it stands at the current instant. Only applicable to SQLiteKeyStore.
+        uint64_t maxRowid() const;
+
       protected:
         bool                    mayHaveExpiration() override;
         RecordEnumerator::Impl* newEnumeratorImpl(RecordEnumerator::Options const&) override;
