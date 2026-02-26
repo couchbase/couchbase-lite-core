@@ -155,7 +155,8 @@ namespace litecore {
         stmtInsert.bind(1, (long long)rowidLow);
         stmtInsert.bind(2, (long long)rowidHigh);
         UsingStatement uInsert(stmtInsert);
-        stmtInsert.exec();
+        // exec() returns the number or rows inserted to kv_del_@
+        if ( stmtInsert.exec() == 0 ) return;
 
         auto& stmtDelete = compileCached("DELETE FROM kv_@ WHERE rowid BETWEEN ? "
                                          "AND ? AND (flags&1)!=0;");

@@ -44,8 +44,6 @@ namespace litecore {
         static unsigned setMigrateBatchSize(unsigned batchSize);
 
       private:
-        static unsigned sMigrateBatchSize;
-
         bool initBackgroundDB();
 
         void _stop();

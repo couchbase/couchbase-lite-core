@@ -124,8 +124,8 @@ namespace litecore {
     }
 
     // Following two constants are subject to performance adjustment
-    unsigned             Housekeeper::sMigrateBatchSize = 10000;
-    static constexpr int kBatchIntervalMS               = 100;
+    static unsigned                       sMigrateBatchSize = 10000;
+    static constexpr chrono::milliseconds kBatchIntervalMS{100};
 
     unsigned Housekeeper::setMigrateBatchSize(unsigned batchSize) {
         auto ret          = sMigrateBatchSize;
@@ -188,8 +188,7 @@ namespace litecore {
 
         if ( nextMaxRowid < 0 ) return;  // Error: already logged in the above catch.
         else {
-            if ( nextMaxRowid > 0 )
-                enqueueAfter(chrono::milliseconds(kBatchIntervalMS), FUNCTION_TO_QUEUE(Housekeeper::_doMigration));
+            if ( nextMaxRowid > 0 ) enqueueAfter(kBatchIntervalMS, FUNCTION_TO_QUEUE(Housekeeper::_doMigration));
             logInfo("Migrate deleted docs. Next rowid to start from %" PRIu64 " down.", nextMaxRowid);
         }
     }

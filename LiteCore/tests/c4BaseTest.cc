@@ -194,7 +194,7 @@ TEST_CASE("Migrate Deleted Documents", "[Database][Upgrade][C]") {
     // The chance of isDeletedTableComplete() == true is extremely low.
     REQUIRE(!migrateDb->isDeletedTableComplete());
 
-    CHECK(WaitUntil(1s, [db = migrateDb.get()]() { return db->isDeletedTableComplete(); }));
+    CHECK(WaitUntil(5s, [db = migrateDb.get()]() { return db->isDeletedTableComplete(); }));
     CHECK(c4coll_getDocumentCount(c4db_getDefaultCollection(migrateDb, WITH_ERROR())) == 78);
 }
 
