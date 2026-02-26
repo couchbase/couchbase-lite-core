@@ -92,8 +92,9 @@ namespace litecore {
 
         void shareSequencesWith(KeyStore&) override;
 
-        // Max rowid as it stands at the current instant. Only applicable to SQLiteKeyStore.
+        // Maximum rowid
         uint64_t maxRowid() const;
+        void     migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh);
 
       protected:
         bool                    mayHaveExpiration() override;

@@ -181,7 +181,7 @@ namespace litecore {
         /** Permanently deletes a KeyStore. */
         virtual void deleteKeyStore(const std::string& name) = 0;
 
-        bool deletedTableCompleted();
+        bool isDeletedTableComplete();
 
         // Redeclare logging methods as public, so Database can use them
         bool willLog(LogLevel level = LogLevel::Info) const { return Logging::willLog(level); }

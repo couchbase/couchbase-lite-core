@@ -346,7 +346,11 @@ namespace litecore {
             }
 
             if ( expiration > C4Timestamp::None ) {
-                if ( _housekeeper ) _housekeeper->documentExpirationChanged(expiration);
+                if ( [this]() {
+                         std::lock_guard lock(_expiryMutex);
+                         return _expiryStarted;
+                     }() )
+                    _housekeeper->documentExpirationChanged(expiration);
                 else
                     startHousekeeping(Housekeeper::Task::kExpiry);
             }
@@ -377,20 +381,41 @@ namespace litecore {
         }
 
         void startHousekeeping(Housekeeper::Task task) {
-            if ( !_housekeeper && isValid() ) {
-                auto flags = _database->getConfiguration().flags;
-                if ( (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) == 0 ) {
+            if ( !isValid() ) return;
+
+            if ( auto flags = _database->getConfiguration().flags;
+                 (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) != 0 )
+                return;
+
+            auto ensureHousekeeper = [this]() {
+                if ( !_housekeeper ) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->setParentObjectRef(getObjectRef());
-                    _housekeeper->start(task);
                 }
+            };
+
+            if ( task == Housekeeper::Task::kExpiry ) {
+                std::lock_guard lock(_expiryMutex);
+                if ( !_expiryStarted ) {
+                    // Ensure that startExpiration() called only once.
+                    ensureHousekeeper();
+                    _housekeeper->startExpiration();
+                    _expiryStarted = true;
+                }
+            } else if ( task == Housekeeper::Task::kMigrate ) {
+                // This is only called in startBackgroundTasks.
+                // And there is no harm to startMigration multiple times.
+                ensureHousekeeper();
+                _housekeeper->startMigration();
             }
         }
 
         bool stopHousekeeping() {
+            std::lock_guard lock(_expiryMutex);
             if ( !_housekeeper ) return false;
             _housekeeper->stop();
-            _housekeeper = nullptr;
+            _housekeeper   = nullptr;
+            _expiryStarted = false;
             return true;
         }
 
@@ -559,6 +584,8 @@ namespace litecore {
         unique_ptr<DocumentFactory>              _documentFactory;  // creates C4Document instances
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
         Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
+        bool                                     _expiryStarted{false};
+        std::mutex                               _expiryMutex;
     };
 
     inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }

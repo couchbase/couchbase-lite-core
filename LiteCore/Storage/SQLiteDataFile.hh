@@ -123,8 +123,6 @@ namespace litecore {
                                     string_view metricName) const override;
 #endif
 
-        void migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh);
-
       protected:
         std::string loggingClassName() const override { return "DB"; }
 

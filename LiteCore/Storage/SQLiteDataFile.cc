@@ -1136,13 +1136,4 @@ namespace litecore {
 
     int SQLiteDataFile::defaultMmapSize() { return kMMapSize; }
 
-    void SQLiteDataFile::migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh) {
-        _exec(stringprintf("INSERT INTO \"kv_%s%.*s\" "
-                           "SELECT * FROM \"kv_%.*s\" WHERE rowid BETWEEN %" PRIu64 " "
-                           "AND %" PRIu64 " AND (flags&1)!=0; "
-                           "DELETE FROM \"kv_%.*s\" WHERE rowid BETWEEN %" PRIu64 " "
-                           "AND %" PRIu64 " AND (flags&1)!=0;",
-                           kDeletedKeyStorePrefix.c_str(), SPLAT(keyStoreName), SPLAT(keyStoreName), rowidLow,
-                           rowidHigh, SPLAT(keyStoreName), rowidLow, rowidHigh));
-    }
 }  // namespace litecore

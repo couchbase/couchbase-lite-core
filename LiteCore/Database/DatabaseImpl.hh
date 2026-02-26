@@ -113,6 +113,7 @@ namespace litecore {
         void          endTransaction(bool commit) override;
         bool          isInTransaction() const noexcept override;
         C4Timestamp   nextDocExpiration() const override;
+        bool          isDeletedTableComplete() const override;
         bool          getRawDocument(slice storeName, slice key,
                                      fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback) override;
         void          putRawDocument(slice storeName, const C4RawDocument&) override;
@@ -131,9 +132,6 @@ namespace litecore {
         C4RemoteID  getRemoteDBID(slice remoteAddress, bool canCreate) override;
         alloc_slice getRemoteDBAddress(C4RemoteID remoteID) override;
         alloc_slice getRevIDGlobalForm(slice revID) override;
-        Record      getInfo(slice key) const;
-        void        setInfo(slice key, slice body);
-        void        setInfo(Record&);
 
         // DataFile::Delegate API:
 
@@ -161,6 +159,9 @@ namespace litecore {
         C4UUID          generateUUID(slice key, bool overwrite = false);
 
         KeyStore& infoKeyStore() const;
+        Record    getInfo(slice key) const;
+        void      setInfo(slice key, slice body);
+        void      setInfo(Record&);
         KeyStore& rawDocStore(slice storeName);
 
         C4UUID                 getUUID(slice key) const;

@@ -29,7 +29,8 @@ namespace litecore {
         enum class Task : short { kExpiry, kMigrate };
 
         /// Asynchronously starts the Housekeeper task.
-        void start(Task task);
+        void startExpiration();
+        void startMigration();
 
         /// Synchronously stops the Housekeeper task. After this returns it will do nothing.
         void stop();
@@ -38,7 +39,13 @@ namespace litecore {
         /// reschedule its next expiration for earlier if necessary.
         void documentExpirationChanged(expiration_t exp);
 
+        // For the testing purpose.
+        // Returns the current batch size.
+        static unsigned setMigrateBatchSize(unsigned batchSize);
+
       private:
+        static unsigned sMigrateBatchSize;
+
         bool initBackgroundDB();
 
         void _stop();
@@ -50,12 +57,11 @@ namespace litecore {
         void _documentExpirationChanged(expiration_t exp);
         void doExpirationAsync();
 
-        void _doMigrate();
+        void _doMigration();
 
         alloc_slice                    _keyStoreName;
         BackgroundDB*                  _bgdb{nullptr};
         std::unique_ptr<actor::Timer>  _expiryTimer;
-        std::unique_ptr<actor::Timer>  _migrateTimer;
         fleece::Retained<C4Collection> _collection;  // Used for initialization only
     };
 }  // namespace litecore

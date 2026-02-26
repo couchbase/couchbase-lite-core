@@ -99,6 +99,18 @@ namespace litecore {
         string sql(sqlTemplate);
         replace(sql, "\"kv_@", "\"" + tableName());
         replace(sql, "kv_@", quotedTableName());
+        auto delTableName = [this] {
+            string ret = this->tableName();
+            replace(ret, "kv_", "kv_del_");
+            return ret;
+        };
+        auto quotedDelTableName = [this]() {
+            string ret = this->quotedTableName();
+            replace(ret, "kv_", "kv_del_");
+            return ret;
+        };
+        replace(sql, "\"kv_del_@", "\"" + delTableName());
+        replace(sql, "kv_del_@", quotedDelTableName());
         return sql;
     }
 
@@ -134,6 +146,23 @@ namespace litecore {
         UsingStatement u(stmt);
         if ( stmt.executeStep() ) ret = (int64_t)stmt.getColumn(0);
         return ret;
+    }
+
+    void SQLiteKeyStore::migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh) {
+        auto& stmtInsert = compileCached("INSERT INTO kv_del_@ "
+                                         "SELECT * FROM kv_@ WHERE rowid BETWEEN ? "
+                                         "AND ? AND (flags&1)!=0");
+        stmtInsert.bind(1, (long long)rowidLow);
+        stmtInsert.bind(2, (long long)rowidHigh);
+        UsingStatement uInsert(stmtInsert);
+        stmtInsert.exec();
+
+        auto& stmtDelete = compileCached("DELETE FROM kv_@ WHERE rowid BETWEEN ? "
+                                         "AND ? AND (flags&1)!=0;");
+        stmtDelete.bind(1, (long long)rowidLow);
+        stmtDelete.bind(2, (long long)rowidHigh);
+        UsingStatement uDelete(stmtDelete);
+        stmtDelete.exec();
     }
 
     sequence_t SQLiteKeyStore::lastSequence() const {

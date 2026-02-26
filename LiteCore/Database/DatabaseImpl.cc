@@ -376,28 +376,9 @@ namespace litecore {
                     asInternal(getCollection(collSpec))->startHousekeeping(Housekeeper::Task::kExpiry);
                 }
                 if ( collSpec == kC4DefaultCollectionSpec ) {
-                    Record rec = getInfo(DataFile::kMaxRowidWithDeletedInDefault);
-                    if ( !rec.exists() ) {
-                        auto&           keystore = _dataFile->getKeyStore(name);
-                        SQLiteKeyStore* sqlks    = SQLiteDataFile::asSQLiteKeyStore(&keystore);
-                        // sqlks is asserted in asSQLiteKeyStore
-                        uint64_t maxrowid = sqlks->maxRowid();
-                        Record   putRec{DataFile::kMaxRowidWithDeletedInDefault};
-                        putRec.setBodyAsUInt(maxrowid);
-                        {
-                            Transaction t{this};
-                            setInfo(putRec);
-                            t.commit();
-                        }
+                    if ( !isDeletedTableComplete() ) {
+                        asInternal(getCollection(collSpec))->startHousekeeping(Housekeeper::Task::kMigrate);
                     }
-                    rec = getInfo(DataFile::kMaxRowidWithDeletedInDefault);
-                    if ( rec.exists() ) {
-                        uint64_t maxrowid = rec.bodyAsUInt();
-                        if ( maxrowid > 0 )
-                            asInternal(getCollection(collSpec))->startHousekeeping(Housekeeper::Task::kMigrate);
-                    } else
-                        DebugAssert(false,
-                                    "Fail to put record of \"maxRowidWithDeletedInDefault\" into the Info store.");
                 }
             }
         }
@@ -411,6 +392,8 @@ namespace litecore {
         });
         return minTime;
     }
+
+    bool DatabaseImpl::isDeletedTableComplete() const { return _dataFile->isDeletedTableComplete(); }
 
 #pragma mark - UUIDS:
 

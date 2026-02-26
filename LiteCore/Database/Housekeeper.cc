@@ -17,6 +17,7 @@
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "Logging.hh"
+#include "SQLiteKeyStore.hh"
 #include "StringUtil.hh"
 
 namespace litecore {
@@ -29,19 +30,14 @@ namespace litecore {
         , _expiryTimer(std::make_unique<actor::Timer>(std::bind(&Housekeeper::doExpirationAsync, this)))
         , _collection(coll) {}
 
-    void Housekeeper::start(Task task) {
-        switch ( task ) {
-            case Task::kExpiry:
-                logInfo("Housekeeper: started expiry.");
-                enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration), true);
-                break;
-            case Task::kMigrate:
-                logInfo("Housekeeper: started migrate.");
-                _migrateTimer = std::make_unique<actor::Timer>(
-                        [this]() { enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doMigrate)); });
-                enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doMigrate));
-                break;
-        }
+    void Housekeeper::startExpiration() {
+        logInfo("Housekeeper: started expiry.");
+        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration), true);
+    }
+
+    void Housekeeper::startMigration() {
+        logInfo("Housekeeper: started migrate.");
+        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doMigration));
     }
 
     void Housekeeper::stop() {
@@ -54,10 +50,7 @@ namespace litecore {
     }
 
     void Housekeeper::_stop() {
-        // _expiryTimer is nulled only when stopped.
-        // _migrateTimer may be nulled when the task is finished.
-        _expiryTimer  = nullptr;
-        _migrateTimer = nullptr;
+        _expiryTimer = nullptr;
         logVerbose("Housekeeper: stopped.");
     }
 
@@ -131,10 +124,16 @@ namespace litecore {
     }
 
     // Following two constants are subject to performance adjustment
-    static constexpr unsigned kBatch           = 20;
-    static constexpr int      kBatchIntervalMS = 100;
+    unsigned             Housekeeper::sMigrateBatchSize = 10000;
+    static constexpr int kBatchIntervalMS               = 100;
 
-    void Housekeeper::_doMigrate() {
+    unsigned Housekeeper::setMigrateBatchSize(unsigned batchSize) {
+        auto ret          = sMigrateBatchSize;
+        sMigrateBatchSize = batchSize;
+        return ret;
+    }
+
+    void Housekeeper::_doMigration() {
         if ( _isStopped() ) return;
         if ( !initBackgroundDB() ) return;
 
@@ -144,29 +143,34 @@ namespace litecore {
                 warn("dataFile is NULL in _scheduleMigrate");
                 return -1;
             }
-            SQLiteDataFile* sqlDataFile = dynamic_cast<SQLiteDataFile*>(dataFile);
-            if ( !sqlDataFile ) {
-                logError("Internal error: Housekeeper::_scheduleMigrate() encounters non SQLDataFile");
-                return -1;
-            }
 
             uint64_t             rowidLow = 1;
             ExclusiveTransaction t(dataFile);
             try {
-                auto&  infoStore = dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
-                Record rec       = infoStore.get(DataFile::kMaxRowidWithDeletedInDefault);
-                Assert(rec.exists());
-                uint64_t rowidHigh = (uint64_t)rec.bodyAsUInt();
+                auto&           infoStore   = dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
+                Record          rec         = infoStore.get(DataFile::kMaxRowidWithDeletedInDefault);
+                uint64_t        rowidHigh   = 0;
+                SQLiteKeyStore* sqlKeyStore = SQLiteDataFile::asSQLiteKeyStore(&dataFile->getKeyStore(_keyStoreName));
+                Assert(sqlKeyStore);
+                if ( !rec.exists() ) {
+                    rowidHigh = sqlKeyStore->maxRowid();
+                    Record putRec{DataFile::kMaxRowidWithDeletedInDefault};
+                    putRec.setBodyAsUInt(rowidHigh);
+                    infoStore.setKV(putRec, t);
+                } else {
+                    rowidHigh = rec.bodyAsUInt();
+                }
 
                 // Invariant: rowidHigh == 0 || _migrateTimer != nullptr
                 if ( rowidHigh == 0 ) {
                     logInfo("All deleted docs are migrated to deleted table");
                     return 0;
                 }
-                rowidLow = (rowidHigh >= kBatch) ? rowidHigh - kBatch + 1 : 1;
+                const unsigned kBatch = sMigrateBatchSize;
+                rowidLow              = (rowidHigh >= kBatch) ? rowidHigh - kBatch + 1 : 1;
 
                 logInfo("Migrate deleted docs. Starts from %" PRIu64 " down.", rowidHigh);
-                sqlDataFile->migrateDeletedDocs(_keyStoreName, rowidLow, rowidHigh);
+                sqlKeyStore->migrateDeletedDocs(_keyStoreName, rowidLow, rowidHigh);
                 // Update MaxRowid
                 Record putRec(DataFile::kMaxRowidWithDeletedInDefault);
                 putRec.setBodyAsUInt(rowidLow - 1);
@@ -184,10 +188,8 @@ namespace litecore {
 
         if ( nextMaxRowid < 0 ) return;  // Error: already logged in the above catch.
         else {
-            if ( nextMaxRowid > 0 ) _migrateTimer->fireAfter(chrono::milliseconds(kBatchIntervalMS));
-            else
-                _migrateTimer = nullptr;
-
+            if ( nextMaxRowid > 0 )
+                enqueueAfter(chrono::milliseconds(kBatchIntervalMS), FUNCTION_TO_QUEUE(Housekeeper::_doMigration));
             logInfo("Migrate deleted docs. Next rowid to start from %" PRIu64 " down.", nextMaxRowid);
         }
     }
