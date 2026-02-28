@@ -13,6 +13,7 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
+#include "SQLiteCpp/SQLiteCpp.h"
 #include "QueryTranslator.hh"
 #include "Error.hh"
 #include "SecureDigest.hh"
@@ -112,7 +113,13 @@ namespace litecore {
     void SQLiteKeyStore::createSequenceIndex() {
         if ( !_createdSeqIndex ) {
             Assert(_capabilities.sequences);
-            db().execWithLock(subst("CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
+            try {
+                db().execWithLock(subst("CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
+            } catch ( const SQLite::Exception& x ) {
+                QueryLog.log(LogLevel::Info, "createSequenceIndex failing with Code=%d, %s", x.getErrorCode(),
+                             x.getErrorStr());
+                return;
+            }
             _createdSeqIndex = true;
         }
     }
