@@ -10,7 +10,7 @@ INCLUDE (${CMAKE_CURRENT_LIST_DIR}/../jenkins/CBDeps.cmake)
 
 if(NOT LITECORE_DISABLE_ICU AND NOT LITECORE_DYNAMIC_ICU)
     # Install cbdeps packages using cbdep tool
-    CBDEP_INSTALL (PACKAGE icu4c VERSION 76.1-1)
+    CBDEP_INSTALL (PACKAGE icu4c VERSION 76.1-2)
     FILE (COPY "${CBDEP_icu4c_DIR}/lib" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 endif()
 
