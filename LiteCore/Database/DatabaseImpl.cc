@@ -352,7 +352,7 @@ namespace litecore {
     }
 
     BackgroundDB* DatabaseImpl::backgroundDatabase() {
-        if ( !_backgroundDB ) _backgroundDB = std::make_unique<BackgroundDB>(this);
+        std::call_once(_initBDBFlag, [this]() { _backgroundDB = std::make_unique<BackgroundDB>(this); });
         return _backgroundDB.get();
     }
 
@@ -370,6 +370,16 @@ namespace litecore {
     }
 
     void DatabaseImpl::startBackgroundTasks() {
+        if ( auto flags = getConfiguration().flags; (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) != 0 ) return;
+
+        if ( asInternal(_defaultCollection)->keyStore().recordCount(true) == 0 ) {
+            Record rec = getInfo(DataFile::kMaxRowidWithDeletedInDefault);
+            rec.setBodyAsUInt(0);
+            Transaction t(this);
+            setInfo(rec);
+            t.commit();
+        }
+
         for ( const string& name : _dataFile->allKeyStoreNames() ) {
             if ( CollectionSpec collSpec = keyStoreNameToCollectionSpec(name); collSpec.name ) {
                 if ( _dataFile->getKeyStore(name).nextExpiration() > C4Timestamp::None ) {

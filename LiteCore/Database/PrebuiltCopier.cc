@@ -32,7 +32,6 @@ namespace litecore {
             error::_throw(error::Domain::POSIX, EEXIST);
         }
 
-        FilePath backupPath;
         Log("Copying prebuilt database from %s to %s", from.path().c_str(), to.path().c_str());
 
         FilePath temp = FilePath::sharedTempDirectory(std::string(to.parentDir())).mkTempDir();

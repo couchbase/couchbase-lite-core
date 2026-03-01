@@ -346,11 +346,8 @@ namespace litecore {
             }
 
             if ( expiration > C4Timestamp::None ) {
-                if ( [this]() {
-                         std::lock_guard lock(_expiryMutex);
-                         return _expiryStarted;
-                     }() )
-                    _housekeeper->documentExpirationChanged(expiration);
+                std::lock_guard lock(_expiryMutex);
+                if ( _expiryStarted ) _housekeeper->documentExpirationChanged(expiration);
                 else
                     startHousekeeping(Housekeeper::Task::kExpiry);
             }
@@ -585,7 +582,7 @@ namespace litecore {
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
         Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
         bool                                     _expiryStarted{false};
-        std::mutex                               _expiryMutex;
+        std::recursive_mutex                     _expiryMutex;
     };
 
     inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }

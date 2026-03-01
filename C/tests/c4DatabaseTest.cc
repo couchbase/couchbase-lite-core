@@ -326,46 +326,65 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Document][Enumerator][C]") {
-    setupAllDocs();
-    C4Error          error;
-    C4DocEnumerator* e;
+    bool with_3_0_DB = false;
+    SECTION("With 3.0 DB") {
+        with_3_0_DB = true;
+        closeDB();
+        auto              name   = copyFixtureDB("db_versions/db_3_0_0_names_100_with_deleted.cblite2");
+        C4DatabaseConfig2 config = {slice(TempDir())};
+        config.flags &= !kC4DB_Create;
+        db = REQUIRED(c4db_openNamed(name, &config, ERROR_INFO()));
+    }
+    SECTION("WITH current DB") { setupAllDocs(); }
 
     auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
-    REQUIRE(c4coll_getDocumentCount(defaultColl) == 99);
+    if ( !with_3_0_DB ) REQUIRE(c4coll_getDocumentCount(defaultColl) == 99);
 
     // No start or end ID:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
-    e                        = REQUIRED(c4coll_enumerateAllDocs(defaultColl, &options, WITH_ERROR()));
-    constexpr size_t bufSize = 20;
-    char             docID[bufSize];
-    int              i = 1;
+
+    C4Error                  error;
+    c4::ref<C4DocEnumerator> e       = REQUIRED(c4coll_enumerateAllDocs(defaultColl, &options, WITH_ERROR()));
+    constexpr size_t         bufSize = 20;
+    char                     docID[bufSize];
+    int                      i                = 1;
+    bool                     isFirstIteration = true;
     while ( c4enum_next(e, &error) ) {
+        if ( with_3_0_DB ) {
+            if ( isFirstIteration ) {
+                std::this_thread::sleep_for(1ms);  // to allow Housekeeper/migration to catch up.
+                isFirstIteration = false;
+            }
+        }
         auto doc = c4enum_getDocument(e, ERROR_INFO());
         REQUIRE(doc);
-        snprintf(docID, bufSize, "doc-%03d", i);
-        CHECK(doc->docID == c4str(docID));
-        CHECK(doc->revID == kRevID);
-        CHECK(doc->selectedRev.revID == kRevID);
-        CHECK(doc->selectedRev.sequence == (C4SequenceNumber)i);
+        if ( !with_3_0_DB ) {
+            snprintf(docID, bufSize, "doc-%03d", i);
+            CHECK(doc->docID == c4str(docID));
+            CHECK(doc->revID == kRevID);
+            CHECK(doc->selectedRev.revID == kRevID);
+            CHECK(doc->selectedRev.sequence == (C4SequenceNumber)i);
+        }
         CHECK(c4doc_getProperties(doc) == nullptr);
         // Doc was loaded without its body, but it should load on demand:
         CHECK(c4doc_loadRevisionBody(doc, WITH_ERROR()));  // have to explicitly load the body
-        CHECK(docBodyEquals(doc, kFleeceBody));
 
-        C4DocumentInfo info;
-        REQUIRE(c4enum_getDocumentInfo(e, &info));
-        CHECK(info.docID == c4str(docID));
-        CHECK(info.flags == kDocExists);
-        CHECK(info.revID == kRevID);
-        CHECK(info.bodySize == kFleeceBody.size);
+        if ( !with_3_0_DB ) {
+            CHECK(docBodyEquals(doc, kFleeceBody));
+            C4DocumentInfo info;
+            REQUIRE(c4enum_getDocumentInfo(e, &info));
+            CHECK(info.docID == c4str(docID));
+            CHECK(info.flags == kDocExists);
+            CHECK(info.revID == kRevID);
+            CHECK(info.bodySize == kFleeceBody.size);
+        }
 
         c4doc_release(doc);
         i++;
     }
-    c4enum_free(e);
     CHECK(error == C4Error{});
-    CHECK(i == 100);
+    if ( !with_3_0_DB ) CHECK(i == 100);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Database][Enumerator][C]") {
@@ -875,6 +894,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     }
 
     if ( !c4db_deleteNamed(kNuName, slice(nuPath), &error) ) { REQUIRE(error.code == 0); }
+
+    // Close the src DB before copyNamed
+    REQUIRED(c4db_close(db, nullptr));
 
     REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, WITH_ERROR()));
     auto nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());

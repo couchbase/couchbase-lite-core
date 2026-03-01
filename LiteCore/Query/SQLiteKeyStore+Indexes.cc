@@ -20,6 +20,7 @@
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
 #include "Array.hh"
+#include "sqlite3.h"
 
 using namespace std;
 using namespace fleece;
@@ -116,9 +117,12 @@ namespace litecore {
             try {
                 db().execWithLock(subst("CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
             } catch ( const SQLite::Exception& x ) {
-                QueryLog.log(LogLevel::Info, "createSequenceIndex failing with Code=%d, %s", x.getErrorCode(),
-                             x.getErrorStr());
-                return;
+                if ( x.getExtendedErrorCode() == SQLITE_BUSY_SNAPSHOT ) {
+                    // This may occur if another connection has committed changes while there is
+                    // outstanding query, as in the case of Database Enumerator.
+                    return;
+                } else
+                    throw;
             }
             _createdSeqIndex = true;
         }
