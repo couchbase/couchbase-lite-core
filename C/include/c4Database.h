@@ -94,6 +94,7 @@ NODISCARD CBL_CORE_API C4Database* c4db_openAgain(C4Database* db, C4Error* C4NUL
         @param destinationName  The name (without filename extension) of the database to create.
         @param config  Database configuration (including destination directory.)
         @param error  On failure, error info will be written here.
+        \note if there is an open database on the sourcePath, it will fail with error code kC4ErrorBusy
         @return  True on success, false on failure. */
 NODISCARD CBL_CORE_API bool c4db_copyNamed(C4String sourcePath, C4String destinationName,
                                            const C4DatabaseConfig2* config, C4Error* C4NULLABLE error) C4API;

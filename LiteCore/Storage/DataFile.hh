@@ -252,6 +252,9 @@ namespace litecore {
 
         static std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath);
 
+        // path: path to db.sqlite3
+        static size_t openCountOnPath(const FilePath& path);
+
         DataFile(const DataFile&)            = delete;
         DataFile& operator=(const DataFile&) = delete;
 

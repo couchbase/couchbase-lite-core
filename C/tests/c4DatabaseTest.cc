@@ -895,10 +895,16 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
 
     if ( !c4db_deleteNamed(kNuName, slice(nuPath), &error) ) { REQUIRE(error.code == 0); }
 
-    // Close the src DB before copyNamed
+    {
+        ExpectingExceptions x;
+        // The source db cannot be open to copyNamed from.
+        REQUIRE(!c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, &error));
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorBusy);
+    }
     REQUIRED(c4db_close(db, nullptr));
-
     REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, WITH_ERROR()));
+
     auto nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
     auto defaultColl = getCollection(nudb, kC4DefaultCollectionSpec);

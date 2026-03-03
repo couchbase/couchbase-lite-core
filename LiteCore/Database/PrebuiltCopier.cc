@@ -27,6 +27,13 @@ namespace litecore {
             error::_throw(error::Domain::LiteCore, kC4ErrorNotFound);
         }
 
+        FilePath dbPath    = from["db.sqlite3"];
+        auto     openCount = DataFile::openCountOnPath(dbPath);
+        if ( openCount > 0 ) {
+            Warn("The prebuilt database %s is open, cannot copy!", from.path().c_str());
+            error::_throw(error::Domain::LiteCore, kC4ErrorBusy);
+        }
+
         if ( to.exists() ) {
             Warn("Database already exists at %s, cannot copy!", to.path().c_str());
             error::_throw(error::Domain::POSIX, EEXIST);
