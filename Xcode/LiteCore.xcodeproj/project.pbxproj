@@ -278,8 +278,6 @@
 		2784A2162F2D6DB30071AC68 /* BonjourTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2784A2152F2D6DB30071AC68 /* BonjourTest.cc */; };
 		27870D912F11A91D0061830F /* TaskMaster.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27870D8F2F11A91D0061830F /* TaskMaster.hh */; };
 		27870D922F11A91D0061830F /* TaskMaster.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27870D902F11A91D0061830F /* TaskMaster.cc */; };
-		2787D93A2DB2FC4E004F7D9B /* c4PeerSyncTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 2787D9392DB2FC4E004F7D9B /* c4PeerSyncTypes.h */; };
-		2787D93B2DB2FC4E004F7D9B /* c4PeerSync.h in Headers */ = {isa = PBXBuildFile; fileRef = 2787D9382DB2FC4E004F7D9B /* c4PeerSync.h */; };
 		2787D95C2DB30173004F7D9B /* Mesh.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2787D9402DB2FCDA004F7D9B /* Mesh.cc */; };
 		2787D95D2DB30173004F7D9B /* c4PeerSync.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2787D93D2DB2FCDA004F7D9B /* c4PeerSync.cc */; };
 		2787D95E2DB30173004F7D9B /* PeerID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2787D9452DB2FCDA004F7D9B /* PeerID.cc */; };
@@ -291,6 +289,10 @@
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
 		278963641D7A376900493096 /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
 		278963671D7B7E7D00493096 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963661D7B7E7D00493096 /* Stream.cc */; };
+		278B65542F578ABE00351504 /* c4PeerSync.h in Headers */ = {isa = PBXBuildFile; fileRef = 278B65502F578ABE00351504 /* c4PeerSync.h */; };
+		278B65552F578ABE00351504 /* c4PeerDiscovery.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278B654F2F578ABE00351504 /* c4PeerDiscovery.hh */; };
+		278B65562F578ABE00351504 /* c4PeerSyncTypes.h in Headers */ = {isa = PBXBuildFile; fileRef = 278B65522F578ABE00351504 /* c4PeerSyncTypes.h */; };
+		278B65572F578ABE00351504 /* c4PeerSync.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278B65512F578ABE00351504 /* c4PeerSync.hh */; };
 		278B97762D8C837B00383915 /* CollectionName.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278B97752D8C837B00383915 /* CollectionName.cc */; };
 		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
@@ -1555,9 +1557,6 @@
 		2785C2682D012AA100F22817 /* c4Replicator+Pool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Replicator+Pool.hh"; sourceTree = "<group>"; };
 		27870D8F2F11A91D0061830F /* TaskMaster.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TaskMaster.hh; sourceTree = "<group>"; };
 		27870D902F11A91D0061830F /* TaskMaster.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TaskMaster.cc; sourceTree = "<group>"; };
-		2787D9372DB2FC3A004F7D9B /* c4PeerSync.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerSync.hh; sourceTree = "<group>"; };
-		2787D9382DB2FC4E004F7D9B /* c4PeerSync.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PeerSync.h; sourceTree = "<group>"; };
-		2787D9392DB2FC4E004F7D9B /* c4PeerSyncTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PeerSyncTypes.h; sourceTree = "<group>"; };
 		2787D93C2DB2FCDA004F7D9B /* c4PeerDiscovery.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerDiscovery.cc; sourceTree = "<group>"; };
 		2787D93D2DB2FCDA004F7D9B /* c4PeerSync.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PeerSync.cc; sourceTree = "<group>"; };
 		2787D93F2DB2FCDA004F7D9B /* Mesh.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Mesh.hh; sourceTree = "<group>"; };
@@ -1576,6 +1575,10 @@
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
 		278963651D7B3E0E00493096 /* Stream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Stream.hh; path = ../Support/Stream.hh; sourceTree = "<group>"; };
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
+		278B654F2F578ABE00351504 /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
+		278B65502F578ABE00351504 /* c4PeerSync.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PeerSync.h; sourceTree = "<group>"; };
+		278B65512F578ABE00351504 /* c4PeerSync.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerSync.hh; sourceTree = "<group>"; };
+		278B65522F578ABE00351504 /* c4PeerSyncTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PeerSyncTypes.h; sourceTree = "<group>"; };
 		278B97742D8C837B00383915 /* CollectionName.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CollectionName.hh; sourceTree = "<group>"; };
 		278B97752D8C837B00383915 /* CollectionName.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CollectionName.cc; sourceTree = "<group>"; };
 		278B97882D8C868500383915 /* PeerDiscoveryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PeerDiscoveryTest.hh; sourceTree = "<group>"; };
@@ -1751,7 +1754,6 @@
 		27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DocumentKeysTest.cc; sourceTree = "<group>"; };
 		27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DocumentKeys.hh; sourceTree = "<group>"; };
 		27E19D652316EDEA00E031F8 /* RESTClientTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RESTClientTest.cc; sourceTree = "<group>"; };
-		27E2BAEB2F23FFE400B6A8AC /* c4PeerDiscovery.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4PeerDiscovery.hh; sourceTree = "<group>"; };
 		27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingRev.cc; sourceTree = "<group>"; };
 		27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingRev.hh; sourceTree = "<group>"; };
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
@@ -2407,7 +2409,6 @@
 				27D62A572B7BF403004C0787 /* c4Index.hh */,
 				274D184C261683F40018D39C /* c4Listener.hh */,
 				2743E20825F6BC88006F696D /* c4Observer.hh */,
-				2787D9372DB2FC3A004F7D9B /* c4PeerSync.hh */,
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
 				2758E0A725F30A37007C7487 /* c4Replicator.hh */,
 				274D18862617B4300018D39C /* c4Socket.hh */,
@@ -3122,6 +3123,17 @@
 			path = DNS_SD;
 			sourceTree = "<group>";
 		};
+		278B65532F578ABE00351504 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				278B654F2F578ABE00351504 /* c4PeerDiscovery.hh */,
+				278B65502F578ABE00351504 /* c4PeerSync.h */,
+				278B65512F578ABE00351504 /* c4PeerSync.hh */,
+				278B65522F578ABE00351504 /* c4PeerSyncTypes.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
 		27A924951D9B316D00086206 /* LiteCore iOS */ = {
 			isa = PBXGroup;
 			children = (
@@ -3552,7 +3564,6 @@
 				271AB00F2374A41E007B0319 /* c4Index.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
-				2787D9382DB2FC4E004F7D9B /* c4PeerSync.h */,
 				27098A96216C1D2E002751DA /* c4PredictiveQuery.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
@@ -3565,7 +3576,6 @@
 				2743E34525F8570C006F696D /* c4DocEnumeratorTypes.h */,
 				2743E34425F8563A006F696D /* c4IndexTypes.h */,
 				274D183A261683680018D39C /* c4ListenerTypes.h */,
-				2787D9392DB2FC4E004F7D9B /* c4PeerSyncTypes.h */,
 				2743E33525F8554F006F696D /* c4QueryTypes.h */,
 				2743E34625F8583D006F696D /* c4ReplicatorTypes.h */,
 				274D18852617B3660018D39C /* c4SocketTypes.h */,
@@ -3661,7 +3671,6 @@
 		27FD728A2D833D4800CC48BF /* P2P */ = {
 			isa = PBXGroup;
 			children = (
-				27E2BAEB2F23FFE400B6A8AC /* c4PeerDiscovery.hh */,
 				2787D93C2DB2FCDA004F7D9B /* c4PeerDiscovery.cc */,
 				2787D93D2DB2FCDA004F7D9B /* c4PeerSync.cc */,
 				2787D93F2DB2FCDA004F7D9B /* Mesh.hh */,
@@ -3677,6 +3686,7 @@
 				2792465D2F1189790050E494 /* TLSCodec.hh */,
 				2792465E2F1189790050E494 /* TLSCodec.cc */,
 				27FD72852D833D4800CC48BF /* CMakeLists.txt */,
+				278B65532F578ABE00351504 /* include */,
 				27EE2C262F4543FA00E84664 /* docs */,
 				2787D9512DB2FD0E004F7D9B /* DNS_SD */,
 				27FD72812D833D4800CC48BF /* Apple */,
@@ -3746,8 +3756,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2787D93A2DB2FC4E004F7D9B /* c4PeerSyncTypes.h in Headers */,
-				2787D93B2DB2FC4E004F7D9B /* c4PeerSync.h in Headers */,
 				27B64938206971FC00FC12F7 /* LiteCore.h in Headers */,
 				27B6494A2069723900FC12F7 /* c4.h in Headers */,
 				27B6494B2069723900FC12F7 /* c4CppUtils.hh in Headers */,
@@ -3825,6 +3833,10 @@
 				276CC1172F196D48003C12B6 /* LiteCoreBTSocket.hh in Headers */,
 				276CC1182F196D48003C12B6 /* Bluetooth+Internal.hh in Headers */,
 				276CC1192F196D48003C12B6 /* BluetoothPeer.hh in Headers */,
+				278B65542F578ABE00351504 /* c4PeerSync.h in Headers */,
+				278B65552F578ABE00351504 /* c4PeerDiscovery.hh in Headers */,
+				278B65562F578ABE00351504 /* c4PeerSyncTypes.h in Headers */,
+				278B65572F578ABE00351504 /* c4PeerSync.hh in Headers */,
 				27870D912F11A91D0061830F /* TaskMaster.hh in Headers */,
 				27115C952D83682D004FCC12 /* ListenerHarness.hh in Headers */,
 				276CC1022F187800003C12B6 /* LiteCoreBTCentral.hh in Headers */,
