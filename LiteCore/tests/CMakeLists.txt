@@ -122,6 +122,7 @@ if (BUILD_ENTERPRISE)
         CppTests PRIVATE
         ${EE_SRC}/Listener
         ${EE_SRC}/P2P
+        ${EE_SRC}/P2P/include
         ${EE_SRC}/P2P/Apple
         ${EE_SRC}/P2P/DNS_SD
     )
