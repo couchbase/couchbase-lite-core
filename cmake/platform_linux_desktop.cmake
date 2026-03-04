@@ -17,6 +17,10 @@ endif()
 function(setup_globals)
     setup_globals_linux()
 
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        add_link_options(-fuse-ld=lld)
+    endif()
+
     # Enable relative RPATHs for installed bits
     set (CMAKE_INSTALL_RPATH "\$ORIGIN" PARENT_SCOPE)
 

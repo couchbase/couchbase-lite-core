@@ -134,7 +134,7 @@ build_binaries () {
     cmake ${cmakeOptions} ../couchbase-lite-core
     make -j8
     if [[ ${OS} == 'linux' ]]; then
-        ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh $PWD
+        OBJCOPY=llvm-objcopy-19 STRIP=llvm-strip-19 ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh $PWD
     else
         dsymutil ${macosx_lib} -o libLiteCore.dylib.dSYM
         strip -x ${macosx_lib}
