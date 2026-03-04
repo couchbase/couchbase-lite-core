@@ -346,10 +346,22 @@ namespace litecore {
             }
 
             if ( expiration > C4Timestamp::None ) {
-                std::lock_guard lock(_expiryMutex);
-                if ( _expiryStarted ) _housekeeper->documentExpirationChanged(expiration);
-                else
+                int expected = ExpiryStopped;
+                if ( _expiryState.compare_exchange_strong(expected, ExpiryStarting) ) {
                     startHousekeeping(Housekeeper::Task::kExpiry);
+                    return true;
+                }
+
+                // Another thread is starting. Just wait
+                if ( expected == ExpiryStarting ) _expiryState.wait(expected);
+
+                expected = ExpiryStarted;
+                if ( _expiryState.compare_exchange_strong(expected, ExpiryNotifying) ) {
+                    _housekeeper->documentExpirationChanged(expiration);
+                    _expiryState = ExpiryStarted;
+                    _expiryState.notify_all();
+                }
+                // Otherwise, it's stopped and we discard the call.
             }
             return true;
         }
@@ -392,12 +404,14 @@ namespace litecore {
             };
 
             if ( task == Housekeeper::Task::kExpiry ) {
-                std::lock_guard lock(_expiryMutex);
-                if ( !_expiryStarted ) {
+                int expected = ExpiryStopped;
+                if ( _expiryState.compare_exchange_strong(expected, ExpiryStarting) || expected == ExpiryStarting ) {
+                    // state == ExpiryStarting
                     // Ensure that startExpiration() called only once.
                     ensureHousekeeper();
                     _housekeeper->startExpiration();
-                    _expiryStarted = true;
+                    _expiryState = ExpiryStarted;
+                    _expiryState.notify_all();
                 }
             } else if ( task == Housekeeper::Task::kMigrate ) {
                 // This is only called in startBackgroundTasks.
@@ -408,12 +422,32 @@ namespace litecore {
         }
 
         bool stopHousekeeping() {
-            std::lock_guard lock(_expiryMutex);
-            if ( !_housekeeper ) return false;
-            _housekeeper->stop();
-            _housekeeper   = nullptr;
-            _expiryStarted = false;
-            return true;
+            while ( true ) {
+                int  expected  = ExpiryStarted;
+                auto exchanged = _expiryState.compare_exchange_strong(expected, ExpiryStopping);
+                if ( !exchanged ) {
+                    expected  = ExpiryStopped;
+                    exchanged = _expiryState.compare_exchange_strong(expected, ExpiryStopping);
+                }
+                if ( exchanged ) {
+                    // We are in ExpiryStopping
+                    bool stopped = false;
+                    if ( _housekeeper ) {
+                        // Stop the entire Housekeeping
+                        _housekeeper->stop();
+                        _housekeeper = nullptr;
+                        stopped      = true;
+                    }
+                    _expiryState = ExpiryStopped;
+                    _expiryState.notify_all();
+                    return stopped;
+                } else {
+                    // wait is to be awoken with ExpiryStarted or ExpiryStopped
+                    if ( expected != ExpiryStopped ) _expiryState.wait(expected);
+                    else
+                        return false;  // Another thread stopped it.
+                }
+            }
         }
 
 #pragma mark - INDEXES:
@@ -581,8 +615,16 @@ namespace litecore {
         unique_ptr<DocumentFactory>              _documentFactory;  // creates C4Document instances
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
         Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
-        bool                                     _expiryStarted{false};
-        std::recursive_mutex                     _expiryMutex;
+
+        enum ExpiryState {
+            ExpiryStopped,    // stable state -> Starting,  Stopping
+            ExpiryStarted,    // stable state -> Notifying, Stopping
+            ExpiryStarting,   //              -> Started
+            ExpiryNotifying,  //              -> Started
+            ExpiryStopping    //              -> Stopped
+        };
+
+        std::atomic<int> _expiryState{ExpiryStopped};
     };
 
     inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }

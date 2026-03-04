@@ -326,65 +326,79 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Document][Enumerator][C]") {
-    bool with_3_0_DB = false;
-    SECTION("With 3.0 DB") {
-        with_3_0_DB = true;
-        closeDB();
-        auto              name   = copyFixtureDB("db_versions/db_3_0_0_names_100_with_deleted.cblite2");
-        C4DatabaseConfig2 config = {slice(TempDir())};
-        config.flags &= !kC4DB_Create;
-        db = REQUIRED(c4db_openNamed(name, &config, ERROR_INFO()));
-    }
-    SECTION("WITH current DB") { setupAllDocs(); }
+    setupAllDocs();
+    C4Error          error;
+    C4DocEnumerator* e;
 
     auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
-    if ( !with_3_0_DB ) REQUIRE(c4coll_getDocumentCount(defaultColl) == 99);
+    REQUIRE(c4coll_getDocumentCount(defaultColl) == 99);
 
     // No start or end ID:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
-
-    C4Error                  error;
-    c4::ref<C4DocEnumerator> e       = REQUIRED(c4coll_enumerateAllDocs(defaultColl, &options, WITH_ERROR()));
-    constexpr size_t         bufSize = 20;
-    char                     docID[bufSize];
-    int                      i                = 1;
-    bool                     isFirstIteration = true;
+    e                        = REQUIRED(c4coll_enumerateAllDocs(defaultColl, &options, WITH_ERROR()));
+    constexpr size_t bufSize = 20;
+    char             docID[bufSize];
+    int              i = 1;
     while ( c4enum_next(e, &error) ) {
-        if ( with_3_0_DB ) {
-            if ( isFirstIteration ) {
-                std::this_thread::sleep_for(1ms);  // to allow Housekeeper/migration to catch up.
-                isFirstIteration = false;
-            }
-        }
         auto doc = c4enum_getDocument(e, ERROR_INFO());
         REQUIRE(doc);
-        if ( !with_3_0_DB ) {
-            snprintf(docID, bufSize, "doc-%03d", i);
-            CHECK(doc->docID == c4str(docID));
-            CHECK(doc->revID == kRevID);
-            CHECK(doc->selectedRev.revID == kRevID);
-            CHECK(doc->selectedRev.sequence == (C4SequenceNumber)i);
-        }
+        snprintf(docID, bufSize, "doc-%03d", i);
+        CHECK(doc->docID == c4str(docID));
+        CHECK(doc->revID == kRevID);
+        CHECK(doc->selectedRev.revID == kRevID);
+        CHECK(doc->selectedRev.sequence == (C4SequenceNumber)i);
         CHECK(c4doc_getProperties(doc) == nullptr);
         // Doc was loaded without its body, but it should load on demand:
         CHECK(c4doc_loadRevisionBody(doc, WITH_ERROR()));  // have to explicitly load the body
+        CHECK(docBodyEquals(doc, kFleeceBody));
 
-        if ( !with_3_0_DB ) {
-            CHECK(docBodyEquals(doc, kFleeceBody));
-            C4DocumentInfo info;
-            REQUIRE(c4enum_getDocumentInfo(e, &info));
-            CHECK(info.docID == c4str(docID));
-            CHECK(info.flags == kDocExists);
-            CHECK(info.revID == kRevID);
-            CHECK(info.bodySize == kFleeceBody.size);
-        }
+        C4DocumentInfo info;
+        REQUIRE(c4enum_getDocumentInfo(e, &info));
+        CHECK(info.docID == c4str(docID));
+        CHECK(info.flags == kDocExists);
+        CHECK(info.revID == kRevID);
+        CHECK(info.bodySize == kFleeceBody.size);
 
         c4doc_release(doc);
         i++;
     }
+    c4enum_free(e);
     CHECK(error == C4Error{});
-    if ( !with_3_0_DB ) CHECK(i == 100);
+    CHECK(i == 100);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator with V3.0 Database",
+                       "[Database][Document][Enumerator][C]") {
+    closeDB();
+    auto              name   = copyFixtureDB("db_versions/db_3_0_0_names_100_with_deleted.cblite2");
+    C4DatabaseConfig2 config = {slice(TempDir())};
+    config.flags &= !kC4DB_Create;
+    db = REQUIRED(c4db_openNamed(name, &config, ERROR_INFO()));
+
+    auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    C4EnumeratorOptions options     = kC4DefaultEnumeratorOptions;
+    options.flags &= ~kC4IncludeBodies;
+
+    C4Error                  error;
+    c4::ref<C4DocEnumerator> e                = REQUIRED(c4coll_enumerateAllDocs(defaultColl, &options, WITH_ERROR()));
+    bool                     isFirstIteration = true;
+    while ( c4enum_next(e, &error) ) {
+        if ( isFirstIteration ) {
+            // to allow Housekeeper/migration to catch up, in order to hit SQLITE_BUSY_SNAPSHOT
+            std::this_thread::sleep_for(1ms);
+            isFirstIteration = false;
+        }
+        auto doc = c4enum_getDocument(e, ERROR_INFO());
+        REQUIRE(doc);
+
+        CHECK(c4doc_getProperties(doc) == nullptr);
+        // Doc was loaded without its body, but it should load on demand:
+        CHECK(c4doc_loadRevisionBody(doc, WITH_ERROR()));  // have to explicitly load the body
+
+        c4doc_release(doc);
+    }
+    CHECK(error == C4Error{});
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Database][Enumerator][C]") {

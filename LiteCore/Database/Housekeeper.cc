@@ -187,10 +187,9 @@ namespace litecore {
         });
 
         if ( nextMaxRowid < 0 ) return;  // Error: already logged in the above catch.
-        else {
-            if ( nextMaxRowid > 0 ) enqueueAfter(kBatchIntervalMS, FUNCTION_TO_QUEUE(Housekeeper::_doMigration));
-            logInfo("Migrate deleted docs. Next rowid to start from %" PRIu64 " down.", nextMaxRowid);
-        }
+
+        if ( nextMaxRowid > 0 ) enqueueAfter(kBatchIntervalMS, FUNCTION_TO_QUEUE(Housekeeper::_doMigration));
+        logInfo("Migrate deleted docs. Next rowid to start from %" PRIu64 " down.", nextMaxRowid);
     }
 
     bool Housekeeper::initBackgroundDB() {

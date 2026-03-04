@@ -119,12 +119,7 @@ namespace litecore {
         return std::make_pair(scope, collection);
     }
 
-    size_t DataFile::openCountOnPath(const FilePath& path) {
-        auto   shared = DataFile::Shared::forPath(path, nullptr);
-        size_t ret    = 0;
-        shared->forOpenDataFiles(nullptr, [&](DataFile*) { ++ret; });
-        return ret;
-    }
+    size_t DataFile::openCountOnPath(const FilePath& path) { return Shared::openCountOnPath(path); }
 
 #pragma mark - DATAFILE:
 
