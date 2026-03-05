@@ -16,6 +16,7 @@
 #    include "CertHelper.hh"
 #    ifdef WIN32
 #        include "Winsock2.h"
+#        include "Ws2tcpip.h"
 #        define in_addr_t unsigned long
 #    else
 #        include <arpa/inet.h>
@@ -41,7 +42,8 @@ TEST_CASE("C4Certificate smoke test", "[Certs][C]") {
 }
 
 TEST_CASE("C4Certificate Subject Name", "[Certs][C]") {
-    auto                ipAddr = htonl(inet_addr("127.0.0.1"));
+    struct in_addr ipAddr;
+    REQUIRE(inet_pton(AF_INET, "127.0.0.1", &ipAddr) == 1);
     fleece::slice       ipAddrSlice((void*)&ipAddr, sizeof(in_addr_t));
     C4CertNameComponent nameComponents[] = {{kC4Cert_CommonName, "CommonName"_sl},
                                             {kC4Cert_Pseudonym, "Pseudonym"_sl},
