@@ -384,13 +384,13 @@ namespace litecore {
             }
         }
         if ( !sureCompleted && !isDeletedTableComplete() ) {
-            asInternal(_defaultCollection)->startHousekeeping(Housekeeper::Task::kMigrate);
+            asInternal(_defaultCollection)->startHousekeeping(CollectionImpl::HousekeeperTask::Migrate);
         }
 
         for ( const string& name : _dataFile->allKeyStoreNames() ) {
             if ( CollectionSpec collSpec = keyStoreNameToCollectionSpec(name); collSpec.name ) {
                 if ( _dataFile->getKeyStore(name).nextExpiration() > C4Timestamp::None ) {
-                    asInternal(getCollection(collSpec))->startHousekeeping(Housekeeper::Task::kExpiry);
+                    asInternal(getCollection(collSpec))->startHousekeeping(CollectionImpl::HousekeeperTask::Expiry);
                 }
             }
         }

@@ -54,6 +54,8 @@ namespace litecore {
 
         ~CollectionImpl() override { destructExtraInfo(_extraInfo); }
 
+        enum class HousekeeperTask : short { Expiry, Migrate };
+
         void close() {
             logVerbose("Closing");
             stopHousekeeping();
@@ -346,22 +348,9 @@ namespace litecore {
             }
 
             if ( expiration > C4Timestamp::None ) {
-                int expected = ExpiryStopped;
-                if ( _expiryState.compare_exchange_strong(expected, ExpiryStarting) ) {
-                    startHousekeeping(Housekeeper::Task::kExpiry);
-                    return true;
-                }
-
-                // Another thread is starting. Just wait
-                if ( expected == ExpiryStarting ) _expiryState.wait(expected);
-
-                expected = ExpiryStarted;
-                if ( _expiryState.compare_exchange_strong(expected, ExpiryNotifying) ) {
-                    _housekeeper->documentExpirationChanged(expiration);
-                    _expiryState = ExpiryStarted;
-                    _expiryState.notify_all();
-                }
-                // Otherwise, it's stopped and we discard the call.
+                if ( _expiryStarted ) _housekeeper->documentExpirationChanged(expiration);
+                else
+                    startHousekeeping(HousekeeperTask::Expiry);
             }
             return true;
         }
@@ -389,65 +378,36 @@ namespace litecore {
             return count;
         }
 
-        void startHousekeeping(Housekeeper::Task task) {
-            if ( !isValid() ) return;
+        void startHousekeeping(HousekeeperTask task) {
+            if ( !isValid() && _expiryStarted && _migrateStarted ) return;
 
             if ( auto flags = _database->getConfiguration().flags;
                  (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) != 0 )
                 return;
 
-            auto ensureHousekeeper = [this]() {
-                if ( !_housekeeper ) {
-                    _housekeeper = new Housekeeper(this);
-                    _housekeeper->setParentObjectRef(getObjectRef());
-                }
-            };
+            if ( !_housekeeper ) {
+                _housekeeper = new Housekeeper(this);
+                _housekeeper->setParentObjectRef(getObjectRef());
+            }
 
-            if ( task == Housekeeper::Task::kExpiry ) {
-                int expected = ExpiryStopped;
-                if ( _expiryState.compare_exchange_strong(expected, ExpiryStarting) || expected == ExpiryStarting ) {
-                    // state == ExpiryStarting
-                    // Ensure that startExpiration() called only once.
-                    ensureHousekeeper();
-                    _housekeeper->startExpiration();
-                    _expiryState = ExpiryStarted;
-                    _expiryState.notify_all();
-                }
-            } else if ( task == Housekeeper::Task::kMigrate ) {
-                // This is only called in startBackgroundTasks.
-                // And there is no harm to startMigration multiple times.
-                ensureHousekeeper();
+            if ( task == HousekeeperTask::Expiry && !_expiryStarted ) {
+                _housekeeper->startExpiration();
+                _expiryStarted = true;
+            } else if ( task == HousekeeperTask::Migrate && !_migrateStarted ) {
                 _housekeeper->startMigration();
+                _migrateStarted = true;
             }
         }
 
         bool stopHousekeeping() {
-            while ( true ) {
-                int  expected  = ExpiryStarted;
-                auto exchanged = _expiryState.compare_exchange_strong(expected, ExpiryStopping);
-                if ( !exchanged ) {
-                    expected  = ExpiryStopped;
-                    exchanged = _expiryState.compare_exchange_strong(expected, ExpiryStopping);
-                }
-                if ( exchanged ) {
-                    // We are in ExpiryStopping
-                    bool stopped = false;
-                    if ( _housekeeper ) {
-                        // Stop the entire Housekeeping
-                        _housekeeper->stop();
-                        _housekeeper = nullptr;
-                        stopped      = true;
-                    }
-                    _expiryState = ExpiryStopped;
-                    _expiryState.notify_all();
-                    return stopped;
-                } else {
-                    // wait is to be awoken with ExpiryStarted or ExpiryStopped
-                    if ( expected != ExpiryStopped ) _expiryState.wait(expected);
-                    else
-                        return false;  // Another thread stopped it.
-                }
-            }
+            _expiryStarted  = false;
+            _migrateStarted = false;
+            if ( _housekeeper ) {
+                _housekeeper->stop();
+                _housekeeper = nullptr;
+                return true;
+            } else
+                return false;
         }
 
 #pragma mark - INDEXES:
@@ -615,16 +575,8 @@ namespace litecore {
         unique_ptr<DocumentFactory>              _documentFactory;  // creates C4Document instances
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
         Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
-
-        enum ExpiryState {
-            ExpiryStopped,    // stable state -> Starting,  Stopping
-            ExpiryStarted,    // stable state -> Notifying, Stopping
-            ExpiryStarting,   //              -> Started
-            ExpiryNotifying,  //              -> Started
-            ExpiryStopping    //              -> Stopped
-        };
-
-        std::atomic<int> _expiryState{ExpiryStopped};
+        bool                                     _expiryStarted{false};
+        bool                                     _migrateStarted{false};
     };
 
     inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }

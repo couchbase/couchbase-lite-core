@@ -26,8 +26,6 @@ namespace litecore {
         /// Creates a Housekeeper for a Collection.
         explicit Housekeeper(C4Collection* NONNULL);
 
-        enum class Task : short { kExpiry, kMigrate };
-
         /// Asynchronously starts the Housekeeper task.
         void startExpiration();
         void startMigration();
