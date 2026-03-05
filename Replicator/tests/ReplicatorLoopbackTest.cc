@@ -2247,7 +2247,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete
             validateCheckpoints(db2, db, "{\"remote\":1}");
             break;
         default:
-            FAIL("Unknown test mode");  
+            FAIL("Unknown test mode");
     }
 
     if ( isRevTrees() && _expectedDocumentCount > 0 ) {
