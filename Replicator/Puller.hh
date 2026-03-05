@@ -114,6 +114,7 @@ namespace litecore::repl {
 #endif
         Retained<Inserter>          _inserter;
         mutable Retained<RevFinder> _revFinder;
+        unsigned const              _maxIncomingRevs;
         unsigned                    _pendingRevMessages{0};     // # of 'rev' msgs expected but not yet being processed
         unsigned                    _activeIncomingRevs{0};     // # of IncomingRev workers running for revs
         unsigned                    _activeIncomingRevoked{0};  // # of IncomingRev workers running for revoked docs

@@ -1,10 +1,10 @@
 var searchData=
 [
-  ['enabledeltasync_0',['enableDeltaSync',['../struct_c4_listener_config.html#a2419cecd8fabcdcc90758c78234750b4',1,'C4ListenerConfig']]],
+  ['enabledeltasync_0',['enableDeltaSync',['../struct_c4_listener_config.html#a2419cecd8fabcdcc90758c78234750b4',1,'C4ListenerConfig::enableDeltaSync'],['../struct_c4_listener_database_config.html#a990bc88c94adbca04daf4455d45c439d',1,'C4ListenerDatabaseConfig::enableDeltaSync']]],
   ['encoders_1',['Fleece Encoders',['../group___f_l_encoder.html',1,'']]],
   ['encryptionkey_2',['encryptionKey',['../struct_c4_database_config2.html#a19d1e0dba59678b93fa017ab9394c472',1,'C4DatabaseConfig2::encryptionKey'],['../struct_c4_database_config.html#a6a939be40707545295b1676962707534',1,'C4DatabaseConfig::encryptionKey']]],
   ['enumeration_3',['Document Enumeration',['../group___doc_enumerator.html',1,'']]],
-  ['error_4',['error',['../struct_c4_replicator_status.html#a9cdb964b6f99262b196e17c5c4c8982f',1,'C4ReplicatorStatus::error'],['../struct_c4_document_ended.html#acbc55cb7cea6d9a1ce173f9d781437dd',1,'C4DocumentEnded::error']]],
+  ['error_4',['error',['../struct_c4_replicator_status.html#a9cdb964b6f99262b196e17c5c4c8982f',1,'C4ReplicatorStatus::error'],['../struct_c4_document_ended.html#acbc55cb7cea6d9a1ce173f9d781437dd',1,'C4DocumentEnded::error'],['../struct_c4_blob_progress.html#ac983d5dc5f01580f0c1aa703fd7bc2df',1,'C4BlobProgress::error']]],
   ['error_20codes_20and_20error_20handling_5',['Error Codes and Error Handling',['../group___errors.html',1,'']]],
   ['error_20handling_6',['Error Codes and Error Handling',['../group___errors.html',1,'']]],
   ['erroristransient_7',['errorIsTransient',['../struct_c4_document_ended.html#ace896db47ee45fb240d301649126e669',1,'C4DocumentEnded']]],

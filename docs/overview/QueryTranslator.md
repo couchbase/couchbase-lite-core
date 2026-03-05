@@ -9,7 +9,7 @@ It operates in several passes:
 3. For each `SourceNode`, ask the delegate what its SQL table name is and store that in its `tableName` property.
 4. Traverse the `Node`s, writing SQL to an output stream.
 
-> If you want to know what happens when the query is run, and why the translator emits calls to cryptic SQL functions, do read the [Query Runtime](./QueryRuntime.md) documentation.
+> If you want to know what happens when the query is run, and why the translator emits calls to cryptic SQL functions, do read the [Query Runtime](QueryRuntime.md) documentation.
 
 
 ## QueryTranslator

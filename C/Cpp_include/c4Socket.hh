@@ -156,17 +156,12 @@ class C4SocketFactoryImpl
     , public fleece::InstanceCountedIn<C4SocketFactoryImpl>
     , protected C4Base {
   public:
-    /// Returns a C4SocketFactory that can be used to open a C4Socket.
-    C4SocketFactory factory();
-
     /// The C4Socket I implement. Null until opened.
     C4Socket* socket() const FLPURE { return _socket; }
 
   protected:
+    explicit C4SocketFactoryImpl(C4Socket* socket);
     C4SocketFactoryImpl() = default;
-
-    /// Call this from the `open` override.
-    void opened(C4Socket*);
 
     void releaseSocket() { _socket = nullptr; }
 
@@ -175,8 +170,8 @@ class C4SocketFactoryImpl
     /// Called by `C4SocketFactory::attached`. You probably don't need to override it.
     virtual void attached();
 
-    /// Called by `C4SocketFactory::open`. Subclasses implementation must call `opened()`.
-    virtual void open(C4Socket* socket, const C4Address& address, C4Slice options) = 0;
+    /// Called by `C4SocketFactory::open`.
+    virtual void open(const C4Address& address, C4Slice options) = 0;
 
     /// Called by `C4SocketFactory::write`.
     virtual void write(fleece::alloc_slice data) = 0;
@@ -188,10 +183,28 @@ class C4SocketFactoryImpl
     virtual void close() = 0;
 
   private:
+    template <std::derived_from<C4SocketFactoryImpl> FACTORY>
+    friend C4SocketFactory c4SocketFactoryFor();
+
     static const C4SocketFactory kFactory;
     static C4SocketFactoryImpl*  nativeHandle(C4Socket*);
 
     fleece::Retained<C4Socket> _socket;
+};
+
+/// Returns a C4SocketFactory that can be used to open a C4Socket
+/// using a specific C4SocketFactoryImpl subclass.
+template <std::derived_from<C4SocketFactoryImpl> FACTORY>
+C4SocketFactory c4SocketFactoryFor() {
+    auto fac = C4SocketFactoryImpl::kFactory;
+    fac.open = [](C4Socket* socket, const C4Address* address, C4Slice options, void* context) {
+        C4SocketFactoryImpl* impl;
+        if ( auto native = socket->getNativeHandle() ) impl = static_cast<C4SocketFactoryImpl*>(native);
+        else
+            impl = new FACTORY(socket);
+        impl->open(*address, options);
+    };
+    return fac;
 };
 
 /** @} */

@@ -60,18 +60,7 @@ C4Socket::~C4Socket() {
 
 #pragma mark - C4SOCKETFACTORYIMPL
 
-C4SocketFactory C4SocketFactoryImpl::factory() {
-    C4SocketFactory fac = kFactory;
-    fac.context         = this;
-    return fac;
-}
-
-void C4SocketFactoryImpl::opened(C4Socket* socket) {
-    if ( !_socket ) {
-        _socket = socket;
-    } else {
-        Assert(socket == _socket);
-    }
+C4SocketFactoryImpl::C4SocketFactoryImpl(C4Socket* socket) : _socket(socket) {
     if ( !socket->getNativeHandle() ) {
         socket->setNativeHandle(this);
         retain(this);  // balanced by the release in kFactory.dispose below
@@ -88,13 +77,8 @@ C4SocketFactoryImpl* C4SocketFactoryImpl::nativeHandle(C4Socket* socket) {
 }
 
 const C4SocketFactory C4SocketFactoryImpl::kFactory{
-        .framing = kC4WebSocketClientFraming,
-        .open =
-                [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
-                    auto impl     = static_cast<C4SocketFactoryImpl*>(context);
-                    impl->_socket = socket;  // Ensure impl's socket ref is set
-                    impl->open(socket, *addr, options);
-                },
+        .framing          = kC4WebSocketClientFraming,
+        .open             = nullptr,
         .write            = [](C4Socket*     socket,
                     C4SliceResult allocatedData) { nativeHandle(socket)->write(alloc_slice(allocatedData)); },
         .completedReceive = [](C4Socket* socket,

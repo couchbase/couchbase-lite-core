@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['fleecedomain_0',['FleeceDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a8b416e51b735e834728f74539e4ee017',1,'c4Error.h']]]
+  ['_5fkfltrustinternaluseonly_0',['_kFLTrustInternalUseOnly',['../group__types.html#ggaa17999d04c6b0a89a07c5db13d154673ade408096ee10ea3001b39e53f0139e5a',1,'FLBase.h']]]
 ];

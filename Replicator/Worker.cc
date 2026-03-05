@@ -345,6 +345,11 @@ namespace litecore::repl {
             kC4ReplicatorOptionAutoPurge,
             kC4ReplicatorOptionAcceptParentDomainCookies,
 
+            // Tuning options:
+            kC4ReplicatorOptionMaxRevsBeingRequested,
+            kC4ReplicatorOptionMaxIncomingRevs,
+            kC4ReplicatorOptionMaxRevsInFlight,
+
             // TLS options:
             kC4ReplicatorOptionRootCerts,
             kC4ReplicatorOptionPinnedServerCert,

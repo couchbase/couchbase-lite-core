@@ -99,6 +99,7 @@ var menudata={children:[
 {text:"f",url:"globals_type.html#index_f"}]},
 {text:"Enumerations",url:"globals_enum.html"},
 {text:"Enumerator",url:"globals_eval.html",children:[
+{text:"_",url:"globals_eval.html#index__5F"},
 {text:"f",url:"globals_eval.html#index_f"},
 {text:"k",url:"globals_eval.html#index_k"},
 {text:"l",url:"globals_eval.html#index_l"},
@@ -114,7 +115,6 @@ var menudata={children:[
 {text:"h",url:"globals_defs.html#index_h"},
 {text:"k",url:"globals_defs.html#index_k"},
 {text:"l",url:"globals_defs.html#index_l"},
-{text:"m",url:"globals_defs.html#index_m"},
 {text:"n",url:"globals_defs.html#index_n"},
 {text:"r",url:"globals_defs.html#index_r"},
 {text:"s",url:"globals_defs.html#index_s"},

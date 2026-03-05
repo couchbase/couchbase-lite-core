@@ -62,17 +62,15 @@ It’s an abstract class, subclassed by `DatabaseImpl`. This is done just to avo
 
 ### C4Collection
 
-A namespace of documents in a database. A database contains collections, and collections contain documents. Indexes also belong to collections.
+Represents a Couchbase Lite `Collection`, a namespace of documents. (Documents will be described later.) A database contains collections, and collections contain documents. Indexes also belong to collections.
 
 There is always a default collection, named "`_default`", and clients can create more.
 
->Note: This is a new feature that isn't yet exposed in Couchbase Lite (as of June 2021.)
-
-For compatibility reasons, C4Database has a number of methods that operate on documents and indexes; those just delegate to the default collection.
+Collections are conceptually contained in Scopes, but those aren't really present in the API. Instead a collection's identifier (`C4CollectionSpec`) is a pair consisting of its name and the name of its scope. The default scope is also named `_default`.
 
 ### SequenceTracker
 
-Tracks an event stream of document changes in a collection, to support change notifications. It's informed of changes and commits by the `C4Collection` class, in fact by any instance of the same collection in any `C4Database` instance on the same database file (which means care needs to be taken to access it in a thread-safe way.)
+Tracks an event stream of document changes in a collection, to support change notifications. It's informed of changes and commits by its owning `C4Collection`, as well as by `C4Collection` instances in any other `C4Database` instance on the same database file.
 
 ### CollectionChangeNotifier
 
@@ -86,6 +84,9 @@ This callback system reduces the overhead of posting notifications. It's expecte
 
 This class is similar to `CollectionChangeNotifier` but is used to receive notifications of changes to a single document. Since it won't be triggered as often, it doesn't have the same callback throttling behavior: it invokes its callback every time the document changes.
 
+### Housekeeper and BackgroundDB
+
+`Housekeeper` takes care of background operations like expiring documents. It runs on a background thread, and it uses the Database's `BackgroundDB`, a separate SQLite connection, to minimize blocking API calls.
 
 
 ## 4. Storage Subsystem
@@ -150,6 +151,8 @@ Abstract database query object associated with, and created by, a `DataFile`. A 
 
 As you'd expect, there is a concrete `SQLiteQuery` subclass.
 
+There is a [separate document describing how we run N1QL queries in SQLite](QueryRuntime.md).
+
 ### C4QueryEnumerator
 
 Delegates to a `QueryEnumerator`, an abstract iterator over a `Query`'s results. Starts out positioned _before_ the first row; call `next()` to advance to the next row, until it returns `false` at the end.
@@ -158,17 +161,19 @@ The `columns` property returns a Fleece array iterator that can be used to acces
 
 The `SQLiteQueryEnumerator` subclass manages a `sqlite3_stmt` cursor. It tries to read individual rows from the cursor when `next()` is called, to keep RAM usage low, but this is only possible if no changes are made to the SQLite3 database on this connection. If a change is about to be made (i.e. a transaction is being opened), the enumerator detects this and quickly buffers the remaining rows into memory, then closes the cursor. This is invisible from the outside; the only side effect is increased memory usage.
 
-### QueryParser
+### QueryTranslator
 
-This class is only loosely connected, having no dependencies on the other classes described here. Its job is to convert  query description in JSON (actually a parsed Fleece object tree) into an equivalent SQLite `SELECT` statement. To do this it recursively traverses the tree, writing the SQL output to a C++ `stringstream`. It uses some tables (declared in `QueryParserTables.hh`) to map operation names to handler methods and SQL functions.
+This class is only loosely connected, having no dependencies on the other classes described here. Its job is to convert  query description in JSON (actually a parsed Fleece object tree) into an equivalent SQLite `SELECT` statement. It acts like a simple compiler, first translating the JSON to an abstract syntax tree (AST), then traversing the tree to write SQL.
 
-QueryParser also generates some of the SQL used to create indexes.
+QueryTranslator also generates the `CREATE INDEX` statements used to create indexes.
 
-To avoid dependencies, QueryParser uses a `Delegate` interface to describe the information it needs to know, like the names of tables corresponding to collections and FTS indexes. The interface is implemented by `DatabaseImpl`.
+To avoid dependencies, QueryTranslator uses a `Delegate` interface to describe the information it needs to know, like the names of tables corresponding to collections and FTS indexes. The interface is implemented by `DatabaseImpl`.
+
+There is a [separate document describing the QueryTranslator](QueryTranslator.md).
 
 ### N1QL
 
-N1QL queries are converted by a parser generated by the [PEG][3] tool from a high-level rule set. The output of the parser is a Fleece object tree corresponding to the JSON query schema; this is passed directly into the QueryParser.
+N1QL queries are converted by a parser generated by the [PEG][3] tool from a high-level grammar. The output of the parser is a Fleece object tree corresponding to the JSON query schema; this is passed directly into the QueryTranslator.
 
 
 ## 6. Blob / Attachment Subsystem
@@ -214,9 +219,9 @@ The final block is of course usually less than 4k in size; this one has to be en
 
 ### DocumentFactory
 
-Abstract class that vends `C4Document` instances; different classes create different `C4Document` subclasses. This allows for multiple types of document storage in `Record`s. Each `C4Collection` instance has one of these.
+Abstract class that vends `C4Document` instances; different subclasses create different `C4Document` subclasses. This allows for multiple types of document storage in `Record`s. Each `C4Collection` instance has one of these.
 
-The two concrete subclasses are `TreeDocumentFactory` and `VectorDocumentFactory`.
+The two concrete subclasses are `TreeDocumentFactory` and `VectorDocumentFactory`. The choice of which to use is based on a flag in the `C4DatabaseConfig`.
 
 ### C4Document
 
@@ -229,6 +234,8 @@ The concrete subclasses are `TreeDocument` and `VectorDocument`.
 A `C4Document` subclass that uses revision trees for versioning.
 
 > **NOTE:** The classes below should only be accessed by TreeDocument; any code outside the Document subsystem should always go through `C4Document`.
+
+> **NOTE:** CBL 4.0 and later no longer use `TreeDocument`, so all new and updated documents will have version vectors. However, pre-existing documents that haven't been updated by CBL 4 will still be in the old rev-tree format, so the subsidiary classes `RevTree` etc. are still needed to read from the old format.
 
 #### RevTreeRecord
 
@@ -270,7 +277,7 @@ Serializes a `RevTree` to/from binary format that's stored in a `Record`'s `extr
 
 `VectorRecord` stores its state in a `Record`. The local revision goes in the `body` and `version`. Others, if any, are stored in `extra` as a serialized Fleece structure. This structure has some optimizations to save space if revisions contain common properties; see the comments in `VectorRecord.cc` for details.
 
-### RevID
+### revid
 
 A binary-encoded revision ID, either the rev-tree kind (generation and digest) or a version vector. The encoding cuts the size in half. `RevID` is what’s stored in a `Record`’s `version`.
 
@@ -281,7 +288,7 @@ A binary-encoded revision ID, either the rev-tree kind (generation and digest) o
 
 ### VersionVector
 
-A decoded version vector represented as a `std::vector<Version>`, where `Version` is a tuple of a generation number and a peer ID (each a `uint64_t`.) This is used only by `VectorDocument` and `VectorRecord`.
+A decoded version vector represented as a `std::vector<Version>`, where `Version` is a tuple of a generation number and a peer ID (each 64 bits.) This is used only by `VectorDocument` and `VectorRecord`.
 
 [1]:	Replicator.md
 [2]:	https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema

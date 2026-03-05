@@ -16,17 +16,13 @@ A DataFile is implemented as a SQLite database file, named `db.sqlite3`, stored 
 
 ## 2. KeyStores
 
-Currently as of 3.0, LiteCore creates and uses three KeyStores:
+KeyStores are backed by SQLite tables whose names are prefixed with "`kv_`". The KeyStore created in a new database are:
 
-* `default` — Documents
+* `default` — The default collection and its documents
 * `info` — Various metadata values, like the database's UUIDs
 * `checkpoints` — Replicator checkpoints
 
-(Platform code _could_ create additional KeyStores by calling `c4raw_put()` -- The `storeName` parameter is a KeyStore name, and the KeyStore will be created if it doesn't exist. I'm not aware of any platforms using this, though.)
-
-KeyStores are backed by SQLite tables whose names are prefixed with "`kv_`". So documents live in the table `kv_default`, etc.
-
-In a 3.x database with multiple collections, each other collection has a KeyStore whose name is prefixed with `.`. So the `widgets` collection has a KeyStore named `.widgets`, which has a SQLite table named `kv_.widgets`. In a non-default scope, the scope name goes before the collection name separated by another `.`. So the `chairs` collection in the `inventory` scope has a KeyStore named `.inventory.chairs` and a SQLite table named `kv_.inventory.chairs`.
+In a database with multiple collections, each other collection has a KeyStore whose name is prefixed with `.`. So the `widgets` collection has a KeyStore named `.widgets`, which has a SQLite table named `kv_.widgets`. In a non-default scope, the scope name goes before the collection name separated by another `.`. So the `chairs` collection in the `inventory` scope has a KeyStore named `.inventory.chairs` and a SQLite table named `kv_.inventory.chairs`.
 
 A KeyStore's table has the following SQL schema:
 
@@ -158,6 +154,10 @@ CREATE INDEX "NAME" ON "kv_default:predict:DIGEST" (fl_unnested_value(body, 'RES
 
 (If there are multiple LiteCore indexes on the same prediction, but indexing different result properties, they share the same predictive table but of course create separate SQL indexes.)
 
+### Vector Indexes
+
+A vector index is a SQLite virtual table named `kv_default::vector::NAME`, managed by our [vector search extension][VECTOR_EXTENSION].
+
 ### The `indexes` table
 
 With the proliferation of index types, we've added a table to keep track of indexes. It's named `indexes` and has a row for each index; its columns are:
@@ -169,3 +169,5 @@ With the proliferation of index types, we've added a table to keep track of inde
 | `keyStore` | text | the name of the KeyStore being indexed |
 | `expression` | text | the JSON query expression describing the index |
 | `indexTableName` | text | the name of the SQLite table created for the index |
+
+[VECTOR_EXTENSION]: https://github.com/couchbaselabs/mobile-vector-search/blob/main/docs/Extension.md

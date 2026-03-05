@@ -14,6 +14,7 @@
 #include "WebSocketInterface.hh"
 #include "Logging.hh"
 #include "Stopwatch.hh"
+#include "Timer.hh"
 #include "c4Certificate.hh"
 #include "fleece/Expert.hh"  // for AllocedDict
 #include <atomic>
@@ -27,10 +28,6 @@ namespace uWS {
     template <const bool isServer>
     class WebSocketProtocol;
 }
-
-namespace litecore::actor {
-    class Timer;
-}  // namespace litecore::actor
 
 namespace litecore::websocket {
 
@@ -94,20 +91,21 @@ namespace litecore::websocket {
 
         using ClientProtocol = uWS::WebSocketProtocol<false>;
         using ServerProtocol = uWS::WebSocketProtocol<true>;
+        using Timer          = actor::Timer;
 
         bool sendOp(fleece::slice, uint8_t opcode);
         bool handleFragment(std::byte* data, size_t length, size_t remainingBytes, uint8_t opCode, bool fin);
         bool receivedMessage(uint8_t opCode, const fleece::alloc_slice& message);
         bool receivedClose(fleece::slice);
         void deliverMessageToDelegate(fleece::slice data, bool binary);
-        int  heartbeatInterval() const;
-        void schedulePing();
-        void sendPing();
-        void receivedPong();
-        void startResponseTimer(std::chrono::seconds timeout);
-        void timedOut();
-        void callCloseSocket();
-        void callRequestClose(int status, fleece::slice message);
+        std::chrono::seconds heartbeatInterval() const;
+        [[nodiscard]] bool   schedulePing();
+        void                 sendPing();
+        void                 receivedPong();
+        void                 startResponseTimer(std::chrono::seconds timeout);
+        void                 timedOut();
+        void                 callCloseSocket();
+        void                 callRequestClose(int status, fleece::slice message);
 
         Parameters const                _parameters;
         bool                            _framing;
@@ -121,8 +119,9 @@ namespace litecore::websocket {
         size_t                          _deliveredBytes{};     // Temporary count of bytes sent to delegate
         bool                            _closeSent{false}, _closeReceived{false};  // Close message sent or received?
         fleece::alloc_slice             _closeMessage;                             // The encoded close request message
-        std::unique_ptr<actor::Timer>   _pingTimer;
-        std::unique_ptr<actor::Timer>   _responseTimer;
+        Timer::time                     _lastReceiveTime{};                        // Time I last received a message
+        std::unique_ptr<Timer>          _pingTimer;
+        std::unique_ptr<Timer>          _responseTimer;
         std::atomic<bool>               _timerDisabled{false};
         std::chrono::seconds            _curTimeout{};
         bool                            _timedOut{false};
