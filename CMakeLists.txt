@@ -328,7 +328,7 @@ if(LITECORE_BUILD_SHARED)
         LiteCore INTERFACE
         C/include
         C/Cpp_include
-        $<$<BOOL:${BUILD_ENTERPRISE}>:${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P>
+        $<$<BOOL:${BUILD_ENTERPRISE}>:${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include>
         PRIVATE ${GENERATED_HEADERS_DIR}
     ) 
     target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
@@ -348,7 +348,7 @@ if(LITECORE_BUILD_SHARED)
 
     if(BUILD_ENTERPRISE)
         list(APPEND LITECORE_HEADERS
-            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/c4PeerDiscovery.hh
+            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include/c4PeerDiscovery.hh
         )
     endif()
 

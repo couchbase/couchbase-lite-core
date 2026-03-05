@@ -8,5 +8,6 @@ var searchData=
   ['flapi_5',['FLAPI',['../_compiler_support_8h.html#afde725198ae6fc34b4e286e4858b6eae',1,'CompilerSupport.h']]],
   ['flconst_6',['FLCONST',['../_compiler_support_8h.html#a917f168a4d475efbf76d6878af79935e',1,'CompilerSupport.h']]],
   ['fleece_5fpublic_7',['FLEECE_PUBLIC',['../_compiler_support_8h.html#a4fd6355527f948dded271b831e1c880a',1,'CompilerSupport.h']]],
-  ['flpure_8',['FLPURE',['../_compiler_support_8h.html#aaf76422cb887897c286992499106254d',1,'CompilerSupport.h']]]
+  ['fleece_5fpublic_5fimpl_8',['FLEECE_PUBLIC_IMPL',['../_compiler_support_8h.html#a3fb979d05d817889e5dc3ad53387b45d',1,'CompilerSupport.h']]],
+  ['flpure_9',['FLPURE',['../_compiler_support_8h.html#aaf76422cb887897c286992499106254d',1,'CompilerSupport.h']]]
 ];

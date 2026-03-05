@@ -76,7 +76,7 @@ CBL_CORE_API bool c4doc_isOldMetaProperty(C4String prop) C4API;
 /** Returns true if the document contains 1.x metadata properties at top level.
         Does NOT return true for "_attachments" because that property isn't obsolete.
         \note The caller must use a lock for Database when this function is called.
-        \note Assume \ref  doc is obtained from the database. */
+        \note Assume `doc` is obtained from the database. */
 CBL_CORE_API bool c4doc_hasOldMetaProperties(FLDict doc) C4API;
 
 /** Re-encodes to Fleece, without any 1.x metadata properties. Old-style attachments that
@@ -88,25 +88,25 @@ CBL_CORE_API C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FL
 /** Decodes the dict's "digest" property to a C4BlobKey.
         Returns false if there is no such property or it's not a valid blob key.
         \note The caller must use a lock for Database when this function is called.
-        \note Assume \ref  dict is obtained from the database. */
+        \note Assume `dict` is obtained from the database. */
 NODISCARD CBL_CORE_API bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey* outKey);
 
 /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key.
         (This function cannot recognize child dictionaries of "_attachments", because it's not
         possible to look at the parent of a Fleece value.) 
     \note The caller must use a lock for Database when this function is called.
-    \note Assume \ref  dict is obtained from the database. */
+    \note Assume `dict` is obtained from the database. */
 NODISCARD CBL_CORE_API bool c4doc_dictIsBlob(FLDict dict, C4BlobKey* outKey) C4API;
 
 /** Returns true if the given dictionary is a [reference to a] blob;
     \note The caller must use a lock for Database when this function is called.
-    \note Assume \ref  dict is obtained from the database. */
+    \note Assume `dict` is obtained from the database. */
 CBL_CORE_API bool c4doc_dictContainsBlobs(FLDict dict) C4API;
 
 /** Returns the contents of a blob dictionary, whether they're inline in the "data" property,
         or indirectly referenced via the "digest" property.
         \note The caller must use a lock for Database when this function is called.
-        @note  Assume \ref  dict is obtained from the database.
+        @note  Assume `dict` is obtained from the database.
         @note  You can omit the C4BlobStore, but if the blob has no inline data the function will
             give up and return a null slice (and clear the error, since this isn't a failure.)
         @param dict  A blob dictionary.
@@ -121,7 +121,7 @@ CBL_CORE_API C4SliceResult c4doc_getBlobData(FLDict dict, C4BlobStore* C4NULLABL
         properties and using heuristics to detect types that are already compressed, like gzip
         or JPEG. If no warning flags are found it will return true. 
         \note The caller must use a lock for Database when this function is called.
-        \note  Assume \ref  blobDict is obtained from the database. */
+        \note  Assume `blobDict` is obtained from the database. */
 CBL_CORE_API bool c4doc_blobIsCompressible(FLDict blobDict);
 
 /** Translates the body of the selected revision from Fleece to JSON.

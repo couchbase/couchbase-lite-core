@@ -14,7 +14,7 @@ var searchData=
   ['c4inline_11',['C4INLINE',['../c4_compat_8h.html#ab6e8c999f5a33767c27706fb4392831d',1,'c4Compat.h']]],
   ['c4nonnull_12',['C4NONNULL',['../c4_compat_8h.html#a8944e5062c19897c26a00074e7c4550b',1,'c4Compat.h']]],
   ['c4nullable_13',['C4NULLABLE',['../c4_compat_8h.html#a284f49deb058040adaabad4c7d5e992a',1,'c4Compat.h']]],
-  ['c4unused_14',['C4UNUSED',['../c4_compat_8h.html#ac2332b97ff6101a105d4e8b6ce3af974',1,'c4Compat.h']]],
-  ['cbl_5fcore_5fapi_15',['CBL_CORE_API',['../c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650',1,'c4Compat.h']]],
+  ['cbl_5fcore_5fapi_14',['CBL_CORE_API',['../c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650',1,'c4Compat.h']]],
+  ['cbl_5fcore_5fapi_5fimpl_15',['CBL_CORE_API_IMPL',['../c4_compat_8h.html#ad4a0a9e5c4aab686dbe5fbbfe3438bca',1,'c4Compat.h']]],
   ['coldlevel_16',['COLDLEVEL',['../_compiler_support_8h.html#a9b2436fdcebefc30179f697a8a483aa6',1,'CompilerSupport.h']]]
 ];

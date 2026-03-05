@@ -47,6 +47,7 @@ typedef void (*C4CollectionObserverCallback)(C4CollectionObserver* observer, voi
         @param collection  The collection to observe.
         @param callback  The function to call after the collection changes.
         @param context  An arbitrary value that will be passed to the callback.
+        @param error  Error information is stored here if the call fails.
         @return  The new observer reference. */
 NODISCARD CBL_CORE_API C4CollectionObserver* c4dbobs_createOnCollection(C4Collection*                collection,
                                                                         C4CollectionObserverCallback callback,
@@ -107,6 +108,7 @@ typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer, C4Colle
         @param docID  The ID of the document to observe.
         @param callback  The function to call after the database changes.
         @param context  An arbitrary value that will be passed to the callback.
+        @param error  Error information is stored here if the call fails.
         @return  The new observer reference. */
 NODISCARD CBL_CORE_API C4DocumentObserver* c4docobs_createWithCollection(C4Collection* collection, C4String docID,
                                                                          C4DocumentObserverCallback callback,
