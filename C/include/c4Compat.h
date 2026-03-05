@@ -139,9 +139,9 @@
 
 // Type-checking for printf-style vararg functions:
 #ifndef __printflike
-#   if __has_attribute(__format__)
-#       define __printflike(fmtarg, firstvararg) __attribute__((__format__(__printf__, fmtarg, firstvararg)))
-#   else
-#       define __printflike(A, B)
-#   endif
+#    if __has_attribute(__format__)
+#        define __printflike(fmtarg, firstvararg) __attribute__((__format__(__printf__, fmtarg, firstvararg)))
+#    else
+#        define __printflike(A, B)
+#    endif
 #endif
