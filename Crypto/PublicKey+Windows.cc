@@ -485,8 +485,8 @@ namespace litecore::crypto {
                 // Duplicate the context before deleting because CertDeleteCertificateFromStore always
                 // frees the context, and winChain needs to remain valid until CertFreeCertificateChain
                 PCCERT_CONTEXT certToDelete = CertDuplicateCertificateContext(element->pCertContext);
-                checkWincryptBool(CertDeleteCertificateFromStore(certToDelete),
-                                  "CertDeleteCertificateFromStore", "Couldn't delete certificate");
+                checkWincryptBool(CertDeleteCertificateFromStore(certToDelete), "CertDeleteCertificateFromStore",
+                                  "Couldn't delete certificate");
             }
         }
     }
