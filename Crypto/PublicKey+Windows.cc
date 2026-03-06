@@ -69,7 +69,8 @@ namespace litecore::crypto {
     }
 
     inline HCERTSTORE getSystemStore() {
-        auto* store = CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
+        auto* store =
+                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
         if ( !store ) { throwWincryptError(GetLastError(), "CertOpenSystemStore", "Couldn't open system store"); }
         return store;
     }
@@ -105,7 +106,7 @@ namespace litecore::crypto {
             if ( !foundCert ) { break; }
 
             DWORD bytesNeeded = 0;
-            BOOL  success     = CertGetCertificateContextProperty(foundCert, LITECORE_ID_PROPERTY, nullptr, &bytesNeeded);
+            BOOL  success = CertGetCertificateContextProperty(foundCert, LITECORE_ID_PROPERTY, nullptr, &bytesNeeded);
 
             if ( !success ) {
                 CertFreeCertificateContext(foundCert);
@@ -449,7 +450,7 @@ namespace litecore::crypto {
         LogTo(TLSLogDomain, "Checking if the certificate chain with id '%s' exists in the Keychain.",
               persistentID.c_str());
 
-        auto* const       store   = getSystemStore();
+        auto* const store = getSystemStore();
         DEFER { CertCloseStore(store, 0); };
         const auto* const winCert = getWinCert(store, persistentID);
 
@@ -481,7 +482,10 @@ namespace litecore::crypto {
             // a child cert doesn't appear to have an effect on "FindCertficate" until
             // the store is closed and re-opened.
             if ( getChildCount(store, element->pCertContext) < 3 ) {
-                checkWincryptBool(CertDeleteCertificateFromStore(element->pCertContext),
+                // Duplicate the context before deleting because CertDeleteCertificateFromStore always
+                // frees the context, and winChain needs to remain valid until CertFreeCertificateChain
+                PCCERT_CONTEXT certToDelete = CertDuplicateCertificateContext(element->pCertContext);
+                checkWincryptBool(CertDeleteCertificateFromStore(certToDelete),
                                   "CertDeleteCertificateFromStore", "Couldn't delete certificate");
             }
         }
