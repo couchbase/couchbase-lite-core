@@ -1690,8 +1690,18 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observers lifetime", "[Query][C][!throws]") {
+    int sw = 0;
+    SECTION("With 3.0 DB") {
+        closeDB();
+        auto              name   = copyFixtureDB("db_versions/db_3_0_0_names_100_with_deleted.cblite2");
+        C4DatabaseConfig2 config = {slice(TempDir())};
+        config.flags &= !kC4DB_Create;
+        db = REQUIRED(c4db_openNamed(name, &config, ERROR_INFO()));
+        sw = GENERATE(0, 1, 2, 3);
+    }
+    SECTION("With current DB") { sw = GENERATE(0, 1, 2, 3); }
+
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
-    const int sw = GENERATE(0, 1, 2, 3);
 
     struct State {
         C4Query*         query;

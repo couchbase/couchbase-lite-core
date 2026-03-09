@@ -36,7 +36,7 @@ namespace litecore {
         // For default keystore, _liveStore may contain deleted docs. We pass includeDeleted to _liveStore to
         // filter out the deleted ones. CBL-4377
         // For non-default stores, true is faster, and there are none anyway
-        auto count = _liveStore->recordCount(includeDeleted || !isDefaultStore);
+        auto count = _liveStore->recordCount(includeDeleted || !isDefaultStore || dataFile().isDeletedTableComplete());
         if ( includeDeleted ) count += _deadStore->recordCount(true);
         return count;
     }

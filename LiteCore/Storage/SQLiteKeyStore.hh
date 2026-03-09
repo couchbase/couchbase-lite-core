@@ -92,6 +92,10 @@ namespace litecore {
 
         void shareSequencesWith(KeyStore&) override;
 
+        // Maximum rowid
+        uint64_t maxRowid() const;
+        void     migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh);
+
       protected:
         bool                    mayHaveExpiration() override;
         RecordEnumerator::Impl* newEnumeratorImpl(RecordEnumerator::Options const&) override;

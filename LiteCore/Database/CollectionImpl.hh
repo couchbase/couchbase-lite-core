@@ -54,6 +54,8 @@ namespace litecore {
 
         ~CollectionImpl() override { destructExtraInfo(_extraInfo); }
 
+        enum class HousekeeperTask : short { Expiry, Migrate };
+
         void close() {
             logVerbose("Closing");
             stopHousekeeping();
@@ -346,9 +348,9 @@ namespace litecore {
             }
 
             if ( expiration > C4Timestamp::None ) {
-                if ( _housekeeper ) _housekeeper->documentExpirationChanged(expiration);
+                if ( _expiryStarted ) _housekeeper->documentExpirationChanged(expiration);
                 else
-                    startHousekeeping();
+                    startHousekeeping(HousekeeperTask::Expiry);
             }
             return true;
         }
@@ -376,22 +378,36 @@ namespace litecore {
             return count;
         }
 
-        void startHousekeeping() {
-            if ( !_housekeeper && isValid() ) {
-                auto flags = _database->getConfiguration().flags;
-                if ( (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) == 0 ) {
-                    _housekeeper = new Housekeeper(this);
-                    _housekeeper->setParentObjectRef(getObjectRef());
-                    _housekeeper->start();
-                }
+        void startHousekeeping(HousekeeperTask task) {
+            if ( !isValid() && _expiryStarted && _migrateStarted ) return;
+
+            if ( auto flags = _database->getConfiguration().flags;
+                 (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) != 0 )
+                return;
+
+            if ( !_housekeeper ) {
+                _housekeeper = new Housekeeper(this);
+                _housekeeper->setParentObjectRef(getObjectRef());
+            }
+
+            if ( task == HousekeeperTask::Expiry && !_expiryStarted ) {
+                _housekeeper->startExpiration();
+                _expiryStarted = true;
+            } else if ( task == HousekeeperTask::Migrate && !_migrateStarted ) {
+                _housekeeper->startMigration();
+                _migrateStarted = true;
             }
         }
 
         bool stopHousekeeping() {
-            if ( !_housekeeper ) return false;
-            _housekeeper->stop();
-            _housekeeper = nullptr;
-            return true;
+            _expiryStarted  = false;
+            _migrateStarted = false;
+            if ( _housekeeper ) {
+                _housekeeper->stop();
+                _housekeeper = nullptr;
+                return true;
+            } else
+                return false;
         }
 
 #pragma mark - INDEXES:
@@ -559,6 +575,8 @@ namespace litecore {
         unique_ptr<DocumentFactory>              _documentFactory;  // creates C4Document instances
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;  // Doc change tracker/notifier
         Retained<Housekeeper>                    _housekeeper;      // for expiration/cleanup tasks
+        bool                                     _expiryStarted{false};
+        bool                                     _migrateStarted{false};
     };
 
     inline CollectionImpl* asInternal(C4Collection* coll) { return (CollectionImpl*)coll; }

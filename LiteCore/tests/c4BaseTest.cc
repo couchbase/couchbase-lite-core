@@ -17,6 +17,8 @@
 #include "fleece/InstanceCounted.hh"
 #include "catch.hpp"
 #include "DatabaseImpl.hh"
+#include "Defer.hh"
+#include "Housekeeper.hh"
 #include "NumConversion.hh"
 #include "Actor.hh"
 #include "URLTransformer.hh"
@@ -168,6 +170,32 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Create collection concurrently", "[Database][C]"
         CHECK(err.code == 0);
         CHECK(err2.code == 0);
     }
+}
+
+TEST_CASE("Migrate Deleted Documents", "[Database][Upgrade][C]") {
+    InitTestLogging(kC4LogInfo);
+
+    // This db has 100 docs of which 22 are deleted.
+    string dbPath = "db_versions/db_3_0_0_names_100_with_deleted.cblite2";
+
+    // Copy the db from the repo to TempDir
+    auto name = C4Test::copyFixtureDB(dbPath);
+    C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
+
+    using namespace litecore;
+    auto prevBatch = Housekeeper::setMigrateBatchSize(20);
+    DEFER { Housekeeper::setMigrateBatchSize(prevBatch); };
+
+    C4DatabaseConfig2   config = {slice(TempDir()), 0};
+    C4Error             c4error{};
+    c4::ref<C4Database> migrateDb = REQUIRED(c4db_openNamed(name, &config, WITH_ERROR(&c4error)));
+    REQUIRE(c4error.code == 0);
+    REQUIRE(migrateDb);
+    // The chance of isDeletedTableComplete() == true is extremely low.
+    REQUIRE(!migrateDb->isDeletedTableComplete());
+
+    CHECK(WaitUntil(5s, [db = migrateDb.get()]() { return db->isDeletedTableComplete(); }));
+    CHECK(c4coll_getDocumentCount(c4db_getDefaultCollection(migrateDb, WITH_ERROR())) == 78);
 }
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Database Flag FullSync", "[Database][C]") {

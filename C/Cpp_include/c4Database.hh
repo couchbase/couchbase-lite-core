@@ -210,6 +210,9 @@ struct C4Database
 
     virtual C4Timestamp nextDocExpiration() const = 0;
 
+    // Deleted Table:
+    virtual bool isDeletedTableComplete() const = 0;
+
     // Blobs:
 
     virtual C4BlobStore& getBlobStore() const = 0;

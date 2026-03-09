@@ -57,6 +57,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt d
     C4Error     error;
     alloc_slice path(c4db_getPath(db));
     string      scratchDBName = stringprintf("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
+    REQUIRE(c4db_close(db, WITH_ERROR(&error)));
     REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
 
     // Open the copied db:

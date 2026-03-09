@@ -13,12 +13,14 @@
 
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
+#include "SQLiteCpp/SQLiteCpp.h"
 #include "QueryTranslator.hh"
 #include "Error.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
 #include "Array.hh"
+#include "sqlite3.h"
 
 using namespace std;
 using namespace fleece;
@@ -112,7 +114,16 @@ namespace litecore {
     void SQLiteKeyStore::createSequenceIndex() {
         if ( !_createdSeqIndex ) {
             Assert(_capabilities.sequences);
-            db().execWithLock(subst("CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
+            try {
+                db().execWithLock(subst("CREATE UNIQUE INDEX IF NOT EXISTS \"kv_@_seqs\" ON kv_@ (sequence)"));
+            } catch ( const SQLite::Exception& x ) {
+                if ( x.getExtendedErrorCode() == SQLITE_BUSY_SNAPSHOT ) {
+                    // This may occur if another connection has committed changes while there is
+                    // outstanding query, as in the case of Database Enumerator.
+                    return;
+                } else
+                    throw;
+            }
             _createdSeqIndex = true;
         }
     }

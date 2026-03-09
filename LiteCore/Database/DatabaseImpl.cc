@@ -24,6 +24,7 @@
 #include "FleeceImpl.hh"
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
+#include "SQLiteKeyStore.hh"
 #include "StringUtil.hh"
 #include "UUID.hh"
 #include "Version.hh"
@@ -351,7 +352,7 @@ namespace litecore {
     }
 
     BackgroundDB* DatabaseImpl::backgroundDatabase() {
-        if ( !_backgroundDB ) _backgroundDB = std::make_unique<BackgroundDB>(this);
+        std::call_once(_initBDBFlag, [this]() { _backgroundDB = std::make_unique<BackgroundDB>(this); });
         return _backgroundDB.get();
     }
 
@@ -369,10 +370,27 @@ namespace litecore {
     }
 
     void DatabaseImpl::startBackgroundTasks() {
+        if ( auto flags = getConfiguration().flags; (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) != 0 ) return;
+
+        Record rec           = getInfo(DataFile::kMaxRowidWithDeletedInDefault);
+        bool   sureCompleted = false;
+        if ( !rec.exists() ) {
+            if ( asInternal(_defaultCollection)->keyStore().lastSequence() == 0_seq ) {
+                rec.setBodyAsUInt(0);
+                Transaction t(this);
+                setInfo(rec);
+                t.commit();
+                sureCompleted = true;
+            }
+        }
+        if ( !sureCompleted && !isDeletedTableComplete() ) {
+            asInternal(_defaultCollection)->startHousekeeping(CollectionImpl::HousekeeperTask::Migrate);
+        }
+
         for ( const string& name : _dataFile->allKeyStoreNames() ) {
             if ( CollectionSpec collSpec = keyStoreNameToCollectionSpec(name); collSpec.name ) {
                 if ( _dataFile->getKeyStore(name).nextExpiration() > C4Timestamp::None ) {
-                    asInternal(getCollection(collSpec))->startHousekeeping();
+                    asInternal(getCollection(collSpec))->startHousekeeping(CollectionImpl::HousekeeperTask::Expiry);
                 }
             }
         }
@@ -386,6 +404,8 @@ namespace litecore {
         });
         return minTime;
     }
+
+    bool DatabaseImpl::isDeletedTableComplete() const { return _dataFile->isDeletedTableComplete(); }
 
 #pragma mark - UUIDS:
 
