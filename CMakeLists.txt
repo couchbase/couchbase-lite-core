@@ -347,9 +347,11 @@ if(LITECORE_BUILD_SHARED)
     )
 
     if(BUILD_ENTERPRISE)
-        list(APPEND LITECORE_HEADERS
-            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include/c4PeerDiscovery.hh
+        file(GLOB P2P_HEADERS 
+            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include/*.h 
+            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include/*.hh
         )
+        list(APPEND LITECORE_HEADERS ${P2P_HEADERS})
     endif()
 
     file(GLOB FLEECE_HEADERS 
