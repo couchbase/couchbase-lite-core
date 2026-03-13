@@ -123,7 +123,7 @@ namespace litecore::actor {
             Use this when registering callbacks, e.g. with a Future.*/
         template <class... Args>
         std::function<void(Args...)> _asynchronize(const char* methodName, std::function<void(Args...)> fn) {
-            Retained<Actor> ret(this);
+            Ref<Actor> ret(this);
             return [=](Args... arg) mutable { ret->_mailbox.enqueue(methodName, ACTOR_BIND_FN(fn, arg)); };
         }
 

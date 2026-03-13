@@ -367,7 +367,7 @@ namespace litecore { namespace crypto {
 
 
     // Public function to generate a new key-pair
-    Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
+    Ref<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
         @autoreleasepool {
             LogTo(TLSLogDomain, "Generating %u-bit RSA key-pair in Keychain", keySizeInBits);
             char timestr[100] = "LiteCore ";
@@ -384,7 +384,7 @@ namespace litecore { namespace crypto {
             privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
             if (!privateKey) {
                 warnCFError(error, "SecKeyCreateRandomKey");
-                return nullptr;
+                error::_throw(error::CryptoError, "Generating RSA key failed");
             }
             publicKey = SecKeyCopyPublicKey(privateKey);
 
@@ -581,7 +581,7 @@ namespace litecore { namespace crypto {
             
             NSData* certData = attrs[(id)kSecValueData];
             Assert(certData);
-            Retained<Cert> cert = new Cert(slice(certData));
+            Ref<Cert> cert = new Cert(slice(certData));
             
             // Create and evaluate trust to get certificate chain:
             SecCertificateRef certRef = (__bridge SecCertificateRef)attrs[(id)kSecValueRef];
@@ -782,7 +782,7 @@ namespace litecore { namespace crypto {
                     root->append(cert);
             }
             CFRelease(certs);
-            return root;
+            return root.asRef();
         }
     }
 

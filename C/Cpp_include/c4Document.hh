@@ -41,7 +41,7 @@ struct C4Document
     // NOTE: Instances are created with database->getDocument or database->putDocument.
 
     /// Creates a new instance identical to this one, except its `extraInfo` is unset.
-    virtual Retained<C4Document> copy() const = 0;
+    virtual Ref<C4Document> copy() const = 0;
 
     // Accessors:
 

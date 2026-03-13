@@ -106,8 +106,8 @@ namespace litecore {
                 enc["startSeq"] = int64_t(startSeq);
                 enc["limit"]    = limit;
                 enc.endDict();
-                Query::Options            options(enc.finish());
-                Retained<QueryEnumerator> e = _query->createEnumerator(&options);
+                Query::Options       options(enc.finish());
+                Ref<QueryEnumerator> e = _query->createEnumerator(&options);
                 if ( e->getRowCount() > 0 )
                     update = new LazyIndexUpdate(this, dimension, startSeq, curSeq, indexedSequences, e, limit);
             }
@@ -116,7 +116,7 @@ namespace litecore {
                 // No vectors to index; mark index as up-to-date:
                 indexedSequences.add(sequence_t{1}, curSeq + 1);
                 updateIndexedSequences(indexedSequences);
-                break;
+                break;  // and return nullptr
             } else if ( update->count() == 0 ) {
                 // No vectors for the caller to compute; finish the update now:
                 ExclusiveTransaction txn(_db);
@@ -159,7 +159,7 @@ namespace litecore {
 #    pragma mark - LAZY INDEX UPDATE:
 
     LazyIndexUpdate::LazyIndexUpdate(LazyIndex* manager, unsigned dimension, sequence_t firstSeq, sequence_t atSeq,
-                                     SequenceSet indexedSeqs, Retained<QueryEnumerator> e, size_t limit)
+                                     SequenceSet indexedSeqs, Ref<QueryEnumerator> e, size_t limit)
         : _manager(manager)
         , _firstSeq(firstSeq)
         , _atSeq(atSeq)
@@ -260,7 +260,7 @@ namespace litecore {
         _items.clear();
 
         _manager->updateIndexedSequences(newIndexedSequences);
-        _manager = nullptr;
+        std::move(_manager).destroy();
 
         return newIndexedSequences.contains(sequence_t{1}, curSeq + 1);
     }

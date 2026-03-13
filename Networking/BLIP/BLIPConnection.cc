@@ -53,7 +53,7 @@ namespace litecore::blip {
     static LogDomain BLIPMessagesLog("BLIPMessages", LogLevel::None);
 
     /** Queue of outgoing messages; each message gets to send one frame in turn. */
-    class MessageQueue : public vector<Retained<MessageOut>> {
+    class MessageQueue : public vector<Ref<MessageOut>> {
       public:
         MessageQueue() = default;
 
@@ -62,7 +62,7 @@ namespace litecore::blip {
         bool contains(MessageOut* msg) const { return find(begin(), end(), msg) != end(); }
 
         [[nodiscard]] MessageOut* findMessage(MessageNo msgNo, bool isResponse) const {
-            auto i = find_if(begin(), end(), [&](const Retained<MessageOut>& msg) {
+            auto i = find_if(begin(), end(), [&](const Ref<MessageOut>& msg) {
                 return msg->number() == msgNo && msg->isResponse() == isResponse;
             });
             if ( i == end() ) return nullptr;
@@ -71,7 +71,7 @@ namespace litecore::blip {
 
         Retained<MessageOut> pop() {
             if ( empty() ) return nullptr;
-            Retained<MessageOut> msg(front());
+            Ref<MessageOut> msg(front());
             erase(begin());
             return msg;
         }
@@ -91,7 +91,7 @@ namespace litecore::blip {
         : public actor::Actor
         , public websocket::Delegate {
       private:
-        using MessageMap      = unordered_map<MessageNo, Retained<MessageIn>>;
+        using MessageMap      = unordered_map<MessageNo, Ref<MessageIn>>;
         using HandlerKey      = pair<string, bool>;
         using RequestHandlers = map<HandlerKey, Connection::RequestHandler>;
 
@@ -141,9 +141,7 @@ namespace litecore::blip {
             }
         }
 
-        void queueMessage(MessageOut* msg) {
-            enqueue(FUNCTION_TO_QUEUE(BLIPIO::_queueMessage), Retained<MessageOut>(msg));
-        }
+        void queueMessage(MessageOut* msg) { enqueue(FUNCTION_TO_QUEUE(BLIPIO::_queueMessage), Ref<MessageOut>(msg)); }
 
         void setRequestHandler(std::string profile, bool atBeginning, Connection::RequestHandler handler) {
             enqueue(FUNCTION_TO_QUEUE(BLIPIO::_setRequestHandler), std::move(profile), atBeginning, std::move(handler));
@@ -247,7 +245,7 @@ namespace litecore::blip {
 
             resetWebSocket();  // thread-safe of _webSocket = nullptr;
             if ( _connection ) {
-                Retained<BLIPIO> holdOn(this);
+                Ref<BLIPIO> holdOn(this);
                 if ( _closingWithError ) {
                     status.reason  = kException;
                     status.code    = _closingWithError->code;
@@ -272,7 +270,7 @@ namespace litecore::blip {
         /** Implementation of public queueMessage() method.
             Adds a new message to the outgoing queue and wakes up the queue. */
         // Cannot use const& because it breaks Actor::enqueue
-        void _queueMessage(Retained<MessageOut> msg) {  // NOLINT(performance-unnecessary-value-param)
+        void _queueMessage(Ref<MessageOut> msg) {  // NOLINT(performance-unnecessary-value-param)
             if ( !_webSocket || _closingWithError ) {
                 logInfo("Can't send %s #%" PRIu64 "; socket is closed", kMessageTypeNames[msg->type()], msg->number());
                 msg->disconnected();
@@ -488,7 +486,7 @@ namespace litecore::blip {
                         }
                     }
 
-                    wsMessage = nullptr;  // free the frame
+                    std::move(wsMessage).destroy();  // free the frame
                 }
 
             } catch ( const std::exception& x ) {
@@ -652,7 +650,7 @@ namespace litecore::blip {
 
     /** Public API to send a new request. */
     void Connection::sendRequest(MessageBuilder& mb) {
-        Retained<MessageOut> message = new MessageOut(this, mb, 0);
+        Ref<MessageOut> message = new MessageOut(this, mb, 0);
         DebugAssert(message->type() == kRequestType);
         send(message);
     }

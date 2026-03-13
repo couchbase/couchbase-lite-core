@@ -103,7 +103,7 @@ namespace litecore::repl {
                 C4DocumentInfo info = e.documentInfo();
                 auto           rev  = makeRevToSend(info, &e);
                 if ( rev ) {
-                    changes.revs.push_back(rev);
+                    changes.revs.push_back(rev.asRef());
                     --limit;
                 }
             }
@@ -166,7 +166,7 @@ namespace litecore::repl {
                             break;
                         }
                     }
-                    changes.revs.push_back(rev);
+                    changes.revs.push_back(rev.asRef());
                     --limit;
                 }
             }

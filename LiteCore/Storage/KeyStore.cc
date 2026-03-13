@@ -75,7 +75,7 @@ namespace litecore {
         rec.setExists();
     }
 
-    Retained<Query> KeyStore::compileQuery(slice expr, QueryLanguage language) {
+    Ref<Query> KeyStore::compileQuery(slice expr, QueryLanguage language) {
         return dataFile().compileQuery(expr, language, this);
     }
 

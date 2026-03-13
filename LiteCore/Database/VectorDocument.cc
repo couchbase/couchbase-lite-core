@@ -52,7 +52,7 @@ namespace litecore {
 
         VectorDocument(const VectorDocument& other) : C4Document(other), _doc(other._doc), _remoteID(other._remoteID) {}
 
-        Retained<C4Document> copy() const override { return new VectorDocument(*this); }
+        Ref<C4Document> copy() const override { return new VectorDocument(*this); }
 
         ~VectorDocument() override { _doc.owner = nullptr; }
 
@@ -699,11 +699,11 @@ namespace litecore {
 
 #pragma mark - FACTORY:
 
-    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
+    Ref<C4Document> VectorDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
         return new VectorDocument(collection(), docID, c);
     }
 
-    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(const Record& record) {
+    Ref<C4Document> VectorDocumentFactory::newDocumentInstance(const Record& record) {
         return new VectorDocument(collection(), record);
     }
 

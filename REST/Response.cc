@@ -117,7 +117,7 @@ namespace litecore::REST {
 
     Response& Response::setIdentity(C4Cert* cert, C4KeyPair* key) {
         Assert(key->hasPrivateKey());
-        Retained<Identity> id = new Identity(cert->assertSignedCert(), key->getPrivateKey());
+        Ref<Identity> id = new Identity(cert->assertSignedCert(), key->getPrivateKey());
         tlsContext()->setIdentity(id);
         return *this;
     }
