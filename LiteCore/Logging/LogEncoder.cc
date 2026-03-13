@@ -112,11 +112,11 @@ namespace litecore {
         _writeUVarInt(objRef);
         if ( _isNewObject(object) ) {
             _seenObjects.insert(objRef);
-            if ( objPath.empty() ) {
+            string cObjPath = string{objPath}.c_str();
+            if ( cObjPath.empty() ) {
                 _writer.write({"?\0", 2});
             } else {
-                _writer.write(objPath);
-                _writer.write("\0", 1);
+                _writer.write(cObjPath.c_str(), cObjPath.length() + 1);
             }
         }
 

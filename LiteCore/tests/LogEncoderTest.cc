@@ -616,3 +616,25 @@ TEST_CASE_METHOD(LogFileTest, "Logging plaintext", "[Log]") {
     regex checkLine2{TIMESTAMP " DB Info Obj=/dummy#[0-9]+/ This will be in plaintext"};
     CHECK(regex_match(lines[n], m2, checkLine2));
 }
+
+// CBL-7866
+TEST_CASE("LogEncoder Bad C-string", "[Log]") {
+    // There is bug that we trusted that std::string holds a NULL terminated c-string.
+    // In this case, we write the string by its length and but decoder reads it as a c-string
+    // ending in 0, and hence leave some bytes unconsumed.
+    // The resolution is to turn it to a c-string by truncating at 0:
+    // "/Twe\0edledum#1/" becomes "/Twe".
+    stringstream out;
+    {
+        LogEncoder  logger(out, int8_t(LogLevel::Info));
+        std::string objPath{"/Twe\0edledum#1/", 15};
+        logger.log(nullptr, LogEncoder::ObjectRef{20}, objPath, "and I'm the rattle");
+        logger.log(nullptr, LogEncoder::ObjectRef{10}, "/Tweedledum#1/rattle#2/", "and I'm another rattle");
+    }
+    string encoded = out.str();
+    string result  = dumpLog(encoded, {});
+    regex  expected(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
+                              "   Obj=/Twe and I'm the rattle\\n" TIMESTAMP
+                              "   Obj=/Tweedledum#1/rattle#2/ and I'm another rattle\\n");
+    CHECK(regex_match(result, expected));
+}
