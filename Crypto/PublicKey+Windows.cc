@@ -48,8 +48,8 @@ namespace litecore::crypto {
     }
 
     [[noreturn]] void throwWincryptError(DWORD err, const char* fnName, const char* what) {
-        LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, err);
-        error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, err);
+        LogError(TLSLogDomain, "%s (%s returned %lu)", what, fnName, err);
+        error::_throw(error::CryptoError, "%s (%s returned %lu)", what, fnName, err);
     }
 
     inline void checkSecurityStatus(SECURITY_STATUS err, const char* fnName, const char* what,
@@ -66,6 +66,13 @@ namespace litecore::crypto {
             const auto err = GetLastError();
             throwWincryptError(err, fnName, what);
         }
+    }
+
+    inline HCERTSTORE getSystemStore() {
+        auto* store =
+                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
+        if ( !store ) { throwWincryptError(GetLastError(), "CertOpenSystemStore", "Couldn't open system store"); }
+        return store;
     }
 
     static PCCERT_CONTEXT toWinCert(Cert* cert) {
@@ -88,37 +95,31 @@ namespace litecore::crypto {
         return blockSize;
     }
 
-    PCCERT_CONTEXT getWinCert(const string& id) {
-        auto* store =
-                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
-
-        if ( !store ) { throwWincryptError(GetLastError(), "CertOpenStore", "Couldn't open system store"); }
-
-        DEFER { CertCloseStore(store, 0); };
-
+    PCCERT_CONTEXT getWinCert(HCERTSTORE store, const string& id) {
         const DWORD    prop        = LITECORE_ID_PROPERTY;
-        PCCERT_CONTEXT winCert     = nullptr;
+        PCCERT_CONTEXT foundCert   = nullptr;
+        PCCERT_CONTEXT retVal      = nullptr;
         void*          enumContext = nullptr;
         do {
-            winCert = CertFindCertificateInStore(store, X509_ASN_ENCODING, 0, CERT_FIND_PROPERTY, &prop, winCert);
+            foundCert = CertFindCertificateInStore(store, X509_ASN_ENCODING, 0, CERT_FIND_PROPERTY, &prop, foundCert);
 
-            if ( !winCert ) { break; }
+            if ( !foundCert ) { break; }
 
             DWORD bytesNeeded = 0;
-            BOOL  success     = CertGetCertificateContextProperty(winCert, LITECORE_ID_PROPERTY, nullptr, &bytesNeeded);
+            BOOL  success = CertGetCertificateContextProperty(foundCert, LITECORE_ID_PROPERTY, nullptr, &bytesNeeded);
 
             if ( !success ) {
-                CertFreeCertificateContext(winCert);
+                CertFreeCertificateContext(foundCert);
                 throwWincryptError(GetLastError(), "CertGetCertificateContextProperty", "Couldn't read cert ID size");
             }
 
             void* idContent = malloc(bytesNeeded);
             DEFER { free(idContent); };
 
-            success = CertGetCertificateContextProperty(winCert, LITECORE_ID_PROPERTY, idContent, &bytesNeeded);
+            success = CertGetCertificateContextProperty(foundCert, LITECORE_ID_PROPERTY, idContent, &bytesNeeded);
 
             if ( !success ) {
-                CertFreeCertificateContext(winCert);
+                CertFreeCertificateContext(foundCert);
                 throwWincryptError(GetLastError(), "CertGetCertificateContextProperty", "Couldn't read cert ID");
             }
 
@@ -126,10 +127,10 @@ namespace litecore::crypto {
             if ( match ) { break; }
         } while ( true );
 
-        return winCert;
+        return foundCert;
     }
 
-    PCCERT_CONTEXT getWinCert(PublicKey* subjectKey) {
+    PCCERT_CONTEXT getWinCert(HCERTSTORE store, PublicKey* subjectKey) {
         auto          keyData = subjectKey->publicKeyData(KeyFormat::Raw);
         unsigned char hash[16];
 
@@ -142,13 +143,8 @@ namespace litecore::crypto {
 
         CRYPT_HASH_BLOB hashBlob{16, hash};
 
-        auto* const store =
-                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
-
         auto winCert =
                 CertFindCertificateInStore(store, X509_ASN_ENCODING, 0, CERT_FIND_PUBKEY_MD5_HASH, &hashBlob, nullptr);
-
-        CertCloseStore(store, 0);
 
         return winCert;
     }
@@ -383,20 +379,15 @@ namespace litecore::crypto {
         LogTo(TLSLogDomain, "Adding a certificate chain with the id '%s' to the Keychain for '%.*s'",
               persistentID.c_str(), SPLAT(name));
 
-        const auto* const winCert = getWinCert(persistentID);
+        auto* const store = getSystemStore();
+        DEFER { CertCloseStore(store, 0); };
+        const auto* const winCert = getWinCert(store, persistentID);
 
         if ( winCert ) {
             CertFreeCertificateContext(winCert);
             throwSecurityStatus(CRYPT_E_EXISTS, "Cert::save",
                                 "A certificate already exists with the same persistentID");
         }
-
-        auto* const store =
-                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
-
-        if ( !store ) { throwWincryptError(GetLastError(), "CertOpenSystemStore", "Couldn't open system store"); }
-
-        DEFER { CertCloseStore(store, 0); };
 
         for ( Retained<Cert> cert = this; cert; cert = cert->next() ) {
             const auto* const winCert = toWinCert(cert);
@@ -432,8 +423,10 @@ namespace litecore::crypto {
 
     Retained<Cert> Cert::loadCert(const std::string& persistentID) {
         LogTo(TLSLogDomain, "Loading a certificate chain with the id '%s' from the store", persistentID.c_str());
+        auto* store = getSystemStore();
+        DEFER { CertCloseStore(store, 0); };
 
-        const auto* const winCert = getWinCert(persistentID);
+        const auto* const winCert = getWinCert(store, persistentID);
         if ( !winCert ) { return nullptr; }
 
         Retained<Cert>    cert     = new Cert(slice(winCert->pbCertEncoded, winCert->cbCertEncoded));
@@ -457,7 +450,9 @@ namespace litecore::crypto {
         LogTo(TLSLogDomain, "Checking if the certificate chain with id '%s' exists in the Keychain.",
               persistentID.c_str());
 
-        const auto* const winCert = getWinCert(persistentID);
+        auto* const store = getSystemStore();
+        DEFER { CertCloseStore(store, 0); };
+        const auto* const winCert = getWinCert(store, persistentID);
 
         CertFreeCertificateContext(winCert);
 
@@ -467,17 +462,15 @@ namespace litecore::crypto {
     void Cert::deleteCert(const std::string& persistentID) {
         LogTo(TLSLogDomain, "Deleting a certificate with the id '%s' from the store", persistentID.c_str());
 
-        const auto* const winCert = getWinCert(persistentID);
+        auto* const store = getSystemStore();
+        DEFER { CertCloseStore(store, 0); };
+        const auto* const winCert = getWinCert(store, persistentID);
         if ( !winCert ) { return; }
-
-        auto* const store =
-                CertOpenStore(CERT_STORE_PROV_SYSTEM_A, X509_ASN_ENCODING, NULL, CERT_SYSTEM_STORE_CURRENT_USER, "CA");
 
         const auto* const winChain = getCertChain(winCert);
         DEFER {
             CertFreeCertificateContext(winCert);
             CertFreeCertificateChain(winChain);
-            CertCloseStore(store, 0);
         };
 
         const auto* const finalChain = winChain->rgpChain[winChain->cChain - 1];
@@ -489,14 +482,19 @@ namespace litecore::crypto {
             // a child cert doesn't appear to have an effect on "FindCertficate" until
             // the store is closed and re-opened.
             if ( getChildCount(store, element->pCertContext) < 3 ) {
-                checkWincryptBool(CertDeleteCertificateFromStore(element->pCertContext),
-                                  "CertDeleteCertificateFromStore", "Couldn't delete certificate");
+                // Duplicate the context before deleting because CertDeleteCertificateFromStore always
+                // frees the context, and winChain needs to remain valid until CertFreeCertificateChain
+                PCCERT_CONTEXT certToDelete = CertDuplicateCertificateContext(element->pCertContext);
+                checkWincryptBool(CertDeleteCertificateFromStore(certToDelete), "CertDeleteCertificateFromStore",
+                                  "Couldn't delete certificate");
             }
         }
     }
 
     Retained<Cert> Cert::load(PublicKey* subjectKey) {
-        auto winCert = getWinCert(subjectKey);
+        auto* const store = getSystemStore();
+        DEFER { CertCloseStore(store, 0); };
+        const auto* const winCert = getWinCert(store, subjectKey);
 
         DEFER { CertFreeCertificateContext(winCert); };
 
@@ -506,7 +504,9 @@ namespace litecore::crypto {
     }
 
     bool Cert::exists(PublicKey* subjectKey) {
-        auto winCert = getWinCert(subjectKey);
+        auto* const store = getSystemStore();
+        DEFER { CertCloseStore(store, 0); };
+        const auto* const winCert = getWinCert(store, subjectKey);
 
         CertFreeCertificateContext(winCert);
 

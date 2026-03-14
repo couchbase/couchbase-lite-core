@@ -68,7 +68,7 @@ Once you've cloned or downloaded the source tree...
 - libicu
 - libpthread
 
-You can use either g++ or clang++ for compilation but you will need to honor the minimum versions of each, and only g++ is officially supported.
+You can use either g++ or clang++ for compilation but you will need to honor the minimum versions of each, and only clang is officially supported.
 
 - clang: 15.0+
 - g++: 11.0+
@@ -76,10 +76,10 @@ You can use either g++ or clang++ for compilation but you will need to honor the
 On Ubuntu or Debian you can run e.g.
 
 ```sh
-sudo apt-get install cmake gcc-11 g++-11 libicu-dev zlib1g-dev
+sudo apt-get install cmake clang-15 libicu-dev zlib1g-dev
 ```
 
-and prefix the `cmake` line (below) with `CC=/usr/bin/gcc-11 CXX=/usr/bin/c++-11`
+and prefix the `cmake` line (below) with `CC=/usr/bin/clang-15 CXX=/usr/bin/clang++-15`
 
 ### Actually Building
 

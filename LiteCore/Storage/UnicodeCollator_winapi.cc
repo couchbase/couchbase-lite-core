@@ -87,7 +87,7 @@ namespace litecore {
         int result = CompareStringEx(locale, winFlags, wchars1, -1, wchars2, -1, nullptr, nullptr, 0);
         if ( result == 0 ) {
             DWORD err = GetLastError();
-            Warn("Failed to compare strings (Error %d), arbitrarily returning equal", err);
+            Warn("Failed to compare strings (Error %lu), arbitrarily returning equal", err);
             return 0;
         }
 
