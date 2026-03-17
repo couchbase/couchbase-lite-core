@@ -548,8 +548,15 @@ namespace litecore {
         va_list args;
         va_start(args, fmt);
         if ( sCallbackPreformatted ) {
-            vsnprintf(sFormatBuffer, sizeof(sFormatBuffer), fmt, args);
+            int charCount = vsnprintf(sFormatBuffer, sizeof(sFormatBuffer), fmt, args);
             va_list noArgs{};
+
+            // Temporary diagnostics, do not merge!
+            char tmp[64];
+            snprintf(tmp, 64, "Sending buffer of size %d to callback", charCount);
+            sCallback(domain, level, tmp, noArgs);
+            // End diagnostics
+
             sCallback(domain, level, sFormatBuffer, noArgs);
         } else {
             sCallback(domain, level, fmt, args);
