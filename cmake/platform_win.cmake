@@ -41,8 +41,10 @@ function(setup_globals)
     file(COPY ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../MSVC/threading_alt.h
          DESTINATION ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../vendor/mbedtls/include/mbedtls)
 
-    add_compile_options(/MP)
-    add_link_options(/CGTHREADS:8)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        add_compile_options(/MP)
+        add_link_options(/CGTHREADS:8)
+    endif()
     set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
     set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
@@ -122,8 +124,15 @@ function(setup_litecore_build_win)
             "/utf-8"
             "/wd4068;/wd4244;/wd4018;/wd4819;/wd4800;/wd5105"
             "-D_CRT_SECURE_NO_WARNINGS=1"
+            "/sdl"
+            "/GS"
             "/guard:cf"
             "$<$<COMPILE_LANGUAGE:CXX>:/EHsc>"
+        )
+
+        target_link_options(
+            ${target} PRIVATE
+            "/GUARD:CF"
         )
     endforeach()
 

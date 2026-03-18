@@ -195,6 +195,7 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from .NET 1.3", "[Upgrade]") {
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Open and upgrade", "[Upgrade]") {
     C4DocumentVersioning vers = GENERATE_VERSIONING();
+    cout << TestFixture::sFixturesDir + "replacedb/android120/androiddb.cblite2/" << endl;
     upgradeInPlace(TestFixture::sFixturesDir + "replacedb/android120/androiddb.cblite2/", vers);
 
     verifyDoc(

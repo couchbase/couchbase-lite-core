@@ -37,11 +37,6 @@
 #    include <android/log.h>
 #endif
 
-#if defined(__clang__) && !defined(__ANDROID__)  // For logBacktrace:
-#    include <execinfo.h>                        // Not available in Windows?
-#    include <cxxabi.h>
-#endif
-
 #ifdef LITECORE_IMPL
 #    include <mbedtls/error.h>
 #    include <sockpp/exception.h>
