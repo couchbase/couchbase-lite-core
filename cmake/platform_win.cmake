@@ -49,6 +49,23 @@ function(setup_globals)
         "/ignore:4221"
         CACHE INTERNAL ""
     )
+
+    # Configure MSVC Address Sanitizer if LITECORE_SANITIZE is enabled
+    # Set this early so flags are applied when targets are created
+    if(LITECORE_SANITIZE AND NOT CODE_COVERAGE_ENABLED)
+        message(STATUS "Configuring MSVC Address Sanitizer for memory debugging (Debug only)")
+
+        # Only add flags if not already present to avoid duplication on reconfigure
+        if(NOT CMAKE_CXX_FLAGS_DEBUG MATCHES "/fsanitize=address")
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /fsanitize=address" CACHE STRING "" FORCE)
+        endif()
+        if(NOT CMAKE_C_FLAGS_DEBUG MATCHES "/fsanitize=address")
+            set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /fsanitize=address" CACHE STRING "" FORCE)
+        endif()
+
+        message(STATUS "  - Address Sanitizer enabled: /fsanitize=address (Debug builds only)")
+        message(STATUS "  - Detects: heap buffer overflows, use-after-free, memory leaks, stack overflows")
+    endif()
 endfunction()
 
 function(setup_litecore_build_win)

@@ -93,7 +93,7 @@ option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
 option(LITECORE_WARNINGS_HARDCORE "Enables tons of warnings and makes them errors (Clang only)" OFF)
-option(LITECORE_SANITIZE "Enables address and undefined-behavior sanitizers (Clang only)" OFF)
+option(LITECORE_SANITIZE "Enables address and undefined-behavior sanitizers (Clang on Unix, MSVC on Windows)" OFF)
 option(LITECORE_BUILD_SHARED "Enables building the LiteCore shared library" ON)
 option(LITECORE_BUILD_STATIC "Enables building the LiteCore static library" ON)
 
