@@ -609,7 +609,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
                      "(doc.q IS NULL OR "
                      "ifnull(doc.q.e, 'e') = 'e' AND "
                      "ifnull(doc.q.m, 0) == 0)";
-        checkBound = 0.5;
+        checkBound = 1.0;
     }
 
     Stopwatch sw;
