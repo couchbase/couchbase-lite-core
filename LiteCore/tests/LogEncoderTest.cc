@@ -634,7 +634,7 @@ TEST_CASE("LogEncoder Bad C-string", "[Log]") {
     string encoded = out.str();
     string result  = dumpLog(encoded, {});
     regex  expected(TIMESTAMP " ---- Logging begins on " DATESTAMP " ----\\n" TIMESTAMP
-                              "   Obj=/Twe and I'm the rattle\\n" TIMESTAMP
+                              "   Obj=/Twe\\?edledum#1/ and I'm the rattle\\n" TIMESTAMP
                               "   Obj=/Tweedledum#1/rattle#2/ and I'm another rattle\\n");
     CHECK(regex_match(result, expected));
 }
