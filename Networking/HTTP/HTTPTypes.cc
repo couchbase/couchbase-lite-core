@@ -99,6 +99,7 @@ namespace litecore::net {
                 break;
             case WebSocketDomain:
                 if ( err.code < 1000 ) status = HTTPStatus(err.code);
+                break;
             default:
                 break;
         }

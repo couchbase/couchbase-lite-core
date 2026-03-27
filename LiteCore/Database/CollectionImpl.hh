@@ -153,7 +153,7 @@ namespace litecore {
             return _documentFactory.get();
         }
 
-        virtual Retained<C4Document> newDocumentInstance(const litecore::Record& record) {
+        Retained<C4Document> newDocumentInstance(const litecore::Record& record) {
             return documentFactory()->newDocumentInstance(record);
         }
 
