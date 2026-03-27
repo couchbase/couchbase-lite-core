@@ -20,6 +20,7 @@
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
 #include "sockpp/mbedtls_context.h"
+#include <mutex>
 #include <string>
 
 using namespace std;
@@ -28,6 +29,12 @@ using namespace fleece;
 
 namespace litecore::net {
     using namespace crypto;
+
+#ifdef COUCHBASE_ENTERPRISE
+    static unordered_map<alloc_slice, Ref<PrivateKey>>* sPrivateKeyMap;
+    static mutex                                        sPrivateKeyMapMutex;
+#endif
+
 
     Retained<TLSContext> TLSContext::fromReplicatorOptions(Dict options, PrivateKey* externalKey,
                                                            const CertAuthCallback& certAuthCallback) {
@@ -52,6 +59,15 @@ namespace litecore::net {
                 slice certData = authDict[kC4ReplicatorAuthClientCert].asData();
                 if ( !certData )
                     error::_throw(error::InvalidParameter, "Missing TLS client cert in C4Replicator config");
+#ifdef COUCHBASE_ENTERPRISE
+                if ( !externalKey ) {
+                    unique_lock lock(sPrivateKeyMapMutex);
+                    if ( sPrivateKeyMap ) {
+                        if ( auto i = sPrivateKeyMap->find(alloc_slice(certData)); i != sPrivateKeyMap->end() )
+                            externalKey = i->second;
+                    }
+                }
+#endif
                 if ( externalKey ) {
                     Retained<Cert> cert = make_retained<Cert>(certData);
                     tlsContext->setIdentity(new Identity(cert, externalKey));
@@ -109,6 +125,14 @@ namespace litecore::net {
         }
 
         return tlsContext;
+    }
+
+    void TLSContext::registerPrivateKey(slice certData, PrivateKey* key) {
+        unique_lock lock(sPrivateKeyMapMutex);
+        if ( !sPrivateKeyMap ) sPrivateKeyMap = new unordered_map<alloc_slice, Ref<PrivateKey>>();
+        if ( key ) sPrivateKeyMap->insert_or_assign(alloc_slice(certData), key);
+        else
+            sPrivateKeyMap->erase(alloc_slice(certData));
     }
 #endif
 
