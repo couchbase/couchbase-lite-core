@@ -125,6 +125,7 @@ function(setup_litecore_build_unix)
                 -Wno-sign-conversion # TODO "implicit conversion changes signedness"
                 -Wno-switch-enum # TODO: "enumeration values not explicitly handled in switch"
                 -Wno-alloca
+                -Wno-allocator-wrappers # "function might be an allocator wrapper"
                 -Wno-atomic-implicit-seq-cst # "implicit use of sequentially-consistent atomic may incur stronger memory barriers than necessary"
                 -Wno-c99-extensions
                 -Wno-c++98-compat
@@ -139,16 +140,20 @@ function(setup_litecore_build_unix)
                 -Wno-direct-ivar-access # Obj-C: "instance variable is being directly accessed"
                 -Wno-exit-time-destructors # "declaration requires an exit-time destructor"
                 -Wno-extra-semi # "extra ';' after member function definition"
+                -Wno-extra-semi-stmt # "empty expression statement has no effect"
                 -Wno-float-equal
                 -Wno-format-pedantic # "format specifies type 'void *' but the argument has type 'C4Document *'"
                 -Wno-global-constructors
                 -Wno-gnu-anonymous-struct # "anonymous structs are a GNU extension"
                 -Wno-gnu-zero-variadic-macro-arguments # "token pasting of ',' and __VA_ARGS__ is a GNU extension"
+                -Wno-implicit-int-float-conversion # implicit conversion from ... to 'double' may lose precision"
                 -Wno-inconsistent-missing-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
+                -Wno-misleading-indentation # a good warning but sockpp code triggers it due to tabs in the source files...
                 -Wno-missing-designated-field-initializers # "missing field 'x' initializer"
                 -Wno-missing-field-initializers # "missing field 'x' initializer"
                 -Wno-missing-noreturn # "function could be declared with attribute 'noreturn'"
                 -Wno-nested-anon-types # "anonymous types declared in an anonymous union are an extension"
+                -Wno-nrvo # "not eliding copy on return" (useful warning in performance-sensitive code but not everywhere!)
                 -Wno-nullability-extension
                 -Wno-old-style-cast
                 -Wno-padded
@@ -158,6 +163,7 @@ function(setup_litecore_build_unix)
                 -Wno-shadow-uncaptured-local # "declaration [of a lambda parameter] shadows a local variable"
                 -Wno-suggest-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
                 -Wno-switch-default # "'switch' missing 'default' label"
+                -Wno-thread-safety-negative # "acquiring mutex '_mutex' requires negative capability '!_mutex'"
                 -Wno-undef      # `#if X` where X isn't defined
                 -Wno-unknown-warning-option   # So Clang 17 warning flags listed here don't break Clang 16
                 -Wno-unsafe-buffer-usage-in-container # "the two-parameter std::span construction is unsafe"

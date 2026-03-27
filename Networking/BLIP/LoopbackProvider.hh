@@ -85,7 +85,7 @@ namespace litecore::websocket {
             _driver->bind(peer, responseHeaders);
         }
 
-        virtual Driver* createDriver() { return new Driver(this, _latency); }
+        Driver* createDriver() { return new Driver(this, _latency); }
 
         Driver* driver() const { return _driver; }
 
@@ -93,7 +93,7 @@ namespace litecore::websocket {
             _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_peerIsConnecting));
         }
 
-        virtual void ack(size_t msgSize) { _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_ack), msgSize); }
+        void ack(size_t msgSize) { _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_ack), msgSize); }
 
         void received(Message* message, actor::delay_t latency = actor::delay_t::zero()) {
             if ( latency == actor::delay_t::zero() ) {
@@ -155,7 +155,7 @@ namespace litecore::websocket {
 
             ~Driver() override { DebugAssert(!connected()); }
 
-            virtual void _connect() {
+            void _connect() {
                 // Pre-conditions:
                 Assert(_state < State::connecting || _state == State::closed);
 
@@ -201,7 +201,7 @@ namespace litecore::websocket {
             }
 
             // Cannot use const& because it breaks Actor::enqueue
-            virtual void _send(fleece::alloc_slice msg, bool binary) {  // NOLINT(performance-unnecessary-value-param)
+            void _send(fleece::alloc_slice msg, bool binary) {  // NOLINT(performance-unnecessary-value-param)
                 if ( _peer ) {
                     Assert(_state == State::connected);
                     logDebug("SEND: %s", formatMsg(msg, binary).c_str());
@@ -226,13 +226,13 @@ namespace litecore::websocket {
             }
 
             // Cannot use const& because it breaks Actor::enqueue
-            virtual void _received(Retained<Message> message) {  // NOLINT(performance-unnecessary-value-param)
+            void _received(Retained<Message> message) {  // NOLINT(performance-unnecessary-value-param)
                 if ( !connected() ) return;
                 logDebug("RECEIVED: %s", formatMsg(message->data, message->binary).c_str());
                 _webSocket->delegateWeak()->invoke(&Delegate::onWebSocketMessage, message);
             }
 
-            virtual void _ack(size_t msgSize) {
+            void _ack(size_t msgSize) {
                 if ( !connected() ) return;
                 auto newValue = (_bufferedBytes -= msgSize);
                 if ( newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize ) {
@@ -242,8 +242,8 @@ namespace litecore::websocket {
             }
 
             // Cannot use const& because it breaks Actor::enqueue
-            virtual void _close(int                 status,
-                                fleece::alloc_slice message) {  // NOLINT(performance-unnecessary-value-param)
+            void _close(int                 status,
+                        fleece::alloc_slice message) {  // NOLINT(performance-unnecessary-value-param)
                 // C.f. WebSocketImpl::close.
                 // However for LoopbackWebSocket, the state is stored in Driver, and
                 // the Loopback socket does not have state closing because it is tighter
@@ -259,7 +259,7 @@ namespace litecore::websocket {
             }
 
             // Cannot use const& because it breaks Actor::enqueue
-            virtual void _closed(CloseStatus status) {  // NOLINT(performance-unnecessary-value-param)
+            void _closed(CloseStatus status) {  // NOLINT(performance-unnecessary-value-param)
                 if ( _state == State::closed ) return;
                 if ( _state >= State::connecting ) {
                     logInfo("CLOSED with %-s %d: %.*s", status.reasonName(), status.code,

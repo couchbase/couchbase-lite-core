@@ -122,8 +122,8 @@ namespace litecore::crypto {
         struct SubjectParameters {
             DistinguishedName subjectName;      // Identity info for certificate (see below)
             SubjectAltNames   subjectAltNames;  // More identity info
-            unsigned          keyUsage{0};      // key usage flags (MBEDTLS_X509_KU_*)
-            NSCertType        nsCertType{0};    // Netscape flags (MBEDTLS_X509_NS_CERT_TYPE_*)
+            unsigned          keyUsage{};       // key usage flags (MBEDTLS_X509_KU_*)
+            NSCertType        nsCertType{};     // Netscape flags (MBEDTLS_X509_NS_CERT_TYPE_*)
 
             explicit SubjectParameters(DistinguishedName dn) : subjectName(std::move(std::move(dn))) {}
         };

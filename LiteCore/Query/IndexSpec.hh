@@ -92,7 +92,7 @@ namespace litecore {
         void validateName() const;
 
         const char* typeName() const {
-            static const char* kTypeName[] = {"value", "full-text", "array", "predictive", "vector"};
+            static constexpr const char* kTypeName[] = {"value", "full-text", "array", "predictive", "vector"};
             return kTypeName[type];
         }
 
