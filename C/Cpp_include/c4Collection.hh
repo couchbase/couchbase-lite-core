@@ -17,10 +17,11 @@
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
 #include "fleece/function_ref.hh"
+#include "fleece/InstanceCounted.hh"
 #include "fleece/RefCounted.hh"
 #include <functional>
 #include <memory>
-#include <fleece/InstanceCounted.hh>
+#include <vector>
 
 C4_ASSUME_NONNULL_BEGIN
 
