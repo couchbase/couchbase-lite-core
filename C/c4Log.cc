@@ -18,6 +18,7 @@
 #include "LogObserver.hh"
 #include "Logging.hh"
 #include "PlatformIO.hh"  // For vasprintf on Windows
+#include "fleece/PlatformCompat.hh"
 #include "WebSocketInterface.hh"
 #include "c4ExceptionUtils.hh"
 
@@ -302,7 +303,8 @@ C4LogDomain c4log_getDomain(const char* name, bool create) noexcept {
     if ( !name ) return kC4DefaultLog;
     auto domain = LogDomain::named(name);
     // LogDomain instances are never deleted, so it's fine to use `new` and `strdup`.
-    if ( !domain && create ) domain = new LogDomain(strdup(name));
+    if ( !domain && create ) domain = new LogDomain(cbl_strdup(name));
+
     return asExternal(domain);
 }
 

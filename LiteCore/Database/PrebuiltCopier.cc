@@ -27,12 +27,18 @@ namespace litecore {
             error::_throw(error::Domain::LiteCore, kC4ErrorNotFound);
         }
 
+        FilePath dbPath = from["db.sqlite3"];
+        if ( DataFile::openCountOnPath(dbPath) > 0 ) {
+            Warn("The prebuilt database %s is open, cannot copy!", from.path().c_str());
+            error::_throw(error::LiteCoreError::Busy, "The prebuilt database %s is open, cannot copy!",
+                          from.path().c_str());
+        }
+
         if ( to.exists() ) {
             Warn("Database already exists at %s, cannot copy!", to.path().c_str());
             error::_throw(error::Domain::POSIX, EEXIST);
         }
 
-        FilePath backupPath;
         Log("Copying prebuilt database from %s to %s", from.path().c_str(), to.path().c_str());
 
         FilePath temp = FilePath::sharedTempDirectory(std::string(to.parentDir())).mkTempDir();

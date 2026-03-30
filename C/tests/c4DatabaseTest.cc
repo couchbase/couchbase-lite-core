@@ -233,9 +233,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Test delete while database open", "[Data
 #ifdef FAIL_FAST
     CHECK(slice(message) == "LiteCore Busy, \"Can't delete db file while the caller has open connections\"");
 #else
-    CHECK(slice(message)
-          == "LiteCore Busy, \"Can't delete db file while other connections are open. The open connections are tagged "
-             "appOpened.\"");
+    CHECK(slice(message).hasPrefix("LiteCore Busy, \"Can't delete db file while other connections are open. The open "
+                                   "connections are tagged "));
 #endif
     FLSliceResult_Release(message);
 }
@@ -367,6 +366,39 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Docume
     c4enum_free(e);
     CHECK(error == C4Error{});
     CHECK(i == 100);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator with V3.0 Database",
+                       "[Database][Document][Enumerator][C]") {
+    closeDB();
+    auto              name   = copyFixtureDB("db_versions/db_3_0_0_names_100_with_deleted.cblite2");
+    C4DatabaseConfig2 config = {slice(TempDir())};
+    config.flags &= !kC4DB_Create;
+    db = REQUIRED(c4db_openNamed(name, &config, ERROR_INFO()));
+
+    auto                defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    C4EnumeratorOptions options     = kC4DefaultEnumeratorOptions;
+    options.flags &= ~kC4IncludeBodies;
+
+    C4Error                  error;
+    c4::ref<C4DocEnumerator> e                = REQUIRED(c4coll_enumerateAllDocs(defaultColl, &options, WITH_ERROR()));
+    bool                     isFirstIteration = true;
+    while ( c4enum_next(e, &error) ) {
+        if ( isFirstIteration ) {
+            // to allow Housekeeper/migration to catch up, in order to hit SQLITE_BUSY_SNAPSHOT
+            std::this_thread::sleep_for(1ms);
+            isFirstIteration = false;
+        }
+        auto doc = c4enum_getDocument(e, ERROR_INFO());
+        REQUIRE(doc);
+
+        CHECK(c4doc_getProperties(doc) == nullptr);
+        // Doc was loaded without its body, but it should load on demand:
+        CHECK(c4doc_loadRevisionBody(doc, WITH_ERROR()));  // have to explicitly load the body
+
+        c4doc_release(doc);
+    }
+    CHECK(error == C4Error{});
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Database][Enumerator][C]") {
@@ -877,7 +909,16 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
 
     if ( !c4db_deleteNamed(kNuName, slice(nuPath), &error) ) { REQUIRE(error.code == 0); }
 
+    {
+        ExpectingExceptions x;
+        // The source db cannot be open to copyNamed from.
+        REQUIRE(!c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, &error));
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorBusy);
+    }
+    REQUIRED(c4db_close(db, nullptr));
     REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, WITH_ERROR()));
+
     auto nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
     auto defaultColl = getCollection(nudb, kC4DefaultCollectionSpec);

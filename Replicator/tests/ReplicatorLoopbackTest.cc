@@ -57,6 +57,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt d
     C4Error     error;
     alloc_slice path(c4db_getPath(db));
     string      scratchDBName = stringprintf("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
+    REQUIRE(c4db_close(db, WITH_ERROR(&error)));
     REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
 
     // Open the copied db:
@@ -2246,6 +2247,8 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Send ReplacementRev for obsolete
             pullerColl = _collDB2;
             validateCheckpoints(db2, db, "{\"remote\":1}");
             break;
+        default:
+            FAIL("Unknown test mode");
     }
 
     if ( isRevTrees() && _expectedDocumentCount > 0 ) {

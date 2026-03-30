@@ -113,6 +113,7 @@ namespace litecore {
         void          endTransaction(bool commit) override;
         bool          isInTransaction() const noexcept override;
         C4Timestamp   nextDocExpiration() const override;
+        bool          isDeletedTableComplete() const override;
         bool          getRawDocument(slice storeName, slice key,
                                      fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback) override;
         void          putRawDocument(slice storeName, const C4RawDocument&) override;
@@ -190,8 +191,9 @@ namespace litecore {
         uint32_t                                  _maxRevTreeDepth{0};    // Max revision-tree depth
         std::recursive_mutex                      _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>                  _backgroundDB;          // for background operations
-        mutable SourceID                          _mySourceID;            // My identifier in version vectors
-        mutable HybridClock                       _versionClock;          // Version-vector clock
+        std::once_flag                            _initBDBFlag;
+        mutable SourceID                          _mySourceID;    // My identifier in version vectors
+        mutable HybridClock                       _versionClock;  // Version-vector clock
     };
 
     inline DatabaseImpl* asInternal(const C4Database* db) { return (DatabaseImpl*)db; }

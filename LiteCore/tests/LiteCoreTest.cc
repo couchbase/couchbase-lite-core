@@ -38,7 +38,7 @@
 
 using namespace std;
 
-#if defined(CMAKE) && defined(_MSC_VER)
+#if defined(CMAKE) && defined(_MSC_VER) && !defined(__clang__)
 string TestFixture::sFixturesDir = "../LiteCore/tests/data/";
 #else
 string TestFixture::sFixturesDir = "LiteCore/tests/data/";

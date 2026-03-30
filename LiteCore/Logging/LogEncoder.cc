@@ -112,10 +112,16 @@ namespace litecore {
         _writeUVarInt(objRef);
         if ( _isNewObject(object) ) {
             _seenObjects.insert(objRef);
-            if ( objPath.empty() ) {
+            string strObjPath{objPath};
+            std::transform(strObjPath.cbegin(), strObjPath.cend(), strObjPath.begin(), [](char c) {
+                if ( c == '\0' ) return '?';
+                else
+                    return c;
+            });
+            if ( strObjPath.empty() ) {
                 _writer.write({"?\0", 2});
             } else {
-                _writer.write(objPath);
+                _writer.write(strObjPath);
                 _writer.write("\0", 1);
             }
         }

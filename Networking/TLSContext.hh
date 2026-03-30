@@ -79,6 +79,11 @@ namespace litecore::net {
         ///                 to the config's `certAuthCallback`, if any.
         static fleece::Ref<TLSContext> fromListenerOptions(const C4TLSConfig*     config,
                                                            C4Listener* C4NULLABLE c4Listener);
+
+        /// Globally registers a PrivateKey instance to use with the given certificate,
+        /// or unregisters if the key is null.
+        /// This can be used when you have no direct access to the code that creates the TLSContext.
+        static void registerPrivateKey(fleece::slice certData, crypto::PrivateKey* C4NULLABLE);
 #endif
 
         /// Creates a default TLSContext with either the client or server role.

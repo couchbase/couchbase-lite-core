@@ -161,6 +161,7 @@ namespace litecore {
 
         static const std::string kDefaultKeyStoreName;
         static const std::string kInfoKeyStoreName;
+        static const std::string kMaxRowidWithDeletedInDefault;
 
         /** The DataFile's default key-value store. */
         KeyStore& defaultKeyStore() const { return defaultKeyStore(_options.keyStores); }
@@ -179,6 +180,8 @@ namespace litecore {
 
         /** Permanently deletes a KeyStore. */
         virtual void deleteKeyStore(const std::string& name) = 0;
+
+        bool isDeletedTableComplete();
 
         // Redeclare logging methods as public, so Database can use them
         bool willLog(LogLevel level = LogLevel::Info) const { return Logging::willLog(level); }
@@ -248,6 +251,9 @@ namespace litecore {
         static string unescapeCollectionName(const string& unescaped);
 
         static std::pair<alloc_slice, alloc_slice> splitCollectionPath(const string& collectionPath);
+
+        // path: path to db.sqlite3
+        static size_t openCountOnPath(const FilePath& path);
 
         DataFile(const DataFile&)            = delete;
         DataFile& operator=(const DataFile&) = delete;

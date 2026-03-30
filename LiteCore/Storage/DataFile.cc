@@ -119,6 +119,8 @@ namespace litecore {
         return std::make_pair(scope, collection);
     }
 
+    size_t DataFile::openCountOnPath(const FilePath& path) { return Shared::openCountOnPath(path); }
+
 #pragma mark - DATAFILE:
 
 
@@ -269,6 +271,7 @@ namespace litecore {
 
     const string DataFile::kDefaultKeyStoreName{"default"};
     const string DataFile::kInfoKeyStoreName{"info"};
+    const string DataFile::kMaxRowidWithDeletedInDefault{"maxRowidWithDeletedInDefault"};
 
     KeyStore& DataFile::getKeyStore(slice name) const { return getKeyStore(name, _options.keyStores); }
 
@@ -312,6 +315,11 @@ namespace litecore {
 
     void DataFile::forOpenKeyStores(function_ref<void(KeyStore&)> fn) {
         for ( auto& ks : _keyStores ) fn(*ks.second);
+    }
+
+    bool DataFile::isDeletedTableComplete() {
+        Record rec = getKeyStore(kInfoKeyStoreName, KeyStore::noSequences).get(kMaxRowidWithDeletedInDefault);
+        return rec.exists() && rec.bodyAsUInt() == 0;
     }
 
     fleece::impl::SharedKeys* DataFile::documentKeys() const {

@@ -23,7 +23,7 @@ This project is built for the following platforms at Couchbase:
 - Windows 10
 - UWP
 - macOS 13.0
-- CentOS 7 (gcc 7.x+)
+- Debian 11+ and compatible Linux distributions
 - Android API 22+
 
 Platform logic is largely separated into the cmake/platform_*.cmake files.  Platforms are conglomerated together as follows
@@ -347,9 +347,11 @@ if(LITECORE_BUILD_SHARED)
     )
 
     if(BUILD_ENTERPRISE)
-        list(APPEND LITECORE_HEADERS
-            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include/c4PeerDiscovery.hh
+        file(GLOB P2P_HEADERS 
+            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include/*.h 
+            ${PROJECT_SOURCE_DIR}/../couchbase-lite-core-EE/P2P/include/*.hh
         )
+        list(APPEND LITECORE_HEADERS ${P2P_HEADERS})
     endif()
 
     file(GLOB FLEECE_HEADERS 
