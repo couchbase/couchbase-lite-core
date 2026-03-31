@@ -182,7 +182,6 @@ namespace litecore {
         void resetScope() noexcept {
             if ( _scope ) {
                 auto data = _scope->data().buf;
-                if ( !_scopeDataIsCopied ) _scope->dontValidate();
                 _scope.reset();
                 if ( _scopeDataIsCopied ) {
                     ::free((void*)data);
