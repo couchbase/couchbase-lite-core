@@ -624,8 +624,11 @@ namespace litecore {
             sObjectMap.emplace(std::piecewise_construct, std::forward_as_tuple(objRef),
                                std::forward_as_tuple(nickname, 0));
         }
-        if ( sCallback && level >= _callbackLogLevel() )
+        if ( sCallback && level >= _callbackLogLevel() ) {
+            unique_lock lock(sLogMutex);
             invokeCallback(*this, level, "{%s#%u}==> %s @%p", nickname.c_str(), objRef, description.c_str(), object);
+        }
+
         return objRef;
     }
 
