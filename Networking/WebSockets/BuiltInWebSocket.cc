@@ -23,6 +23,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
+#include "WeakHolder.hh"
 #include <string>
 
 using namespace litecore;
@@ -345,7 +346,9 @@ namespace litecore::websocket {
 
     void BuiltInWebSocket::awaitReadable() {
         logDebug("**** socket read RESUMED");
-        _socket->onReadable([this] { readFromSocket(); });
+        _socket->onReadable([weakRetain = WeakHolder<BuiltInWebSocket>(this)] {
+            weakRetain.invoke(&BuiltInWebSocket::readFromSocket);
+        });
     }
 
     void BuiltInWebSocket::readFromSocket() {
@@ -396,7 +399,9 @@ namespace litecore::websocket {
     void BuiltInWebSocket::awaitWriteable() {
         logDebug("**** Waiting to write to socket");
         //DebugAssert(!_outbox.empty());            // can't do this safely (data race)
-        _socket->onWriteable([this] { writeToSocket(); });
+        _socket->onWriteable([weakRetain = WeakHolder<BuiltInWebSocket>(this)] {
+            weakRetain.invoke(&BuiltInWebSocket::writeToSocket);
+        });
     }
 
     void BuiltInWebSocket::writeToSocket() {
