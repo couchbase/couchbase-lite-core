@@ -43,7 +43,7 @@ namespace litecore {
         @return true if the underlying pointer is good, and false otherwise.
         @warning what is returned from the member fundtion, if not void, will be thrown away. */
         template <typename MemFuncPtr, typename... Args>
-        bool invoke(MemFuncPtr memFuncPtr, Args&&... args) {
+        bool invoke(MemFuncPtr memFuncPtr, Args&&... args) const {
             Retained<RefCounted> holdingIt = _holder;
             if ( _holder->refCount() == 2 ) {
                 // There is no place outside here do references exist.
@@ -55,7 +55,7 @@ namespace litecore {
 
       private:
         // Invariant: dynamic_cast<RefCounted*>(_pointer) == _holder.get()
-        T*                   _pointer;
+        T* const             _pointer;
         Retained<RefCounted> _holder;
     };
 
