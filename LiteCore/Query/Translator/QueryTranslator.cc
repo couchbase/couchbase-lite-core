@@ -140,8 +140,16 @@ namespace litecore {
             if ( name.empty() ) name = _defaultCollectionName;
             if ( !source->scope().empty() ) name = string(source->scope()) + "." + name;
 
-            DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
-            //FIXME: Support kDeletedDocs
+            DeletionStatus delStatus;
+            if ( source->onlyDeletedDocs() && _delegate.isDeletedTableComplete(name) ) {
+                // WHERE clause guarantees only deleted docs match, and the delegate
+                // confirms that all deleted docs are in the dedicated kv_del_ table.
+                delStatus = kDeletedDocs;
+            } else if ( source->usesDeletedDocs() ) {
+                delStatus = kLiveAndDeletedDocs;
+            } else {
+                delStatus = kLiveDocs;
+            }
 
             tableName = _delegate.collectionTableName(name, delStatus);
             if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
@@ -171,7 +179,7 @@ namespace litecore {
 #endif
                 }
             } else if ( source->isCollection() ) {
-                if ( delStatus != kLiveAndDeletedDocs )  // that mode uses a fake union table
+                if ( delStatus == kLiveDocs )  // only real kv_ tables, not union views or kv_del_ tables
                     _kvTables.insert(tableName);
             }
         }

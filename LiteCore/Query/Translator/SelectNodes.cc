@@ -428,6 +428,58 @@ namespace litecore::qt {
             }
         });
 
+        // Check if the WHERE clause guarantees only deleted documents can match.
+        // This is true when `_deleted` appears as a top-level boolean condition in the WHERE,
+        // either directly or as an operand of a top-level AND chain.
+        // In that case we can query only the deleted-docs table (kv_del_) instead of the
+        // union view (all_), avoiding a full scan of the live-docs table.
+        if ( _where ) {
+            // Searches the WHERE tree (following AND branches) for a condition that
+            // requires `_deleted` to be true. Recognizes five equivalent N1QL forms:
+            //   _._deleted, _._deleted = true, _._deleted != false,
+            //   _._deleted IS TRUE, _._deleted IS NOT FALSE
+            // These produce different ASTs (no normalization before this point).
+            struct DeletedFilter {
+                static SourceNode* find(ExprNode* expr) {
+                    if ( auto src = isDeletedTrue(expr) ) return src;
+                    if ( auto op = dynamic_cast<OpNode*>(expr); op && op->op().name == "AND"_sl ) {
+                        if ( auto src = find(op->operand(0)) ) return src;
+                        return find(op->operand(1));
+                    }
+                    return nullptr;
+                }
+
+                static SourceNode* isDeletedTrue(ExprNode* expr) {
+                    // Bare boolean: _._deleted
+                    if ( auto meta = dynamic_cast<MetaNode*>(expr) ) {
+                        if ( meta->property() == MetaProperty::deleted ) return meta->source();
+                    } else if ( auto op = dynamic_cast<OpNode*>(expr) ) {
+                        // Comparison forms: =/IS with true, or !=/IS NOT with false
+                        slice opName   = op->op().name;
+                        bool  eqTrue   = (opName == "="_sl || opName == "IS"_sl);
+                        bool  neqFalse = (opName == "!="_sl || opName == "IS NOT"_sl);
+                        if ( eqTrue || neqFalse ) {
+                            for ( int i = 0; i < 2; ++i ) {
+                                auto meta = dynamic_cast<MetaNode*>(op->operand(i));
+                                auto lit  = dynamic_cast<LiteralNode*>(op->operand(1 - i));
+                                if ( meta && meta->property() == MetaProperty::deleted && lit ) {
+                                    // Check for boolean literal (true/false) or integer literal (1/0)
+                                    if ( auto b = lit->asBool() ) {
+                                        if ( (eqTrue && *b) || (neqFalse && !*b) ) return meta->source();
+                                    } else if ( auto val = lit->asInt() ) {
+                                        if ( (eqTrue && *val == 1) || (neqFalse && *val == 0) ) return meta->source();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return nullptr;
+                }
+            };
+
+            if ( auto src = DeletedFilter::find(_where) ) { src->setOnlyDeleted(); }
+        }
+
         // Locate FTS and vector indexed expressions and add corresponding SourceNodes:
         addIndexes(ctx);
 
