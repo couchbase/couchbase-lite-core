@@ -53,6 +53,7 @@ namespace litecore::qt {
 
         FLValueType            type() const;
         std::optional<int64_t> asInt() const;
+        std::optional<bool>    asBool() const;
         string_view            asString() const;
 
         void setInt(int64_t);
