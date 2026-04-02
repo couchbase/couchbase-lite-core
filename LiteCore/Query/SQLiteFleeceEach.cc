@@ -75,7 +75,7 @@ namespace litecore {
         bool            _scopeDataIsCopied{false};  // If true, _scope.data() is a malloc'ed block
         alloc_slice     _rootPath;                  // The path string within the data, if any
         const Value*    _container{nullptr};        // The object being iterated (target of the path)
-        valueType       _containerType{0};          // The value type of _container
+        valueType       _containerType{};           // The value type of _container
         uint32_t        _rowid{0};                  // The current row number, starting at 0
         uint32_t        _rowCount{0};               // The number of rows
 
