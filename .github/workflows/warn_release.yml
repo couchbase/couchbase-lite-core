@@ -1,12 +1,14 @@
 on:
   workflow_call: # So it can be used by our other repos
   pull_request:  # And also be used for itself
-    branches: ['release*']
+    branches: ['release/**']
   workflow_dispatch:  # manual trigger via GitHub UI
 
 jobs:
   warn-release:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/github-script@v7
         with:
@@ -22,5 +24,5 @@ jobs:
             - [ ] A response to a customer ask
             - [ ] A change per our security policy
             - [ ] A non-functional change (i.e. changes needed for building an older version)
-            - [ ] A change that has been granted an exception (please comment)
+            - [ ] A change that has been granted an exception (please comment)`
             })
