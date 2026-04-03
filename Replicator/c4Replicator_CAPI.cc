@@ -149,6 +149,12 @@ bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level
     return true;
 }
 
+C4StringResult c4repl_getCorrelationID(C4Replicator* repl) noexcept {
+    alloc_slice ret;
+    if ( _usuallyTrue(repl != nullptr) ) { ret = repl->correlationID(); }
+    return C4StringResult(ret);
+}
+
 #pragma mark - SOCKET:
 
 

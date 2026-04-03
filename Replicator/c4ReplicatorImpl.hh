@@ -70,6 +70,12 @@ namespace litecore {
 
         alloc_slice pendingDocumentIDs(C4CollectionSpec spec) const;
 
+        alloc_slice correlationID() const noexcept override {
+            if ( Retained<Replicator> retained = _replicator; retained ) return retained->getCorrelationID();
+            else
+                return {};
+        }
+
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override;
 
 #ifdef COUCHBASE_ENTERPRISE
