@@ -1,0 +1,26 @@
+on:
+  workflow_call: # So it can be used by our other repos
+  pull_request:  # And also be used for itself
+    branches: ['release*']
+  workflow_dispatch:  # manual trigger via GitHub UI
+
+jobs:
+  warn-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `This is a release branch and commits are restricted.
+
+            Please confirm this PR is one of the following:
+
+            - [ ] A response to a customer ask
+            - [ ] A change per our security policy
+            - [ ] A non-functional change (i.e. changes needed for building an older version)
+            - [ ] A change that has been granted an exception (please comment)
+            })
