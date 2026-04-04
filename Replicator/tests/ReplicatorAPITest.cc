@@ -368,6 +368,24 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][
     CHECK(c4coll_getDocumentCount(collRose2) == expectDocCountInDB2);
 }
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API getCollectionID", "[C][Sync]") {
+    createRev("doc"_sl, kRevID, kFleeceBody);
+    createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
+
+    createDB2();
+    alloc_slice xid;
+    _onDocsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
+        CHECK(numDocs == 1);
+        *((alloc_slice*)((ReplicatorAPITest*)context)->_testContext) = c4repl_getCorrelationID(repl);
+    };
+    _enableDocProgressNotifications = true;
+    _testContext                    = &xid;
+    replicate(kC4OneShot, kC4Disabled);
+    CHECK(!xid.empty());
+    auto xidFromHeader = _headers["X-Correlation-Id"_sl];
+    CHECK(xidFromHeader.asString() == xid);
+}
+
 #endif
 
 

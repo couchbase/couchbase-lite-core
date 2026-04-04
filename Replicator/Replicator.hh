@@ -212,7 +212,20 @@ namespace litecore::repl {
             _workerHandlers.useLocked()->emplace(key, worker->asynchronize(profile, fn));
         }
 
+        alloc_slice getCorrelationID() const {
+            if ( _isCorrIDAvailable.load(std::memory_order_acquire) ) return _correlationID;
+            else
+                return {};
+        }
+
       private:
+        // The setter is supposedly to be called once.
+        void setCorrelationID(slice corrID) {
+            DebugAssert(!_isCorrIDAvailable);
+            _correlationID = corrID;
+            _isCorrIDAvailable.store(true, std::memory_order_release);
+        }
+
         using WorkerHandlers = std::map<pair<string, CollectionIndex>, WorkerHandler>;
         access_lock<WorkerHandlers> _workerHandlers;
 
@@ -248,8 +261,8 @@ namespace litecore::repl {
         vector<SubReplicator> _subRepls;
         bool                  _getCollectionsRequested{};  // True while "getCollections" request pending
         alloc_slice           _remoteURL;
-        std::atomic<bool>     _setMsgHandlerFor3_0_ClientDone{false};
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
+        std::atomic<bool>                              _isCorrIDAvailable{false};
         alloc_slice                                    _correlationID{};
         int                                            _httpStatus = 0;
         std::unique_ptr<websocket::Headers>            _httpHeaders;

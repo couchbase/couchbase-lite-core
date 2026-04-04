@@ -181,6 +181,13 @@ NODISCARD CBL_CORE_API C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, 
 NODISCARD CBL_CORE_API bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level,
                                                     C4Error* C4NULLABLE outErr) C4API;
 
+/** Gets the Correlation ID provided by the server upon connection.
+    *
+    * \note This function is thread-safe
+    * @param repl  The C4Replicator instance.
+    * @return The Correlation ID, or an empty string if unavailable (e.g., pre-connection or server omitted the ID).
+    */
+CBL_CORE_API C4StringResult c4repl_getCorrelationID(C4Replicator* repl) C4API;
 
 #pragma mark - COOKIES:
 

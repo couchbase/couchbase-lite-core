@@ -59,6 +59,8 @@ struct C4Replicator
     alloc_slice pendingDocIDs(C4CollectionSpec) const;
     bool        isDocumentPending(slice docID, C4CollectionSpec) const;
 
+    virtual alloc_slice correlationID() const noexcept = 0;
+
 #ifdef COUCHBASE_ENTERPRISE
     using PeerTLSCertificateValidator = std::function<bool(slice certData, std::string_view hostname)>;
 
