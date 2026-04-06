@@ -368,7 +368,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Single Collection Sync", "[Push][Pull][
     CHECK(c4coll_getDocumentCount(collRose2) == expectDocCountInDB2);
 }
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API getCollectionID", "[C][Sync]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API getCorrelationID", "[C][Sync]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
@@ -384,6 +384,36 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API getCollectionID", "[C][Sync]") {
     CHECK(!xid.empty());
     auto xidFromHeader = _headers["X-Correlation-Id"_sl];
     CHECK(xidFromHeader.asString() == xid);
+}
+
+TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C][Sync]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    createDB2();
+    C4Error err;
+    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR(&err)));
+    waitForStatus(kC4Busy, 5s);
+    alloc_slice corrID = c4repl_getCorrelationID(_repl);
+    CHECK(!!corrID);
+
+    // Stop
+    c4repl_stop(_repl);
+    waitForStatus(kC4Stopped);
+
+    // CorreslationID is nullslice after stopped
+    CHECK(!c4repl_getCorrelationID(_repl));
+
+    // Restart
+    c4repl_start(_repl, false);
+    alloc_slice corrID_restart;
+    CHECK(WaitUntil(20s, [&] {
+        corrID_restart = c4repl_getCorrelationID(_repl);
+        return !!corrID_restart;
+    }));
+    CHECK(corrID != corrID_restart);
+
+    c4repl_stop(_repl);
+    waitForStatus(kC4Stopped);
 }
 
 #endif

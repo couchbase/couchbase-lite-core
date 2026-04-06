@@ -213,7 +213,7 @@ namespace litecore::repl {
         }
 
         alloc_slice getCorrelationID() const {
-            if ( _isCorrIDAvailable.load(std::memory_order_acquire) ) return _correlationID;
+            if ( _hasCorrelationID.load(std::memory_order_acquire) ) return _correlationID;
             else
                 return {};
         }
@@ -221,9 +221,9 @@ namespace litecore::repl {
       private:
         // The setter is supposedly to be called once.
         void setCorrelationID(slice corrID) {
-            DebugAssert(!_isCorrIDAvailable);
+            DebugAssert(!_hasCorrelationID);
             _correlationID = corrID;
-            _isCorrIDAvailable.store(true, std::memory_order_release);
+            _hasCorrelationID.store(true, std::memory_order_release);
         }
 
         using WorkerHandlers = std::map<pair<string, CollectionIndex>, WorkerHandler>;
@@ -262,7 +262,7 @@ namespace litecore::repl {
         bool                  _getCollectionsRequested{};  // True while "getCollections" request pending
         alloc_slice           _remoteURL;
         Retained<WeakHolder<blip::ConnectionDelegate>> _weakConnectionDelegateThis;
-        std::atomic<bool>                              _isCorrIDAvailable{false};
+        std::atomic<bool>                              _hasCorrelationID{false};
         alloc_slice                                    _correlationID{};
         int                                            _httpStatus = 0;
         std::unique_ptr<websocket::Headers>            _httpHeaders;
