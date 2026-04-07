@@ -44,7 +44,7 @@ namespace litecore {
         // Bump this when incompatible changes are made to API or implementation.
         // Subclass c4LocalReplicator is in the couchbase-lite-core-EE repo, which doesn not have a
         // submodule relationship to this one, so it's possible for it to get out of sync.
-        static constexpr int API_VERSION = 5;
+        static constexpr int API_VERSION = 6;
 
         void start(bool reset = false) noexcept override;
 
