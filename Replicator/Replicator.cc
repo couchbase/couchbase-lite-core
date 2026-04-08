@@ -630,7 +630,7 @@ namespace litecore::repl {
                                        "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
             }
             if ( slice x_corr = _httpHeaders->get("X-Correlation-Id"_sl); x_corr ) {
-                _correlationID = x_corr;
+                setCorrelationID(x_corr);
                 logInfo("Received X-Correlation-Id");
             }
         }
@@ -1324,10 +1324,10 @@ namespace litecore::repl {
 
     string Replicator::loggingKeyValuePairs() const {
         string kv = Worker::loggingKeyValuePairs();
-        if ( _correlationID ) {
+        if ( auto xid = getCorrelationID(); xid ) {
             if ( !kv.empty() ) kv += " ";
             kv += "CorrID=";
-            kv += _correlationID.asString();
+            kv += xid.asString();
         }
         return kv;
     }

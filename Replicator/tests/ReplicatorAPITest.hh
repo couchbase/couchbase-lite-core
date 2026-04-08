@@ -468,4 +468,5 @@ class ReplicatorAPITest : public C4Test {
     SG                      _sg;
     std::set<std::string>   _expectedDocPushErrorsAfterOffline;
     std::set<std::string>   _expectedDocPullErrorsAfterOffline;
+    void*                   _testContext{nullptr};
 };
