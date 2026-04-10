@@ -864,6 +864,37 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     waitForStatus(kC4Stopped);
 }
 
+// CBL-8074
+TEST_CASE_METHOD(ReplicatorAPITest, "OneShot WebSocket kCodeAbnormal", "[C][Push][Pull]") {
+    _mayGoOffline           = true;
+    C4SocketFactory factory = {};
+    factory.open            = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
+        c4socket_opened(socket);
+    };
+
+    factory.close = [](C4Socket* socket) {
+        // Not invoked
+        REQUIRE(false);
+    };
+    factory.write = [](C4Socket* socket, C4SliceResult msg) {
+        // Simulate closing the socket starting from within.
+        // This will stop the replicator.
+        c4socket_closed(socket, {WebSocketDomain, websocket::kCodeGoingAway});
+    };
+
+    _socketFactory = &factory;
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+    REQUIRE(startReplicator(kC4Disabled, kC4OneShot, WITH_ERROR(&err)));
+
+    waitForStatus(kC4Stopped);
+
+    auto status = _repl->getStatus();
+    // We are having the error code 1006. Before this commit, this code is
+    // considered as transient and the status would go to kC4Offline
+    CHECK((status.error.domain == WebSocketDomain && status.error.code == websocket::kCodeAbnormal));
+}
+
 TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull]") {
     // c.f. the flow with test case "Stop after transient connect failure"
     _mayGoOffline            = true;
