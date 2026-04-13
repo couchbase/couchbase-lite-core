@@ -879,6 +879,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "OneShot WebSocket kCodeAbnormal", "[C][Push
     factory.write = [](C4Socket* socket, C4SliceResult msg) {
         // Simulate closing the socket starting from within.
         // This will stop the replicator.
+        FLSliceResult_Release(msg);
         c4socket_closed(socket, {WebSocketDomain, websocket::kCodeGoingAway});
     };
 
