@@ -51,6 +51,7 @@
 
 /* Begin PBXBuildFile section */
 		1B4CCD1D2E4D1A0800B0542C /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
+		1B737C472F8D8C1400507DA7 /* c4LocalReplicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B737C462F8D8C1400507DA7 /* c4LocalReplicator.cc */; };
 		1B8C29482E32C7840007A132 /* MultipeerTest_C.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8C29472E32C7840007A132 /* MultipeerTest_C.cc */; };
 		1BC685522E2EC10C00A5AEC1 /* MultipeerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1BC685512E2EC10C00A5AEC1 /* MultipeerTest.cc */; };
 		2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; };
@@ -1128,6 +1129,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1B737C462F8D8C1400507DA7 /* c4LocalReplicator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4LocalReplicator.cc; sourceTree = "<group>"; };
 		1B8C29472E32C7840007A132 /* MultipeerTest_C.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MultipeerTest_C.cc; sourceTree = "<group>"; };
 		1BC685512E2EC10C00A5AEC1 /* MultipeerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MultipeerTest.cc; sourceTree = "<group>"; };
 		2700BB4D216FF2DA00797537 /* CoreML.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreML.framework; path = System/Library/Frameworks/CoreML.framework; sourceTree = SDKROOT; };
@@ -3698,6 +3700,7 @@
 		27FD728D2D833D4800CC48BF /* Replicator */ = {
 			isa = PBXGroup;
 			children = (
+				1B737C462F8D8C1400507DA7 /* c4LocalReplicator.cc */,
 				27FD728B2D833D4800CC48BF /* c4LocalReplicator.hh */,
 				27FD728C2D833D4800CC48BF /* PropertyEncryption.cc */,
 			);
@@ -5148,6 +5151,7 @@
 				27115C992D83682D004FCC12 /* DatabaseRegistry.cc in Sources */,
 				27115C9B2D83682D004FCC12 /* c4Listener_CAPI.cc in Sources */,
 				27FD72C92D833F8E00CC48BF /* MeshManager.cc in Sources */,
+				1B737C472F8D8C1400507DA7 /* c4LocalReplicator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
