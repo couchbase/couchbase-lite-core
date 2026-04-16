@@ -335,6 +335,7 @@ __cold bool C4Error::mayBeTransient() const noexcept {
                                            502, /* Bad Gateway */
                                            503, /* Service Unavailable */
                                            504, /* Gateway Timeout */
+                                           websocket::kCodeAbnormal,
                                            websocket::kCloseAppTransient,
                                            0};
     static ErrorSet kTransient          = {// indexed by C4ErrorDomain

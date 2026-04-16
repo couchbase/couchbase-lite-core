@@ -865,35 +865,84 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
 }
 
 // CBL-8074
-TEST_CASE_METHOD(ReplicatorAPITest, "OneShot WebSocket kCodeAbnormal", "[C][Push][Pull]") {
-    _mayGoOffline           = true;
-    C4SocketFactory factory = {};
-    factory.open            = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
+TEST_CASE_METHOD(ReplicatorAPITest, "WebSocket Peer Going Away", "[C][Push][Pull]") {
+    bool            afterClose = false;
+    C4SocketFactory factory    = {};
+    C4Socket*       c4socket   = nullptr;
+    factory.context            = &c4socket;
+    factory.open               = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
         c4socket_opened(socket);
+        *(C4Socket**)context = socket;
     };
 
     factory.close = [](C4Socket* socket) {
         // Not invoked
         REQUIRE(false);
     };
-    factory.write = [](C4Socket* socket, C4SliceResult msg) {
-        // Simulate closing the socket starting from within.
-        // This will stop the replicator.
-        FLSliceResult_Release(msg);
-        c4socket_closed(socket, {WebSocketDomain, websocket::kCodeGoingAway});
-    };
+
+    // "peer going away" before CLOSE is sent
+    // Replicator receives error code 1006, which is transient.
+    // C4Replicator goes to offline and waiting for retry.
+    SECTION("CLOSE Not Sent") {
+        afterClose    = false;
+        _mayGoOffline = true;
+        factory.write = [](C4Socket* socket, C4SliceResult msg) {
+            // Simulate Peer-Going-Away before Replicator calling Stop.
+            // Socket is closed unexpectedly, without the client sending CLOSE
+            FLSliceResult_Release(msg);
+            c4socket_closed(socket, {WebSocketDomain, websocket::kCodeGoingAway});
+        };
+    }
+
+    // "peer going away" after CLOSE frame was already sent
+    // Replicator receives error code 1005. The client of C4Replicator won't
+    // see this error.
+    // C4Replicator goes to Stop with error code == 0
+    SECTION("CLOSE Has Been Sent") {
+        afterClose    = true;
+        _mayGoOffline = false;
+        factory.write = [](C4Socket* socket, C4SliceResult msg) {
+            // Do nothing
+            FLSliceResult_Release(msg);
+        };
+    }
 
     _socketFactory = &factory;
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Disabled, kC4OneShot, WITH_ERROR(&err)));
+
+    if ( !afterClose ) {
+        // WebSocket code 1006, transient error
+        REQUIRE(startReplicator(kC4Disabled, kC4OneShot, WITH_ERROR(&err)));
+        _numCallbacksWithLevel[kC4Offline] = 0;
+        waitForStatus(kC4Offline);
+    } else {
+        REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
+        // Making sure the WebSocket is open/connected
+        waitForStatus(kC4Busy);
+    }
+
+    c4repl_stop(_repl);
+
+    if ( afterClose ) {
+        // Give some time for Replicator::_stop to be called, but must be before timeout in WebSocketImp
+        std::this_thread::sleep_for(1s);
+        // Replicator turns this error to WebSocket code 1005
+        c4socket_closed(c4socket, {WebSocketDomain, websocket::kCodeGoingAway});
+    }
 
     waitForStatus(kC4Stopped);
 
-    auto status = _repl->getStatus();
-    // We are having the error code 1006. Before this commit, this code is
-    // considered as transient and the status would go to kC4Offline
-    CHECK((status.error.domain == WebSocketDomain && status.error.code == websocket::kCodeAbnormal));
+    auto status = c4repl_getStatus(_repl);
+
+    if ( !afterClose ) {
+        // kCodeAbnormal == 1006
+        CHECK((status.error.domain == WebSocketDomain && status.error.code == websocket::kCodeAbnormal));
+    } else {
+        // (kCodeStatusCodeExpected == 1005) This error is cleared before by C4Replicator.
+        // c.f. C4ReplicatorImpl::replicatorStatusChanged
+        CHECK(status.error.code == 0);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull]") {

@@ -344,6 +344,14 @@ namespace litecore {
             if ( _status.level == kC4Stopped ) {
                 _replicator->terminate();
                 _replicator = nullptr;
+                if ( _status.error.code == websocket::kCodeStatusCodeExpected ) {
+                    // c.f. WebSocketImpl.cc
+                    // The replicator stopped with this error when it already sent
+                    // CLOSE to the remote but fail to receive a response. This may happen
+                    // with remote behind a Load Balancer as it tries to close the connection
+                    // as it is done. This error is interested to the client.
+                    _status.error.code = 0;
+                }
                 if ( statusFlag(kC4Suspended) ) {
                     // If suspended, go to Offline state when Replicator stops
                     _status.level = kC4Offline;
