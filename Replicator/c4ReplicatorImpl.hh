@@ -44,7 +44,7 @@ namespace litecore {
         // Bump this when incompatible changes are made to API or implementation.
         // Subclass c4LocalReplicator is in the couchbase-lite-core-EE repo, which doesn not have a
         // submodule relationship to this one, so it's possible for it to get out of sync.
-        static constexpr int API_VERSION = 5;
+        static constexpr int API_VERSION = 6;
 
         void start(bool reset = false) noexcept override;
 
@@ -69,6 +69,12 @@ namespace litecore {
         bool isDocumentPending(C4Slice docID, C4CollectionSpec spec) const;
 
         alloc_slice pendingDocumentIDs(C4CollectionSpec spec) const;
+
+        alloc_slice correlationID() const noexcept override {
+            if ( Retained<Replicator> retained = _replicator; retained ) return retained->getCorrelationID();
+            else
+                return {};
+        }
 
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override;
 

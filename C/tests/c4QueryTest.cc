@@ -14,6 +14,7 @@
 #include "c4Collection.h"
 #include "c4Observer.h"
 #include "StringUtil.hh"
+#include <algorithm>
 #include <thread>
 using namespace std;
 
@@ -1370,6 +1371,202 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     REQUIRE(e2);
     CHECK(e2 != e);
     CHECK(c4queryenum_getRowCount(e2, WITH_ERROR(&error)) == 8);
+}
+
+namespace {
+    struct QueryState {
+        C4Query*                 query = nullptr;
+        c4::ref<C4QueryObserver> obs;
+        atomic<int>              count = 0;
+
+        std::vector<string> queryResult() {
+            std::vector<string>        ret;
+            C4Error                    error;
+            c4::ref<C4QueryEnumerator> e = c4queryobs_getEnumerator(obs, true, ERROR_INFO(error));
+            while ( c4queryenum_next(e, nullptr) ) {
+                FLArrayIterator cols = e->columns;
+                Value           v1   = FLArrayIterator_GetValueAt(&cols, 0);
+                ret.emplace_back(v1.asString());
+            }
+            return ret;
+        }
+
+        typedef void (*Callback)(C4QueryObserver* obs, C4Query* query, void* context);
+        static Callback callback;
+    };
+
+    QueryState::Callback QueryState::callback = [](C4QueryObserver* obs, C4Query* query, void* context) {
+        C4Log("---- Query observer called!");
+        QueryState* state = (QueryState*)context;
+        REQUIRE(query == state->query);
+        REQUIRE(obs == state->obs);
+        ++state->count;
+    };
+}  // namespace
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer: observe deleted", "[Query][C][!throws]") {
+    compileSelect("SELECT META().id FROM _ WHERE META().deleted", kC4N1QLQuery);
+
+    QueryState state;
+    state.query = query;
+    state.obs   = c4queryobs_create(query, QueryState::callback, &state);
+    CHECK(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
+
+    C4Log("---- Waiting for query observer...");
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+
+    C4Log("Checking query observer...");
+    CHECK(state.count == 1);
+    // We start with no docs deleted.
+    CHECK(state.queryResult().size() == 0);
+
+    auto  defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    slice doc1        = "0000001"_sl;
+    state.count       = 0;
+    // Delete doc1
+    {
+        TransactionHelper   tt(db);
+        c4::ref<C4Document> doc     = c4coll_getDoc(defaultColl, doc1, true, kDocGetMetadata, nullptr);
+        c4::ref<C4Document> updated = c4doc_update(doc, kC4SliceNull, kRevDeleted, nullptr);
+    }
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+    CHECK(state.count == 1);
+    auto qResult = state.queryResult();
+    CHECK((qResult.size() == 1 && qResult[0] == string_view(doc1)));
+
+    state.count = 0;
+    // Purge doc1
+    {
+        TransactionHelper t(db);
+        REQUIRE(c4coll_purgeDoc(defaultColl, doc1, nullptr));
+    }
+    REQUIRE_BEFORE(20000ms, state.count > 0);
+    CHECK(state.count == 1);
+    // The deleted doc is purged.
+    CHECK(state.queryResult().size() == 0);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer after delete and purge", "[Query][C][!throws]") {
+    compileSelect("SELECT META().id FROM _ WHERE contact.address.state='CA'", kC4N1QLQuery);
+
+    QueryState state;
+    state.query = query;
+    state.obs   = c4queryobs_create(query, QueryState::callback, &state);
+    CHECK(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
+
+    C4Log("---- Waiting for query observer...");
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+
+    C4Log("Checking query observer...");
+    CHECK(state.count == 1);
+    auto queryResult = state.queryResult();
+    // There are 8 docs of that the contacts are in 'CA'
+    CHECK(queryResult.size() == 8);
+
+    string_view doc1 = queryResult[0];
+    string_view doc2 = queryResult[1];
+
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
+    state.count = 0;
+    // Delete doc1
+    {
+        TransactionHelper   tt(db);
+        c4::ref<C4Document> doc     = c4coll_getDoc(defaultColl, (slice)doc1, true, kDocGetMetadata, nullptr);
+        c4::ref<C4Document> updated = c4doc_update(doc, kC4SliceNull, kRevDeleted, nullptr);
+    }
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+    CHECK(state.count == 1);
+    CHECK(state.queryResult().size() == 7);
+
+    SECTION("Purge the deleted doc") {
+        state.count = 0;
+        // Purge doc1 which was deleted
+        {
+            TransactionHelper t(db);
+            REQUIRE(c4coll_purgeDoc(defaultColl, (slice)doc1, nullptr));
+        }
+
+        REQUIRE_BEFORE(20000ms, state.count > 0);
+        CHECK(state.count == 1);
+        // The deleted doc is purged. The callback is called but the result is the same.
+        CHECK(state.queryResult().size() == 7);
+    }
+
+    SECTION("Purge a live doc") {
+        state.count = 0;
+        // Purge doc2 in queryResult after the query is enabled.
+        {
+            TransactionHelper t(db);
+            REQUIRE(c4coll_purgeDoc(defaultColl, (slice)doc2, nullptr));
+        }
+
+        REQUIRE_BEFORE(20000ms, state.count > 0);
+        CHECK(state.count == 1);
+        // doc2 is dropped from the query result.
+        CHECK(state.queryResult().size() == 6);
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observe deleted after delete and purge", "[Query][C][!throws]") {
+    compileSelect("SELECT META().id FROM _ WHERE contact.address.state='CA' OR META().deleted", kC4N1QLQuery);
+
+    QueryState state;
+    state.query = query;
+    state.obs   = c4queryobs_create(query, QueryState::callback, &state);
+    CHECK(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
+
+    C4Log("---- Waiting for query observer...");
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+
+    C4Log("Checking query observer...");
+    CHECK(state.count == 1);
+    auto caResult = state.queryResult();
+    // There are 8 docs of that the contacts are in 'CA'
+    CHECK(caResult.size() == 8);
+
+    std::string_view doc1 = caResult[0];
+    std::string_view doc2 = caResult[1];
+    string           doc0 = "0000002";
+    // doc0 is not in original query result.
+    REQUIRE(std::ranges::find(caResult, doc0) == caResult.end());
+
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
+    state.count = 0;
+    // Delete doc0 and purge doc1
+    {
+        TransactionHelper   tt(db);
+        c4::ref<C4Document> doc     = c4coll_getDoc(defaultColl, (slice)doc0, true, kDocGetMetadata, nullptr);
+        c4::ref<C4Document> updated = c4doc_update(doc, kC4SliceNull, kRevDeleted, nullptr);
+        REQUIRE(c4coll_purgeDoc(defaultColl, (slice)doc1, nullptr));
+    }
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+    CHECK(state.count == 1);
+    // doc0 is added to the result, and doc1 is removed from the result.
+    auto q2Result = state.queryResult();
+    CHECK(q2Result.size() == 8);
+    CHECK(std::ranges::find(q2Result, doc0) != q2Result.end());
+    CHECK(std::ranges::find(q2Result, doc1) == q2Result.end());
+
+    state.count = 0;
+    // Purge doc0, delete doc2
+    {
+        TransactionHelper t(db);
+        REQUIRE(c4coll_purgeDoc(defaultColl, (slice)doc0, nullptr));
+        c4::ref<C4Document> doc     = c4coll_getDoc(defaultColl, (slice)doc2, true, kDocGetMetadata, nullptr);
+        c4::ref<C4Document> updated = c4doc_update(doc, kC4SliceNull, kRevDeleted, nullptr);
+    }
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+    CHECK(state.count == 1);
+    // doc0 was purged. doc2 was deleted and remains in the result
+    q2Result = state.queryResult();
+    CHECK(q2Result.size() == 7);
+    CHECK(std::ranges::find(q2Result, doc0) == q2Result.end());
+    CHECK(std::ranges::find(q2Result, doc2) != q2Result.end());
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer with changing query parameters", "[Query][C][!throws]") {

@@ -28,7 +28,9 @@ namespace litecore {
 
         [[nodiscard]] sequence_t lastSequence() const override { return _liveStore->lastSequence(); }
 
-        [[nodiscard]] uint64_t purgeCount() const override { return _liveStore->purgeCount(); }
+        [[nodiscard]] uint64_t purgeCount() const override {
+            return _liveStore->purgeCount() + _deadStore->purgeCount();
+        }
 
         //// CRUD:
 
