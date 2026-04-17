@@ -895,9 +895,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "WebSocket Peer Going Away", "[C][Push][Pull
     }
 
     // "peer going away" after CLOSE frame was already sent
-    // Replicator receives error code 1005. The client of C4Replicator won't
-    // see this error.
-    // C4Replicator goes to Stop with error code == 0
+    // Since the replicator is already stopped when the peer goes away, WebSocket will
+    // treat it as Normal Close.
     SECTION("CLOSE Has Been Sent") {
         afterClose    = true;
         _mayGoOffline = false;
@@ -925,7 +924,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "WebSocket Peer Going Away", "[C][Push][Pull
     c4repl_stop(_repl);
 
     if ( afterClose ) {
-        // Give some time for Replicator::_stop to be called, but must be before timeout in WebSocketImpl
+        // Give some time for Replicator::_stop to be called, but before timeout in WebSocketImpl
+        // to not get Timeout error.
         std::this_thread::sleep_for(1s);
         // Replicator turns this error to WebSocket code 1005
         c4socket_closed(c4socket, {WebSocketDomain, websocket::kCodeGoingAway});
@@ -939,8 +939,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "WebSocket Peer Going Away", "[C][Push][Pull
         // kCodeAbnormal == 1006
         CHECK((status.error.domain == WebSocketDomain && status.error.code == websocket::kCodeAbnormal));
     } else {
-        // (kCodeStatusCodeExpected == 1005) This error is cleared before by C4Replicator.
-        // c.f. C4ReplicatorImpl::replicatorStatusChanged
+        // "peer going away" after stop results in normal Stop.
         CHECK(status.error.code == 0);
     }
 }
