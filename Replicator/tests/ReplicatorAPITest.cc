@@ -927,7 +927,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "WebSocket Peer Going Away", "[C][Push][Pull
         // Give some time for Replicator::_stop to be called, but before timeout in WebSocketImpl
         // to not get Timeout error.
         std::this_thread::sleep_for(1s);
-        // Replicator turns this error to WebSocket code 1005
+        // WebSocket will treat it as Normal Close
         c4socket_closed(c4socket, {WebSocketDomain, websocket::kCodeGoingAway});
     }
 
