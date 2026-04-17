@@ -555,7 +555,8 @@ namespace litecore::websocket {
 
                     if ( clean ) {
                         status.reason = kWebSocketClose;
-                        if ( !expected ) status.code = kCodeAbnormal;
+                        // if (!expected) then _closeSent => !_closeReceived
+                        if ( !expected ) status.code = _closeSent ? kCodeNormal : kCodeAbnormal;
                         else if ( !_closeMessage )
                             status.code = kCodeNormal;
                         else {
