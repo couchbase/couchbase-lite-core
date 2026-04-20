@@ -434,6 +434,7 @@ namespace litecore::websocket {
                     sendOp(closeMsg, uWS::CLOSE);
                     return;
                 }
+                [[fallthrough]];
             case SOCKET_OPENING:
                 if ( currState != SOCKET_OPENED ) { logVerbose("Calling close before the socket is connected"); }
                 if ( _framing ) {

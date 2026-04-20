@@ -460,7 +460,7 @@ namespace litecore {
                             break;
                         }
                     }
-                    // else fall through:
+                    [[fallthrough]];
                 case SQLITE_TEXT:
                     enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
                     break;

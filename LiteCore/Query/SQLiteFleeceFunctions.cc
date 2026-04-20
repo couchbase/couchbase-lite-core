@@ -264,6 +264,7 @@ namespace litecore {
                                     // Untagged blob with size is already Fleece data
                                     break;
                                 }  // Untagged blob with 0 size is null, so fall through into the Null case.
+                                [[fallthrough]];
                             case kFleeceNullSubtype:
                                 {
                                     // A tagged Fleece/JSON null:
