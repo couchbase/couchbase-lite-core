@@ -70,11 +70,7 @@ namespace litecore {
 
         alloc_slice pendingDocumentIDs(C4CollectionSpec spec) const;
 
-        alloc_slice correlationID() const noexcept override {
-            if ( Retained<Replicator> retained = _replicator; retained ) return retained->getCorrelationID();
-            else
-                return {};
-        }
+        alloc_slice correlationID() const noexcept override;
 
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override;
 
@@ -185,6 +181,16 @@ namespace litecore {
         std::atomic<C4ReplicatorStatusChangedCallback>  _onStatusChanged;
         std::atomic<C4ReplicatorDocumentsEndedCallback> _onDocumentsEnded;
         std::atomic<C4ReplicatorBlobProgressCallback>   _onBlobProgress;
+
+        // The setter requires _mutex
+        void setCorrelationID(slice corrID) {
+            if ( !_correlationID ) _correlationID = corrID;
+        }
+
+        // The setter requires _mutex
+        void clearCorrelationID() { _correlationID.reset(); }
+
+        alloc_slice _correlationID;
     };
 
     // All instances are subclasses of C4ReplicatorImpl.
