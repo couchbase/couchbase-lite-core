@@ -59,6 +59,7 @@ namespace litecore {
         }
 
         if ( !_replicator ) {
+            clearCorrelationID();
             if ( !_start(reset) ) {
                 UNLOCK();
                 // error set as part of _start,
@@ -330,6 +331,10 @@ namespace litecore {
         {
             LOCK(_mutex);
             if ( repl != _replicator ) return;
+
+            if ( !_correlationID )
+                if ( auto corrID = _replicator->getCorrelationID() ) setCorrelationID(corrID);
+
             auto oldLevel = _status.level;
             updateStatusFromReplicator((C4ReplicatorStatus)newStatus);
             if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) {
@@ -485,5 +490,12 @@ namespace litecore {
 
     alloc_slice C4ReplicatorImpl::pendingDocumentIDs(C4CollectionSpec spec) const {
         return PendingDocuments::create(this, spec).pendingDocumentIDs();
+    }
+
+    alloc_slice C4ReplicatorImpl::correlationID() const noexcept {
+        LOCK(_mutex);
+        if ( _correlationID ) return _correlationID;
+        if ( _replicator ) return _replicator->getCorrelationID();
+        return {};
     }
 }  // namespace litecore

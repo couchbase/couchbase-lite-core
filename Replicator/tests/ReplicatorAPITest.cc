@@ -22,6 +22,7 @@
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
 #include "SequenceSet.hh"
+#include <algorithm>
 
 using namespace fleece;
 using namespace std;
@@ -373,17 +374,17 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API getCorrelationID", "[C][Sync]") {
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
     createDB2();
-    alloc_slice xid;
+    alloc_slice corrID;
     _onDocsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
         CHECK(numDocs == 1);
         *((alloc_slice*)((ReplicatorAPITest*)context)->_testContext) = c4repl_getCorrelationID(repl);
     };
     _enableDocProgressNotifications = true;
-    _testContext                    = &xid;
+    _testContext                    = &corrID;
     replicate(kC4OneShot, kC4Disabled);
-    CHECK(!xid.empty());
-    auto xidFromHeader = _headers["X-Correlation-Id"_sl];
-    CHECK(xidFromHeader.asString() == xid);
+    CHECK(!corrID.empty());
+    // _corrID is obtained when _repl is stopped, before it's released.
+    CHECK(corrID == _corrID);
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C][Sync]") {
@@ -400,16 +401,18 @@ TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C
     c4repl_stop(_repl);
     waitForStatus(kC4Stopped);
 
-    // CorreslationID is nullslice after stopped
-    CHECK(!c4repl_getCorrelationID(_repl));
+    // CorrelationID is queriable after stopped.
+    CHECK(c4repl_getCorrelationID(_repl) == corrID);
 
     // Restart
+    std::fill(std::begin(_numCallbacksWithLevel), std::end(_numCallbacksWithLevel), 0);
     c4repl_start(_repl, false);
-    alloc_slice corrID_restart;
-    CHECK(WaitUntil(20s, [&] {
-        corrID_restart = c4repl_getCorrelationID(_repl);
-        return !!corrID_restart;
-    }));
+    // c4repl_start will clear correlationID synchronously.
+    CHECK(!c4repl_getCorrelationID(_repl));
+    waitForStatus(kC4Busy, 5s);
+
+    alloc_slice corrID_restart = c4repl_getCorrelationID(_repl);
+    CHECK(!!corrID_restart);
     CHECK(corrID != corrID_restart);
 
     c4repl_stop(_repl);
