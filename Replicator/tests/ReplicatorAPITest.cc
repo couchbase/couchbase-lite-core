@@ -401,13 +401,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C
     c4repl_stop(_repl);
     waitForStatus(kC4Stopped);
 
-    // CorreslationID is queriable after Stopped.
+    // CorrelationID is queriable after stopped.
     CHECK(c4repl_getCorrelationID(_repl) == corrID);
 
     // Restart
     std::fill(std::begin(_numCallbacksWithLevel), std::end(_numCallbacksWithLevel), 0);
     c4repl_start(_repl, false);
-    // c4rep_start will clear correlationID synchronously.
+    // c4repl_start will clear correlationID synchronously.
     CHECK(!c4repl_getCorrelationID(_repl));
     waitForStatus(kC4Busy, 5s);
 
