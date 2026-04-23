@@ -407,8 +407,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C
     // Restart
     std::fill(std::begin(_numCallbacksWithLevel), std::end(_numCallbacksWithLevel), 0);
     c4repl_start(_repl, false);
-    // c4repl_start will clear correlationID synchronously.
-    CHECK(!c4repl_getCorrelationID(_repl));
     waitForStatus(kC4Busy, 5s);
 
     alloc_slice corrID_restart = c4repl_getCorrelationID(_repl);

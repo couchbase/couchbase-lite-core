@@ -26,6 +26,7 @@
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
+#include <cinttypes>
 #include <cmath>
 #include <cerrno>
 #include <future>
@@ -766,16 +767,33 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Document expiration torture test", "[Dat
         auto otherCollection = c4db_getDefaultCollection(otherDb, ERROR_INFO());
         REQUIRE(otherCollection);
 
-        auto fut = std::async(std::launch::async, [otherCollection]() {
-            int64_t n;
-            do { n = c4coll_getDocumentCount(otherCollection); } while ( n > 0 );
+        int64_t           docCount = 0;
+        std::atomic<bool> stop{false};
+        auto              fut = std::async(std::launch::async, [otherCollection, &docCount, &stop]() {
+            while ( !stop.load() ) {
+                docCount = c4coll_getDocumentCount(otherCollection);
+                if ( docCount <= 0 ) break;
+            }
         });
 
-        for ( int i = 1; i <= total; ++i ) {
-            REQUIRE(c4coll_setDocExpiration(collection, c4str(docID(i)), expire, WITH_ERROR()));
+        int     setCount = 1;
+        C4Error error{};
+        for ( ; setCount <= total; ++setCount ) {
+            if ( !c4coll_setDocExpiration(collection, c4str(docID(setCount)), expire, &error) ) {
+                stop.store(true);
+                break;
+            }
         }
 
-        fut.wait();
+        if ( fut.wait_for(20s) == std::future_status::timeout ) {
+            stop.store(true);
+            fut.wait();
+        }
+        if ( docCount > 0 ) {
+            C4WarnError("Purge incomplete: remainingDocCount=%" PRId64 "  successfulSets=%d errorCode=%d", docCount,
+                        setCount - 1, error.code);
+        }
+        CHECK(docCount == 0);
 
         bool closedOtherDb = c4db_close(otherDb, ERROR_INFO());
         REQUIRE(closedOtherDb);
