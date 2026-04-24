@@ -26,6 +26,7 @@
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
+#include <atomic>
 #include <cinttypes>
 #include <cmath>
 #include <cerrno>
@@ -767,12 +768,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Document expiration torture test", "[Dat
         auto otherCollection = c4db_getDefaultCollection(otherDb, ERROR_INFO());
         REQUIRE(otherCollection);
 
-        int64_t           docCount = 0;
+        int64_t           docCount = -1;
         std::atomic<bool> stop{false};
         auto              fut = std::async(std::launch::async, [otherCollection, &docCount, &stop]() {
             while ( !stop.load() ) {
                 docCount = c4coll_getDocumentCount(otherCollection);
-                if ( docCount <= 0 ) break;
+                if ( docCount == 0 ) break;
             }
         });
 
@@ -789,7 +790,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Document expiration torture test", "[Dat
             stop.store(true);
             fut.wait();
         }
-        if ( docCount > 0 ) {
+        if ( docCount != 0 ) {
             C4WarnError("Purge incomplete: remainingDocCount=%" PRId64 "  successfulSets=%d errorCode=%d", docCount,
                         setCount - 1, error.code);
         }
