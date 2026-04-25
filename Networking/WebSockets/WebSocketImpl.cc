@@ -434,6 +434,7 @@ namespace litecore::websocket {
                     sendOp(closeMsg, uWS::CLOSE);
                     return;
                 }
+                [[fallthrough]];
             case SOCKET_OPENING:
                 if ( currState != SOCKET_OPENED ) { logVerbose("Calling close before the socket is connected"); }
                 if ( _framing ) {
@@ -555,7 +556,8 @@ namespace litecore::websocket {
 
                     if ( clean ) {
                         status.reason = kWebSocketClose;
-                        if ( !expected ) status.code = kCodeAbnormal;
+                        // if (!expected) then _closeSent => !_closeReceived
+                        if ( !expected ) status.code = _closeSent ? kCodeNormal : kCodeAbnormal;
                         else if ( !_closeMessage )
                             status.code = kCodeNormal;
                         else {

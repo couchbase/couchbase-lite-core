@@ -22,6 +22,7 @@
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
 #include "SequenceSet.hh"
+#include <algorithm>
 
 using namespace fleece;
 using namespace std;
@@ -373,17 +374,17 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API getCorrelationID", "[C][Sync]") {
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
     createDB2();
-    alloc_slice xid;
+    alloc_slice corrID;
     _onDocsEnded = [](C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
         CHECK(numDocs == 1);
         *((alloc_slice*)((ReplicatorAPITest*)context)->_testContext) = c4repl_getCorrelationID(repl);
     };
     _enableDocProgressNotifications = true;
-    _testContext                    = &xid;
+    _testContext                    = &corrID;
     replicate(kC4OneShot, kC4Disabled);
-    CHECK(!xid.empty());
-    auto xidFromHeader = _headers["X-Correlation-Id"_sl];
-    CHECK(xidFromHeader.asString() == xid);
+    CHECK(!corrID.empty());
+    // _corrID is obtained when _repl is stopped, before it's released.
+    CHECK(corrID == _corrID);
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C][Sync]") {
@@ -400,16 +401,16 @@ TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C
     c4repl_stop(_repl);
     waitForStatus(kC4Stopped);
 
-    // CorreslationID is nullslice after stopped
-    CHECK(!c4repl_getCorrelationID(_repl));
+    // CorrelationID is queriable after stopped.
+    CHECK(alloc_slice(c4repl_getCorrelationID(_repl)) == corrID);
 
     // Restart
+    std::fill(std::begin(_numCallbacksWithLevel), std::end(_numCallbacksWithLevel), 0);
     c4repl_start(_repl, false);
-    alloc_slice corrID_restart;
-    CHECK(WaitUntil(20s, [&] {
-        corrID_restart = c4repl_getCorrelationID(_repl);
-        return !!corrID_restart;
-    }));
+    waitForStatus(kC4Busy, 5s);
+
+    alloc_slice corrID_restart = c4repl_getCorrelationID(_repl);
+    CHECK(!!corrID_restart);
     CHECK(corrID != corrID_restart);
 
     c4repl_stop(_repl);
@@ -862,6 +863,86 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     c4repl_stop(_repl);
 
     waitForStatus(kC4Stopped);
+}
+
+// CBL-8074
+TEST_CASE_METHOD(ReplicatorAPITest, "WebSocket Peer Going Away", "[C][Push][Pull]") {
+    bool            afterClose = false;
+    C4SocketFactory factory    = {};
+    C4Socket*       c4socket   = nullptr;
+    factory.context            = &c4socket;
+    factory.open               = [](C4Socket* socket, const C4Address* addr, C4Slice options, void* context) {
+        c4socket_opened(socket);
+        *(C4Socket**)context = socket;
+    };
+
+    factory.close = [](C4Socket* socket) {
+        // Not invoked
+        REQUIRE(false);
+    };
+
+    // "peer going away" before CLOSE is sent
+    // Replicator receives error code 1006, which is transient.
+    // C4Replicator goes to offline and waiting for retry.
+    SECTION("CLOSE Not Sent") {
+        afterClose    = false;
+        _mayGoOffline = true;
+        factory.write = [](C4Socket* socket, C4SliceResult msg) {
+            // Simulate Peer-Going-Away before Replicator calling Stop.
+            // Socket is closed unexpectedly, without the client sending CLOSE
+            FLSliceResult_Release(msg);
+            c4socket_closed(socket, {WebSocketDomain, websocket::kCodeGoingAway});
+        };
+    }
+
+    // "peer going away" after CLOSE frame was already sent
+    // Since the replicator is already stopped when the peer goes away, WebSocket will
+    // treat it as Normal Close.
+    SECTION("CLOSE Has Been Sent") {
+        afterClose    = true;
+        _mayGoOffline = false;
+        factory.write = [](C4Socket* socket, C4SliceResult msg) {
+            // Do nothing
+            FLSliceResult_Release(msg);
+        };
+    }
+
+    _socketFactory = &factory;
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    if ( !afterClose ) {
+        // WebSocket code 1006, transient error
+        REQUIRE(startReplicator(kC4Disabled, kC4OneShot, WITH_ERROR(&err)));
+        _numCallbacksWithLevel[kC4Offline] = 0;
+        waitForStatus(kC4Offline);
+    } else {
+        REQUIRE(startReplicator(kC4Disabled, kC4Continuous, WITH_ERROR(&err)));
+        // Making sure the WebSocket is open/connected
+        waitForStatus(kC4Busy);
+    }
+
+    c4repl_stop(_repl);
+
+    if ( afterClose ) {
+        // Give some time for Replicator::_stop to be called, but before timeout in WebSocketImpl
+        // to not get Timeout error.
+        std::this_thread::sleep_for(1s);
+        // WebSocket will treat it as Normal Close
+        c4socket_closed(c4socket, {WebSocketDomain, websocket::kCodeGoingAway});
+    }
+
+    waitForStatus(kC4Stopped);
+
+    auto status = c4repl_getStatus(_repl);
+
+    if ( !afterClose ) {
+        // kCodeAbnormal == 1006
+        CHECK((status.error.domain == WebSocketDomain && status.error.code == websocket::kCodeAbnormal));
+    } else {
+        // "peer going away" after stop results in normal Stop.
+        CHECK(status.error.code == 0);
+    }
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Calling c4socket_ method after STOP", "[C][Push][Pull]") {

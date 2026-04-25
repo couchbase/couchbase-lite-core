@@ -405,7 +405,8 @@ class ReplicatorAPITest : public C4Test {
         CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
         CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
 
-        _repl = nullptr;
+        _corrID = c4repl_getCorrelationID(_repl);
+        _repl   = nullptr;
     }
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess = true) {
@@ -469,4 +470,5 @@ class ReplicatorAPITest : public C4Test {
     std::set<std::string>   _expectedDocPushErrorsAfterOffline;
     std::set<std::string>   _expectedDocPullErrorsAfterOffline;
     void*                   _testContext{nullptr};
+    alloc_slice             _corrID;
 };
