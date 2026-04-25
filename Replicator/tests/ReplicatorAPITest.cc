@@ -402,7 +402,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "CorrelationID after stop and re-start", "[C
     waitForStatus(kC4Stopped);
 
     // CorrelationID is queriable after stopped.
-    CHECK(c4repl_getCorrelationID(_repl) == corrID);
+    CHECK(alloc_slice(c4repl_getCorrelationID(_repl)) == corrID);
 
     // Restart
     std::fill(std::begin(_numCallbacksWithLevel), std::end(_numCallbacksWithLevel), 0);
