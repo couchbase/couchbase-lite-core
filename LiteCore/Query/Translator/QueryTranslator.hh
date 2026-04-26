@@ -45,8 +45,14 @@ namespace litecore {
             using DeletionStatus = QueryTranslator::DeletionStatus;
             virtual ~Delegate()  = default;
 
-            [[nodiscard]] virtual bool   tableExists(const string& tableName) const                             = 0;
-            [[nodiscard]] virtual string collectionTableName(const string& collection, DeletionStatus) const    = 0;
+            [[nodiscard]] virtual bool   tableExists(const string& tableName) const                          = 0;
+            [[nodiscard]] virtual string collectionTableName(const string& collection, DeletionStatus) const = 0;
+            /// True if all deleted docs in this collection reside in its dedicated deleted table
+            /// (kv_del_*), meaning the deleted table alone can be queried without missing any.
+            /// For non-default collections this is always true. For the default collection it
+            /// depends on whether the background migration of deleted docs out of kv_default
+            /// has completed.
+            [[nodiscard]] virtual bool   isDeletedTableComplete(const string& collection) const                 = 0;
             [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const      = 0;
             [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
 #ifdef COUCHBASE_ENTERPRISE

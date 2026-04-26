@@ -26,6 +26,7 @@ struct QueryTranslatorTest
     // QueryTranslator::Delegate:
     [[nodiscard]] virtual bool   tableExists(const string& tableName) const override;
     [[nodiscard]] virtual string collectionTableName(const string& collection, DeletionStatus) const override;
+    [[nodiscard]] virtual bool   isDeletedTableComplete(const string& collection) const override;
     [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const override;
     [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const override;
 #ifdef COUCHBASE_ENTERPRISE
@@ -34,7 +35,8 @@ struct QueryTranslatorTest
                                                  string_view metricName) const override;
 #endif
 
-    string           databaseName = "db";
+    string           databaseName         = "db";
+    bool             deletedTableComplete = true;
     std::set<string> tableNames{"kv_default", "kv_del_default"};
     std::map<std::pair<string, string>, string>
                              vectorIndexedProperties;  // maps {table name,expression JSON} -> vector-index table name

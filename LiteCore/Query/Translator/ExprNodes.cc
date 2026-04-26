@@ -241,6 +241,13 @@ namespace litecore::qt {
         return nullopt;
     }
 
+    optional<bool> LiteralNode::asBool() const {
+        if ( _literal.index() == 0 ) {
+            if ( Value v = get<Value>(_literal); v.type() == kFLBoolean ) return v.asBool();
+        }
+        return nullopt;
+    }
+
     string_view LiteralNode::asString() const {
         switch ( _literal.index() ) {
             case 0:

@@ -898,6 +898,13 @@ namespace litecore {
         return name;
     }
 
+    bool SQLiteDataFile::isDeletedTableComplete(const string& collection) const {
+        auto [scope, coll] = splitCollectionPath(collection);
+        bool isDefault     = (collection == "_" || (isDefaultScope(scope) && isDefaultCollection(coll)));
+        if ( !isDefault ) return true;  // Non-default collections are always fully migrated
+        return const_cast<SQLiteDataFile*>(this)->DataFile::isDeletedTableComplete();
+    }
+
     string SQLiteDataFile::auxiliaryTableName(const string& onTable, slice typeSeparator, const string& property) {
         return onTable + string(typeSeparator) + SQLiteKeyStore::transformCollectionName(property, true);
     }

@@ -115,6 +115,8 @@ void QueryTranslatorTest::mustFail(string_view json) {
     return name;
 }
 
+bool QueryTranslatorTest::isDeletedTableComplete(const string& /*collection*/) const { return deletedTableComplete; }
+
 string QueryTranslatorTest::FTSTableName(const string& onTable, const string& property) const {
     return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kIndexSeparator, property);
 }
@@ -223,23 +225,86 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator property contexts", "[Que
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Only Deleted Docs", "[Query][QueryTranslator]") {
+    // When the WHERE clause guarantees only deleted docs, use kv_del_default directly
+    // (skipping the expensive UNION with kv_default)
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['._deleted']}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE (_doc.flags & 1 != 0)");
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['AND',  ['.foo'], ['._deleted']]}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE fl_value(_doc.body, 'foo') AND (_doc.flags & 1 "
+                "!= 0)");
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted']}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE (_doc.flags & 1 != 0)");
+    CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
+                "SELECT testdb.key FROM kv_del_default AS testdb WHERE (testdb.flags & 1 != 0)");
+    CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
+                "SELECT testdb.key FROM kv_del_default AS testdb WHERE (testdb.flags & 1 != 0)");
+    CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['.testdb._deleted'], FROM: [{AS: 'testdb'}]}"),
+                "SELECT testdb.key FROM kv_del_default AS testdb WHERE (testdb.flags & 1 != 0)");
+    CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
+                "SELECT testdb.key FROM kv_del_default AS testdb WHERE (testdb.flags & 1 != 0)");
+    CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()', 'testdb'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
+                "SELECT testdb.key FROM kv_del_default AS testdb WHERE (testdb.flags & 1 != 0)");
+    // Equivalent comparison forms:
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['=', ['._deleted'], true]}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE (_doc.flags & 1 != 0) = fl_bool(1)");
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['!=', ['._deleted'], false]}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE (_doc.flags & 1 != 0) != fl_bool(0)");
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['IS', ['._deleted'], true]}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE (_doc.flags & 1 != 0) IS fl_bool(1)");
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['IS NOT', ['._deleted'], false]}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE (_doc.flags & 1 != 0) IS NOT fl_bool(0)");
+    // AND chains:
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['AND', ['.foo'], ['!=', ['._deleted'], false]]}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE fl_value(_doc.body, 'foo') AND "
+                "(_doc.flags & 1 != 0) != fl_bool(0)");
+    // Nested AND: AND(foo, AND(bar, _deleted))
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['AND', ['.foo'], ['AND', ['.bar'], ['._deleted']]]}]"),
+                "SELECT _doc.key FROM kv_del_default AS _doc WHERE fl_value(_doc.body, 'foo') AND "
+                "(fl_value(_doc.body, 'bar') AND (_doc.flags & 1 != 0))");
+    // _deleted in both SELECT and WHERE — still optimized (WHERE guarantees only deleted docs)
+    CHECK_equal(parse("['SELECT', {WHAT: [['._deleted']], WHERE: ['._deleted']}]"),
+                "SELECT fl_boolean_result((_doc.flags & 1 != 0)) FROM kv_del_default AS _doc WHERE "
+                "(_doc.flags & 1 != 0)");
+}
+
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Not Only Deleted Docs", "[Query][QueryTranslator]") {
+    // These forms should NOT optimize to kv_del_default — they don't guarantee only deleted docs.
+    // _deleted = false (targets live docs)
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['=', ['._deleted'], false]}]"),
+                "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0) = fl_bool(0)");
+    // _deleted != true (targets live docs)
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['!=', ['._deleted'], true]}]"),
+                "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0) != fl_bool(1)");
+    // _deleted IS FALSE (targets live docs)
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['IS', ['._deleted'], false]}]"),
+                "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0) IS fl_bool(0)");
+    // _deleted IS NOT TRUE (targets live docs)
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['IS NOT', ['._deleted'], true]}]"),
+                "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0) IS NOT fl_bool(1)");
+    // OR _deleted (live docs can match via the other branch)
+    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['OR', ['.foo'], ['._deleted']]}]"),
+                "SELECT _doc.key FROM all_default AS _doc WHERE fl_value(_doc.body, 'foo') OR (_doc.flags & 1 "
+                "!= 0)");
+}
+
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Only Deleted Docs During Migration",
+                 "[Query][QueryTranslator]") {
+    // When the default collection's deleted table migration is not complete,
+    // fall back to the union view (all_default) to avoid missing deleted docs still in kv_default
+    deletedTableComplete = false;
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['._deleted']}]"),
                 "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0)");
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['AND',  ['.foo'], ['._deleted']]}]"),
-                "SELECT _doc.key FROM all_default AS _doc WHERE fl_value(_doc.body, 'foo') AND (_doc.flags & 1 "
-                "!= 0)");
-    CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted']}]"),
-                "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0)");
-    CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
-    CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
-    CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['.testdb._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
-    CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
-    CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()', 'testdb'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
+                "SELECT _doc.key FROM all_default AS _doc WHERE fl_value(_doc.body, 'foo') AND (_doc.flags & 1 != 0)");
+}
+
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Only Deleted Docs Non-Default Collection",
+                 "[Query][QueryTranslator]") {
+    // Non-default collections always have migration complete, so the optimization always applies.
+    tableNames.insert("kv_.books");
+    tableNames.insert("kv_del_.books");
+    CHECK_equal(parse("{WHAT: [['.books._id']], FROM: [{collection: 'books'}], WHERE: ['.books._deleted']}"),
+                "SELECT books.key FROM \"kv_del_.books\" AS books WHERE (books.flags & 1 != 0)");
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Deleted And Live Docs", "[Query][QueryTranslator]") {
