@@ -15,6 +15,7 @@
 #include "EncryptedStream.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include <filesystem>
 
 namespace litecore {
     using namespace std;
@@ -38,7 +39,7 @@ namespace litecore {
 
     BlobWriteStream::BlobWriteStream(const string& blobsDir, EncryptionAlgorithm algorithm, slice encryptionKey) {
         FILE* file;
-        _tmpPath = FilePath(blobsDir, "incoming_").mkTempFile(&file);
+        _tmpPath = FilePath(filesystem::path(blobsDir) / "incoming_").mkTempFile(&file);
         _writer  = shared_ptr<WriteStream>{new FileWriteStream(file)};
         if ( algorithm != EncryptionAlgorithm::kNoEncryption )
             _writer = make_shared<EncryptedWriteStream>(_writer, algorithm, encryptionKey);
