@@ -57,8 +57,8 @@ namespace litecore::repl {
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
-        _revMessage = msg;
 
+        _revMessage         = msg;
         _rev                = new RevToInsert(this, _revMessage->property("id"_sl), _revMessage->property("rev"_sl),
                                               _revMessage->property("history"_sl), _revMessage->boolProperty("deleted"_sl),
                                               _revMessage->boolProperty("noconflicts"_sl) || _options->noIncomingConflicts(),
@@ -190,6 +190,7 @@ namespace litecore::repl {
     }
 
     // We've lost access to this doc on the server; it should be purged.
+    // This runs on the caller's (Puller's) thread.
     void IncomingRev::handleRevokedDoc(RevToInsert* rev) {
         reinitialize();
         _rev       = rev;
@@ -211,6 +212,7 @@ namespace litecore::repl {
         insertRevision();
     }
 
+    // This method may be enqueued as normal, or called directly from handleRev on the Puller's thread.
     void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
         // First create a Fleece document:
         Doc     fleeceDoc;
@@ -408,7 +410,7 @@ namespace litecore::repl {
         revoked ? _puller->revWasProvisionallyHandled<true>() : _puller->revWasProvisionallyHandled<false>();
     }
 
-    // Called by the Inserter after the revision is safely committed to disk.
+    // Called directly by the Inserter, on its thread, after the revision is safely committed to disk.
     void IncomingRev::revisionInserted() {
         Retained<IncomingRev> retainSelf = this;
         decrement(_pendingCallbacks);
@@ -454,14 +456,29 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        _puller->revWasHandled(this);
+        // finish() can be called either on my queue, or on the Puller's or Inserter's queue.
+        // If on my queue, I'm not ready to be reset until after the `afterEvent` call following
+        // this method, so defer telling the Puller I'm done until then:
+        if ( currentActor() == this ) _finishedAfterEvent = true;
+        else
+            _puller->revWasHandled(this);
     }
 
     void IncomingRev::reset() {
-        _rev            = nullptr;
-        _parent         = nullptr;
-        _remoteSequence = {};
-        _bodySize       = 0;
+        _rev                = nullptr;
+        _parent             = nullptr;
+        _remoteSequence     = {};
+        _bodySize           = 0;
+        _finishedAfterEvent = false;
+    }
+
+    // Call Worker::afterEvent to calculate status and progress, then notify
+    // Puller we are done.
+    void IncomingRev::afterEvent() {
+        Worker::afterEvent();
+        // If the finish() method passed the buck to me (see above), call revWasHandled now:
+        auto expected = true;
+        if ( _finishedAfterEvent.compare_exchange_strong(expected, false) ) _puller->revWasHandled(this);
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {

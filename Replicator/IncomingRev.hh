@@ -50,6 +50,8 @@ namespace litecore::repl {
 
         ActivityLevel computeActivityLevel(std::string* reason) const override;
 
+        void afterEvent() override;
+
       private:
         void        reinitialize();
         void        parseAndInsert(alloc_slice jsonBody);
@@ -81,6 +83,8 @@ namespace litecore::repl {
         RemoteSequence            _remoteSequence;
         uint32_t                  _serialNumber{0};
         std::atomic<bool>         _provisionallyInserted{false};
+        std::atomic<bool>         _finishedAfterEvent{false};
+
         // blob stuff:
         std::vector<PendingBlob>                 _pendingBlobs;
         std::vector<PendingBlob>::const_iterator _blob;
