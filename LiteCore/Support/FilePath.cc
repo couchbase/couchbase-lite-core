@@ -245,12 +245,12 @@ namespace litecore {
             if ( !f ) { error(error::POSIX, EIO, "Unable to create temporary file")._throw(1); }
 
             if ( outHandle ) {
-                int fd = open(pathTemplate.c_str(), O_RDWR | O_TRUNC);
+                int fd = cbl_open(pathTemplate.c_str(), O_RDWR | O_TRUNC);
                 if ( fd < 0 ) { error(error::POSIX, errno, "Unable to open temporary file")._throw(1); }
 
                 *outHandle = fdopen(fd, "wb");
                 if ( !*outHandle ) {
-                    close(fd);
+                    cbl_close(fd);
                     error(error::POSIX, errno, "Unable to fdopen temporary file")._throw(1);
                 }
             }

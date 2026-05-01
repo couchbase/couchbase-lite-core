@@ -24,6 +24,8 @@
 #    define strncasecmp _strnicmp
 #    define strcasecmp  _stricmp
 #    define fdclose     ::_close
+#    define cbl_open    ::_open
+#    define cbl_close   ::_close
 
 #    define R_OK 1
 #    define W_OK 2
@@ -48,7 +50,9 @@ namespace litecore {
 #    include <sys/stat.h>
 #    include <unistd.h>
 
-#    define fdclose ::close
+#    define fdclose     ::close
+#    define cbl_open    ::open
+#    define cbl_close   ::close
 
 namespace litecore {
     inline int mkdir_u8(const char* const path NONNULL, int mode) { return ::mkdir(path, (mode_t)mode); }
