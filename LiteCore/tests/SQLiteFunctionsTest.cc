@@ -283,13 +283,13 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[Query]") {
     insert("one", "{\"hey\": 2.5}");
 
 
-    CHECK(query("SELECT sqrt(fl_value(kv.body, 'hey')) FROM kv") == (vector<string>{"2.0", "1.58113883008419"}));
+    CHECK(query("SELECT sqrt(fl_value(kv.body, 'hey')) FROM kv") == (vector<string>{"2.0", "1.5811388300841898"}));
     CHECK(query("SELECT log(fl_value(kv.body, 'hey')) FROM kv")
-          == (vector<string>{"0.602059991327962", "0.397940008672038"}));
+          == (vector<string>{"0.6020599913279624", "0.3979400086720376"}));
     CHECK(query("SELECT ln(fl_value(kv.body, 'hey')) FROM kv")
-          == (vector<string>{"1.38629436111989", "0.916290731874155"}));
+          == (vector<string>{"1.3862943611198906", "0.91629073187415511"}));
     CHECK(query("SELECT exp(fl_value(kv.body, 'hey')) FROM kv")
-          == (vector<string>{"54.5981500331442", "12.1824939607035"}));
+          == (vector<string>{"54.598150033144236", "12.182493960703473"}));
     CHECK(query("SELECT power(fl_value(kv.body, 'hey'), 3) FROM kv") == (vector<string>{"64.0", "15.625"}));
     CHECK(query("SELECT floor(fl_value(kv.body, 'hey')) FROM kv") == (vector<string>{"4.0", "2.0"}));
     CHECK(query("SELECT ceil(fl_value(kv.body, 'hey')) FROM kv") == (vector<string>{"4.0", "3.0"}));
