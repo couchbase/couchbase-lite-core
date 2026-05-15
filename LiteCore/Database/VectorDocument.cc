@@ -428,6 +428,62 @@ namespace litecore {
             } else {
                 // Compare it with the current document revision:
                 order = VersionVecWithLegacy::compare(newVers, curVers);
+
+                // CBL-7841: Handle the case where revision history may appear broken.
+                //
+                // Concrete scenario for a single document ID:
+                //   1. Local DB deletes the doc.
+                //   2. Local pushes the tombstone to a remote SGW.
+                //   3. In the target CB database, a new doc is created with the same ID.
+                //      (In CBS, a deleted doc is effectively purged, so the ID is free
+                //      for reuse by an unrelated document.)
+                //   4. Local DB performs a pull.
+                //
+                // At step 4 the BLIP message carries a document that starts at a new
+                // version with no history. In general, this conflicts with whatever
+                // revision Local currently holds, and it is indistinguishable from a
+                // genuinely new document authored elsewhere (i.e. one that never went
+                // through the sequence above). The following analysis shows how we can
+                // recognize the sequence above and treat `newVers` as a newer revision
+                // rather than a conflict.
+                //
+                // Proposition:
+                //   For a given document at a given remote, the set of authors in the
+                //   Version Vector may only grow.
+                //
+                // Applying the proposition here:
+                //   - `remote`   : the remote index that `newVers` came from.
+                //   - `rev`      : the latest revision we know we have shared with
+                //                  `remote`.
+                //   - `newVers`  : the revision arriving from `remote` via BLIP.
+                //   - `curVers`  : the current local revision of the document.
+                //
+                // Because the remote has already seen `rev`, its Version Vector must
+                // contain `rev`'s author. Our general VV comparison relies on this. If
+                // that author is now missing from `newVers`, it must have been dropped.
+                // From this we can draw the following conservative conclusion:
+                //
+                //   `newVers` is "newer" than any version that shares an author with
+                //   `rev` at the same or older age (lower or equal logical clock).
+                //
+                // We further posit that `is_newer_or_same` is transitive. Because `rev`
+                // has been seen by the remote, we have:
+                //
+                //   newVers is_newer_or_same rev
+                //
+                // By transitivity, if rev is_newer_or_same curVers, then
+                // newVers is_newer_or_same curVers. The "same" case is already handled
+                // by the general comparison, so here we are only concerned with the
+                // strict is_newer case.
+
+                if ( order == kConflicting && remote != RemoteID::Local ) {
+                    if ( optional<Revision> rev = _doc.loadRemoteRevision(remote); rev ) {
+                        VersionVecWithLegacy landmark{rev->revID};
+                        versionOrder         orderWithLandmark = VersionVecWithLegacy::compare(landmark, curVers);
+                        if ( orderWithLandmark == kSame || orderWithLandmark == kNewer ) order = kNewer;
+                    }
+                }
+
                 logPutExisting(curVers, newVers, order, remote);
 
                 // Check for no-op or conflict:
