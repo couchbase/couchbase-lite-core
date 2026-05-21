@@ -440,48 +440,61 @@ namespace litecore {
                 //   4. Local DB performs a pull.
                 //
                 // At step 4 the BLIP message carries a document that starts at a new
-                // version with no history. In general, this conflicts with whatever
-                // revision Local currently holds, and it is indistinguishable from a
-                // genuinely new document authored elsewhere (i.e. one that never went
-                // through the sequence above). The following analysis shows how we can
-                // recognize the sequence above and treat `newVers` as a newer revision
-                // rather than a conflict.
-                //
-                // Proposition:
-                //   For a given document at a given remote, the set of authors in the
-                //   Version Vector may only grow.
-                //
-                // Applying the proposition here:
-                //   - `remote`   : the remote index that `newVers` came from.
-                //   - `rev`      : the latest revision we know we have shared with
-                //                  `remote`.
-                //   - `newVers`  : the revision arriving from `remote` via BLIP.
-                //   - `curVers`  : the current local revision of the document.
-                //
-                // Because the remote has already seen `rev`, its Version Vector must
-                // contain `rev`'s author. Our general VV comparison relies on this. If
-                // that author is now missing from `newVers`, it must have been dropped.
-                // From this we can draw the following conservative conclusion:
-                //
-                //   `newVers` is "newer" than any version that shares an author with
-                //   `rev` at the same or older age (lower or equal logical clock).
-                //
-                // We further posit that `is_newer_or_same` is transitive. Because `rev`
-                // has been seen by the remote, we have:
-                //
-                //   newVers is_newer_or_same rev
-                //
-                // By transitivity, if rev is_newer_or_same curVers, then
-                // newVers is_newer_or_same curVers. The "same" case is already handled
-                // by the general comparison, so here we are only concerned with the
-                // strict is_newer case.
+                // revision with no history. In this case, this new revision will be in
+                // conflict with any revisions that exist before its birth. However, we
+                // would like to make it new current, replacing the already deleted Local.
 
-                if ( order == kConflicting && remote != RemoteID::Local ) {
-                    if ( optional<Revision> rev = _doc.loadRemoteRevision(remote); rev ) {
-                        VersionVecWithLegacy landmark{rev->revID};
-                        versionOrder         orderWithLandmark = VersionVecWithLegacy::compare(landmark, curVers);
-                        if ( orderWithLandmark == kSame || orderWithLandmark == kNewer ) order = kNewer;
+                // Following is a fallback to make up for the loss of the history which causes
+                // the general VV comparison to yield kConflict. We focus on the
+                // following conditions:
+                // 1. Conflict with genuine remote
+                // 2. curVers is a tombstone
+                // 3. Remote revision is available at `remote`
+                // 4. curVers == RemoteRevision(remote)
+                // 5. curVers.vector shares no version with newVers.vector
+                // 6. curVers.legacy[0] is not in newVers.legacy (RevTree parent)
+
+                for ( bool goOn = order == kConflicting && remote != RemoteID::Local; goOn; goOn = false ) {
+                    // 1. Conflict with genuine remote
+
+                    // 2. curVers is a tombstone
+                    if ( !(_doc.flags() & DocumentFlags::kDeleted) ) break;
+
+                    // 3. Remote revision is available
+                    optional<Revision> rev = _doc.loadRemoteRevision(remote);
+                    if ( !rev ) break;
+
+                    // 4. curVers == RemoteRevision(remote)
+                    VersionVecWithLegacy lastSynced{rev->revID};
+                    if ( curVers.legacy != lastSynced.legacy || curVers.vector != lastSynced.vector ) break;
+
+                    // 5. curVers.vector shares no version with newVers.vector
+                    unordered_map<SourceID, logicalTime>       newVersions;
+                    optional<std::pair<SourceID, logicalTime>> extra;
+                    for ( auto& v : newVers.vector.versions() ) {
+                        if ( !newVersions.insert({v.author(), v.time()}).second )
+                            extra = std::make_pair(v.author(), v.time());
                     }
+                    auto intersect = [&]() {
+                        for ( auto& v : lastSynced.vector.versions() ) {
+                            if ( auto i = newVersions.find(v.author());
+                                 i != newVersions.end() && i->second == v.time() ) {
+                                return true;
+                            }
+                            if ( extra && extra->first == v.author() && extra->second == v.time() ) { return true; }
+                        }
+                        return false;
+                    };
+                    if ( intersect() ) break;
+
+                    // 6. curVers.legacy[0] is not in newVers.legacy (RevTree parent)
+                    auto isCurVersLegacyParentOfNewVers = [&]() {
+                        if ( curVers.legacy.empty() ) return false;
+                        return std::ranges::find(newVers.legacy, curVers.legacy[0]) != newVers.legacy.end();
+                    };
+                    if ( isCurVersLegacyParentOfNewVers() ) break;
+
+                    order = kNewer;
                 }
 
                 logPutExisting(curVers, newVers, order, remote);
