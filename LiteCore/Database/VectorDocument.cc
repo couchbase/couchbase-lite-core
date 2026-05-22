@@ -429,33 +429,23 @@ namespace litecore {
                 // Compare it with the current document revision:
                 order = VersionVecWithLegacy::compare(newVers, curVers);
 
-                // CBL-7841: Handle the case where revision history may appear broken.
-                //
-                // Concrete scenario for a single document ID:
-                //   1. Local DB deletes the doc.
-                //   2. Local pushes the tombstone to a remote SGW.
-                //   3. In the target CB database, a new doc is created with the same ID.
-                //      (In CBS, a deleted doc is effectively purged, so the ID is free
-                //      for reuse by an unrelated document.)
-                //   4. Local DB performs a pull.
-                //
-                // At step 4 the BLIP message carries a document that starts at a new
-                // revision with no history. In this case, this new revision will be in
-                // conflict with any revisions that exist before its birth. However, we
-                // would like to make it new current, replacing the already deleted Local.
-
-                // Following is a fallback to make up for the loss of the history which causes
-                // the general VV comparison to yield kConflict. We focus on the
-                // following conditions:
-                // 1. Conflict with genuine remote
+                // CBL-7841: Handle the case where the revision history may appear broken.
+                //   This happens when a deleted doc is resurrected on the CB Server
+                // without going through SGW. Manifested here, 'order' as yielded by the
+                // above comparison shows Conflict. However, we want to resolve it here by simply
+                // accepting the new version from the remote, provided the following conditions are
+                // true:
+                // 1. Conflict with a genuine remote (remote != RemoteID::Local)
                 // 2. curVers is a tombstone
                 // 3. Remote revision is available at `remote`
                 // 4. curVers == RemoteRevision(remote)
                 // 5. curVers.vector shares no version with newVers.vector
                 // 6. curVers.legacy[0] is not in newVers.legacy (RevTree parent)
 
-                for ( bool goOn = order == kConflicting && remote != RemoteID::Local; goOn; goOn = false ) {
+                // Make a block that we can "break" out of if any of the above conditions fail.
+                do {
                     // 1. Conflict with genuine remote
+                    if ( order != kConflicting || remote == RemoteID::Local ) break;
 
                     // 2. curVers is a tombstone
                     if ( !(_doc.flags() & DocumentFlags::kDeleted) ) break;
@@ -469,33 +459,15 @@ namespace litecore {
                     if ( curVers.legacy != lastSynced.legacy || curVers.vector != lastSynced.vector ) break;
 
                     // 5. curVers.vector shares no version with newVers.vector
-                    unordered_map<SourceID, logicalTime>       newVersions;
-                    optional<std::pair<SourceID, logicalTime>> extra;
-                    for ( auto& v : newVers.vector.versions() ) {
-                        if ( !newVersions.insert({v.author(), v.time()}).second )
-                            extra = std::make_pair(v.author(), v.time());
-                    }
-                    auto intersect = [&]() {
-                        for ( auto& v : lastSynced.vector.versions() ) {
-                            if ( auto i = newVersions.find(v.author());
-                                 i != newVersions.end() && i->second == v.time() ) {
-                                return true;
-                            }
-                            if ( extra && extra->first == v.author() && extra->second == v.time() ) { return true; }
-                        }
-                        return false;
-                    };
-                    if ( intersect() ) break;
+                    if ( curVers.vector.sharesVersion(newVers.vector) ) break;
 
                     // 6. curVers.legacy[0] is not in newVers.legacy (RevTree parent)
-                    auto isCurVersLegacyParentOfNewVers = [&]() {
-                        if ( curVers.legacy.empty() ) return false;
-                        return std::ranges::find(newVers.legacy, curVers.legacy[0]) != newVers.legacy.end();
-                    };
-                    if ( isCurVersLegacyParentOfNewVers() ) break;
+                    if ( !curVers.legacy.empty()
+                         && std::ranges::find(newVers.legacy, curVers.legacy[0]) != newVers.legacy.end() )
+                        break;
 
                     order = kNewer;
-                }
+                } while ( false );
 
                 logPutExisting(curVers, newVers, order, remote);
 
