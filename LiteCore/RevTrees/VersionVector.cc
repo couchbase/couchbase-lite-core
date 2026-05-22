@@ -278,6 +278,22 @@ namespace litecore {
         return true;
     }
 
+    bool VersionVector::sharesVersion(const VersionVector& other) const {
+        unordered_map<SourceID, logicalTime> myVersions;
+        optional<Version>                    myExtraVersion;  // A merge version may share author with the current.
+        for ( auto& v : _vers ) {
+            if ( !myVersions.insert({v.author(), v.time()}).second ) myExtraVersion = v;
+        }
+
+        for ( auto& v : other._vers ) {
+            auto i = myVersions.find(v.author());
+            if ( i != myVersions.end() && i->second == v.time() ) return true;
+            if ( myExtraVersion && *myExtraVersion == v ) return true;
+        }
+
+        return false;
+    }
+
 #pragma mark - MODIFICATION:
 
     void VersionVector::prune(size_t maxCount, logicalTime before) {
