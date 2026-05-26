@@ -11,6 +11,8 @@
 //
 
 #include "LogFiles.hh"
+
+#include "Backtrace.hh"
 #include "c4ExceptionUtils.hh"
 #include "Error.hh"
 #include "FilePath.hh"
@@ -159,6 +161,10 @@ namespace litecore {
         // Initialize LogFile objects before opening them:
         for ( int i = 0; i < kNumLogLevels; i++ ) _files[i] = make_unique<LogFile>(LogLevel(i), _options);
         for ( int i = 0; i < kNumLogLevels; i++ ) _files[i]->open();
+
+        // The expectation here is that you will only create one active LogFiles at once
+        auto crash_path = options.directory + FilePath::kSeparator + "cbl_crash.log";
+        BacktraceSignalHandler::setLogPath(crash_path.c_str());
     }
 
     LogFiles::~LogFiles() { close(); }

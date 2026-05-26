@@ -26,6 +26,11 @@
 #include <fstream>
 #include <thread>
 
+#ifndef _MSC_VER
+#include <signal.h>
+#include <unistd.h>
+#endif
+
 using namespace std;
 
 // These formats are used in the decoded log files. They are UTC times.
@@ -638,3 +643,19 @@ TEST_CASE("LogEncoder Bad C-string", "[Log]") {
                               "   Obj=/Tweedledum#1/rattle#2/ and I'm another rattle\\n");
     CHECK(regex_match(result, expected));
 }
+
+#ifndef _MSC_VER
+
+TEST_CASE_METHOD(LogFileTest, "Crash Log", "[.LogManual]") {
+    tmpLogDir.mkdir();
+    LogFiles::Options fileOptions{tmpLogDir.canonicalPath(), "Hello", 1024, 1, false};
+    createLogger(fileOptions, LogLevel::Info);
+    WARN("This test will crash the process, so you will need to manually inspect "
+        << tmpLogDir.canonicalPath() << "/cbl_crash.log to see if things are working");
+    c4log_enableFatalExceptionBacktrace();
+
+    raise(SIGABRT);
+
+
+}
+#endif
