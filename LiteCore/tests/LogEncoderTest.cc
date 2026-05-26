@@ -27,8 +27,8 @@
 #include <thread>
 
 #ifndef _MSC_VER
-#include <signal.h>
-#include <unistd.h>
+#    include <signal.h>
+#    include <unistd.h>
 #endif
 
 using namespace std;
@@ -651,11 +651,9 @@ TEST_CASE_METHOD(LogFileTest, "Crash Log", "[.LogManual]") {
     LogFiles::Options fileOptions{tmpLogDir.canonicalPath(), "Hello", 1024, 1, false};
     createLogger(fileOptions, LogLevel::Info);
     WARN("This test will crash the process, so you will need to manually inspect "
-        << tmpLogDir.canonicalPath() << "/cbl_crash.log to see if things are working");
+         << tmpLogDir.canonicalPath() << "/cbl_crash.log to see if things are working");
     c4log_enableFatalExceptionBacktrace();
 
     raise(SIGABRT);
-
-
 }
 #endif
