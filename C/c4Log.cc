@@ -329,14 +329,7 @@ void c4log_warnOnErrors(bool warn) noexcept { error::sWarnOnError = warn; }
 bool c4log_getWarnOnErrors() noexcept { return error::sWarnOnError; }
 
 void c4log_enableFatalExceptionBacktrace() C4API {
-    fleece::Backtrace::installTerminateHandler([](const string& backtrace) {
-        c4log(kC4DefaultLog, kC4LogError,
-              "FATAL ERROR (backtrace follows)\n"
-              "********************\n"
-              "%s\n"
-              "******************** NOW TERMINATING",
-              backtrace.c_str());
-    });
+    c4log(kC4DefaultLog, kC4LogWarning, "c4log_enableFatalExceptionBacktrace is a no-op now");
 }
 
 #pragma mark - WRITING LOG MESSAGES:
