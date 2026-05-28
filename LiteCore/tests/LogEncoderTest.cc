@@ -26,6 +26,11 @@
 #include <fstream>
 #include <thread>
 
+#ifndef _MSC_VER
+#    include <signal.h>
+#    include <unistd.h>
+#endif
+
 using namespace std;
 
 // These formats are used in the decoded log files. They are UTC times.
@@ -290,9 +295,9 @@ TEST_CASE_METHOD(LogFileTest, "Logging rollover", "[Log]") {
     });
 
     // infoFiles.size(), log files at the Info level
-    // 4 additional log files, 1 for each level besides Info.
+    // 5 additional log files, 1 for each level besides Info plus the crash log.
     // 2 arbitrary files, "intheway" and "acbd", in particular
-    REQUIRE(totalCount == infoFiles.size() + 6);
+    REQUIRE(totalCount == infoFiles.size() + 7);
     // The rollover logic will cut a new file as its size reaches maxSize as specified in
     // the LogFiles::Options. However, we check the size by checking the number of bytes already
     // flushed to the fstream. Therefore, the number of files that have actually been cut
@@ -519,7 +524,7 @@ TEST_CASE_METHOD(LogFileTest, "c4log writeToBinary", "[Log]") {
     CHECK(binaryFilePath == path);
     int currFileCount = fileCount;
     fileCount         = getFileCount(logDir);
-    CHECK(fileCount - currFileCount == 5);  // There are 5 valid levels.
+    CHECK(fileCount - currFileCount == 6);  // There are 5 valid levels, and a crash log.
 
     // That is, no logs will be observed.
     CHECK(checkDomainEffectiveLevels(kC4LogNone));
@@ -638,3 +643,17 @@ TEST_CASE("LogEncoder Bad C-string", "[Log]") {
                               "   Obj=/Tweedledum#1/rattle#2/ and I'm another rattle\\n");
     CHECK(regex_match(result, expected));
 }
+
+#ifndef _MSC_VER
+
+TEST_CASE_METHOD(LogFileTest, "Crash Log", "[.LogManual]") {
+    tmpLogDir.mkdir();
+    LogFiles::Options fileOptions{tmpLogDir.canonicalPath(), "Hello", 1024, 1, false};
+    createLogger(fileOptions, LogLevel::Info);
+    WARN("This test will crash the process, so you will need to manually inspect "
+         << tmpLogDir.canonicalPath() << "/cbl_crash.log to see if things are working");
+    c4log_enableFatalExceptionBacktrace();
+
+    raise(SIGABRT);
+}
+#endif
