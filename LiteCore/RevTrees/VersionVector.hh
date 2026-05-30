@@ -152,6 +152,9 @@ namespace litecore {
 
         bool operator>=(const Version& v) const { return compareTo(v) != kOlder; }
 
+        // Whether this and `other` share a version.
+        bool sharesVersion(const VersionVector& other) const;
+
         using CompareBySourceFn = function_ref<bool(SourceID, logicalTime, logicalTime)>;
 
         /** For each SourceID found in either `this` or `other`, calls the callback with that ID
