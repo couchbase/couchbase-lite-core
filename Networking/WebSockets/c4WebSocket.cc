@@ -136,7 +136,7 @@ namespace litecore::repl {
 
     bool C4WebSocket::waitForTLSHandshake() {
         unique_lock lock(_mutex);
-        _tlsHandshakeCondition.wait(lock, [this] { return _peerCertData != nullslice && !_closed; });
+        _tlsHandshakeCondition.wait(lock, [this] { return _peerCertData != nullslice || _closed; });
         return _peerCertData != nullslice;
     }
 
