@@ -26,8 +26,8 @@ TEST_CASE("ParsedSequenceID parse - simple revision", "[ParsedSequenceID]") {
         CHECK(s.triggeredBy() == 0);
         CHECK(s.lowSeq() == 0);
         CHECK(s.isSimpleRevision());
-        CHECK_FALSE(s.isBackfillFormat());
-        CHECK_FALSE(s.isLowSeqFormat());
+        CHECK_FALSE(s.isTriggeredRevision());
+        CHECK_FALSE(s.isLowSeqRevision());
     }
 
     SECTION("multi digit") {
@@ -60,23 +60,16 @@ TEST_CASE("ParsedSequenceID parse - backfill (TriggeredBy:Seq)", "[ParsedSequenc
         CHECK(s.triggeredBy() == 100);
         CHECK(s.seq() == 35);
         CHECK(s.lowSeq() == 0);
-        CHECK(s.isBackfillFormat());
+        CHECK(s.isTriggeredRevision());
         CHECK_FALSE(s.isSimpleRevision());
-        CHECK_FALSE(s.isLowSeqFormat());
+        CHECK_FALSE(s.isLowSeqRevision());
     }
 
     SECTION("both components equal") {
         auto s = mustParse("50:50");
         CHECK(s.triggeredBy() == 50);
         CHECK(s.seq() == 50);
-        CHECK(s.isBackfillFormat());
-    }
-
-    SECTION("triggeredBy larger than seq") {
-        auto s = mustParse("200:1");
-        CHECK(s.triggeredBy() == 200);
-        CHECK(s.seq() == 1);
-        CHECK(s.isBackfillFormat());
+        CHECK(s.isTriggeredRevision());
     }
 }
 
@@ -89,8 +82,8 @@ TEST_CASE("ParsedSequenceID parse - LowSeq with TriggeredBy (LowSeq:TriggeredBy:
         CHECK(s.lowSeq() == 20);
         CHECK(s.triggeredBy() == 100);
         CHECK(s.seq() == 35);
-        CHECK(s.isLowSeqFormat());
-        CHECK_FALSE(s.isBackfillFormat());
+        CHECK(s.isLowSeqRevision());
+        CHECK_FALSE(s.isTriggeredRevision());
         CHECK_FALSE(s.isSimpleRevision());
     }
 
@@ -99,7 +92,7 @@ TEST_CASE("ParsedSequenceID parse - LowSeq with TriggeredBy (LowSeq:TriggeredBy:
         CHECK(s.lowSeq() == 10);
         CHECK(s.triggeredBy() == 10);
         CHECK(s.seq() == 10);
-        CHECK(s.isLowSeqFormat());
+        CHECK(s.isLowSeqRevision());
     }
 }
 
@@ -111,7 +104,7 @@ TEST_CASE("ParsedSequenceID parse - LowSeq without TriggeredBy (LowSeq::Seq)", "
         CHECK(s.lowSeq() == 20);
         CHECK(s.triggeredBy() == 0);
         CHECK(s.seq() == 35);
-        CHECK(s.isLowSeqFormat());
+        CHECK(s.isLowSeqRevision());
     }
 
     SECTION("lowseq large values") {
@@ -119,7 +112,7 @@ TEST_CASE("ParsedSequenceID parse - LowSeq without TriggeredBy (LowSeq::Seq)", "
         CHECK(s.lowSeq() == 1000);
         CHECK(s.triggeredBy() == 0);
         CHECK(s.seq() == 9999);
-        CHECK(s.isLowSeqFormat());
+        CHECK(s.isLowSeqRevision());
     }
 }
 
@@ -128,69 +121,63 @@ TEST_CASE("ParsedSequenceID parse - LowSeq without TriggeredBy (LowSeq::Seq)", "
 // ══════════════════════════════════════════════════════════════════
 
 TEST_CASE("ParsedSequenceID parse - invalid inputs", "[ParsedSequenceID]") {
-    SECTION("empty string")              { mustFail(""); }
-    SECTION("non-numeric single")        { mustFail("abc"); }
-    SECTION("leading alpha")             { mustFail("abc:35"); }
-    SECTION("trailing alpha")            { mustFail("100:abc"); }
-    SECTION("too many parts (4)")        { mustFail("1:2:3:4"); }
-    SECTION("too many parts (5)")        { mustFail("1:2:3:4:5"); }
-    SECTION("trailing colon two-part")   { mustFail("100:"); }
-    SECTION("leading colon")             { mustFail(":35"); }
-    SECTION("empty lowseq in three-part"){ mustFail("::35"); }
-    SECTION("empty seq in three-part")   { mustFail("20:100:"); }
-    SECTION("float value")               { mustFail("1.5"); }
-    SECTION("negative value")            { mustFail("-1"); }
-    SECTION("spaces")                    { mustFail("100 : 35"); }
+    SECTION("empty string") { mustFail(""); }
+    SECTION("non-numeric single") { mustFail("abc"); }
+    SECTION("leading alpha") { mustFail("abc:35"); }
+    SECTION("trailing alpha") { mustFail("100:abc"); }
+    SECTION("too many parts (4)") { mustFail("1:2:3:4"); }
+    SECTION("too many parts (5)") { mustFail("1:2:3:4:5"); }
+    SECTION("trailing colon two-part") { mustFail("100:"); }
+    SECTION("leading colon") { mustFail(":35"); }
+    SECTION("empty lowseq in three-part") { mustFail("::35"); }
+    SECTION("empty seq in three-part") { mustFail("20:100:"); }
+    SECTION("float value") { mustFail("1.5"); }
+    SECTION("negative value") { mustFail("-1"); }
+    SECTION("spaces") { mustFail("100 : 35"); }
 }
 
 TEST_CASE("ParsedSequenceID format classification", "[ParsedSequenceID]") {
     SECTION("simple is exclusively simple") {
         auto s = mustParse("42");
         CHECK(s.isSimpleRevision());
-        CHECK_FALSE(s.isBackfillFormat());
-        CHECK_FALSE(s.isLowSeqFormat());
+        CHECK_FALSE(s.isTriggeredRevision());
+        CHECK_FALSE(s.isLowSeqRevision());
     }
 
     SECTION("backfill is exclusively backfill") {
         auto s = mustParse("100:35");
         CHECK_FALSE(s.isSimpleRevision());
-        CHECK(s.isBackfillFormat());
-        CHECK_FALSE(s.isLowSeqFormat());
+        CHECK(s.isTriggeredRevision());
+        CHECK_FALSE(s.isLowSeqRevision());
     }
 
     SECTION("lowseq with triggeredby is exclusively lowseq") {
         auto s = mustParse("20:100:35");
         CHECK_FALSE(s.isSimpleRevision());
-        CHECK_FALSE(s.isBackfillFormat());
-        CHECK(s.isLowSeqFormat());
+        CHECK_FALSE(s.isTriggeredRevision());
+        CHECK(s.isLowSeqRevision());
     }
 
     SECTION("lowseq without triggeredby is still lowseq") {
         auto s = mustParse("20::35");
         CHECK_FALSE(s.isSimpleRevision());
-        CHECK_FALSE(s.isBackfillFormat());
-        CHECK(s.isLowSeqFormat());
+        CHECK_FALSE(s.isTriggeredRevision());
+        CHECK(s.isLowSeqRevision());
     }
 }
 
 TEST_CASE("ParsedSequenceID before - Simple vs Simple", "[ParsedSequenceID]") {
     // Both plain "Seq": compare seq directly.
 
-    SECTION("a < b → a.before(b) = true") {
-        CHECK(mustParse("42").before(mustParse("100")));
-    }
+    SECTION("a < b → a.before(b) = true") { CHECK(mustParse("42").before(mustParse("100"))); }
 
-    SECTION("a > b → a.before(b) = false") {
-        CHECK_FALSE(mustParse("100").before(mustParse("42")));
-    }
+    SECTION("a > b → a.before(b) = false") { CHECK_FALSE(mustParse("100").before(mustParse("42"))); }
 
     SECTION("a == b → a.before(b) = false (not strictly before)") {
         CHECK_FALSE(mustParse("42").before(mustParse("42")));
     }
 
-    SECTION("zero is before any positive") {
-        CHECK(mustParse("0").before(mustParse("1")));
-    }
+    SECTION("zero is before any positive") { CHECK(mustParse("0").before(mustParse("1"))); }
 }
 
 TEST_CASE("ParsedSequenceID before - Backfill vs Backfill", "[ParsedSequenceID]") {
@@ -208,17 +195,23 @@ TEST_CASE("ParsedSequenceID before - Backfill vs Backfill", "[ParsedSequenceID]"
         CHECK_FALSE(mustParse("100:55").before(mustParse("100:35")));
     }
 
-    SECTION("identical → not before") {
-        CHECK_FALSE(mustParse("100:35").before(mustParse("100:35")));
-    }
+    SECTION("identical → not before") { CHECK_FALSE(mustParse("100:35").before(mustParse("100:35"))); }
 
-    SECTION("same triggeredBy, same seq → not before") {
-        CHECK_FALSE(mustParse("50:50").before(mustParse("50:50")));
-    }
+    SECTION("same triggeredBy, same seq → not before") { CHECK_FALSE(mustParse("50:50").before(mustParse("50:50"))); }
 }
 
 TEST_CASE("ParsedSequenceID before - LowSeq vs LowSeq", "[ParsedSequenceID]") {
     // Both "LowSeq:TB:Seq": compare lowSeq first, then inner pair as tie-break.
+
+    SECTION("same lowSeq, backfill inner vs simple inner at boundary") {
+        // "20:100:35" vs "20::100":
+        // lowSeq equal (20); recurse → backfill(100:35).before(simple(100))
+        // → triggeredBy(100) <= seq(100) → true
+        CHECK(mustParse("20:100:35").before(mustParse("20::100")));
+        // Reverse: simple(100).before(backfill(100:35))
+        // → seq(100) < triggeredBy(100) → false (strict <)
+        CHECK_FALSE(mustParse("20::100").before(mustParse("20:100:35")));
+    }
 
     SECTION("different lowSeq: smaller lowSeq is before") {
         // "20:100:35" before "25:100:40"
@@ -237,9 +230,7 @@ TEST_CASE("ParsedSequenceID before - LowSeq vs LowSeq", "[ParsedSequenceID]") {
         CHECK_FALSE(mustParse("20:100:55").before(mustParse("20:100:35")));
     }
 
-    SECTION("identical → not before") {
-        CHECK_FALSE(mustParse("20:100:35").before(mustParse("20:100:35")));
-    }
+    SECTION("identical → not before") { CHECK_FALSE(mustParse("20:100:35").before(mustParse("20:100:35"))); }
 
     SECTION("LowSeq without triggeredBy vs LowSeq with triggeredBy, same lowSeq") {
         // "20::35" vs "20:100:55" → inner: simple(35) vs backfill(100:55)
@@ -375,7 +366,6 @@ TEST_CASE("ParsedSequenceID before - LowSeq vs Backfill", "[ParsedSequenceID]") 
 }
 
 TEST_CASE("ParsedSequenceID checkpoint resolution scenarios", "[ParsedSequenceID]") {
-
     SECTION("Scenario 1 - both int, local older → keep local") {
         // local=42, remote=100 → remote.before(local) = 100<42 = false
         CHECK_FALSE(mustParse("100").before(mustParse("42")));
@@ -445,4 +435,3 @@ TEST_CASE("ParsedSequenceID before - asymmetry at tier boundary", "[ParsedSequen
         CHECK(mustParse("100").before(mustParse("101:35")));
     }
 }
-

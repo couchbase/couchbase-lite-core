@@ -1,4 +1,6 @@
 #pragma once
+#include "StringUtil.hh"
+#include "slice_stream.hh"
 #include <cstdint>
 #include <string>
 
@@ -34,15 +36,25 @@ namespace litecore::repl {
       public:
         ParsedSequenceID() = default;
 
-        ParsedSequenceID(uint64_t seq, uint64_t triggeredBy, uint64_t lowSeq) : _seq(seq), _triggeredBy(triggeredBy), _lowSeq(lowSeq) {}
+        ParsedSequenceID(uint64_t seq, uint64_t triggeredBy, uint64_t lowSeq)
+            : _seq(seq), _triggeredBy(triggeredBy), _lowSeq(lowSeq) {}
 
-        [[nodiscard]] uint64_t seq()         const { return _seq; }
+        [[nodiscard]] uint64_t seq() const { return _seq; }
+
         [[nodiscard]] uint64_t triggeredBy() const { return _triggeredBy; }
-        [[nodiscard]] uint64_t lowSeq()      const { return _lowSeq; }
 
-        [[nodiscard]] bool isLowSeqFormat()    const { return _lowSeq > 0; }
-        [[nodiscard]] bool isBackfillFormat()  const { return _lowSeq == 0 && _triggeredBy > 0; }
-        [[nodiscard]] bool isSimpleRevision()  const { return _lowSeq == 0 && _triggeredBy == 0; }
+        [[nodiscard]] uint64_t lowSeq() const { return _lowSeq; }
+
+        /// "Seq" — plain sequence, no trigger, no lowSeq.
+        [[nodiscard]] bool isSimpleRevision() const { return _lowSeq == 0 && _triggeredBy == 0; }
+
+        /// "TriggeredBy:Seq" — sent retroactively due to an access-grant, no lowSeq tracking.
+        /// triggeredBy is the primary comparison value in before().
+        [[nodiscard]] bool isTriggeredRevision() const { return _lowSeq == 0 && _triggeredBy > 0; }
+
+        /// "LowSeq:TriggeredBy:Seq" or "LowSeq::Seq" — includes lowSeq feed-position tracking.
+        /// lowSeq is the primary comparison value in before(). May or may not include a trigger.
+        [[nodiscard]] bool isLowSeqRevision() const { return _lowSeq > 0; }
 
         /**
          * Parse a sequence string into a ParsedSequenceID.
@@ -59,74 +71,59 @@ namespace litecore::repl {
          *         an unexpected number of components.
          */
         static bool parse(const std::string& str, ParsedSequenceID& out) {
-            if ( str.empty() ) return false;
+            if ( str.empty() || str.back() == ':' ) return false;  // litecore::split drops trailing empty tokens
 
-            // Split into up to 4 tokens by ':' (4th would mean invalid).
-            uint64_t values[3] = {};
-            bool     empty[3]  = {};
-            int      count     = 0;
-            size_t   start     = 0;
+            auto parts = litecore::split(str, ":");
+            if ( parts.size() < 1 || parts.size() > 3 ) return false;
 
-            for ( size_t i = 0; i <= str.size(); ++i ) {
-                if ( i == str.size() || str[i] == ':' ) {
-                    if ( count >= 3 ) return false;  // Too many components.
-                    auto part = str.substr(start, i - start);
-                    if ( part.empty() ) {
-                        empty[count] = true;
-                        values[count] = 0;
-                    } else {
-                        // Reject negative values explicitly — std::stoull wraps them silently.
-                        if ( part[0] == '-' ) return false;
-                        try {
-                            size_t pos;
-                            values[count] = std::stoull(part, &pos);
-                            if ( pos != part.size() ) return false;  // Not a pure integer.
-                        } catch ( ... ) { return false; }
-                    }
-                    ++count;
-                    start = i + 1;
-                }
-            }
+            // Parse a single component as uint64. Empty is only valid for middle part of "LowSeq::Seq".
+            auto readUInt = [](std::string_view sv, uint64_t& val) -> bool {
+                if ( sv.empty() ) return false;
+                fleece::slice_istream stream(sv.data(), sv.size());
+                val = stream.readDecimal();
+                return stream.eof();
+            };
 
-            out = {};
-            switch ( count ) {
+            uint64_t v[3] = {};
+            switch ( parts.size() ) {
                 case 1:
-                    if ( empty[0] ) return false;
-                    out = ParsedSequenceID(values[0], 0, 0);
+                    if ( !readUInt(parts[0], v[0]) ) return false;
+                    out = ParsedSequenceID(v[0], 0, 0);  // Seq
                     return true;
                 case 2:
-                    if ( empty[0] || empty[1] ) return false;
-                    out = ParsedSequenceID(values[1], values[0], 0);
+                    if ( !readUInt(parts[0], v[0]) || !readUInt(parts[1], v[1]) ) return false;
+                    out = ParsedSequenceID(v[1], v[0], 0);  // TriggeredBy:Seq
                     return true;
                 case 3:
-                    if ( empty[0] || empty[2] ) return false;
-                    out = ParsedSequenceID(values[2], values[1], values[0]);
+                    if ( !readUInt(parts[0], v[0]) ) return false;
+                    if ( !parts[1].empty() && !readUInt(parts[1], v[1]) ) return false;  // empty → 0 for "LowSeq::Seq"
+                    if ( !readUInt(parts[2], v[2]) ) return false;
+                    out = ParsedSequenceID(v[2], v[1], v[0]);  // LowSeq:TriggeredBy:Seq
                     return true;
                 default:
                     return false;
             }
         }
 
-
         [[nodiscard]] bool before(const ParsedSequenceID& seqID2) const {
             const auto& a = *this;
             const auto& b = seqID2;
 
-            if ( a.isLowSeqFormat() ) {
-                if ( b.isLowSeqFormat() ) {
+            if ( a.isLowSeqRevision() ) {
+                if ( b.isLowSeqRevision() ) {
                     if ( a.lowSeq() != b.lowSeq() ) return a.lowSeq() < b.lowSeq();
                     ParsedSequenceID aInner(a.seq(), a.triggeredBy(), 0);
                     ParsedSequenceID bInner(b.seq(), b.triggeredBy(), 0);
                     return aInner.before(bInner);
                 }
-                if ( b.isBackfillFormat() ) return a.lowSeq() < b.triggeredBy();
+                if ( b.isTriggeredRevision() ) return a.lowSeq() < b.triggeredBy();
                 /* b is simple seq*/
                 return a.lowSeq() < b.seq();
             }
 
-            if ( a.isBackfillFormat() ) {
-                if ( b.isLowSeqFormat() )  return a.triggeredBy() <= b.lowSeq();
-                if ( b.isBackfillFormat() ) {
+            if ( a.isTriggeredRevision() ) {
+                if ( b.isLowSeqRevision() ) return a.triggeredBy() <= b.lowSeq();
+                if ( b.isTriggeredRevision() ) {
                     if ( a.triggeredBy() != b.triggeredBy() ) return a.triggeredBy() < b.triggeredBy();
                     return a.seq() < b.seq();
                 }
@@ -134,9 +131,9 @@ namespace litecore::repl {
                 return a.triggeredBy() <= b.seq();
             }
 
-            // A is Simple revision
-            if ( b.isLowSeqFormat() )  return a.seq() <= b.lowSeq();
-            if ( b.isBackfillFormat() ) return a.seq() < b.triggeredBy();
+            // a is simple revision
+            if ( b.isLowSeqRevision() ) return a.seq() <= b.lowSeq();
+            if ( b.isTriggeredRevision() ) return a.seq() < b.triggeredBy();
             /* both simple */
             return a.seq() < b.seq();
         }
@@ -148,4 +145,3 @@ namespace litecore::repl {
     };
 
 }  // namespace litecore::repl
-
