@@ -116,7 +116,9 @@ namespace litecore::repl {
                   remoteSequences._remote.toJSONString().c_str());
 
             ParsedSequenceID localParsed, remoteParsed;
-            if ( _remote.toParsedSequenceID(localParsed) && remoteSequences._remote.toParsedSequenceID(remoteParsed) ) {
+            bool localParseable  = _remote.toParsedSequenceID(localParsed);
+            bool remoteParseable = remoteSequences._remote.toParsedSequenceID(remoteParsed);
+            if ( localParseable && remoteParseable ) {
                 if ( remoteParsed.before(localParsed) ) {
                     LogTo(SyncLog, "Rolling back to earlier remote sequence from server, some redundant changes may be "
                                    "proposed...");
@@ -127,8 +129,10 @@ namespace litecore::repl {
                                    "redundant changes may be proposed...");
                 }
             } else {
-                Warn("Unparseable remote sequence detected, resetting replication back to start.  Redundant changes "
-                     "will be proposed...");
+                Warn("Unparseable remote sequence: locally-saved remote seq '%s' is %s, "
+                     "server-side remote seq '%s' is %s. Resetting replication.",
+                     _remote.toJSONString().c_str(), localParseable ? "parseable" : "UNPARSEABLE",
+                     remoteSequences._remote.toJSONString().c_str(), remoteParseable ? "parseable" : "UNPARSEABLE");
                 _remote = {};
                 match   = false;
             }
