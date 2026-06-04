@@ -114,19 +114,25 @@ namespace litecore::repl {
         if ( _remote && _remote != remoteSequences._remote ) {
             LogTo(SyncLog, "Remote sequence mismatch: I had '%s', remote had '%s'", _remote.toJSONString().c_str(),
                   remoteSequences._remote.toJSONString().c_str());
-            if ( _remote.isInt() && remoteSequences._remote.isInt() ) {
-                if ( _remote.intValue() > remoteSequences._remote.intValue() ) {
+
+            ParsedSequenceID localParsed, remoteParsed;
+            bool             localParseable  = _remote.toParsedSequenceID(localParsed);
+            bool             remoteParseable = remoteSequences._remote.toParsedSequenceID(remoteParsed);
+            if ( localParseable && remoteParseable ) {
+                if ( remoteParsed.before(localParsed) ) {
                     LogTo(SyncLog, "Rolling back to earlier remote sequence from server, some redundant changes may be "
                                    "proposed...");
                     _remote = remoteSequences._remote;
                     match   = false;
                 } else {
-                    LogTo(SyncLog, "Ignoring remote sequence on server since client side is older, some redundant "
-                                   "changes may be proposed...");
+                    LogTo(SyncLog, "Ignoring remote sequence on server since client side is older or equal, some "
+                                   "redundant changes may be proposed...");
                 }
             } else {
-                Warn("Non-numeric remote sequence detected, resetting replication back to start.  Redundant changes "
-                     "will be proposed...");
+                Warn("Unparseable remote sequence: locally-saved remote seq '%s' is %s, "
+                     "server-side remote seq '%s' is %s. Resetting replication.",
+                     _remote.toJSONString().c_str(), localParseable ? "parseable" : "UNPARSEABLE",
+                     remoteSequences._remote.toJSONString().c_str(), remoteParseable ? "parseable" : "UNPARSEABLE");
                 _remote = {};
                 match   = false;
             }

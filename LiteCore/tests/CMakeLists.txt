@@ -90,6 +90,7 @@ add_executable(
     ${TOP}Crypto/CertificateTest.cc
     ${TOP}Networking/tests/CookieStoreTest.cc
     ${TOP}Replicator/tests/DBAccessTestWrapper.cc
+    ${TOP}Replicator/tests/ParsedSequenceIDTest.cc
     ${TOP}Replicator/tests/PropertyEncryptionTests.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
     ${TOP}Replicator/tests/ReplicatorAPITest.cc
