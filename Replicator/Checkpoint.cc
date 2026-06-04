@@ -116,8 +116,8 @@ namespace litecore::repl {
                   remoteSequences._remote.toJSONString().c_str());
 
             ParsedSequenceID localParsed, remoteParsed;
-            bool localParseable  = _remote.toParsedSequenceID(localParsed);
-            bool remoteParseable = remoteSequences._remote.toParsedSequenceID(remoteParsed);
+            bool             localParseable  = _remote.toParsedSequenceID(localParsed);
+            bool             remoteParseable = remoteSequences._remote.toParsedSequenceID(remoteParsed);
             if ( localParseable && remoteParseable ) {
                 if ( remoteParsed.before(localParsed) ) {
                     LogTo(SyncLog, "Rolling back to earlier remote sequence from server, some redundant changes may be "
