@@ -1,4 +1,5 @@
 #include "ParsedSequenceID.hh"
+#include "RemoteSequence.hh"
 #include "c4Test.hh"
 
 using namespace litecore::repl;
@@ -435,3 +436,81 @@ TEST_CASE("ParsedSequenceID before - asymmetry at tier boundary", "[ParsedSequen
         CHECK(mustParse("100").before(mustParse("101:35")));
     }
 }
+
+
+TEST_CASE("RemoteSequence toParsedSequenceID - quoted compound sequences (Value constructor)", "[RemoteSequence]") {
+    // Sequences arriving via the Value constructor go through val.toJSON(), which wraps
+    // string values in JSON quotes.  toParsedSequenceID must strip these before parsing.
+
+    SECTION("backfill - quoted") {
+        RemoteSequence rs(fleece::slice("\"100:35\""));
+        ParsedSequenceID parsed;
+        REQUIRE(rs.toParsedSequenceID(parsed));
+        CHECK(parsed.triggeredBy() == 100);
+        CHECK(parsed.seq() == 35);
+        CHECK(parsed.isTriggeredRevision());
+    }
+
+    SECTION("three-part - quoted") {
+        RemoteSequence rs(fleece::slice("\"20:100:35\""));
+        ParsedSequenceID parsed;
+        REQUIRE(rs.toParsedSequenceID(parsed));
+        CHECK(parsed.lowSeq() == 20);
+        CHECK(parsed.triggeredBy() == 100);
+        CHECK(parsed.seq() == 35);
+        CHECK(parsed.isLowSeqRevision());
+    }
+
+    SECTION("LowSeq::Seq - quoted") {
+        RemoteSequence rs(fleece::slice("\"20::35\""));
+        ParsedSequenceID parsed;
+        REQUIRE(rs.toParsedSequenceID(parsed));
+        CHECK(parsed.lowSeq() == 20);
+        CHECK(parsed.triggeredBy() == 0);
+        CHECK(parsed.seq() == 35);
+        CHECK(parsed.isLowSeqRevision());
+    }
+
+    SECTION("simple integer as quoted string") {
+        RemoteSequence rs(fleece::slice("\"42\""));
+        ParsedSequenceID parsed;
+        REQUIRE(rs.toParsedSequenceID(parsed));
+        CHECK(parsed.seq() == 42);
+        CHECK(parsed.isSimpleRevision());
+    }
+}
+
+TEST_CASE("RemoteSequence toParsedSequenceID - empty/null returns false", "[RemoteSequence]") {
+    SECTION("default constructed") {
+        RemoteSequence rs;
+        ParsedSequenceID parsed;
+        CHECK_FALSE(rs.toParsedSequenceID(parsed));
+    }
+
+    SECTION("empty slice") {
+        RemoteSequence rs(fleece::slice(""));
+        ParsedSequenceID parsed;
+        CHECK_FALSE(rs.toParsedSequenceID(parsed));
+    }
+}
+
+TEST_CASE("RemoteSequence toParsedSequenceID - invalid sequences remain unparseable", "[RemoteSequence]") {
+    SECTION("non-numeric") {
+        RemoteSequence rs(fleece::slice("abc"));
+        ParsedSequenceID parsed;
+        CHECK_FALSE(rs.toParsedSequenceID(parsed));
+    }
+
+    SECTION("quoted non-numeric") {
+        RemoteSequence rs(fleece::slice("\"abc\""));
+        ParsedSequenceID parsed;
+        CHECK_FALSE(rs.toParsedSequenceID(parsed));
+    }
+
+    SECTION("single quote only") {
+        RemoteSequence rs(fleece::slice("\""));
+        ParsedSequenceID parsed;
+        CHECK_FALSE(rs.toParsedSequenceID(parsed));
+    }
+}
+

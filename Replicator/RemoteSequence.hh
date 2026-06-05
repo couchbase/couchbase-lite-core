@@ -75,14 +75,20 @@ namespace litecore::repl {
 
         bool operator!=(const RemoteSequence& other) const noexcept FLPURE { return _value != other._value; }
 
-        /** Convert this RemoteSequence to a ParsedSequenceID. Returns false if unparseable. */
+        /** Convert this RemoteSequence to a ParsedSequenceID. Returns false if unparseable.
+            Note: sliceValue() may contain JSON string quotes (added by Value::toJSON() in the
+            Value constructor path). These are stripped before parsing so that compound Sync
+            Gateway sequences like "20:100:35" are handled correctly whether quoted or not. */
         [[nodiscard]] bool toParsedSequenceID(ParsedSequenceID& out) const {
             if ( !*this ) return false;
             if ( isInt() ) {
                 out = {intValue(), 0, 0};
                 return true;
             }
-            return ParsedSequenceID::parse(std::string(sliceValue()), out);
+            std::string s(sliceValue());
+            if ( s.size() >= 2 && s.front() == '"' && s.back() == '"' )
+                s = s.substr(1, s.size() - 2);
+            return ParsedSequenceID::parse(s, out);
         }
 
         bool operator<(const RemoteSequence& other) const noexcept FLPURE {
