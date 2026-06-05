@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "ParsedSequenceID.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include "slice_stream.hh"
@@ -18,6 +19,7 @@
 #include <cinttypes>
 
 namespace litecore::repl {
+
 
     /** A sequence received from a remote peer. Can be any JSON value, but optimized for positive ints. */
     class RemoteSequence {
@@ -72,6 +74,21 @@ namespace litecore::repl {
         bool operator==(const RemoteSequence& other) const noexcept FLPURE { return _value == other._value; }
 
         bool operator!=(const RemoteSequence& other) const noexcept FLPURE { return _value != other._value; }
+
+        /** Convert this RemoteSequence to a ParsedSequenceID. Returns false if unparseable.
+            Note: sliceValue() may contain JSON string quotes (added by Value::toJSON() in the
+            Value constructor path). These are stripped before parsing so that compound Sync
+            Gateway sequences like "20:100:35" are handled correctly whether quoted or not. */
+        [[nodiscard]] bool toParsedSequenceID(ParsedSequenceID& out) const {
+            if ( !*this ) return false;
+            if ( isInt() ) {
+                out = {intValue(), 0, 0};
+                return true;
+            }
+            std::string s(sliceValue());
+            if ( s.size() >= 2 && s.front() == '"' && s.back() == '"' ) s = s.substr(1, s.size() - 2);
+            return ParsedSequenceID::parse(s, out);
+        }
 
         bool operator<(const RemoteSequence& other) const noexcept FLPURE {
             if ( isInt() ) return !other.isInt() || intValue() < other.intValue();
