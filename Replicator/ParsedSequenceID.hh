@@ -1,3 +1,15 @@
+//
+// ParsedSequenceID.hh
+//
+// Copyright 2026-Present Couchbase, Inc.
+//
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
+//
+
 #pragma once
 #include "StringUtil.hh"
 #include "slice_stream.hh"
@@ -105,6 +117,27 @@ namespace litecore::repl {
             }
         }
 
+        /**
+         * Returns true if this sequence is strictly before \p seqID2.
+         *
+         * Implements the same ordering as Sync Gateway's SequenceID.Before().
+         * Each format has a "comparison value" (CV):
+         *   - Simple   → CV = seq
+         *   - Backfill → CV = triggeredBy
+         *   - LowSeq   → CV = lowSeq
+         *
+         * Cross-format rules (a.before(b)):
+         *
+         *   a \ b          | Simple       | Backfill        | LowSeq
+         *   ───────────────|──────────────|─────────────────|────────────────
+         *   Simple         | seq < seq    | seq <  trig     | seq <= low
+         *   Backfill       | trig <= seq  | trig < trig     | trig <= low
+         *                  |              | (tie: seq<seq)  |
+         *   LowSeq         | low <  seq   | low <  trig     | low < low
+         *                  |              |                 | (tie: recurse
+         *                  |              |                 |  on inner pair)
+         *
+         */
         [[nodiscard]] bool before(const ParsedSequenceID& seqID2) const {
             const auto& a = *this;
             const auto& b = seqID2;

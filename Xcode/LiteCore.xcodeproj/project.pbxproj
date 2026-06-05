@@ -719,6 +719,9 @@
 		93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
+		99158D7D2FD35A610044D7E3 /* ParsedSequenceIDTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 99158D7C2FD35A610044D7E3 /* ParsedSequenceIDTest.cc */; };
+		99158D7E2FD35A610044D7E3 /* ParsedSequenceIDTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 99158D7C2FD35A610044D7E3 /* ParsedSequenceIDTest.cc */; };
+		99158D7F2FD35A610044D7E3 /* ParsedSequenceIDTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 99158D7C2FD35A610044D7E3 /* ParsedSequenceIDTest.cc */; };
 		D6F99A0428E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0528E4F02000D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
 		D6F99A0628E4F02400D2DC63 /* ReplicatorCollectionSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */; };
@@ -1946,6 +1949,8 @@
 		729272F22238DB8500E7208E /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
+		99158D7C2FD35A610044D7E3 /* ParsedSequenceIDTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ParsedSequenceIDTest.cc; sourceTree = "<group>"; };
+		99158D802FD35AA90044D7E3 /* ParsedSequenceID.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ParsedSequenceID.hh; sourceTree = "<group>"; };
 		D624FC81282AF78900B423A8 /* WeakHolder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeakHolder.hh; sourceTree = "<group>"; };
 		D64D17BB2894777A008B68FD /* c4ReplicatorHelpers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ReplicatorHelpers.hh; sourceTree = "<group>"; };
 		D6F999FF28E4EFB200D2DC63 /* ReplicatorCollectionSGTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorCollectionSGTest.cc; sourceTree = "<group>"; };
@@ -2895,6 +2900,7 @@
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */,
+				99158D7C2FD35A610044D7E3 /* ParsedSequenceIDTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -3247,6 +3253,7 @@
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				275E98FF238360B200EA516B /* Checkpointer.cc */,
 				275E9904238360B200EA516B /* Checkpointer.hh */,
+				99158D802FD35AA90044D7E3 /* ParsedSequenceID.hh */,
 				275E4CD22241C701006C5B71 /* Pull */,
 				275E4CD32241C726006C5B71 /* Push */,
 				277B9567224597E1005B7E79 /* Support */,
@@ -4700,6 +4707,7 @@
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
+				99158D7E2FD35A610044D7E3 /* ParsedSequenceIDTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27BA41642D680A5400FAA569 /* LogObserverTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
@@ -4867,6 +4875,7 @@
 			files = (
 				2740A74E2B321073003387E9 /* TestsCommon.cc in Sources */,
 				27FE0CFB24BE7C2A00A36EC2 /* LiteCoreTest.cc in Sources */,
+				99158D7D2FD35A610044D7E3 /* ParsedSequenceIDTest.cc in Sources */,
 				27FE0CF224BE7C2A00A36EC2 /* LogEncoderTest.cc in Sources */,
 				27FE0CEF24BE7C2A00A36EC2 /* DataFileTest.cc in Sources */,
 				27FE0CF024BE7C2A00A36EC2 /* DocumentKeysTest.cc in Sources */,
@@ -5201,6 +5210,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27FD73512D834B7A00CC48BF /* ResultTest.cc in Sources */,
+				99158D7F2FD35A610044D7E3 /* ParsedSequenceIDTest.cc in Sources */,
 				27FD73522D834B7A00CC48BF /* LiteCoreTest.cc in Sources */,
 				27FD73532D834B7A00CC48BF /* SequenceSetTest.cc in Sources */,
 				1BC685522E2EC10C00A5AEC1 /* MultipeerTest.cc in Sources */,
