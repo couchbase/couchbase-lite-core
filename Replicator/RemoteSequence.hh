@@ -86,8 +86,7 @@ namespace litecore::repl {
                 return true;
             }
             std::string s(sliceValue());
-            if ( s.size() >= 2 && s.front() == '"' && s.back() == '"' )
-                s = s.substr(1, s.size() - 2);
+            if ( s.size() >= 2 && s.front() == '"' && s.back() == '"' ) s = s.substr(1, s.size() - 2);
             return ParsedSequenceID::parse(s, out);
         }
 

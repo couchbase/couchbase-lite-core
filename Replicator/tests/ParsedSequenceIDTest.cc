@@ -437,13 +437,12 @@ TEST_CASE("ParsedSequenceID before - asymmetry at tier boundary", "[ParsedSequen
     }
 }
 
-
 TEST_CASE("RemoteSequence toParsedSequenceID - quoted compound sequences (Value constructor)", "[RemoteSequence]") {
     // Sequences arriving via the Value constructor go through val.toJSON(), which wraps
     // string values in JSON quotes.  toParsedSequenceID must strip these before parsing.
 
     SECTION("backfill - quoted") {
-        RemoteSequence rs(fleece::slice("\"100:35\""));
+        RemoteSequence   rs(fleece::slice("\"100:35\""));
         ParsedSequenceID parsed;
         REQUIRE(rs.toParsedSequenceID(parsed));
         CHECK(parsed.triggeredBy() == 100);
@@ -452,7 +451,7 @@ TEST_CASE("RemoteSequence toParsedSequenceID - quoted compound sequences (Value 
     }
 
     SECTION("three-part - quoted") {
-        RemoteSequence rs(fleece::slice("\"20:100:35\""));
+        RemoteSequence   rs(fleece::slice("\"20:100:35\""));
         ParsedSequenceID parsed;
         REQUIRE(rs.toParsedSequenceID(parsed));
         CHECK(parsed.lowSeq() == 20);
@@ -462,7 +461,7 @@ TEST_CASE("RemoteSequence toParsedSequenceID - quoted compound sequences (Value 
     }
 
     SECTION("LowSeq::Seq - quoted") {
-        RemoteSequence rs(fleece::slice("\"20::35\""));
+        RemoteSequence   rs(fleece::slice("\"20::35\""));
         ParsedSequenceID parsed;
         REQUIRE(rs.toParsedSequenceID(parsed));
         CHECK(parsed.lowSeq() == 20);
@@ -472,7 +471,7 @@ TEST_CASE("RemoteSequence toParsedSequenceID - quoted compound sequences (Value 
     }
 
     SECTION("simple integer as quoted string") {
-        RemoteSequence rs(fleece::slice("\"42\""));
+        RemoteSequence   rs(fleece::slice("\"42\""));
         ParsedSequenceID parsed;
         REQUIRE(rs.toParsedSequenceID(parsed));
         CHECK(parsed.seq() == 42);
@@ -482,13 +481,13 @@ TEST_CASE("RemoteSequence toParsedSequenceID - quoted compound sequences (Value 
 
 TEST_CASE("RemoteSequence toParsedSequenceID - empty/null returns false", "[RemoteSequence]") {
     SECTION("default constructed") {
-        RemoteSequence rs;
+        RemoteSequence   rs;
         ParsedSequenceID parsed;
         CHECK_FALSE(rs.toParsedSequenceID(parsed));
     }
 
     SECTION("empty slice") {
-        RemoteSequence rs(fleece::slice(""));
+        RemoteSequence   rs(fleece::slice(""));
         ParsedSequenceID parsed;
         CHECK_FALSE(rs.toParsedSequenceID(parsed));
     }
@@ -496,21 +495,20 @@ TEST_CASE("RemoteSequence toParsedSequenceID - empty/null returns false", "[Remo
 
 TEST_CASE("RemoteSequence toParsedSequenceID - invalid sequences remain unparseable", "[RemoteSequence]") {
     SECTION("non-numeric") {
-        RemoteSequence rs(fleece::slice("abc"));
+        RemoteSequence   rs(fleece::slice("abc"));
         ParsedSequenceID parsed;
         CHECK_FALSE(rs.toParsedSequenceID(parsed));
     }
 
     SECTION("quoted non-numeric") {
-        RemoteSequence rs(fleece::slice("\"abc\""));
+        RemoteSequence   rs(fleece::slice("\"abc\""));
         ParsedSequenceID parsed;
         CHECK_FALSE(rs.toParsedSequenceID(parsed));
     }
 
     SECTION("single quote only") {
-        RemoteSequence rs(fleece::slice("\""));
+        RemoteSequence   rs(fleece::slice("\""));
         ParsedSequenceID parsed;
         CHECK_FALSE(rs.toParsedSequenceID(parsed));
     }
 }
-
