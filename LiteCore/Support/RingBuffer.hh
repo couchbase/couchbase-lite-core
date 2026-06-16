@@ -58,7 +58,7 @@ namespace litecore {
             if ( end >= _capacity ) end -= _capacity;
             size_t n1 = std::min(n, _capacity - end);
             ::memcpy(&_buffer[end], data.buf, n1);
-            if ( n1 > n ) ::memcpy(&_buffer[0], &data[n1], n - n1);
+            if ( n1 < n ) ::memcpy(&_buffer[0], &data[n1], n - n1);
             _size += n;
             return n;
         }
