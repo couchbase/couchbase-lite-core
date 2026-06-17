@@ -107,7 +107,7 @@ namespace litecore {
     void Housekeeper::_doExpiration() {
         if ( _isStopped() ) return;
 
-        logInfo("Housekeeper: expiring documents...");
+        logVerbose("Housekeeper: expiring documents...");
         try {
             _bgdb->useInTransaction(_keyStoreName, [&](KeyStore& keyStore, SequenceTracker* sequenceTracker) -> bool {
                 if ( sequenceTracker ) {
@@ -125,8 +125,8 @@ namespace litecore {
             // Instead, reschedule a near-term retry of the purge.
             error e = error::convertException(x).standardized();
             if ( e.domain == error::LiteCore && e.code == error::Busy ) {
-                logInfo("Housekeeper: expiration deferred (database busy); retrying in %lldms",
-                        (long long)kRetryExpirationAfterBusyMS.count());
+                logVerbose("Housekeeper: expiration deferred (database busy); retrying in %lldms",
+                           (long long)kRetryExpirationAfterBusyMS.count());
                 _expiryTimer->fireAfter(kRetryExpirationAfterBusyMS);
                 return;
             }
