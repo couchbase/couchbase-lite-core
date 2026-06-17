@@ -789,8 +789,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Document expiration torture test", "[Dat
             for ( int busyRetries = 0; !ok; ) {
                 ok = c4coll_setDocExpiration(collection, c4str(docID(setCount)), expire, &error);
                 if ( ok ) break;
-                if ( error.domain != LiteCoreDomain || error.code != kC4ErrorBusy
-                     || ++busyRetries > kMaxBusyRetries )
+                if ( error.domain != LiteCoreDomain || error.code != kC4ErrorBusy || ++busyRetries > kMaxBusyRetries )
                     break;
                 std::this_thread::sleep_for(5ms);
             }
