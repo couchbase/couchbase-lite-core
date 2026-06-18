@@ -9,18 +9,30 @@ set(CMAKE_SYSTEM_PROCESSOR AMD64)
 if(NOT DEFINED XWIN_SDK)
     set(XWIN_SDK "${CMAKE_CURRENT_LIST_DIR}/xwin-sdk")
 endif()
+
+# try_compile() runs an isolated sub-project with a fresh cache, so a
+# command-line -DXWIN_SDK is NOT visible there and the default above would
+# wrongly kick in. Forward it explicitly to every try_compile.
+list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES XWIN_SDK LLVM_SUFFIX)
+
+message(STATUS "Checking XWIN_SDK at ${XWIN_SDK}")
 get_filename_component(XWIN_SDK "${XWIN_SDK}" ABSOLUTE)
 if(NOT EXISTS "${XWIN_SDK}/crt/include")
-    message(FATAL_ERROR "XWIN_SDK does not look like an xwin splat: ${XWIN_SDK}")
+    message(FATAL_ERROR "XWIN_SDK does not look like an xwin splat...")
 endif()
 
 # LLVM tools (must be on PATH).
-set(CMAKE_C_COMPILER   clang-cl)
-set(CMAKE_CXX_COMPILER clang-cl)
-set(CMAKE_RC_COMPILER  llvm-rc)
-set(CMAKE_MT           llvm-mt)
-set(CMAKE_AR           llvm-lib)
-set(CMAKE_LINKER_TYPE  LLD)   # CMake 3.29+: link with lld-link
+set(CMAKE_C_COMPILER   clang-cl${LLVM_SUFFIX})
+set(CMAKE_CXX_COMPILER clang-cl${LLVM_SUFFIX})
+set(CMAKE_RC_COMPILER  llvm-rc${LLVM_SUFFIX})
+set(CMAKE_MT           llvm-mt${LLVM_SUFFIX})
+set(CMAKE_AR           llvm-lib${LLVM_SUFFIX})
+# Link with lld-link. Do NOT use CMAKE_LINKER_TYPE LLD: it forces the bare
+# unsuffixed name "lld-link" into the link rule, ignoring both LLVM_SUFFIX and
+# CMAKE_LINKER. On a suffixed-LLVM box (lld-link-19, no unsuffixed alias) that
+# exec fails with "no such file or directory". Pin CMAKE_LINKER to the real
+# binary instead; the MSVC direct-link rule uses it verbatim.
+find_program(CMAKE_LINKER NAMES "lld-link${LLVM_SUFFIX}" lld-link REQUIRED)
 
 # The xwin splat ships only the RELEASE CRT (msvcrt.lib); the debug CRT
 # (msvcrtd.lib, vcruntimed.lib, ...) is dev-only and not in the redistributable
