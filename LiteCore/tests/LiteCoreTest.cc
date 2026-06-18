@@ -32,7 +32,7 @@
 #endif
 
 #ifdef _MSC_VER
-#    include <atlbase.h>
+#    include <atl_compat.hh>
 #endif
 
 

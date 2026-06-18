@@ -16,8 +16,7 @@
 #    include <direct.h>
 #    include <sys/types.h>
 #    include <sys/stat.h>
-#    include <atlbase.h>
-#    include <atlconv.h>
+#    include <atl_compat.hh>
 
 namespace litecore {
 

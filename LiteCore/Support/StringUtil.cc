@@ -21,7 +21,7 @@
 
 // For matchGlobPattern:
 #ifdef _MSC_VER
-#    include <atlbase.h>
+#    include <atl_compat.hh>
 #    include <Shlwapi.h>
 #    pragma comment(lib, "shlwapi.lib")
 #    undef min

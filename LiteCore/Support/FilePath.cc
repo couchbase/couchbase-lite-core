@@ -36,8 +36,7 @@
 #        include <sys/sendfile.h>
 #    endif
 #else
-#    include <atlbase.h>
-#    include <atlconv.h>
+#    include <atl_compat.hh>
 #    include <WinBase.h>
 #    include <direct.h>
 #    include <io.h>

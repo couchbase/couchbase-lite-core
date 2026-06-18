@@ -82,7 +82,7 @@ namespace litecore {
 #    pragma mark - WINDOWS:
 
 #    include <Windows.h>
-#    include <atlbase.h>
+#    include <atl_compat.hh>
 
 namespace litecore {
 

@@ -34,10 +34,6 @@
 #    include <CoreFoundation/CFBundle.h>
 #endif
 
-#ifdef _MSC_VER
-#    include <atlbase.h>
-#endif
-
 using namespace std;
 
 const std::string& TempDir() {

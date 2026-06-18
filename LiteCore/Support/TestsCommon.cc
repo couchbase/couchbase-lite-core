@@ -24,7 +24,7 @@
 #include <thread>
 
 #ifdef _MSC_VER
-#    include <atlbase.h>
+#    include <atl_compat.hh>
 #endif
 
 #include "catch.hpp"

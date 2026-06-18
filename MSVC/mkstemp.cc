@@ -14,7 +14,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <atlbase.h>
+#include <atl_compat.hh>
 #include "TempArray.hh"
 #include "SecureRandomize.hh"
 #include <Error.hh>

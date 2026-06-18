@@ -24,7 +24,7 @@
 
 #ifdef _WIN32
 #    include <IPHlpApi.h>
-#    include <atlconv.h>
+#    include <atl_compat.hh>
 
 #    pragma comment(lib, "iphlpapi")
 #else

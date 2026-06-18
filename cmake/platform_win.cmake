@@ -44,12 +44,23 @@ function(setup_globals)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         add_compile_options(/MP)
         add_link_options(/CGTHREADS:8)
+        # /GL (whole-program opt) + /LTCG are cl.exe/link.exe/lib.exe features.
+        # llvm-lib and lld-link do not accept "/LTCG:incremental", so these are
+        # gated to the genuine MSVC toolchain; clang-cl uses the LTO-free flags below.
+        set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
+        set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
+        set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
+        set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
+    else()
+        # clang-cl + lld-link/llvm-lib: keep the MSVC-style optimization/debug
+        # switches that clang-cl understands, but drop /GL and /LTCG.
+        set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi" CACHE INTERNAL "")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi" CACHE INTERNAL "")
+        set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /debug" CACHE INTERNAL "")
+        set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /debug" CACHE INTERNAL "")
+        set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "" CACHE INTERNAL "")
     endif()
-    set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL /MP" CACHE INTERNAL "")
-    set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
-    set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
-    set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
 
     # Disable the following warnings:
     #   4099 (library linked without debug info)

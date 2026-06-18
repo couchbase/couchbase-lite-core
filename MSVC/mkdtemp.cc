@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <io.h>
-#include <atlbase.h>
+#include <atl_compat.hh>
 
 char* mkdtemp(char* path) {
     char *       start, *cp;
