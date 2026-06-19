@@ -252,9 +252,13 @@ namespace litecore::repl {
 
     // Called after the checkpoint is established.
     void Replicator::startReplicating(CollectionIndex coll) {
-        if ( _options->push(coll) > kC4Passive ) _subRepls[coll].pusher->start();
-        if ( _options->pull(coll) > kC4Passive )
-            _subRepls[coll].puller->start(_subRepls[coll].checkpointer->remoteMinSequence());
+        if ( _options->push(coll) > kC4Passive ) {
+            if ( auto pusher = _subRepls[coll].pusher.get() ) pusher->start();
+        }
+        if ( _options->pull(coll) > kC4Passive ) {
+            if ( auto puller = _subRepls[coll].puller.get() )
+                puller->start(_subRepls[coll].checkpointer->remoteMinSequence());
+        }
     }
 
     pair<int, websocket::Headers> Replicator::httpResponse() const {
@@ -379,9 +383,9 @@ namespace litecore::repl {
 
         CollectionIndex coll = task->collectionIndex();
         if ( coll != kNotCollectionIndex ) {
-            if ( task == _subRepls[coll].pusher ) {
+            if ( auto pusher = _subRepls[coll].pusher.get(); pusher == task ) {
                 updatePushStatus(coll, taskStatus);
-            } else if ( task == _subRepls[coll].puller ) {
+            } else if ( auto puller = _subRepls[coll].puller.get(); puller == task ) {
                 updatePullStatus(coll, taskStatus);
             }
         }
@@ -656,8 +660,8 @@ namespace litecore::repl {
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
         for ( auto& sub : _subRepls ) {
-            if ( sub.pusher ) sub.pusher->connectionClosed();
-            if ( sub.puller ) sub.puller->connectionClosed();
+            if ( auto pusher = sub.pusher.get() ) pusher->connectionClosed();
+            if ( auto puller = sub.puller.get() ) puller->connectionClosed();
         }
 
         if ( status.isNormal() && closedByPeer && _options->isActive() ) {
@@ -718,9 +722,10 @@ namespace litecore::repl {
                 cLogInfo(coll, "No local checkpoint '%.*s'", SPLAT(sub.checkpointer->initialCheckpointID()));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
-                if ( _options->pull(coll) > kC4Passive && sub.puller
+                if ( auto puller = sub.puller.get();
+                     puller && _options->pull(coll) > kC4Passive
                      && _db->useCollection(sub.collectionSpec)->getLastSequence() == 0_seq )
-                    sub.puller->setSkipDeleted();
+                    puller->setSkipDeleted();
             }
             return true;
         } catch ( ... ) {
@@ -767,8 +772,9 @@ namespace litecore::repl {
 
             if ( !refresh && sub.hadLocalCheckpoint ) {
                 // Compare checkpoints, reset if mismatched:
-                bool valid = sub.checkpointer->validateWith(remoteCheckpoint);
-                if ( !valid && sub.pusher ) sub.pusher->checkpointIsInvalid();
+                if ( !sub.checkpointer->validateWith(remoteCheckpoint) ) {
+                    if ( auto pusher = sub.pusher.get() ) pusher->checkpointIsInvalid();
+                }
 
                 if ( !refresh ) {
                     // Now we have the checkpoints! Time to start replicating:
@@ -898,8 +904,9 @@ namespace litecore::repl {
 
                     if ( _subRepls[i].hadLocalCheckpoint ) {
                         // Compare checkpoints, reset if mismatched:
-                        bool valid = _subRepls[i].checkpointer->validateWith(remoteCheckpoints[i]);
-                        if ( !valid && _subRepls[i].pusher ) _subRepls[i].pusher->checkpointIsInvalid();
+                        if ( !_subRepls[i].checkpointer->validateWith(remoteCheckpoints[i]) ) {
+                            if ( auto pusher = _subRepls[i].pusher.get() ) pusher->checkpointIsInvalid();
+                        }
                     }
                     // Now we have the checkpoints! Time to start replicating:
                     startReplicating(i);
