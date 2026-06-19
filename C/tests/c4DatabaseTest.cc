@@ -780,7 +780,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Document expiration torture test", "[Dat
         int     setCount = 1;
         C4Error error{};
         for ( ; setCount <= total; ++setCount ) {
-            if ( !c4coll_setDocExpiration(collection, c4str(docID(setCount)), expire, &error) ) {
+            // CBL-8202: Under this artificial contention (a no-pause reader on another connection
+            // plus the background purge) setDocExpiration can momentarily fail with a transient
+            // "busy" error when it can't grab the write lock. That is expected and retryable, so
+            // retry rather than aborting the loop and leaving documents without an expiration.
+            constexpr int kMaxBusyRetries = 200;
+            bool          ok              = false;
+            for ( int busyRetries = 0; !ok; ) {
+                ok = c4coll_setDocExpiration(collection, c4str(docID(setCount)), expire, &error);
+                if ( ok ) break;
+                if ( error.domain != LiteCoreDomain || error.code != kC4ErrorBusy || ++busyRetries > kMaxBusyRetries )
+                    break;
+                std::this_thread::sleep_for(5ms);
+            }
+            if ( !ok ) {
                 stop.store(true);
                 break;
             }

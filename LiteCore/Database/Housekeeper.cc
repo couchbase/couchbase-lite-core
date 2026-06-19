@@ -16,6 +16,7 @@
 #include "SequenceTracker.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "SQLiteKeyStore.hh"
 #include "StringUtil.hh"
@@ -98,18 +99,39 @@ namespace litecore {
         enqueue(FUNCTION_TO_QUEUE(Housekeeper::_doExpiration));
     }
 
+    // CBL-8202: How long to wait before retrying expiration after a transient "database busy"
+    // error. Another connection (or thread) held the write lock while we tried to purge; we just
+    // need to try again shortly.
+    static constexpr chrono::milliseconds kRetryExpirationAfterBusyMS{100};
+
     void Housekeeper::_doExpiration() {
         if ( _isStopped() ) return;
 
-        logInfo("Housekeeper: expiring documents...");
-        _bgdb->useInTransaction(_keyStoreName, [&](KeyStore& keyStore, SequenceTracker* sequenceTracker) -> bool {
-            if ( sequenceTracker ) {
-                keyStore.expireRecords([&](slice docID) { sequenceTracker->documentPurged(docID); });
-            } else {
-                keyStore.expireRecords();
+        logVerbose("Housekeeper: expiring documents...");
+        try {
+            _bgdb->useInTransaction(_keyStoreName, [&](KeyStore& keyStore, SequenceTracker* sequenceTracker) -> bool {
+                if ( sequenceTracker ) {
+                    keyStore.expireRecords([&](slice docID) { sequenceTracker->documentPurged(docID); });
+                } else {
+                    keyStore.expireRecords();
+                }
+                return true;
+            });
+        } catch ( const exception& x ) {
+            // CBL-8202: A transient lock conflict (another connection holding the write lock) must
+            // not abort the Housekeeper. If we let the exception propagate, the actor swallows it
+            // and the _scheduleExpiration() below is skipped, so the timer never fires again and
+            // expired documents are never purged once the app stops calling setDocExpiration.
+            // Instead, reschedule a near-term retry of the purge.
+            error e = error::convertException(x).standardized();
+            if ( e.domain == error::LiteCore && e.code == error::Busy ) {
+                logVerbose("Housekeeper: expiration deferred (database busy); retrying in %lldms",
+                           (long long)kRetryExpirationAfterBusyMS.count());
+                _expiryTimer->fireAfter(kRetryExpirationAfterBusyMS);
+                return;
             }
-            return true;
-        });
+            throw;
+        }
 
         _scheduleExpiration(false);
     }
