@@ -1,8 +1,19 @@
 on:
   workflow_call: # So it can be used by our other repos
-  pull_request:  # And also be used for itself
-    branches: ['release/**']
-  workflow_dispatch:  # manual trigger via GitHub UI
+  pull_request: # And also be used for itself
+    types: [opened]
+    branches: ["release/**"]
+    paths:
+      - "C/**"
+      - "Crypto/**"
+      - "LiteCore/**"
+      - "MSVC/**"
+      - "Networking/**"
+      - "Replicator/**"
+      - "REST/**"
+      - "vendor/fleece"
+
+  workflow_dispatch: # manual trigger via GitHub UI
 
 jobs:
   warn-release:
@@ -23,6 +34,7 @@ jobs:
 
             - [ ] A response to a customer ask
             - [ ] A change per our security policy
-            - [ ] A non-functional change (i.e. changes needed for building an older version)
+            - [ ] A non-functional change (e.g. changes needed for building an older version)
+            - [ ] A bug fix for a x.y.0 release
             - [ ] A change that has been granted an exception (please comment)`
             })
