@@ -47,7 +47,7 @@ namespace litecore::repl {
         void closeWithException();
 
         /** Blocks until the TLS handshake completes or the socket closes. Returns true on success. */
-        [[nodiscard]] bool waitForTLSHandshake();
+        [[nodiscard]] bool waitForTLSHandshake(unsigned timeoutSecs);
 
         // WebSocket public API:
         void connect() override;
