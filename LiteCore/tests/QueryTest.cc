@@ -14,6 +14,7 @@
 #include "SQLiteDataFile.hh"
 #include "Benchmark.hh"
 #include "SQLiteKeyStore.hh"
+#include <array>
 #include <cstdint>
 #include <ctime>
 #include <cfloat>
@@ -3359,35 +3360,48 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Translator with Alternative FROM names", "[Qu
 
     auto delFlag = [&](string alias) -> string {
         std::stringstream ss;
-        if ( delDocsFullyTracked ) ss << "";
+        if ( delDocsFullyTracked ) ss << " AS " << alias;
         else
-            ss << " WHERE (" << alias << ".flags & 1 = 0)";
+            ss << " AS " << alias << " WHERE (" << alias << ".flags & 1 = 0)";
         return ss.str();
     };
 
-    checkParser(json5("{'WHAT': ['.foo\\\\.bar.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo.bar'}]}"),
-                R"(SELECT fl_result(fl_value("foo.bar".body, 'type')) FROM kv_default AS "foo.bar")"s
-                        + delFlag("\"foo.bar\""));
     checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default'}]}"),
-                "SELECT fl_result(fl_value(_default.body, 'type')) FROM kv_default AS _default"s + delFlag("_default"));
-    checkParser(
-            json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default._default'}]}"),
-            R"(SELECT fl_result(fl_value("_default._default".body, 'type')) FROM kv_default AS "_default._default")"s
-                    + delFlag("\"_default._default\""));
-    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_'}]}"),
-                "SELECT fl_result(fl_value(_.body, 'type')) FROM kv_default AS _"s + delFlag("_"));
+                "SELECT fl_result(fl_value(_default.body, 'type')) FROM kv_default"s + delFlag("_default"));
+    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default._default'}]}"),
+                R"(SELECT fl_result(fl_value("_default._default".body, 'type')) FROM kv_default)"
+                        + delFlag("\"_default._default\""));
     checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}"),
-                "SELECT fl_result(fl_value(db.body, 'type')) FROM kv_default AS db"s + delFlag("db"));
-    string collectionName = sqlKeyStore->collectionName();
-    string sel            = "SELECT fl_result(fl_value(_doc.body, 'foo.type')) FROM ";
-    if ( collectionName == "_default" )
-        checkParser(json5("{'WHAT': ['.foo.type']}"), sel + "kv_default AS _doc" + delFlag("_doc"));
-    else if ( collectionName == "Secondary" )
-        checkParser(json5("{'WHAT': ['.foo.type']}"), sel + R"("kv_.\Secondary" AS _doc)");
-    else if ( collectionName == "scopey.subsidiary" )
-        checkParser(json5("{'WHAT': ['.foo.type']}"), sel + R"("kv_.scopey.subsidiary" AS _doc)");
-    else
-        Log("CollectionName %s not tested", collectionName.c_str());
+                "SELECT fl_result(fl_value(db.body, 'type')) FROM kv_default"s + delFlag("db"));
+
+    // Special FROM aliases: "_" or omitted FROM clause. When a query is created from a
+    // named KeyStore, that KeyStore is implicitly used as the data source.
+
+    struct SpecialFromTest {
+        string json;
+        string sqlSel;
+        string alias;
+    };
+
+    auto fromTests = std::to_array<SpecialFromTest>(
+            {// omitted FROM
+             {"{'WHAT': ['.foo.type']}", "SELECT fl_result(fl_value(_doc.body, 'foo.type')) FROM ", "_doc"},
+             // FROM _
+             {"{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_'}]}", "SELECT fl_result(fl_value(_.body, 'type')) FROM ",
+              "_"},
+             // FROM _
+             {"{'WHAT': ['.foo\\\\.bar.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo.bar'}]}",
+              R"(SELECT fl_result(fl_value("foo.bar".body, 'type')) FROM )", R"("foo.bar")"}});
+    string collName = sqlKeyStore->collectionName();
+    for ( const auto& t : fromTests ) {
+        if ( collName == "_default" ) checkParser(json5(t.json), t.sqlSel + "kv_default" + delFlag(t.alias));
+        else if ( collName == "Secondary" )
+            checkParser(json5(t.json), t.sqlSel + R"("kv_.\Secondary")" + delFlag(t.alias));
+        else if ( collName == "scopey.subsidiary" )
+            checkParser(json5(t.json), t.sqlSel + R"("kv_.scopey.subsidiary")" + delFlag(t.alias));
+        else
+            Log("CollectionName %s not tested", collectionName.c_str());
+    }
 
     // For database names that include dot, we must properly quote it.
     // In JSON, we escape dot inside the JSON string value.
@@ -3395,7 +3409,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Translator with Alternative FROM names", "[Qu
 
     _databaseName = "cbl.core.temp";
     checkParser(json5(R"({'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\.core\\.temp'}]})"),
-                R"(SELECT fl_result(fl_value("cbl\.core\.temp".body, 'type')) FROM kv_default AS "cbl\.core\.temp")"s
+                R"(SELECT fl_result(fl_value("cbl\.core\.temp".body, 'type')) FROM kv_default)"
                         + delFlag(R"("cbl\.core\.temp")"));
 }
 
