@@ -730,6 +730,16 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator FROM scope", "[Query][Que
     CHECK(usedTableNames == set<string>{"kv_.store.customers", "kv_.store2.customers"});
 }
 
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator FROM non-default collection", "[Query][QueryTranslator]") {
+    // Tests the interpretation of "FROM _" when the QueryTranslator is instantiated with a non-default
+    // collection name. This functionality is exposed by C4Collection::newQuery() but is not used in
+    // the CBL API; however, Edge Server uses it. See CBL-8554.
+    QueryTranslator t(*this, "books", "kv_.books");
+    t.parseJSON(json5("{WHAT: ['.title'], FROM: [{collection: '_'}]}"));
+    usedTableNames = t.collectionTablesUsed();
+    CHECK(t.SQL() == "SELECT fl_result(fl_value(_.body, 'title')) FROM \"kv_.books\" AS _");
+}
+
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator nested SELECT", "[Query][QueryTranslator]") {
     //    CHECK_equal(parse("['SELECT',{'WHAT':[['IS',6,9]]}]"),
     //                "SELECT fl_boolean_result(6 IS 9) FROM kv_default AS _doc WHERE (_doc.flags & 1 = 0)");
