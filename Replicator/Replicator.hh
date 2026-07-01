@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "AtomicRetained.hh"
 #include "Worker.hh"
 #include "Checkpointer.hh"
 #include "BLIPConnection.hh"
@@ -18,7 +19,6 @@
 #include "Stopwatch.hh"
 #include "c4DatabaseTypes.h"
 #include <access_lock.hh>
-#include <array>
 #include <optional>
 #include <utility>
 
@@ -232,8 +232,8 @@ namespace litecore::repl {
         // Member variables:
 
         struct SubReplicator {
-            Retained<Pusher>         pusher;
-            Retained<Puller>         puller;
+            AtomicRetained<Pusher>   pusher;
+            AtomicRetained<Puller>   puller;
             Status                   pushStatus;                        // Current status of Pusher
             Status                   pullStatus;                        // Current status of Puller
             unique_ptr<Checkpointer> checkpointer;                      // Object that manages checkpoints
