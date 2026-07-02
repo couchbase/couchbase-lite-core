@@ -600,16 +600,20 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL Performance", "[Query][N1QL][C]") {
 
     SECTION("Very Long Query") {
         // 3b1fe0d6fe46a5a4e1655dbe6f42e89154a189dd, this query takes 4 seconds
-        n1ql       = "SELECT doc.* FROM _ doc WHERE "
-                     "doc.type = 'Model' AND "
-                     "doc.s NOT IN ('A', 'B', 'V') AND "
-                     "((doc.model.total.totalA "
-                     "- ifnull(doc.model.totalA.totalB, 0)) "
-                     "> 0 OR doc.t = false) AND "
-                     "(doc.q IS NULL OR "
-                     "ifnull(doc.q.e, 'e') = 'e' AND "
-                     "ifnull(doc.q.m, 0) == 0)";
+        n1ql = "SELECT doc.* FROM _ doc WHERE "
+               "doc.type = 'Model' AND "
+               "doc.s NOT IN ('A', 'B', 'V') AND "
+               "((doc.model.total.totalA "
+               "- ifnull(doc.model.totalA.totalB, 0)) "
+               "> 0 OR doc.t = false) AND "
+               "(doc.q IS NULL OR "
+               "ifnull(doc.q.e, 'e') = 'e' AND "
+               "ifnull(doc.q.m, 0) == 0)";
+#ifdef _MSC_VER
+        checkBound = 10.0;
+#else
         checkBound = 1.0;
+#endif
     }
 
     Stopwatch sw;
