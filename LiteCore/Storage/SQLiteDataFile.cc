@@ -685,7 +685,7 @@ namespace litecore {
 
     void SQLiteDataFile::_beginTransaction(ExclusiveTransaction*) {
         checkOpen();
-        _exec("BEGIN");
+        _exec("BEGIN IMMEDIATE");
     }
 
     void SQLiteDataFile::_endTransaction(ExclusiveTransaction* t, bool commit) {
