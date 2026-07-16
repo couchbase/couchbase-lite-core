@@ -77,12 +77,25 @@ namespace litecore {
     typedef struct stat     lc_stat_t;
 #endif
 
+    // std::filesystem::path treats '/' as a separator for parsing purposes on every platform,
+    // but it does not rewrite it to the native separator in the stored string. Many call sites
+    // in this codebase build directory paths with a literal trailing '/' regardless of platform,
+    // so trailing-separator trimming must recognize '/' as well as the native separator.
+    static bool endsWithSeparator(const string& pathStr) {
+        char c = pathStr.back();
+#ifdef _MSC_VER
+        return c == '/' || c == kSeparatorChar;
+#else
+        return c == kSeparatorChar;
+#endif
+    }
+
     FilePath::FilePath(std::filesystem::path&& path) : _path(std::move(path)) {
         auto pathStr = _path.string();
 
         // Trim off ending separator unless it's root because otherwise it
         // messes with the existing parentDir() logic.
-        if ( pathStr.size() > 1 && pathStr.ends_with(kSeparator) ) {
+        if ( pathStr.size() > 1 && endsWithSeparator(pathStr) ) {
             _path = filesystem::path(pathStr.substr(0, pathStr.size() - 1));
         }
     }
@@ -92,7 +105,7 @@ namespace litecore {
 
         // Trim off ending separator unless it's root because otherwise it
         // messes with the existing parentDir() logic.
-        if ( pathStr.size() > 1 && pathStr.ends_with(kSeparator) ) {
+        if ( pathStr.size() > 1 && endsWithSeparator(pathStr) ) {
             _path = filesystem::path(pathStr.substr(0, pathStr.size() - 1));
         }
     }
