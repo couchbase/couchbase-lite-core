@@ -50,9 +50,9 @@ namespace litecore {
 #    include <sys/stat.h>
 #    include <unistd.h>
 
-#    define fdclose     ::close
-#    define cbl_open    ::open
-#    define cbl_close   ::close
+#    define fdclose   ::close
+#    define cbl_open  ::open
+#    define cbl_close ::close
 
 namespace litecore {
     inline int mkdir_u8(const char* const path NONNULL, int mode) { return ::mkdir(path, (mode_t)mode); }
