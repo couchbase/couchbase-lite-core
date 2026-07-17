@@ -51,10 +51,31 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
+    if (LITECORE_SANITIZE AND NOT CODE_COVERAGE_ENABLED)
+        set(SANITIZER_COMPILE_FLAGS -fsanitize=address -fno-omit-frame-pointer)
+
+        target_link_options(
+            LiteCore PRIVATE
+            -fsanitize=address
+        )
+
+        foreach(otherVariant FleeceBase FleeceObjects FleeceStatic LiteCoreStatic)
+            target_compile_options(
+                ${otherVariant} PRIVATE
+                ${SANITIZER_COMPILE_FLAGS}
+            )
+        endforeach()
+    endif()
+
     foreach(liteCoreVariant LiteCoreObjects LiteCoreUnitTesting)
         target_compile_definitions(
             ${liteCoreVariant} PRIVATE
             -DLITECORE_USES_ICU=1
+        )
+
+        target_compile_options(
+            ${liteCoreVariant} PRIVATE
+            ${SANITIZER_COMPILE_FLAGS}
         )
 
         target_include_directories(
@@ -67,6 +88,8 @@ function(setup_litecore_build)
             zlibstatic
         )
     endforeach()
+
+
 
     target_compile_options(
         CouchbaseSqlite3 PRIVATE

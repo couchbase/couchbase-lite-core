@@ -126,9 +126,11 @@ ${CMAKE} \
     -DCMAKE_MAKE_PROGRAM="${NINJA}" \
     -DANDROID_PLATFORM=${ARCH_VERSION} \
     -DANDROID_ABI=${ANDROID_ARCH} \
+    -DANDROID_STL=c++_shared \
     -DEDITION=${EDITION} \
     -DCMAKE_INSTALL_PREFIX=`pwd`/install \
     -DCMAKE_BUILD_TYPE=Debug \
+    -DLITECORE_SANITIZE=ON \
     ..
 
 ${NINJA} install

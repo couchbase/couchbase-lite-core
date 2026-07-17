@@ -84,6 +84,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 )
 
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
+option(LITECORE_SANITIZE "Enables address and undefined-behavior sanitizers (Clang only)" OFF)
 option(LITECORE_PERF_TESTING_MODE "Build LiteCore with more things public than in production to facilitate perf testing" OFF)
 option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
