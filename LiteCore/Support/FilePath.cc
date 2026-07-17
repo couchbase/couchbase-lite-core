@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <cstdio>
+#include <chrono>
 #include <thread>
 #include <algorithm>
 #include <mutex>
@@ -329,7 +330,19 @@ namespace litecore {
             if ( ec ) { error::_throw(error::POSIX, to_errno(ec)); }
         }
 
+#ifdef _MSC_VER
+        // MoveFileEx(..., MOVEFILE_REPLACE_EXISTING), which std::filesystem::rename uses on Windows,
+        // is known to intermittently fail with ERROR_ACCESS_DENIED on a file that was just created
+        // and closed (observed on Windows Server 2022 CI runners). Retry a few times before giving up.
+        constexpr int kMaxAttempts = 5;
+        for ( int attempt = 1; attempt <= kMaxAttempts; ++attempt ) {
+            filesystem::rename(_path, to, ec);
+            if ( !ec || ec != errc::permission_denied || attempt == kMaxAttempts ) break;
+            this_thread::sleep_for(chrono::milliseconds(50 * attempt));
+        }
+#else
         filesystem::rename(_path, to, ec);
+#endif
         if ( ec ) { error::_throw(error::POSIX, to_errno(ec)); }
     }
 
