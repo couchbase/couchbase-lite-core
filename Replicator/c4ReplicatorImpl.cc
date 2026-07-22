@@ -46,7 +46,7 @@ namespace litecore {
         // Tear down the Replicator instance -- this is important in the case where it was
         // never started, because otherwise there will be a bunch of ref cycles that cause many
         // objects (including C4Databases) to be leaked. [CBL-524]
-        if ( _replicator ) _replicator->terminate();
+        if ( auto repl = _replicator.get() ) repl->terminate();
     }
 
     void C4ReplicatorImpl::start(bool reset) noexcept {
@@ -58,7 +58,7 @@ namespace litecore {
             return;
         }
 
-        if ( !_replicator ) {
+        if ( !_replicator.get() ) {
             clearCorrelationID();
             if ( !_start(reset) ) {
                 UNLOCK();
@@ -155,9 +155,9 @@ namespace litecore {
             return;
         }
 
-        if ( _replicator ) {
+        if ( auto repl = _replicator.get() ) {
             _status.level = kC4Stopping;
-            _replicator->stop();
+            repl->stop();
         } else if ( _status.level != kC4Stopped ) {
             _status.level    = kC4Stopped;
             _status.progress = {};
@@ -207,21 +207,20 @@ namespace litecore {
         return _peerTLSCertificate;
     }
 
-    void C4ReplicatorImpl::_registerBLIPHandlersNow(BLIPHandlerSpecs specs) {
-        for ( auto& s : specs )
-            _replicator->registerBLIPHandler(std::move(s.profile), s.atBeginning, std::move(s.handler));
+    void C4ReplicatorImpl::_registerBLIPHandlersNow(Replicator* repl, BLIPHandlerSpecs specs) {
+        for ( auto& s : specs ) repl->registerBLIPHandler(std::move(s.profile), s.atBeginning, std::move(s.handler));
     }
 
     void C4ReplicatorImpl::registerBLIPHandlers(BLIPHandlerSpecs const& specs) {
         LOCK(_mutex);
-        if ( _replicator ) _registerBLIPHandlersNow(specs);
+        if ( auto repl = _replicator.get() ) _registerBLIPHandlersNow(repl, specs);
         else
             _pendingHandlers.insert(_pendingHandlers.end(), specs.begin(), specs.end());
     }
 
     void C4ReplicatorImpl::sendBLIPRequest(blip::MessageBuilder& request) {
         LOCK(_mutex);
-        _replicator->sendBLIPRequest(request);
+        if ( auto repl = _replicator.get() ) repl->sendBLIPRequest(request);
     }
 #endif
 
@@ -275,7 +274,7 @@ namespace litecore {
     }
 
     bool C4ReplicatorImpl::_start(bool reset) noexcept {
-        if ( !_replicator ) {
+        if ( !_replicator.get() ) {
             try {
                 createReplicator();
             } catch ( exception& x ) {
@@ -284,30 +283,32 @@ namespace litecore {
                 return false;
             }
         }
+        auto repl = _replicator.get();
+        if ( !repl ) return false;
 
         setStatusFlag(kC4Suspended, false);
-        logInfo("Starting Replicator %s with config: {%s} and endpoint: %.*s", _replicator->loggingName().c_str(),
-                std::string(*_options).c_str(), SPLAT(_replicator->remoteURL()));
+        logInfo("Starting Replicator %s with config: {%s} and endpoint: %.*s", repl->loggingName().c_str(),
+                std::string(*_options).c_str(), SPLAT(repl->remoteURL()));
         _selfRetain = this;  // keep myself alive till Replicator stops
-        updateStatusFromReplicator(_replicator->status());
+        updateStatusFromReplicator(repl->status());
         _responseHeaders = nullptr;
 
 #ifdef COUCHBASE_ENTERPRISE
         _peerTLSCertificateData = nullopt;
         _peerTLSCertificate     = nullptr;
-        _registerBLIPHandlersNow(std::move(_pendingHandlers));
+        _registerBLIPHandlersNow(repl, std::move(_pendingHandlers));
         _pendingHandlers.clear();
 #endif
 
-        _replicator->start(reset);
+        repl->start(reset);
         return true;
     }
 
     void C4ReplicatorImpl::_suspend() noexcept {
         // called with _mutex locked
-        if ( _replicator ) {
+        if ( auto repl = _replicator.get() ) {
             _status.level = kC4Stopping;
-            _replicator->stop();
+            repl->stop();
         }
     }
 
@@ -330,16 +331,17 @@ namespace litecore {
         bool stopped, resume = false;
         {
             LOCK(_mutex);
-            if ( repl != _replicator ) return;
+            auto replicator = _replicator.get();
+            if ( repl != replicator ) return;  // invariant: repl != nullptr
 
             if ( !_correlationID )
-                if ( auto corrID = _replicator->getCorrelationID() ) setCorrelationID(corrID);
+                if ( auto corrID = replicator->getCorrelationID() ) setCorrelationID(corrID);
 
             auto oldLevel = _status.level;
             updateStatusFromReplicator((C4ReplicatorStatus)newStatus);
             if ( _status.level > kC4Connecting && oldLevel <= kC4Connecting ) {
                 // Connected! By now we know the HTTP headers and (optional) peer cert:
-                _responseHeaders = _replicator->httpResponse().second.encode();
+                _responseHeaders = replicator->httpResponse().second.encode();
 #ifdef COUCHBASE_ENTERPRISE
                 if ( !_peerTLSCertificateData.has_value() )
                     _peerTLSCertificateData = nullslice;  // definitely no peer cert
@@ -347,7 +349,8 @@ namespace litecore {
                 handleConnected();
             }
             if ( _status.level == kC4Stopped ) {
-                _replicator->terminate();
+                replicator->terminate();
+                replicator  = nullptr;
                 _replicator = nullptr;
                 if ( statusFlag(kC4Suspended) ) {
                     // If suspended, go to Offline state when Replicator stops
@@ -375,7 +378,8 @@ namespace litecore {
 
     void C4ReplicatorImpl::replicatorDocumentsEnded(Replicator*                                 repl,
                                                     const std::vector<Retained<ReplicatedRev>>& revs) {
-        if ( repl != _replicator ) return;
+        auto replicator = _replicator.get();
+        if ( repl != replicator ) return;
 
         auto                                nRevs = revs.size();
         std::vector<const C4DocumentEnded*> docsEnded;
@@ -394,7 +398,8 @@ namespace litecore {
     }
 
     void C4ReplicatorImpl::replicatorBlobProgress(Replicator* repl, const Replicator::BlobProgress& p) {
-        if ( repl != _replicator ) return;
+        auto replicator = _replicator.get();
+        if ( repl != replicator ) return;
         auto onBlob = _onBlobProgress.load();
         if ( onBlob )
             onBlob(this, (p.dir == Dir::kPushing), p.collSpec, p.docID, p.docProperty, p.key, p.bytesCompleted,
@@ -495,7 +500,7 @@ namespace litecore {
     alloc_slice C4ReplicatorImpl::correlationID() const noexcept {
         LOCK(_mutex);
         if ( _correlationID ) return _correlationID;
-        if ( _replicator ) return _replicator->getCorrelationID();
+        if ( auto repl = _replicator.get() ) return repl->getCorrelationID();
         return {};
     }
 }  // namespace litecore

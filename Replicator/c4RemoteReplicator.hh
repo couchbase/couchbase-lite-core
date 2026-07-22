@@ -59,7 +59,7 @@ namespace litecore {
 
         void start(bool reset) noexcept override {
             LOCK(_mutex);
-            if ( _replicator ) return;
+            if ( _replicator.get() ) return;
             _retryCount = 0;
             if ( !_restart(reset) ) {
                 UNLOCK();
@@ -139,7 +139,7 @@ namespace litecore {
             // are not the _actual_ addresses of the object, but rather the pointer to
             // its Logging virtual table since inside of _logVerbose this is all that
             // is known.
-            _logVerbose("C4RemoteRepl %p created Repl %p", (Logging*)this, (Logging*)_replicator.get());
+            _logVerbose("C4RemoteRepl %p created Repl %p", (Logging*)this, (Logging*)_replicator.get().get());
         }
 
         // Both `start` and `retry` end up calling this.

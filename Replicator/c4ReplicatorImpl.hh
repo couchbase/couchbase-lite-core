@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "AtomicRetained.hh"
 #include "c4Replicator.hh"
 #include "c4Database.hh"
 #include "c4Internal.hh"
@@ -154,7 +155,7 @@ namespace litecore {
         mutable std::mutex            _mutex;
         DatabaseOrPool const          _database;
         Retained<Replicator::Options> _options;
-        Retained<Replicator>          _replicator;
+        AtomicRetained<Replicator>    _replicator;
         C4ReplicatorStatus            _status{kC4Stopped};
         bool                          _activeWhenSuspended{false};
         bool                          _cancelStop{false};
@@ -166,7 +167,7 @@ namespace litecore {
 
       private:
 #ifdef COUCHBASE_ENTERPRISE
-        void _registerBLIPHandlersNow(BLIPHandlerSpecs);
+        void _registerBLIPHandlersNow(Replicator* repl, BLIPHandlerSpecs);
 #endif
 
         class PendingDocuments;
