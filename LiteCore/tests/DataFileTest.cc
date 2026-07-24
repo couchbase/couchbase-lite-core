@@ -648,32 +648,26 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 TEST_CASE("CanonicalPath") {
 #ifdef _MSC_VER
     const char* startPath = "C:\\folder\\..\\subfolder\\";
-    string      endPath   = "C:\\subfolder\\";
+    string      endPath   = "C:\\subfolder";
 #else
     auto tmpPath   = TestFixture::sTempDir.path();
-    auto startPath = tmpPath + "folder/";
+    auto startPath = tmpPath + "/folder/";
     ::mkdir(startPath.c_str(), 777);
     startPath += "../subfolder/";
-    auto endPath = tmpPath + "subfolder";
+    auto endPath = tmpPath + "/subfolder";
     ::mkdir(endPath.c_str(), 777);
-#    if __APPLE__ && !TARGET_OS_IPHONE
-    endPath   = "/private" + endPath;
-#    endif
 #endif
 
     FilePath path(startPath);
     CHECK(path.canonicalPath() == endPath);
 
 #ifdef _MSC_VER
-    startPath = (const char*)u8"C:\\日本語\\";
+    startPath = (const char*)u8"C:\\日本語";
     endPath   = startPath;
 #else
     startPath = tmpPath + (const char*)u8"日本語";
     ::mkdir(startPath.c_str(), 777);
     endPath = startPath;
-#    if __APPLE__ && !TARGET_OS_IPHONE
-    endPath = "/private" + endPath;
-#    endif
 #endif
 
     path = FilePath(startPath);
@@ -682,23 +676,23 @@ TEST_CASE("CanonicalPath") {
 
 TEST_CASE("ParentDir") {
 #ifdef _MSC_VER
-    CHECK(FilePath("C:\\").parentDir().path() == "C:\\");
-    CHECK(FilePath("D:\\folder\\subfolder\\file").parentDir().path() == "D:\\folder\\subfolder\\");
-    CHECK(FilePath("C:\\folder\\subfolder\\").parentDir().path() == "C:\\folder\\");
-    CHECK(FilePath("C:\\folder\\file").parentDir().path() == "C:\\folder\\");
+    CHECK(FilePath("C:\\").parentDir().path() == "C:");
+    CHECK(FilePath("D:\\folder\\subfolder\\file").parentDir().path() == "D:\\folder\\subfolder");
+    CHECK(FilePath("C:\\folder\\subfolder\\").parentDir().path() == "C:\\folder");
+    CHECK(FilePath("C:\\folder\\file").parentDir().path() == "C:\\folder");
 #else
     CHECK(FilePath("/").parentDir().path() == "/");
-    CHECK(FilePath("/folder/subfolder/file").parentDir().path() == "/folder/subfolder/");
-    CHECK(FilePath("/folder/subfolder/").parentDir().path() == "/folder/");
-    CHECK(FilePath("/folder/file").parentDir().path() == "/folder/");
+    CHECK(FilePath("/folder/subfolder/file").parentDir().path() == "/folder/subfolder");
+    CHECK(FilePath("/folder/subfolder/").parentDir().path() == "/folder");
+    CHECK(FilePath("/folder/file").parentDir().path() == "/folder");
 #endif
 
-    check_parent("folder/subfolder/", "folder/");
-    check_parent("folder/file", "folder/");
-    check_parent("./file", "./");
-    check_parent("./folder/", "./");
-    check_parent("file", "./");
-    check_parent("folder/", "./");
+    check_parent("folder/subfolder", "folder");
+    check_parent("folder/file", "folder");
+    check_parent("./file", ".");
+    check_parent("./folder/", ".");
+    check_parent("file", ".");
+    check_parent("folder/", ".");
     ExpectException(error::POSIX, EINVAL, [&] {
         stringstream ss;
         ss << "." << FilePath::kSeparator;
