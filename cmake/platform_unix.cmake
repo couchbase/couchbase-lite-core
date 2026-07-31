@@ -72,8 +72,12 @@ function(setup_litecore_build_unix)
         if (LITECORE_BUILD_SHARED)
             target_link_options(LiteCore PRIVATE -fsanitize=address -fsanitize=undefined)
         endif()
-        if (LITECORE_BUILD_TESTS)
+        # CppTests/C4Tests are not created on all platforms (e.g. Android), so
+        # guard on the targets actually existing, not just LITECORE_BUILD_TESTS.
+        if (LITECORE_BUILD_TESTS AND TARGET CppTests)
             target_link_options(CppTests PRIVATE -fsanitize=address -fsanitize=undefined)
+        endif()
+        if (LITECORE_BUILD_TESTS AND TARGET C4Tests)
             target_link_options(C4Tests  PRIVATE -fsanitize=address -fsanitize=undefined)
         endif()
     else()
