@@ -52,7 +52,9 @@ function(setup_litecore_build)
     setup_litecore_build_linux()
 
     if (LITECORE_SANITIZE AND NOT CODE_COVERAGE_ENABLED)
-        set(SANITIZER_COMPILE_FLAGS -fsanitize=address -fno-omit-frame-pointer)
+        # ASan only: -fno-sanitize turns off the UBSan enabled by Fleece's LITECORE_SANITIZE
+        # block (its vptr checks false-positive in the monolithic static lib)
+        set(SANITIZER_COMPILE_FLAGS -fsanitize=address -fno-omit-frame-pointer -fno-sanitize=undefined,nullability)
 
         target_link_options(
             LiteCore PRIVATE
