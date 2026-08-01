@@ -61,11 +61,14 @@ function(setup_litecore_build)
             -fsanitize=address
         )
 
-        foreach(otherVariant FleeceBase FleeceObjects FleeceStatic LiteCoreStatic)
-            target_compile_options(
-                ${otherVariant} PRIVATE
-                ${SANITIZER_COMPILE_FLAGS}
-            )
+        foreach(otherVariant FleeceBase FleeceObjects FleeceStatic LiteCoreStatic
+                LiteCoreREST_Objects LiteCoreListener_Objects BLIPObjects LiteCoreP2P)
+            if(TARGET ${otherVariant})
+                target_compile_options(
+                    ${otherVariant} PRIVATE
+                    ${SANITIZER_COMPILE_FLAGS}
+                )
+            endif()
         endforeach()
     endif()
 
