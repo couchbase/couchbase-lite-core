@@ -48,6 +48,10 @@ namespace litecore::repl {
         // Passive replicator always sends "changes"
         bool passive() const override { return _options->push(collectionIndex()) <= kC4Passive; }
 
+        /// Called (only) via Replicator::getSubReplPusher, after the caller has safely confirmed
+        /// this Pusher is still the current one -- see ChangesFeed::dbChanged's doc comment.
+        void notifyDbChanged() { _changesFeed.dbChanged(); }
+
       protected:
         friend class BlobDataSource;
 

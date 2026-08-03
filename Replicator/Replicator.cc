@@ -250,6 +250,8 @@ namespace litecore::repl {
         }
     }
 
+    Retained<Pusher> Replicator::getSubReplPusher(CollectionIndex i) const { return _subRepls[i].pusher.get(); }
+
     // Called after the checkpoint is established.
     void Replicator::startReplicating(CollectionIndex coll) {
         if ( _options->push(coll) > kC4Passive ) {

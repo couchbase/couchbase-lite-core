@@ -212,6 +212,10 @@ namespace litecore::repl {
             _workerHandlers.useLocked()->emplace(key, worker->asynchronize(profile, fn));
         }
 
+        /// Returns the current Pusher for a collection, retained, or nullptr if it's already been
+        /// torn down. Safe to call from any thread, since `_subRepls[i].pusher` is AtomicRetained.
+        Retained<Pusher> getSubReplPusher(CollectionIndex i) const;
+
         alloc_slice getCorrelationID() const {
             if ( _hasCorrelationID.load(std::memory_order_acquire) ) return _correlationID;
             else

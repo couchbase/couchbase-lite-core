@@ -28,6 +28,7 @@ namespace litecore::repl {
     class DBAccess;
     class Options;
     class Checkpointer;
+    class Replicator;
 
     using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
 
@@ -48,7 +49,7 @@ namespace litecore::repl {
             virtual void failedToGetChange(ReplicatedRev* rev, C4Error error, bool transient) = 0;
         };
 
-        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess& db, Checkpointer*);
+        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess& db, Checkpointer*, Replicator* NONNULL);
         ~ChangesFeed() override;
 
         // Setup:
@@ -84,6 +85,12 @@ namespace litecore::repl {
         /** Returns true if the given rev matches the push filters. */
         [[nodiscard]] virtual bool shouldPushRev(RevToSend* NONNULL) const;
 
+        /** Callback from the C4DatabaseObserver when the database has changed.
+            \warning This is called on an arbitrary thread! Callers must first obtain a safely-
+            retained Pusher/ChangesFeed (e.g. via `Replicator::getSubReplPusher`) before calling
+            this -- never capture a raw pointer to a ChangesFeed/Pusher across threads. */
+        void dbChanged();
+
       protected:
         std::string loggingClassName() const override { return "ChangesFeed"; }
 
@@ -94,7 +101,6 @@ namespace litecore::repl {
       private:
         void                getHistoricalChanges(Changes&, unsigned limit);
         void                getObservedChanges(Changes&, unsigned limit);
-        void                _dbChanged();
         Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*);
         bool                shouldPushRev(RevToSend*, C4DocEnumerator*) const;
 
@@ -106,6 +112,8 @@ namespace litecore::repl {
         CollectionIndex const  _collectionIndex;
         bool                   _getForeignAncestors{false};  // True in propose-changes mode
       private:
+        Retained<Replicator> _replicator;  // Kept alive & used to safely reach the
+                                           // owning Pusher from the DB-observer callback
         Checkpointer*                       _checkpointer;
         DocIDSet                            _docIDs;              // Doc IDs to filter to, or null
         std::unique_ptr<C4DatabaseObserver> _changeObserver;      // Used in continuous push mode
@@ -119,7 +127,8 @@ namespace litecore::repl {
 
     class ReplicatorChangesFeed final : public ChangesFeed {
       public:
-        ReplicatorChangesFeed(Delegate& delegate, const Options* options, DBAccess& db, Checkpointer* cp);
+        ReplicatorChangesFeed(Delegate& delegate, const Options* options, DBAccess& db, Checkpointer* cp,
+                              Replicator* NONNULL replicator);
 
         void setContinuous(bool continuous) override;
 

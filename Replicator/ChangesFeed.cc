@@ -19,6 +19,8 @@
 #include "ChangesFeed.hh"
 #include "Checkpointer.hh"
 #include "ReplicatorOptions.hh"
+#include "Replicator.hh"
+#include "Pusher.hh"
 #include "DBAccess.hh"
 #include "StringUtil.hh"
 #include "c4DocEnumerator.hh"
@@ -33,13 +35,15 @@ using namespace fleece;
 namespace litecore::repl {
 
 
-    ChangesFeed::ChangesFeed(Delegate& delegate, const Options* options, DBAccess& db, Checkpointer* checkpointer)
+    ChangesFeed::ChangesFeed(Delegate& delegate, const Options* options, DBAccess& db, Checkpointer* checkpointer,
+                             Replicator* replicator)
         : Logging(SyncLog)
         , _delegate(delegate)
         , _options(options)
         , _db(db)
         , _collectionSpec(checkpointer->collectionSpec())
         , _collectionIndex(CollectionIndex(_options->collectionSpecToIndex().at(checkpointer->collectionSpec())))
+        , _replicator(replicator)
         , _checkpointer(checkpointer)
         , _skipDeleted(_options->skipDeleted()) {
         _continuous = _options->push(_collectionIndex) == kC4Continuous;
@@ -70,7 +74,13 @@ namespace litecore::repl {
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
             BorrowedCollection coll = _db.useCollection(_collectionSpec);
-            _changeObserver = C4DatabaseObserver::create(coll, [this](C4DatabaseObserver*) { this->_dbChanged(); });
+            // Captures a Retained<Replicator> + the collection index by value -- NEVER a raw
+            // pointer into this ChangesFeed/its owning Pusher, since this callback fires on an
+            // arbitrary thread and Pusher may already be mid-teardown by the time it runs.
+            _changeObserver = C4DatabaseObserver::create(
+                    coll, [replicator = _replicator, collIndex = _collectionIndex](C4DatabaseObserver*) {
+                        if ( auto pusher = replicator->getSubReplPusher(collIndex) ) pusher->notifyDbChanged();
+                    });
         }
 
         Changes changes       = {};
@@ -183,9 +193,9 @@ namespace litecore::repl {
         }
     }
 
-    // Callback from the C4DatabaseObserver when the database has changed
-    // **This is called on an arbitrary thread!**
-    void ChangesFeed::_dbChanged() {
+    // Called (via Pusher::notifyDbChanged) once the caller has safely confirmed, through
+    // Replicator::getSubReplPusher, that this ChangesFeed's owning Pusher is still current.
+    void ChangesFeed::dbChanged() {
         logVerbose("Database changed! [notify=%d]", _notifyOnChanges.load());
         if ( _notifyOnChanges.exchange(false) )  // test-and-clear
             _delegate.dbHasNewChanges();
@@ -258,8 +268,8 @@ namespace litecore::repl {
 #pragma mark - REPLICATOR CHANGES FEED:
 
     ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate& delegate, const Options* options, DBAccess& db,
-                                                 Checkpointer* cp)
-        : ChangesFeed(delegate, options, db, cp)  // DBAccess is a subclass of access_lock<C4Database*>
+                                                 Checkpointer* cp, Replicator* replicator)
+        : ChangesFeed(delegate, options, db, cp, replicator)  // DBAccess is a subclass of access_lock<C4Database*>
         , _usingVersionVectors(db.usingVersionVectors()) {
         if ( _options->push(_collectionIndex) == kC4Continuous ) _db.echoCanceler.trackCollection(_collectionIndex);
     }
