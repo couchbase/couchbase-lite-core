@@ -91,6 +91,14 @@ namespace litecore::repl {
             this -- never capture a raw pointer to a ChangesFeed/Pusher across threads. */
         void dbChanged();
 
+        /** Explicitly, synchronously stops observing further database changes. Idempotent (safe
+            to call more than once, including from the destructor). Mirrors how `Worker::_parent`
+            is proactively released in `changedStatus()` once the Worker reaches `kC4Stopped`,
+            rather than only being torn down passively when the owning object is fully destructed.
+            \note Can't race getMoreChanges() re-creating the observer: see the serialization
+            invariant documented at the observer-creation site in getMoreChanges(). */
+        void stopObserving();
+
       protected:
         std::string loggingClassName() const override { return "ChangesFeed"; }
 

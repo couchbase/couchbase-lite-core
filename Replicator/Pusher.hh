@@ -67,6 +67,13 @@ namespace litecore::repl {
         void          _connectionClosed() override;
         ActivityLevel computeActivityLevel(std::string* reason) const override;
 
+        /// Mirrors Worker::changedStatus()'s early release of _parent once Stopped: proactively
+        /// stops the DB-change observer at the same point, instead of only via ~ChangesFeed().
+        void changedStatus() override {
+            Worker::changedStatus();
+            if ( status().level == kC4Stopped ) _changesFeed.stopObserving();
+        }
+
       private:
         void _start();
         bool isBusy(std::string* reason = nullptr) const;

@@ -73,6 +73,14 @@ namespace litecore::repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
+            // Serialization invariant: this can't race stopObserving() (called from
+            // Pusher::changedStatus() once Stopped) -- both are only ever reached via the owning
+            // Pusher's own actor queue (this one through _maybeGetMoreChanges(), that one through
+            // Worker's afterEvent()), so they can't interleave. And it can't fire *after*
+            // stopObserving() either: for a continuous Pusher, reaching kC4Stopped requires
+            // !connected(), and _maybeGetMoreChanges()'s own guard (see Pusher.cc) permanently
+            // blocks any further call into this method once that's true -- so there's no route
+            // back into this branch that could recreate an observer stopObserving() tore down.
             BorrowedCollection coll = _db.useCollection(_collectionSpec);
             // Captures a Retained<Replicator> + the collection index by value -- NEVER a raw
             // pointer into this ChangesFeed/its owning Pusher, since this callback fires on an
@@ -192,6 +200,8 @@ namespace litecore::repl {
             changes.askAgain = true;
         }
     }
+
+    void ChangesFeed::stopObserving() { _changeObserver.reset(); }
 
     // Called (via Pusher::notifyDbChanged) once the caller has safely confirmed, through
     // Replicator::getSubReplPusher, that this ChangesFeed's owning Pusher is still current.
