@@ -28,6 +28,7 @@ namespace litecore::repl {
     class DBAccess;
     class Options;
     class Checkpointer;
+    class Pusher;
 
     using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
 
@@ -97,6 +98,7 @@ namespace litecore::repl {
         void                _dbChanged();
         Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*);
         bool                shouldPushRev(RevToSend*, C4DocEnumerator*) const;
+        void                stopObserving();
 
       protected:
         Delegate&              _delegate;
@@ -106,6 +108,7 @@ namespace litecore::repl {
         CollectionIndex const  _collectionIndex;
         bool                   _getForeignAncestors{false};  // True in propose-changes mode
       private:
+        friend Pusher;
         Checkpointer*                       _checkpointer;
         DocIDSet                            _docIDs;              // Doc IDs to filter to, or null
         std::unique_ptr<C4DatabaseObserver> _changeObserver;      // Used in continuous push mode
