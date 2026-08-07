@@ -252,8 +252,6 @@ namespace litecore::repl {
         return true;
     }
 
-    // This will remove the notifier from the SequenceTracker under the following lock,
-    // _collection->sequenceTracker().useLocked([&](SequenceTracker& st)
     void ChangesFeed::stopObserving() { _changeObserver.reset(); }
 
     // Overridden by ReplicatorChangesFeed

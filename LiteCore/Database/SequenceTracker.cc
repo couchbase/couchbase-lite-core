@@ -467,8 +467,6 @@ namespace litecore {
         if ( tracker ) { tracker->removePlaceholder(_placeholder); }
     }
 
-    // This method is called under collection's SequenceTrack lock,
-    // in CollectionImpl::documentSaved().
     void CollectionChangeNotifier::notify() noexcept {
         if ( callback ) {
             logInfo("posting notification");
