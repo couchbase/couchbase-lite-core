@@ -51,6 +51,10 @@ namespace litecore {
             mutableThis->assignTableNameToSource(source, ctx);
         };
         root.translatorDefaultCollection = [&]() -> string_view { return _defaultCollectionName; };
+        root.isDeletedDocsFullyTracked   = [&](string_view collection) {
+            if ( collection.empty() ) collection = _defaultCollectionName;
+            return collection != "_default" || _delegate.isDeletedDocsFullyTracked();
+        };
         return root;
     }
 
@@ -140,9 +144,14 @@ namespace litecore {
             if ( name.empty() ) name = _defaultCollectionName;
             if ( !source->scope().empty() ) name = string(source->scope()) + "." + name;
 
-            DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
-            //FIXME: Support kDeletedDocs
-
+            DeletionStatus delStatus{kLiveDocs};
+            if ( source->onlyDeletedDocs() && ctx.delegate.isDeletedDocsFullyTracked(name) ) {
+                // WHERE clause guarantees only deleted docs match, and the delegate
+                // confirms that all deleted docs are in the dedicated kv_del_ table.
+                delStatus = kDeletedDocs;
+            } else if ( source->usesDeletedDocs() ) {
+                delStatus = kLiveAndDeletedDocs;
+            }
             tableName = _delegate.collectionTableName(name, delStatus);
             if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
                 fail("no such collection \"%s\"", name.c_str());

@@ -914,6 +914,8 @@ namespace litecore {
         }
     }
 
+    bool SQLiteDataFile::isDeletedDocsFullyTracked() const { return isDeletedTableComplete(); }
+
 #ifdef COUCHBASE_ENTERPRISE
     string SQLiteDataFile::predictiveTableName(const string& onTable, const std::string& property) const {
         return auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);

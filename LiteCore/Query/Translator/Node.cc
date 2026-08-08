@@ -39,6 +39,11 @@ namespace litecore::qt {
         _parent = p;
     }
 
+    void Node::setNext(Node* n) {
+        DebugAssert(!_next || !n);
+        _next = n;
+    }
+
     void Node::postprocess(ParseContext& ctx) {
         visitChildren(ChildVisitor{[&](Node& child) { child.postprocess(ctx); }});
     }
