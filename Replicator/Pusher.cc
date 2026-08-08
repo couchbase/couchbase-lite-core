@@ -615,6 +615,11 @@ namespace litecore::repl {
         return level;
     }
 
+    void Pusher::changedStatus() {
+        if ( status().level == kC4Stopped ) _changesFeed.stopObserving();
+        Worker::changedStatus();
+    }
+
     void Pusher::afterEvent() {
         // If I would otherwise go idle or stop, but there are revs I want to retry, restart them:
         if ( !_revsToRetry.empty() && connected() && !isBusy() ) retryRevs(std::move(_revsToRetry), false);

@@ -84,6 +84,8 @@ namespace litecore::repl {
         /** Returns true if the given rev matches the push filters. */
         [[nodiscard]] virtual bool shouldPushRev(RevToSend* NONNULL) const;
 
+        void stopObserving();
+
       protected:
         std::string loggingClassName() const override { return "ChangesFeed"; }
 
