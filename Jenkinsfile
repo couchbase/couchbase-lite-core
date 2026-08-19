@@ -1,7 +1,7 @@
 pipeline {
     agent none
     options {
-        timeout(time: 60, unit: 'MINUTES') 
+        timeout(time: 90, unit: 'MINUTES')
     }
     stages {
         stage("Build Mobile") {
