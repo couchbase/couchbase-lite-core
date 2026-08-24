@@ -63,6 +63,8 @@ namespace litecore::repl {
         void          _connectionClosed() override;
         ActivityLevel computeActivityLevel(std::string* reason) const override;
 
+        void changedStatus() override;
+
       private:
         void _start();
         bool isBusy(std::string* reason = nullptr) const;
