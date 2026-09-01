@@ -91,7 +91,7 @@ static optional<C4BlobKey> BlobKeyFromFilename(slice filename) {
 
 C4BlobStore::C4BlobStore(slice dirPath, C4DatabaseFlags flags, const C4EncryptionKey& key)
     : _dirPath(dirPath), _flags(flags), _encryptionKey(key) {
-    FilePath dir(_dirPath, "");
+    FilePath dir(_dirPath);
     if ( dir.exists() ) {
         dir.mustExistAsDir();
     } else if ( !(flags & kC4DB_ReadOnly) ) {
@@ -103,9 +103,9 @@ C4BlobStore::~C4BlobStore() = default;
 
 void C4BlobStore::deleteStore() { dir().delRecursive(); }
 
-FilePath C4BlobStore::dir() const { return {_dirPath, ""}; }
+FilePath C4BlobStore::dir() const { return filesystem::path(_dirPath); }
 
-FilePath C4BlobStore::pathForKey(C4BlobKey key) const { return {_dirPath, BlobKeyToFilename(key)}; }
+FilePath C4BlobStore::pathForKey(C4BlobKey key) const { return filesystem::path(_dirPath) / BlobKeyToFilename(key); }
 
 alloc_slice C4BlobStore::getFilePath(C4BlobKey key) const {
     FilePath path = pathForKey(key);

@@ -20,7 +20,6 @@
 #include "Instrumentation.hh"
 #include <algorithm>
 #include <cerrno>
-#include <dirent.h>
 #include <exception>
 #include <iomanip>
 #include <sstream>

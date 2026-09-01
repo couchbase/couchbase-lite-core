@@ -2,7 +2,6 @@ function(setup_build)
     target_sources(
         C4Tests PRIVATE
         ${TOP}Crypto/mbedUtils.cc
-        ${TOP}LiteCore/Unix/strlcat.c
     )
 
     target_link_libraries(
