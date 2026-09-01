@@ -40,7 +40,6 @@ target_include_directories(
     ../vendor/fleece/Fleece/Support
     ../vendor/mbedtls/include
     ../vendor/sockpp/include
-    ../vendor/fleece/vendor/date/include
 )
 
 target_compile_definitions(
