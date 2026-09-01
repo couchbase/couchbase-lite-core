@@ -180,7 +180,6 @@ target_include_directories(
     ${TOP}REST
     ${TOP}REST/tests
     ${TOP}vendor/sockpp/include
-    ${TOP}vendor/fleece/vendor/date/include
     ${TOP}vendor/vector_search
 )
 

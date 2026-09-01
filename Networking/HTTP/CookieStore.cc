@@ -21,8 +21,8 @@
 #include <string>
 #include <ctime>
 #include <chrono>
+#include <iomanip>
 #include <algorithm>
-#include "date/date.h"
 
 using namespace std;
 using namespace std::chrono;
@@ -30,7 +30,7 @@ using namespace fleece;
 using namespace litecore::net;
 
 namespace litecore::net {
-    // Date formats we can parse, refer to std::chrono::parse for format specifiers
+    // Date formats we can parse, refer to std::get_time for format specifiers
     static constexpr const char* dateFormats[] = {
             "%a, %d %b %Y %T GMT",  // RFC 822
             "%a, %d-%b-%Y %T GMT",  // Google Cloud Load Balancer format (CBL-3949)
@@ -38,11 +38,17 @@ namespace litecore::net {
     };
 
     static time_t parse_gmt_time(const char* timeStr) {
-        date::sys_seconds tp;
+        // std::chrono::parse isn't implemented in libc++ yet, so parse into a plain
+        // std::tm with std::get_time (all the formats above are GMT, so no timezone
+        // handling is needed) and then build a sys_seconds from the parsed fields the
+        // same way std::chrono::parse would have.
+        struct tm tm {};
+
         // Go through each of the `dateFormats` and attempt to parse the date given
         for ( int i = 0; i < size(dateFormats); ++i ) {
             istringstream s(timeStr);
-            s >> date::parse(dateFormats[i], tp);
+            tm = {};
+            s >> get_time(&tm, dateFormats[i]);
             if ( s.fail() ) {
                 // If we've failed to parse, and this is the last format in the list
                 if ( i == size(dateFormats) - 1 ) {
@@ -53,6 +59,9 @@ namespace litecore::net {
                 break;
             }
         }
+
+        sys_days    day = year{tm.tm_year + 1900} / (tm.tm_mon + 1) / tm.tm_mday;
+        sys_seconds tp  = day + hours{tm.tm_hour} + minutes{tm.tm_min} + seconds{tm.tm_sec};
 
         // The limit of 32-bit time_t is approaching...
         auto result = tp.time_since_epoch().count();

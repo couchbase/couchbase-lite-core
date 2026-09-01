@@ -37,7 +37,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include <chrono>
-#include "date/date.h"
+#include <iomanip>
+#include <sstream>
+#include "ParseDate.hh"
 
 namespace litecore::crypto {
     using namespace std;
@@ -262,8 +264,8 @@ namespace litecore::crypto {
         auto         now = floor<seconds>(system_clock::now()) - 60s;
         auto         exp = now + seconds(issuerParams.validity_secs);
         stringstream notBefore, notAfter;
-        notBefore << date::format("%Y%m%d%H%M%S", now);
-        notAfter << date::format("%Y%m%d%H%M%S", exp);
+        notBefore << fleece::format("%Y%m%d%H%M%S", now);
+        notAfter << fleece::format("%Y%m%d%H%M%S", exp);
 
         // Set certificate attributes:
         mbedtls_x509write_crt_set_subject_key(&crt, subjectKey->context());
@@ -345,8 +347,8 @@ namespace litecore::crypto {
     }
 
     static time_t x509_to_time_t(const mbedtls_x509_time& xtime) {
-        date::sys_days    date     = date::year{xtime.year} / xtime.mon / xtime.day;
-        date::sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
+        sys_days    date     = year{xtime.year} / xtime.mon / xtime.day;
+        sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
 
         // The limit of 32-bit time_t is approaching...
         auto result = datetime.time_since_epoch().count();
