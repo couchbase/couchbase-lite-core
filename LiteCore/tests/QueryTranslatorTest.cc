@@ -123,6 +123,8 @@ string QueryTranslatorTest::unnestedTableName(const string& onTable, const strin
     return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kUnnestSeparator, property);
 }
 
+bool QueryTranslatorTest::isDeletedDocsFullyTracked() const { return deletedTableComplete; }
+
 #ifdef COUCHBASE_ENTERPRISE
 string QueryTranslatorTest::predictiveTableName(const string& onTable, const string& property) const {
     return SQLiteDataFile::auxiliaryTableName(onTable, KeyStore::kPredictSeparator, property);
@@ -223,26 +225,37 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator property contexts", "[Que
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Only Deleted Docs", "[Query][QueryTranslator]") {
+    std::function<string(const string&)> andFlag   = [](const string&) { return ""; };
+    std::function<string(const string&)> whereFlag = [](const string&) { return ""; };
+    string                               fromTable = "kv_del_default";
+    deletedTableComplete                           = GENERATE(false, true);
+    if ( !deletedTableComplete ) {
+        andFlag   = [](const string& alias) { return " AND (" + alias + ".flags & 1 != 0)"; };
+        whereFlag = [](const string& alias) { return " WHERE (" + alias + ".flags & 1 != 0)"; };
+        fromTable = "all_default";
+    }
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['._deleted']}]"),
-                "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0)");
+                "SELECT _doc.key FROM " + fromTable + " AS _doc" + whereFlag("_doc"));
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['AND',  ['.foo'], ['._deleted']]}]"),
-                "SELECT _doc.key FROM all_default AS _doc WHERE fl_value(_doc.body, 'foo') AND (_doc.flags & 1 "
-                "!= 0)");
+                "SELECT _doc.key FROM " + fromTable + " AS _doc WHERE fl_value(_doc.body, 'foo')" + andFlag("_doc"));
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted']}]"),
-                "SELECT _doc.key FROM all_default AS _doc WHERE (_doc.flags & 1 != 0)");
+                "SELECT _doc.key FROM " + fromTable + " AS _doc" + whereFlag("_doc"));
     CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
+                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
     CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
+                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
     CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['.testdb._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
+                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
     CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
+                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
     CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()', 'testdb'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM all_default AS testdb WHERE (testdb.flags & 1 != 0)");
+                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Deleted And Live Docs", "[Query][QueryTranslator]") {
+    // When the query allows both deleted and live docs, deletedTableComplete won't matter.
+    deletedTableComplete = GENERATE(false, true);
+
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['OR',  ['.foo'], ['._deleted']]}]"),
                 "SELECT _doc.key FROM all_default AS _doc WHERE fl_value(_doc.body, 'foo') OR (_doc.flags & 1 "
                 "!= 0)");
@@ -259,23 +272,29 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Deleted And Live Docs", "
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Meta Without Deletion", "[Query][QueryTranslator]") {
+    string flag = "";
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) flag = " AND (_doc.flags & 1 = 0)";
+
     CHECK_equal(parse("['SELECT', {WHAT: [['_.', ['META()'], 'sequence']], WHERE: ['_.', ['META()'], 'sequence']}]"),
-                "SELECT _doc.sequence FROM kv_default AS _doc WHERE _doc.sequence AND (_doc.flags & 1 = 0)");
+                "SELECT _doc.sequence FROM kv_default AS _doc WHERE _doc.sequence" + flag);
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Expiration", "[Query][QueryTranslator]") {
+    string flag = "";
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) flag = " AND (_doc.flags & 1 = 0)";
+
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['IS NOT', ['._expiration'], ['MISSING']]}]"),
-                "SELECT _doc.key FROM kv_default AS _doc WHERE _doc.expiration IS NOT NULL AND (_doc.flags & "
-                "1 = 0)");
+                "SELECT _doc.key FROM kv_default AS _doc WHERE _doc.expiration IS NOT NULL" + flag);
     CHECK_equal(parse("['SELECT', {WHAT: ['._expiration'], WHERE: ['IS NOT', ['._expiration'], ['MISSING']]}]"),
-                "SELECT _doc.expiration FROM kv_default AS _doc WHERE _doc.expiration IS NOT NULL AND "
-                "(_doc.flags & 1 = 0)");
+                "SELECT _doc.expiration FROM kv_default AS _doc WHERE _doc.expiration IS NOT NULL" + flag);
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator RevisionID", "[Query][QueryTranslator]") {
+    string flag{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) flag = " WHERE (_doc.flags & 1 = 0)";
+
     CHECK_equal(parse("['SELECT', {WHAT: ['._id', '._revisionID']}]"),
-                "SELECT _doc.key, fl_version(_doc.version) FROM kv_default AS _doc WHERE "
-                "(_doc.flags & 1 = 0)");
+                "SELECT _doc.key, fl_version(_doc.version) FROM kv_default AS _doc" + flag);
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator ANY", "[Query][QueryTranslator]") {
@@ -291,23 +310,37 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator ANY", "[Query][QueryTrans
                 "(fl_count(body, 'names') > 0 AND NOT EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE NOT "
                 "(_X.value = 'Smith')))");
 
-    CHECK_equal(parse("['SELECT', {FROM: [{AS: 'person'}],\
+    for ( int i = 0; i < 2; ++i ) {
+        string flag1{};
+        string flag2{};
+        deletedTableComplete = true;
+        if ( i == 0 ) {
+            deletedTableComplete = false;
+            flag1                = " AND (person.flags & 1 = 0)";
+            flag2                = " AND (book.flags & 1 = 0)";
+        }
+
+        CHECK_equal(
+                parse("['SELECT', {FROM: [{AS: 'person'}],\
                                  WHERE: ['ANY', 'X', ['.', 'person', 'names'], ['=', ['?', 'X'], 'Smith']]}]"),
                 "SELECT person.key, person.sequence FROM kv_default AS person WHERE fl_contains(person.body, 'names', "
-                "'Smith') AND (person.flags & 1 = 0)");
-    CHECK_equal(parse("['SELECT', {FROM: [{AS: 'person'}, {AS: 'book', 'ON': 1}],\
+                "'Smith')"
+                        + flag1);
+        CHECK_equal(parse("['SELECT', {FROM: [{AS: 'person'}, {AS: 'book', 'ON': 1}],\
                                  WHERE: ['ANY', 'X', ['.', 'book', 'keywords'], ['=', ['?', 'X'], 'horror']]}]"),
-                "SELECT person.key, person.sequence FROM kv_default AS person INNER JOIN kv_default AS book ON 1 AND "
-                "(book.flags & 1 = 0) WHERE fl_contains(book.body, 'keywords', 'horror') AND (person.flags & 1 = 0)");
+                    "SELECT person.key, person.sequence FROM kv_default AS person INNER JOIN kv_default AS book ON 1"
+                            + flag2 + " WHERE fl_contains(book.body, 'keywords', 'horror')" + flag1);
+        CHECK_equal(
+                parse("['SELECT', {FROM: [{AS: 'person'}],\
+                          WHERE: ['ANY', 'X', ['pi()'], ['=', ['?', 'X'], 'Smith']]}]"),
+                "SELECT person.key, person.sequence FROM kv_default AS person WHERE fl_contains(pi(), NULL, 'Smith')"
+                        + flag1);
+    }
 
     // Non-property calls:
     CHECK_equal(parseWhere("['ANY', 'X', ['pi()'], ['=', ['?X'], 'Smith']]"), "fl_contains(pi(), NULL, 'Smith')");
     CHECK_equal(parseWhere("['EVERY', 'X', ['pi()'], ['=', ['?', 'X'], 'Smith']]"),
                 "NOT EXISTS (SELECT 1 FROM fl_each(pi()) AS _X WHERE NOT (_X.value = 'Smith'))");
-    CHECK_equal(parse("['SELECT', {FROM: [{AS: 'person'}],\
-                     WHERE: ['ANY', 'X', ['pi()'], ['=', ['?', 'X'], 'Smith']]}]"),
-                "SELECT person.key, person.sequence FROM kv_default AS person WHERE fl_contains(pi(), NULL, 'Smith') "
-                "AND (person.flags & 1 = 0)");
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator ANY complex", "[Query][QueryTranslator]") {
@@ -316,70 +349,92 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator ANY complex", "[Query][Qu
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT", "[Query][QueryTranslator]") {
+    string flag{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) flag = " AND (_doc.flags & 1 = 0)";
+
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'],\
                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
                               ORDER_BY: [['.', 'first'], ['.', 'age']]}]"),
-                "SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith' AND "
-                "(_doc.flags & 1 = 0) ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age')");
+                "SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith'" + flag
+                        + " ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age')");
     CHECK_equal(parseWhere("['array_count()', ['SELECT',\
                                   {WHAT: ['._id'],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                ORDER_BY: [['.', 'first'], ['.', 'age']]}]]"),
                 "array_count(SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = "
-                "'Smith' AND (_doc.flags & 1 = 0) ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
+                "'Smith'"
+                        + flag + " ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
     // note this query is lowercase, to test case-insensitivity
     CHECK_equal(parseWhere("['exists', ['select',\
                                   {what: ['._id'],\
                                   where: ['=', ['.', 'last'], 'Smith'],\
                                order_by: [['.', 'first'], ['.', 'age']]}]]"),
-                "EXISTS (SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith' "
-                "AND (_doc.flags & 1 = 0) ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
+                "EXISTS (SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith'" + flag
+                        + " ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
     CHECK_equal(parseWhere("['EXISTS', ['SELECT',\
                                   {WHAT: [['MAX()', ['.weight']]],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                DISTINCT: true,\
                                GROUP_BY: [['.', 'first'], ['.', 'age']]}]]"),
                 "EXISTS (SELECT DISTINCT fl_result(max(fl_value(_doc.body, 'weight'))) FROM kv_default AS _doc WHERE "
-                "fl_value(_doc.body, 'last') = 'Smith' AND (_doc.flags & 1 = 0) GROUP BY fl_value(_doc.body, 'first'), "
-                "fl_value(_doc.body, 'age'))");
+                "fl_value(_doc.body, 'last') = 'Smith'"
+                        + flag
+                        + " GROUP BY fl_value(_doc.body, 'first'), "
+                          "fl_value(_doc.body, 'age'))");
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT WHAT", "[Query][QueryTranslator]") {
+    string flag{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) flag = " AND (_doc.flags & 1 = 0)";
+
     CHECK_equal(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['=', ['.', 'last'], 'Smith']}]"),
-                "SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith' AND "
-                "(_doc.flags & 1 = 0)");
+                "SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith'" + flag);
     CHECK_equal(parseWhere("['SELECT', {WHAT: [['.first']],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]"),
                 "SELECT fl_result(fl_value(_doc.body, 'first')) FROM kv_default AS _doc WHERE fl_value(_doc.body, "
-                "'last') = 'Smith' AND (_doc.flags & 1 = 0)");
+                "'last') = 'Smith'"
+                        + flag);
     CHECK_equal(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]"),
                 "SELECT fl_result(fl_value(_doc.body, 'first')), N1QL_length(fl_value(_doc.body, 'middle')) "
-                "FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith' AND (_doc.flags & 1 = 0)");
+                "FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith'"
+                        + flag);
     CHECK_equal(parseWhere("['SELECT', {WHAT: [['.first'], ['AS', ['length()', ['.middle']], 'mid']],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]"),
                 "SELECT fl_result(fl_value(_doc.body, 'first')), N1QL_length(fl_value(_doc.body, 'middle')) AS "
-                "mid FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith' AND (_doc.flags & 1 = 0)");
+                "mid FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = 'Smith'"
+                        + flag);
     // Check the "." operator (like SQL "*"):
     CHECK_equal(parseWhere("['SELECT', {WHAT: ['.'], WHERE: ['=', ['.', 'last'], 'Smith']}]"),
                 "SELECT fl_result(fl_root(_doc.body)) FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = "
-                "'Smith' AND (_doc.flags & 1 = 0)");
+                "'Smith'"
+                        + flag);
     CHECK_equal(parseWhere("['SELECT', {WHAT: [['.']], WHERE: ['=', ['.', 'last'], 'Smith']}]"),
                 "SELECT fl_result(fl_root(_doc.body)) FROM kv_default AS _doc WHERE fl_value(_doc.body, 'last') = "
-                "'Smith' AND (_doc.flags & 1 = 0)");
+                "'Smith'"
+                        + flag);
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator WHAT aliases", "[Query][QueryTranslator]") {
+    string flag1{};
+    string flag2{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) {
+        flag1 = " AND (_doc.flags & 1 = 0)";
+        flag2 = R"( WHERE ("foo.bar".flags & 1 = 0))";
+    }
+
     CHECK_equal(parse("{WHAT: ['._id', ['AS', ['.dict.key2'], 'answer']], WHERE: ['=', ['.answer'], 1]}"),
                 "SELECT _doc.key, fl_result(fl_value(_doc.body, 'dict.key2')) AS answer FROM kv_default AS _doc WHERE "
-                "answer = 1 AND (_doc.flags & 1 = 0)");
+                "answer = 1"
+                        + flag1);
     // This one was parsed from N1QL query: SELECT `foo.bar`.type FROM _ AS `foo.bar`
-    CHECK_equal(
-            parse(R"({"FROM":[{"AS":"foo\\.bar","COLLECTION":"_"}],"WHAT":[[".foo\\.bar.type"]]})"),
-            R"(SELECT fl_result(fl_value("foo.bar".body, 'type')) FROM kv_default AS "foo.bar" WHERE ("foo.bar".flags & 1 = 0))");
+    CHECK_equal(parse(R"({"FROM":[{"AS":"foo\\.bar","COLLECTION":"_"}],"WHAT":[[".foo\\.bar.type"]]})"),
+                R"(SELECT fl_result(fl_value("foo.bar".body, 'type')) FROM kv_default AS "foo.bar")" + flag2);
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator CASE", "[Query][QueryTranslator]") {
+    deletedTableComplete = GENERATE(false, true);
+
     const char* target = "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 ELSE fl_null() END";
     CHECK_equal(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2      ]"), target);
     CHECK_equal(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2, null]"), target);
@@ -411,14 +466,30 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator LIKE", "[Query][QueryTran
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Join", "[Query][QueryTranslator]") {
+    std::function<string(const string&)> andFlag   = [](const string&) { return ""; };
+    std::function<string(const string&)> onFlag    = [](const string&) { return ""; };
+    std::function<string(const string&)> whereFlag = [](const string&) { return ""; };
+    string                               leftParen{};
+    string                               rightParen{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) {
+        andFlag    = [](const string& alias) { return " AND ("s + alias + ".flags & 1 = 0)"; };
+        leftParen  = "(";
+        rightParen = ")";
+        onFlag     = [](const string& alias) { return " ON (" + alias + ".flags & 1 = 0)"; };
+        whereFlag  = [](const string& alias) { return " WHERE (" + alias + ".flags & 1 = 0)"; };
+    }
+
     CHECK_equal(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
                   FROM: [{as: 'book'}, \
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}"),
                 "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), "
                 "fl_result(fl_root(library.body)) FROM kv_default AS book INNER JOIN kv_default AS library ON "
-                "fl_value(book.body, 'library') = library.key AND (library.flags & 1 = 0) WHERE fl_value(book.body, "
-                "'author') = $_AUTHOR AND (book.flags & 1 = 0)");
+                "fl_value(book.body, 'library') = library.key"
+                        + andFlag("library")
+                        + " WHERE fl_value(book.body, "
+                          "'author') = $_AUTHOR"
+                        + andFlag("book"));
     CHECK(usedTableNames == set<string>{"kv_default"});
 
     // Multiple JOINs (#363):
@@ -430,21 +501,27 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Join", "[Query][QueryTran
                  'WHERE':['AND',['AND',['=',['.','session','type'],'session'],['=',['.','user','type'],'user']],['=',['.','licence','type'],'licence']]}"),
             "SELECT fl_result(fl_value(session.body, 'appId')), fl_result(fl_value(user.body, 'username')), "
             "fl_result(fl_value(session.body, 'emoId')) FROM kv_default AS session INNER JOIN kv_default AS user ON "
-            "fl_value(session.body, 'emoId') = fl_value(user.body, 'emoId') AND (user.flags & 1 = 0) INNER JOIN "
-            "kv_default AS licence ON fl_value(session.body, 'licenceID') = fl_value(licence.body, 'id') AND "
-            "(licence.flags & 1 = 0) WHERE ((fl_value(session.body, 'type') = 'session' AND fl_value(user.body, "
-            "'type') = 'user') AND fl_value(licence.body, 'type') = 'licence') AND (session.flags & 1 = 0)");
+            "fl_value(session.body, 'emoId') = fl_value(user.body, 'emoId')"
+                    + andFlag("user")
+                    + " INNER JOIN "
+                      "kv_default AS licence ON fl_value(session.body, 'licenceID') = fl_value(licence.body, 'id')"
+                    + andFlag("licence") + " WHERE " + leftParen
+                    + "(fl_value(session.body, 'type') = 'session' AND fl_value(user.body, "
+                      "'type') = 'user') AND fl_value(licence.body, 'type') = 'licence'"
+                    + rightParen + andFlag("session"));
 
     CHECK_equal(parse("{WHAT: [['.main.number1'], ['.secondary.number2']],"
                       " FROM: [{AS: 'main'}, {AS: 'secondary', JOIN: 'CROSS'}]}"),
                 "SELECT fl_result(fl_value(main.body, 'number1')), fl_result(fl_value(secondary.body, 'number2')) FROM "
                 "kv_default AS "
-                "main CROSS JOIN kv_default AS secondary ON (secondary.flags & 1 = 0) WHERE (main.flags & 1 = 0)");
+                "main CROSS JOIN kv_default AS secondary"
+                        + onFlag("secondary") + whereFlag("main"));
 
     // Result alias and property name are used in different scopes.
     CHECK_equal(parse("{'FROM':[{'AS':'coll','COLLECTION':'_'}],'WHAT':[['AS',['.x'],'label'],['.coll.label']]}"),
                 "SELECT fl_result(fl_value(coll.body, 'x')) AS label, fl_result(fl_value(coll.body, 'label')) "
-                "FROM kv_default AS coll WHERE (coll.flags & 1 = 0)");
+                "FROM kv_default AS coll"
+                        + whereFlag("coll"));
     // CBL-3040:
     CHECK_equal(
             parse(R"r({"WHERE":["AND",["=",[".machines.Type"],"machine"],["OR",["=",[".machines.Disabled"],false],[".machines.Disabled"]]],)r"
@@ -454,26 +531,39 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Join", "[Query][QueryTran
             "fl_result(fl_value(machines.body, 'ModelId')), fl_result(fl_value(models.body, 'Label2')) AS ModelLabel "
             "FROM kv_default AS machines "
             "LEFT OUTER JOIN kv_default AS models ON fl_value(models.body, 'Id') = fl_value(machines.body, "
-            "'ModelId') AND (models.flags & 1 = 0) "
-            "WHERE (fl_value(machines.body, 'Type') = 'machine' AND (fl_value(machines.body, 'Disabled') = fl_bool(0) "
-            "OR fl_value(machines.body, 'Disabled'))) AND (machines.flags & 1 = 0)");
+            "'ModelId')"
+                    + andFlag("models")
+                    + " "
+                      "WHERE "
+                    + leftParen
+                    + "fl_value(machines.body, 'Type') = 'machine' AND (fl_value(machines.body, 'Disabled') = "
+                      "fl_bool(0) "
+                      "OR fl_value(machines.body, 'Disabled'))"
+                    + rightParen + andFlag("machines"));
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST", "[Query][QueryTranslator][Unnest]") {
+    std::function<string(const string&)> flag = [](const string&) { return ""; };
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) {
+        flag = [](const string& alias) { return " AND ("s + alias + ".flags & 1 = 0)"; };
+    }
+
     CHECK_equal(
             parseWhere("['SELECT', {\
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['=', ['.notes'], 'torn']}]"),
             "SELECT book.key, book.sequence FROM kv_default AS book JOIN fl_each(book.body, 'notes') AS notes WHERE "
-            "notes.value = 'torn' AND (book.flags & 1 = 0)");
+            "notes.value = 'torn'"
+                    + flag("book"));
     CHECK_equal(parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]"),
                 "SELECT fl_result(notes.value) FROM kv_default AS book JOIN fl_each(book.body, 'notes') AS notes WHERE "
-                "fl_nested_value(notes.body, 'page') > 100 AND (book.flags & 1 = 0)");
+                "fl_nested_value(notes.body, 'page') > 100"
+                        + flag("book"));
     //    CHECK_equal(parseWhere("['SELECT', {\
 //                      WHAT: ['.notes'], \
 //                      FROM: [{as: 'book'}, \
@@ -496,32 +586,41 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST", "[Query][
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST optimized", "[Query][QueryTranslator][Unnest]") {
+    std::function<string(const string&)> flag = [](const string&) { return ""; };
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) {
+        flag = [](const string& alias) { return " AND ("s + alias + ".flags & 1 = 0)"; };
+    }
+
     string hashedUnnestTable = hexName("kv_default:unnest:notes");
     tableNames.insert(hashedUnnestTable);
     if ( '0' <= hashedUnnestTable[0] && hashedUnnestTable[0] <= '9' )
         hashedUnnestTable = "\""s + hashedUnnestTable + "\"";
 
-    CHECK_equal(
-            parseWhere("['SELECT', {\
+    CHECK_equal(parseWhere("['SELECT', {\
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['=', ['.notes'], 'torn']}]"),
-            "SELECT book.key, book.sequence FROM kv_default AS book JOIN " + hashedUnnestTable
-                    + " AS notes ON "
-                      "notes.docid=book.rowid WHERE fl_unnested_value(notes.body) = 'torn' AND (book.flags & 1 = 0)");
+                "SELECT book.key, book.sequence FROM kv_default AS book JOIN " + hashedUnnestTable
+                        + " AS notes ON "
+                          "notes.docid=book.rowid WHERE fl_unnested_value(notes.body) = 'torn'"
+                        + flag("book"));
     CHECK_equal(parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]"),
                 "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN " + hashedUnnestTable
-                        + " AS notes ON notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND "
-                          "(book.flags & "
-                          "1 = 0)");
+                        + " AS notes ON notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100"
+                        + flag("book"));
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collections",
                  "[Query][QueryTranslator][Unnest]") {
+    std::function<string(const string&)> flag = [](const string&) { return ""; };
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) {
+        flag = [](const string& alias) { return " AND ("s + alias + ".flags & 1 = 0)"; };
+    }
+
     string str = "['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'library'}, \
@@ -533,7 +632,8 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collec
     CHECK_equal(parseWhere(str),
                 "SELECT fl_result(notes.value) FROM kv_default AS library INNER JOIN \"kv_.books\" AS book ON "
                 "fl_value(book.body, 'library') = library.key JOIN fl_each(book.body, 'notes') AS notes WHERE "
-                "fl_nested_value(notes.body, 'page') > 100 AND (library.flags & 1 = 0)");
+                "fl_nested_value(notes.body, 'page') > 100"
+                        + flag("library"));
 
     // Same, but optimized:
     string hashedUnnestTable = hexName("kv_.books:unnest:notes");
@@ -547,9 +647,8 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT UNNEST with collec
             "book ON fl_value(book.body, 'library') = library.key JOIN "
                     + hashedUnnestTable
                     + " AS notes ON "
-                      "notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100 AND (library.flags & 1 "
-                      "= "
-                      "0)");
+                      "notes.docid=book.rowid WHERE fl_unnested_value(notes.body, 'page') > 100"
+                    + flag("library"));
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Collate", "[Query][QueryTranslator][Collation]") {
@@ -564,14 +663,27 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Collate", "[Query][QueryT
     CHECK_equal(parseWhere("['COLLATE', {unicode: true, locale:'yue_Hans_CN', case:false}, \
                      ['=', ['.', 'name'], 'Puddin\\' Tane']]"),
                 "fl_value(body, 'name') COLLATE LCUnicode_C__yue_Hans_CN = 'Puddin'' Tane'");
-    CHECK_equal(parse("{WHAT: ['.book.title'], \
+
+    for ( int count = 0; count < 2; ++count ) {
+        string flag{};
+        if ( count == 0 ) {
+            deletedTableComplete = false;
+            flag                 = " AND (book.flags & 1 = 0)";
+        } else
+            deletedTableComplete = true;
+
+        CHECK_equal(parse("{WHAT: ['.book.title'], \
                   FROM: [{as: 'book'}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']], \
               ORDER_BY: [ ['COLLATE', {'unicode':true, 'case':false}, ['.book.title']] ]}"),
-                "SELECT fl_result(fl_value(book.body, 'title')) "
-                "FROM kv_default AS book "
-                "WHERE fl_value(book.body, 'author') = $_AUTHOR AND (book.flags & 1 = 0) "
-                "ORDER BY fl_value(book.body, 'title') COLLATE LCUnicode_C__");
+                    "SELECT fl_result(fl_value(book.body, 'title')) "
+                    "FROM kv_default AS book "
+                    "WHERE fl_value(book.body, 'author') = $_AUTHOR"
+                            + flag
+                            + " "
+                              "ORDER BY fl_value(book.body, 'title') COLLATE LCUnicode_C__");
+    }
+
     CHECK_equal(parseWhere("['COLLATE',{'CASE':false,'DIAC':true,'LOCALE':'se','UNICODE':false}"
                            ",['=',['.name'],'fred']]"),
                 "fl_value(body, 'name') COLLATE NOCASE = 'fred'");
@@ -594,6 +706,11 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator weird property names", "[
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator FROM collection", "[Query][QueryTranslator]") {
+    std::function<string(const string&)> flag = [](const string&) { return ""; };
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) {
+        flag = [](const string& alias) { return " AND ("s + alias + ".flags & 1 = 0)"; };
+    }
+
     // Query a nonexistent collection:
     ExpectException(error::LiteCore, error::InvalidQuery, [&] {
         parse("{WHAT: ['.books.title'], \
@@ -638,8 +755,10 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator FROM collection", "[Query
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}"),
                 "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), "
                 "fl_result(fl_root(library.body)) FROM \"kv_.books\" AS book INNER JOIN kv_default AS library ON "
-                "fl_value(book.body, 'library') = library.key AND (library.flags & 1 = 0) WHERE fl_value(book.body, "
-                "'author') = $_AUTHOR");
+                "fl_value(book.body, 'library') = library.key"
+                        + flag("library")
+                        + " WHERE fl_value(book.body, "
+                          "'author') = $_AUTHOR");
     CHECK(usedTableNames == set<string>{"kv_default", "kv_.books"});
 
     // Join with a non-default collection:
@@ -660,12 +779,15 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator FROM collection", "[Query
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}"),
                 "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), "
                 "fl_result(fl_root(library.body)) FROM kv_default AS book INNER JOIN \"kv_.library\" AS library ON "
-                "fl_value(book.body, 'library') = library.key WHERE fl_value(book.body, 'author') = $_AUTHOR AND "
-                "(book.flags & 1 = 0)");
+                "fl_value(book.body, 'library') = library.key WHERE fl_value(book.body, 'author') = $_AUTHOR"
+                        + flag("book"));
     CHECK(usedTableNames == set<string>{"kv_default", "kv_.library"});
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator FROM scope", "[Query][QueryTranslator]") {
+    // Non-default collections don't need deletion flag.
+    deletedTableComplete = GENERATE(false, true);
+
     tableNames.insert("kv_.banned.books");
     tableNames.insert("kv_.store.customers");
     tableNames.insert("kv_.store2.customers");
@@ -731,24 +853,30 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator FROM scope", "[Query][Que
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator nested SELECT", "[Query][QueryTranslator]") {
+    string whereFlag{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) whereFlag = " WHERE (_doc.flags & 1 = 0)";
+
     //    CHECK_equal(parse("['SELECT',{'WHAT':[['IS',6,9]]}]"),
     //                "SELECT fl_boolean_result(6 IS 9) FROM kv_default AS _doc WHERE (_doc.flags & 1 = 0)");
     CHECK_equal(parse("{'WHAT':[['EXISTS',['SELECT',{'WHAT':[['IS',6,9]]}]]]}"),
-                "SELECT fl_boolean_result(EXISTS (SELECT fl_boolean_result(6 IS 9) FROM kv_default AS _doc WHERE "
-                "(_doc.flags & 1 = 0))) FROM kv_default AS _doc WHERE (_doc.flags & 1 = 0)");
+                "SELECT fl_boolean_result(EXISTS (SELECT fl_boolean_result(6 IS 9) FROM kv_default AS _doc" + whereFlag
+                        + ")) FROM kv_default AS _doc" + whereFlag);
 }
 
 #pragma mark - FTS:
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator SELECT FTS", "[Query][QueryTranslator][FTS]") {
+    string flag{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) flag = " AND (_doc.flags & 1 = 0)";
+
     tableNames.insert("kv_default::bio");
     CHECK_equal(parse("{WHAT: [ ['rank()', 'bio'] ],\
                         WHERE: ['MATCH()', 'bio', 'mobile']}"),
                 "SELECT _doc.rowid, offsets(\"<idx1>\".\"kv_default::bio\"), "
                 "rank(matchinfo(\"<idx1>\".\"kv_default::bio\")) FROM kv_default AS _doc INNER JOIN "
                 "\"kv_default::bio\" AS \"<idx1>\" ON \"<idx1>\".docid = _doc.rowid WHERE "
-                "\"<idx1>\".\"kv_default::bio\" MATCH 'mobile' "
-                "AND (_doc.flags & 1 = 0)");
+                "\"<idx1>\".\"kv_default::bio\" MATCH 'mobile'"
+                        + flag);
 
     // Non-default collection:
     tableNames.insert("kv_.employees");
@@ -797,6 +925,122 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried FTS", "[Query][Que
                     });
 }
 
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Reduction of Deleted Meta Property",
+                 "[Query][QueryTranslator]") {
+    deletedTableComplete = GENERATE(false, true);
+
+    tableNames.insert("kv_.book");
+    tableNames.insert("kv_del_.book");
+    tableNames.insert("kv_.library");
+    tableNames.insert("kv_del_.library");
+
+    string json = R"(['SELECT',
+{
+  WHAT: [['.x.id']],
+  FROM: [{COLLECTION: 'book', AS: 'x'}],
+ WHERE: ['AND',
+            ['AND',
+                ['AND',
+                    ['OR',
+                        ['=',1,1],
+                        2],
+                    3],
+                ['.x._deleted']],
+            ['OR',4,
+                 5]
+        ]
+}])";
+    // 1. The cascated 'AND', demands ['x._deleted'] to be true.
+    // 2. By using del table, the above evaluates to true.
+    // 3. ['AND', ['AND', or_expr, 3], ['x._deleted']] reduced to ['AND', ['AND', or_expr, 3], TRUE] => ['AND', or_expr, 3]
+    // 4. Finally, ['AND', ['AND', or_expr, 3], ['OR, 4, 5]]
+    CHECK_equal(
+            parse(json),
+            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "kv_del_.book" AS x WHERE ((1 = 1 OR 2) AND 3) AND (4 OR 5))");
+
+    json = R"(['SELECT',
+{
+  WHAT: [['.x.id']],
+  FROM: [{COLLECTION: 'book', AS: 'x'}],
+ WHERE: ['AND',
+            ['OR',
+                ['AND',
+                    ['OR',
+                        ['=',1,1],
+                        2],
+                    3],
+                ['.x._deleted']],
+            ['OR',4,
+                 5]
+        ]
+}])";
+    // 'OR' in the middle forces us to use all_book and the flag.
+    CHECK_equal(
+            parse(json),
+            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "all_.book" AS x WHERE (((1 = 1 OR 2) AND 3) OR (x.flags & 1 != 0)) AND (4 OR 5))");
+
+    json = R"(['SELECT',
+{
+  WHAT: [['.x.id']],
+  FROM: [{COLLECTION: 'library', AS: 'x'}, {COLLECTION: 'book', AS: 'y', ON: ['AND', ['.x._deleted'],
+                                                                                     ['=', ['.y.title'], 'title']]
+                                           }]
+}])";
+    // Logically, from the ON predicate, we can use kv_del_.library and remove the use of flags, but this demands more
+    // detailed analysis among all ON predicates, WHERE predicates, and whether inner join or outer join,etc.
+    // Current approach only analyze the WHERE clause, leave the ON predicates unaddresses.
+    CHECK_equal(
+            parse(json),
+            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "all_.library" AS x INNER JOIN "kv_.book" AS y ON (x.flags & 1 != 0) AND fl_value(y.body, 'title') = 'title')");
+
+    // Default collection
+    json = R"(['SELECT',
+{
+  WHAT: [['.x.id']],
+  FROM: [{COLLECTION: '_default', AS: 'x'}],
+ WHERE: ['AND',
+            ['AND',
+                ['AND',
+                    ['OR',
+                        ['=',1,1],
+                        2],
+                    3],
+                ['.x._deleted']],
+            ['OR',4,
+                 5]
+        ]
+}])";
+    if ( deletedTableComplete ) {
+        // Similar to named collection.
+        CHECK_equal(
+                parse(json),
+                R"(SELECT fl_result(fl_value(x.body, 'id')) FROM kv_del_default AS x WHERE ((1 = 1 OR 2) AND 3) AND (4 OR 5))");
+    } else {
+        CHECK_equal(
+                parse(json),
+                R"(SELECT fl_result(fl_value(x.body, 'id')) FROM all_default AS x WHERE (((1 = 1 OR 2) AND 3) AND (x.flags & 1 != 0)) AND (4 OR 5))");
+    }
+
+    json = R"(['SELECT',
+{
+  WHAT: [['.x.id']],
+  FROM: [{COLLECTION: 'book', AS: 'x'}],
+ WHERE: ['AND',
+            ['OR',
+                ['=',1,1],
+                2],
+            ['=',
+                ['.x._deleted'],
+                true]
+        ]
+}])";
+    // Although ['.x._deleted'] must be true in above WHERE clause, we choose to leave it alone because
+    // it does not come from natural queries.
+    CHECK_equal(
+            parse(json),
+            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "all_.book" AS x WHERE (1 = 1 OR 2) AND (x.flags & 1 != 0) = fl_bool(1))");
+}
+
 #ifdef COUCHBASE_ENTERPRISE
 
 TEST_CASE_METHOD(QueryTranslatorTest, "Predictive Index ID", "[Query][QueryTranslator][Predict]") {
@@ -808,6 +1052,13 @@ TEST_CASE_METHOD(QueryTranslatorTest, "Predictive Index ID", "[Query][QueryTrans
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][QueryTranslator][VectorSearch]") {
+    string whereFlag{};
+    string andFlag{};
+    if ( !(deletedTableComplete = GENERATE(false, true)) ) {
+        whereFlag = " WHERE (_doc.flags & 1 = 0)";
+        andFlag   = " AND (_doc.flags & 1 = 0)";
+    }
+
     tableNames.insert("kv_default:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});
     // Pure vector search (no other WHERE criteria):
@@ -817,7 +1068,8 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
                 "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
                 "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS "
                 "\"<idx1>\" ON "
-                "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
+                "\"<idx1>\".docid = _doc.rowid"
+                        + whereFlag + " ORDER BY \"<idx1>\".distance LIMIT 5");
     // Pure vector search, specifying metric and numProbes:
     vectorIndexMetric = "cosine";
     CHECK_equal(
@@ -826,7 +1078,8 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
             "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
             "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) AND "
             "vectorsearch_probes(vector, 50) LIMIT 5) AS \"<idx1>\" ON "
-            "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
+            "\"<idx1>\".docid = _doc.rowid"
+                    + whereFlag + " ORDER BY \"<idx1>\".distance LIMIT 5");
     // Pure vector search, testing distance in the WHERE:
     vectorIndexMetric = "euclidean2";
     CHECK_equal(parse("['SELECT', {"
@@ -836,8 +1089,10 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
                 "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
                 "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) LIMIT 5) AS "
                 "\"<idx1>\" ON "
-                "\"<idx1>\".docid = _doc.rowid WHERE \"<idx1>\".distance < 1234 AND (_doc.flags & 1 = 0) ORDER BY "
-                "\"<idx1>\".distance LIMIT 5");
+                "\"<idx1>\".docid = _doc.rowid WHERE \"<idx1>\".distance < 1234"
+                        + andFlag
+                        + " ORDER BY "
+                          "\"<idx1>\".distance LIMIT 5");
     // Hybrid search:
     CHECK_equal(parse("['SELECT', {WHAT: [ ['APPROX_VECTOR_DISTANCE()', ['.vector'], ['[]', 12, 34]] ],"
                       "WHERE: ['>', ['._id'], 'x'],"
@@ -846,7 +1101,8 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
                 "\"<idx1>\" ON "
                 "\"<idx1>\".docid = _doc.rowid AND \"<idx1>\".vector MATCH encode_vector(array_of(12, 34)) WHERE "
                 "_doc.key > "
-                "'x' AND (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance");
+                "'x'" + andFlag
+                        + " ORDER BY \"<idx1>\".distance");
 
     // The optional 'accurate' parameter is ignored, but if given must be false:
     vectorIndexMetric = "cosine";
@@ -856,7 +1112,8 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
                 "SELECT _doc.key, _doc.sequence FROM kv_default AS _doc INNER JOIN (SELECT docid, distance FROM "
                 "\"kv_default:vector:vecIndex\" WHERE vector MATCH encode_vector(array_of(12, 34)) AND "
                 "vectorsearch_probes(vector, 50) LIMIT 5) AS \"<idx1>\" ON "
-                "\"<idx1>\".docid = _doc.rowid WHERE (_doc.flags & 1 = 0) ORDER BY \"<idx1>\".distance LIMIT 5");
+                "\"<idx1>\".docid = _doc.rowid"
+                        + whereFlag + " ORDER BY \"<idx1>\".distance LIMIT 5");
     ExpectException(
             error::LiteCore, error::InvalidQuery, "APPROX_VECTOR_DISTANCE does not support 'accurate'=true", [this] {
                 parse("['SELECT', {"
@@ -867,6 +1124,9 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search", "[Query][
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search Non-Default Collection",
                  "[Query][QueryTranslator][VectorSearch]") {
+    // Non-default collections are not affected by the deletion flag
+    deletedTableComplete = GENERATE(false, true);
+
     tableNames.insert("kv_.coll");
     tableNames.insert("kv_.coll:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_.coll", R"([".vector"])"}, "kv_.coll:vector:vecIndex"});
@@ -882,6 +1142,9 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Vector Search Non-Default
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried Vector Search",
                  "[Query][QueryTranslator][VectorSearch]") {
+    // Non-default collections are not affected by the deletion flag
+    deletedTableComplete = GENERATE(false, true);
+
     // Like FTS, vector_match can only be used at top level or within an AND.
     tableNames.insert("kv_default:vector:vecIndex");
     vectorIndexedProperties.insert({{"kv_default", R"([".vector"])"}, "kv_default:vector:vecIndex"});

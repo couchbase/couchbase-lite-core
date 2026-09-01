@@ -19,6 +19,8 @@
 #include "TranslatorTables.hh"
 #include "TranslatorUtils.hh"
 #include <iostream>
+#include <vector>
+#include <ranges>
 
 namespace litecore::qt {
     using namespace fleece;
@@ -444,6 +446,21 @@ namespace litecore::qt {
     }
 
     OpFlags OpNode::opFlags() const { return _op.flags; }
+
+    ExprNode* OpNode::swapArg(size_t i, ExprNode* newArg) {
+        auto count = argCount();
+        require(i < count, "OpNode::swapArg: is out of bounds");
+        std::vector<ExprNode*> nodes;
+        for ( size_t q = 0; q < i; ++q ) nodes.push_back(_operands.pop_front());
+        auto ith = _operands.pop_front();
+        ith->setParent(nullptr);
+        if ( newArg ) {
+            newArg->setParent(this);
+            _operands.push_front(newArg);
+        }
+        for ( auto expr : nodes | std::views::reverse ) _operands.push_front(expr);
+        return ith;
+    }
 
     void OpNode::visitChildren(ChildVisitor const& visitor) { visitor(_operands); }
 

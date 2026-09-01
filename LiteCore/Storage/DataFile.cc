@@ -317,7 +317,7 @@ namespace litecore {
         for ( auto& ks : _keyStores ) fn(*ks.second);
     }
 
-    bool DataFile::isDeletedTableComplete() {
+    bool DataFile::isDeletedTableComplete() const {
         Record rec = getKeyStore(kInfoKeyStoreName, KeyStore::noSequences).get(kMaxRowidWithDeletedInDefault);
         return rec.exists() && rec.bodyAsUInt() == 0;
     }

@@ -202,6 +202,10 @@ namespace litecore::qt {
 
         void addArg(ExprNode* node) { addChild(_operands, node); }
 
+        size_t argCount() const { return _operands.size(); }
+
+        ExprNode* swapArg(size_t i, ExprNode* C4NULLABLE newArg);
+
         OpFlags opFlags() const override;
         void    visitChildren(ChildVisitor const& visitor) override;
         void    writeSQL(SQLWriter&) const override;

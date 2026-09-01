@@ -28,6 +28,7 @@ struct QueryTranslatorTest
     [[nodiscard]] virtual string collectionTableName(const string& collection, DeletionStatus) const override;
     [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const override;
     [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const override;
+    [[nodiscard]] virtual bool   isDeletedDocsFullyTracked() const override;
 #ifdef COUCHBASE_ENTERPRISE
     [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const override;
     [[nodiscard]] virtual string vectorTableName(const string& collection, const std::string& property,
@@ -36,6 +37,7 @@ struct QueryTranslatorTest
 
     string           databaseName = "db";
     std::set<string> tableNames{"kv_default", "kv_del_default"};
+    bool             deletedTableComplete{true};
     std::map<std::pair<string, string>, string>
                              vectorIndexedProperties;  // maps {table name,expression JSON} -> vector-index table name
     std::string              vectorIndexMetric = "euclidean2";

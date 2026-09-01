@@ -87,6 +87,8 @@ namespace litecore::qt {
 
         bool usesDeletedDocs() const { return _usesDeleted; }  ///< True if exprs refer to deleted docs
 
+        bool onlyDeletedDocs() const { return _onlyDeleted; }  ///< True if WHERE guarantees only deleted docs
+
         string_view asColumnName() const { return _columnName; }  ///< Name to use, if used as result column
 
         bool isJoin() const { return _join != JoinType::none; }  ///< True if this is a JOIN
@@ -118,6 +120,11 @@ namespace litecore::qt {
             _tableName   = string_view{};
         }
 
+        void setOnlyDeleted() {
+            _onlyDeleted = true;  // WHERE guarantees only deleted docs; can use kv_del_ directly
+            _tableName   = string_view{};
+        }
+
       private:
         string_view          _scope;                  // Scope name, or empty for default
         string_view          _collection;             // Collection name, or empty for default
@@ -127,6 +134,7 @@ namespace litecore::qt {
         ExprNode* C4NULLABLE _joinOn{};               // "ON ..." predicate
         Value                _tempOn;                 // Temporarily holds source of _joinOn
         bool                 _usesDeleted = false;    // True if exprs refer to deleted docs
+        bool                 _onlyDeleted = false;    // True if WHERE guarantees only deleted docs
         SourceType const     _type;
     };
 
@@ -188,13 +196,14 @@ namespace litecore::qt {
         void writeSQL(SQLWriter&) const override;
 
       private:
-        void   parse(Value, ParseContext&);
-        void   registerAlias(AliasedNode*, ParseContext&);
-        void   addSource(SourceNode*, ParseContext&);
-        void   addIndexes(ParseContext&);
-        void   addIndexForNode(IndexedNode*, ParseContext&);
-        string makeIndexAlias() const;
-        void   writeFTSColumns(SQLWriter&, fleece::delimiter&) const;
+        void                 parse(Value, ParseContext&);
+        void                 registerAlias(AliasedNode*, ParseContext&);
+        void                 addSource(SourceNode*, ParseContext&);
+        void                 addIndexes(ParseContext&);
+        void                 addIndexForNode(IndexedNode*, ParseContext&);
+        string               makeIndexAlias() const;
+        void                 writeFTSColumns(SQLWriter&, fleece::delimiter&) const;
+        ExprNode* C4NULLABLE reduceDeleted(ExprNode* expr, ParseContext& ctx);
 
         List<SourceNode>     _sources;                      // The sources (FROM exprs)
         List<WhatNode>       _what;                         // The WHAT expressions
