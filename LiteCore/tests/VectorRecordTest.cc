@@ -19,6 +19,7 @@
 #include "c4.hh"
 #include "HybridClock.hh"
 #include "VectorRecord.hh"
+#include "DeDuplicateEncoder.hh"
 #include "VersionVector.hh"
 #include "fleece/Mutable.hh"
 #include <iostream>
@@ -274,4 +275,43 @@ TEST_CASE_METHOD(DataFileTestFixture, "VectorRecord legacy revIDs", "[VectorReco
 
         cerr << "Storage:\n" << doc.dumpStorage();
     }
+}
+
+TEST_CASE("DeDuplicateEncoder remove-then-reset undercounted dict (CBL-8812)", "[VectorRecord]") {
+    // Same underlying Fleece bug as MutableTests.cc's "MutableDict remove then re-set a source
+    // key" (Fleece submodule), but exercised through the actual code path that crashed in the
+    // field, not just Fleece's own public count()/iterator: DeDuplicateEncoder's Dict handling
+    // constructs a Dict::iterator, which for a mutable Dict is backed by HeapDict::kvArray() --
+    // the function that sizes its cache array from the (buggy, too-low) count(), then overruns
+    // it once the real iteration yields more entries than that. This is the one call site that
+    // actually reaches that path in this codebase (VectorRecord::encodeBodyAndExtra).
+    //
+    // NOTE: before HeapDict::setting() is fixed, this test does not fail cleanly -- it crashes
+    // the whole process. HeapDict::kvArray() is reached through Dict::iterator's public
+    // constructor, which is implemented as the C-linkage function FLDictIterator_Begin(); a C++
+    // exception can never cross an extern "C" boundary; it hits std::terminate() instead,
+    // uncatchable by any caller, debug build or not. So this test is only safe to run -- and
+    // only meaningful as a regression check -- once that fix is in place.
+    Doc  doc    = Doc::fromJSON("{\"a\":1,\"b\":2,\"c\":3}"_sl);  // keeps the parsed data alive
+    Dict source = doc.asDict();
+    REQUIRE(source.count() == 3);
+
+    MutableDict dict = source.mutableCopy();
+    REQUIRE(dict.count() == 3);
+
+    dict.remove("b"_sl);
+    dict.set("b"_sl, 20);
+    REQUIRE(dict.count() == 3);
+
+    Encoder            enc;
+    DeDuplicateEncoder ddenc(enc);
+    ddenc.writeValue(dict, 1);
+    alloc_slice encoded = enc.finish();
+
+    Doc  decoded   = Doc(encoded);
+    Dict roundTrip = decoded.asDict();
+    REQUIRE(roundTrip.count() == 3);
+    CHECK(roundTrip.get("a"_sl).asInt() == 1);
+    CHECK(roundTrip.get("b"_sl).asInt() == 20);
+    CHECK(roundTrip.get("c"_sl).asInt() == 3);
 }
