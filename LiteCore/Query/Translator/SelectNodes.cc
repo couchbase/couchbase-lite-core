@@ -351,10 +351,7 @@ namespace litecore::qt {
             for ( WhatNode* what : _what ) what->parseChildExprs(ctx);
 
             // Parse the WHERE clause:
-            if ( Value where = getCaseInsensitive(select, "WHERE") ) {
-                auto nodeWhere = reduceDeleted(ExprNode::parse(where, ctx), ctx);
-                if ( nodeWhere ) setChild(_where, nodeWhere);
-            }
+            if ( Value where = getCaseInsensitive(select, "WHERE") ) { setChild(_where, ExprNode::parse(where, ctx)); }
 
             if ( Value order = getCaseInsensitive(select, "ORDER_BY") ) {
                 for ( Value orderItem : requiredArray(order, "ORDER BY") ) {
@@ -424,12 +421,28 @@ namespace litecore::qt {
             if ( auto meta = dynamic_cast<MetaNode*>(&node) ) {
                 // `meta()` calls that don't access any property implicity return the `deleted` property:
                 auto prop = meta->property();
-                if ( prop == MetaProperty::none || prop == MetaProperty::deleted ) meta->source()->setUsesDeleted();
+                if ( prop == MetaProperty::none || prop == MetaProperty::deleted ) meta->source()->setUsesDeletedDocs();
             } else if ( auto fn = dynamic_cast<FunctionNode*>(&node) ) {
                 // Look for aggregate functions:
                 if ( fn->opFlags() & kOpAggregate ) _isAggregate = true;
             }
         });
+
+        // Check if the WHERE clause filters the query to only deleted docs.
+        if ( _where ) {
+            [&](ExprNode* root) {
+                auto markDeleted = [&](auto self, ExprNode* expr) -> void {
+                    if ( auto meta = dynamic_cast<MetaNode*>(expr) ) {
+                        if ( meta->property() == MetaProperty::deleted ) { meta->source()->setUsesOnlyDeletedDocs(); }
+                    } else if ( auto op = dynamic_cast<OpNode*>(expr); op && op->op().name == "AND"_sl ) {
+                        op->visitChildren({[self](Node& node) {
+                            if ( auto* operand = dynamic_cast<ExprNode*>(&node) ) self(self, operand);
+                        }});
+                    }
+                };
+                markDeleted(markDeleted, root);
+            }(_where);
+        }
 
         // Locate FTS and vector indexed expressions and add corresponding SourceNodes:
         addIndexes(ctx);
@@ -437,7 +450,10 @@ namespace litecore::qt {
         for ( SourceNode* source : _sources ) {
             string_view coll{source->collection()};
             if ( coll.empty() ) coll = ctx.delegate.translatorDefaultCollection();
-            if ( !source->_usesDeleted && source->isCollection() && !ctx.delegate.isDeletedDocsFullyTracked(coll) ) {
+            if ( source->usesDeletedDocs() || !source->isCollection() ) continue;
+
+            auto keyStoreName = ctx.delegate.collectionKeyStoreName(coll);
+            if ( !ctx.delegate.isDeletedDocsFullyTracked(keyStoreName) ) {
                 // The default collection may contain deleted documents in its main table,
                 // so if the query didn't ask for deleted docs, add a condition to the WHERE
                 // or ON clause that only passes live docs:
@@ -498,78 +514,4 @@ namespace litecore::qt {
         visitor(_sources)(_what)(_where)(_groupBy)(_having)(_orderBy)(_limit)(_offset);
     }
 
-    ExprNode* SelectNode::reduceDeleted(ExprNode* expr, ParseContext& ctx) {
-        if ( !expr ) return nullptr;
-
-        // Find all branches following "AND" ending at MetaNode of property "deleted"
-        // and store them in deleted. They are leaf nodes.
-        std::vector<MetaNode*> delMetas;
-        [&](ExprNode* root) {
-            auto markDeleted = [&](auto self, ExprNode* expr) -> void {
-                if ( auto meta = dynamic_cast<MetaNode*>(expr) ) {
-                    if ( meta->property() == MetaProperty::deleted ) {
-                        meta->source()->setOnlyDeleted();
-                        delMetas.push_back(meta);
-                    }
-                } else if ( auto op = dynamic_cast<OpNode*>(expr); op && op->op().name == "AND"_sl ) {
-                    op->visitChildren({[self](Node& node) {
-                        if ( auto* operand = dynamic_cast<ExprNode*>(&node) ) self(self, operand);
-                    }});
-                }
-            };
-            markDeleted(markDeleted, root);
-        }(expr);
-
-        ExprNode* ret = expr;
-        for ( auto del : delMetas ) {
-            if ( auto source = del->source();
-                 source && source->onlyDeletedDocs() && ctx.delegate.isDeletedDocsFullyTracked(source->collection()) ) {
-                // reduce only if the source collection has the deleted table complete.
-                if ( !del->parent() ) ret = nullptr;
-                else if ( auto parentOp = dynamic_cast<OpNode*>(const_cast<Node*>(del->parent()));
-                          parentOp->op().name == "AND"_sl ) {
-                    // Must enter here because of how "onlyDeleted" are marked.
-                    auto argCount = parentOp->argCount();
-                    auto childIdx = [](const OpNode* parent, const Node* child, size_t childCount) -> int {
-                        for ( int i = 0; i < childCount; ++i )
-                            if ( parent->operand(i) == child ) return i;
-                        return -1;
-                    };
-                    auto delIdx = childIdx(parentOp, del, argCount);
-                    require(delIdx >= 0, "Internal error, child index not found for OpNode");
-
-                    // Reducing parentOp
-                    ExprNode* reduced = nullptr;
-                    if ( argCount == 2 ) {
-                        // typical case. <expr> AND ['._deleted'] => <expr>.
-                        reduced = parentOp->operand((delIdx + 1) % 2);
-                    } else {
-                        // ['AND', A, B, TRUE, X ] => ['AND', A, B, X]
-                        parentOp->swapArg(delIdx, nullptr);
-                        reduced = parentOp;
-                    }
-                    if ( !parentOp->parent() ) {
-                        // The parent "AND" node is the root.
-                        ret = reduced;
-                    } else if ( auto gParentOp = dynamic_cast<OpNode*>(const_cast<Node*>(parentOp->parent()));
-                                // Must enter here because of how "onlyDeleted" are marked.
-                                gParentOp->op().name == "AND"_sl ) {
-                        auto parentIdx = childIdx(gParentOp, parentOp, gParentOp->argCount());
-                        require(parentIdx >= 0, "Internal error, child index not found for OpNode");
-
-                        // grand parent to adopt reduced as direct child
-                        // reduced is to be adopted by grand-parent as new child.
-                        reduced->setParent(nullptr);
-                        reduced->setNext(nullptr);
-                        gParentOp->swapArg(parentIdx, reduced);
-                    }
-                }
-            }
-        }
-        if ( ret != nullptr && ret != expr ) {
-            ret->setParent(nullptr);
-            ret->setNext(nullptr);
-        }
-        return ret;
-    }
 }  // namespace litecore::qt

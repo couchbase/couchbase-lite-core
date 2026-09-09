@@ -80,6 +80,7 @@ namespace litecore::qt {
         std::function<void(SourceNode*, ParseContext&)> assignTableNameToMainSource;
         std::function<string_view()>                    translatorDefaultCollection;
         std::function<bool(string_view collection)>     isDeletedDocsFullyTracked;
+        std::function<string(string_view collection)>   collectionKeyStoreName;
     };
 
     /** State used during parsing, passed down through the recursive descent. */
@@ -130,10 +131,9 @@ namespace litecore::qt {
         void            operator delete(void* C4NULLABLE ptr, ParseContext& ctx) noexcept;
 
         /// The node's parent in the parse tree.
-        Node const* C4NULLABLE parent() const noexcept { return _parent; }
+        Node const* parent() const noexcept { return _parent; }
 
         void setParent(Node* C4NULLABLE);
-        void setNext(Node* C4NULLABLE);
 
         /// Next sibling in list.
         /// @note Only some parents organize children into lists! Some parents use multiple lists!

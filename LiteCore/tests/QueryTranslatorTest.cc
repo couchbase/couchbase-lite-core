@@ -225,31 +225,31 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator property contexts", "[Que
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Only Deleted Docs", "[Query][QueryTranslator]") {
-    std::function<string(const string&)> andFlag   = [](const string&) { return ""; };
-    std::function<string(const string&)> whereFlag = [](const string&) { return ""; };
+    std::function<string(const string&)> delFlag   = [](const string&) { return "fl_bool(1)"; };
     string                               fromTable = "kv_del_default";
     deletedTableComplete                           = GENERATE(false, true);
     if ( !deletedTableComplete ) {
-        andFlag   = [](const string& alias) { return " AND (" + alias + ".flags & 1 != 0)"; };
-        whereFlag = [](const string& alias) { return " WHERE (" + alias + ".flags & 1 != 0)"; };
+        delFlag   = [](const string& alias) { return "(" + alias + ".flags & 1 != 0)"; };
         fromTable = "all_default";
     }
+
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['._deleted']}]"),
-                "SELECT _doc.key FROM " + fromTable + " AS _doc" + whereFlag("_doc"));
+                "SELECT _doc.key FROM " + fromTable + " AS _doc WHERE " + delFlag("_doc"));
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['AND',  ['.foo'], ['._deleted']]}]"),
-                "SELECT _doc.key FROM " + fromTable + " AS _doc WHERE fl_value(_doc.body, 'foo')" + andFlag("_doc"));
+                "SELECT _doc.key FROM " + fromTable + " AS _doc WHERE fl_value(_doc.body, 'foo') AND "
+                        + delFlag("_doc"));
     CHECK_equal(parse("['SELECT', {WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted']}]"),
-                "SELECT _doc.key FROM " + fromTable + " AS _doc" + whereFlag("_doc"));
+                "SELECT _doc.key FROM " + fromTable + " AS _doc WHERE " + delFlag("_doc"));
     CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
+                "SELECT testdb.key FROM " + fromTable + " AS testdb WHERE " + delFlag("testdb"));
     CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
+                "SELECT testdb.key FROM " + fromTable + " AS testdb WHERE " + delFlag("testdb"));
     CHECK_equal(parse("{WHAT: [['._id']], WHERE: ['.testdb._deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
+                "SELECT testdb.key FROM " + fromTable + " AS testdb WHERE " + delFlag("testdb"));
     CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
+                "SELECT testdb.key FROM " + fromTable + " AS testdb WHERE " + delFlag("testdb"));
     CHECK_equal(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()', 'testdb'], 'deleted'], FROM: [{AS: 'testdb'}]}"),
-                "SELECT testdb.key FROM " + fromTable + " AS testdb" + whereFlag("testdb"));
+                "SELECT testdb.key FROM " + fromTable + " AS testdb WHERE " + delFlag("testdb"));
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Deleted And Live Docs", "[Query][QueryTranslator]") {
@@ -925,8 +925,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Buried FTS", "[Query][Que
                     });
 }
 
-TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Reduction of Deleted Meta Property",
-                 "[Query][QueryTranslator]") {
+TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Deleted Meta Property", "[Query][QueryTranslator]") {
     deletedTableComplete = GENERATE(false, true);
 
     tableNames.insert("kv_.book");
@@ -950,13 +949,11 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Reduction of Deleted Meta
                  5]
         ]
 }])";
-    // 1. The cascated 'AND', demands ['x._deleted'] to be true.
-    // 2. By using del table, the above evaluates to true.
-    // 3. ['AND', ['AND', or_expr, 3], ['x._deleted']] reduced to ['AND', ['AND', or_expr, 3], TRUE] => ['AND', or_expr, 3]
-    // 4. Finally, ['AND', ['AND', or_expr, 3], ['OR, 4, 5]]
+    // 1. The conjunctive condition (AND) requires x._deleted to be true for the overall expression to pass.
+    // 2. When querying the deleted table, x._deleted evaluates to true by definition.
     CHECK_equal(
             parse(json),
-            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "kv_del_.book" AS x WHERE ((1 = 1 OR 2) AND 3) AND (4 OR 5))");
+            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "kv_del_.book" AS x WHERE (((1 = 1 OR 2) AND 3) AND fl_bool(1)) AND (4 OR 5))");
 
     json = R"(['SELECT',
 {
@@ -1014,7 +1011,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Reduction of Deleted Meta
         // Similar to named collection.
         CHECK_equal(
                 parse(json),
-                R"(SELECT fl_result(fl_value(x.body, 'id')) FROM kv_del_default AS x WHERE ((1 = 1 OR 2) AND 3) AND (4 OR 5))");
+                R"(SELECT fl_result(fl_value(x.body, 'id')) FROM kv_del_default AS x WHERE (((1 = 1 OR 2) AND 3) AND fl_bool(1)) AND (4 OR 5))");
     } else {
         CHECK_equal(
                 parse(json),
