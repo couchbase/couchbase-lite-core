@@ -421,12 +421,26 @@ namespace litecore::qt {
             if ( auto meta = dynamic_cast<MetaNode*>(&node) ) {
                 // `meta()` calls that don't access any property implicity return the `deleted` property:
                 auto prop = meta->property();
-                if ( prop == MetaProperty::none || prop == MetaProperty::deleted ) meta->source()->setUsesDeleted();
+                if ( prop == MetaProperty::none || prop == MetaProperty::deleted ) meta->source()->setUsesDeletedDocs();
             } else if ( auto fn = dynamic_cast<FunctionNode*>(&node) ) {
                 // Look for aggregate functions:
                 if ( fn->opFlags() & kOpAggregate ) _isAggregate = true;
             }
         });
+
+        // Check if the WHERE clause filters the query to only deleted docs.
+        if ( _where ) {
+            auto markDeleted = [&](auto self, ExprNode* expr) -> void {
+                if ( auto meta = dynamic_cast<MetaNode*>(expr) ) {
+                    if ( meta->property() == MetaProperty::deleted ) { meta->source()->setUsesOnlyDeletedDocs(); }
+                } else if ( auto op = dynamic_cast<OpNode*>(expr); op && op->op().name == "AND"_sl ) {
+                    op->visitChildren({[self](Node& node) {
+                        if ( auto* operand = dynamic_cast<ExprNode*>(&node) ) self(self, operand);
+                    }});
+                }
+            };
+            markDeleted(markDeleted, _where);
+        }
 
         // Locate FTS and vector indexed expressions and add corresponding SourceNodes:
         addIndexes(ctx);
@@ -434,7 +448,10 @@ namespace litecore::qt {
         for ( SourceNode* source : _sources ) {
             string_view coll{source->collection()};
             if ( coll.empty() ) coll = ctx.delegate.translatorDefaultCollection();
-            if ( !source->_usesDeleted && coll == "_default" && source->isCollection() ) {
+            if ( source->usesDeletedDocs() || !source->isCollection() ) continue;
+
+            auto keyStoreName = ctx.delegate.collectionTableName(coll);
+            if ( !ctx.delegate.isDeletedDocsFullyTracked(keyStoreName) ) {
                 // The default collection may contain deleted documents in its main table,
                 // so if the query didn't ask for deleted docs, add a condition to the WHERE
                 // or ON clause that only passes live docs:

@@ -3323,6 +3323,82 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
     checkTypeN1QL("SELECT type FROM `cbl.core.temp`");
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Translator with Alternative FROM names", "[Query][QueryTranslator]") {
+    bool newDB = true;
+    SECTION("From Empty DB") {
+        // This happens after SQLiteDataFile::reopen(), and
+        // kv_info[kMaxRowidWithDeletedInDefault] is set to 0.
+        // Effectively it is a brand new DB.
+        addNumberedDocs(1, 10);
+    }
+    SECTION("From Plain DB") {
+        auto dbPath = databasePath();
+        deleteDatabase();
+        // The plain_db.sqlite3 contains 10 documents before
+        // kv_info[kMaxRowidWithDeletedInDefault] is set.
+        // SQLiteDataFile::reopen() will consider them as possibly deleted,
+        // and set it to 10.
+        // Effectively, it is a legacy DB with 10 legacy docs.
+        newDB        = false;
+        auto srcPath = litecore::FilePath(sFixturesDir + "/plain_db.sqlite3");
+        srcPath.copyTo(dbPath);
+        db.reset(newDatabase(dbPath, &DataFile::Options::defaults));
+        store = &db->defaultKeyStore();
+    }
+
+    auto  sqlKeyStore         = SQLiteDataFile::asSQLiteKeyStore(store);
+    auto& sqlDataFile         = (SQLiteDataFile&)sqlKeyStore->dataFile();
+    bool  delDocsFullyTracked = sqlDataFile.isDeletedDocsFullyTracked();
+    REQUIRE(delDocsFullyTracked == newDB);
+
+    auto checkParser = [&](string json, string sql) -> void {
+        QueryTranslator qt{sqlDataFile, sqlKeyStore->collectionName(), sqlKeyStore->tableName()};
+        qt.parseJSON(json);
+        CHECK(qt.SQL() == sql);
+    };
+
+    auto delFlag = [&](string alias) -> string {
+        std::stringstream ss;
+        if ( delDocsFullyTracked ) ss << "";
+        else
+            ss << " WHERE (" << alias << ".flags & 1 = 0)";
+        return ss.str();
+    };
+
+    checkParser(json5("{'WHAT': ['.foo\\\\.bar.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo.bar'}]}"),
+                R"(SELECT fl_result(fl_value("foo.bar".body, 'type')) FROM kv_default AS "foo.bar")"s
+                        + delFlag("\"foo.bar\""));
+    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default'}]}"),
+                "SELECT fl_result(fl_value(_default.body, 'type')) FROM kv_default AS _default"s + delFlag("_default"));
+    checkParser(
+            json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default._default'}]}"),
+            R"(SELECT fl_result(fl_value("_default._default".body, 'type')) FROM kv_default AS "_default._default")"s
+                    + delFlag("\"_default._default\""));
+    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_'}]}"),
+                "SELECT fl_result(fl_value(_.body, 'type')) FROM kv_default AS _"s + delFlag("_"));
+    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}"),
+                "SELECT fl_result(fl_value(db.body, 'type')) FROM kv_default AS db"s + delFlag("db"));
+    string collectionName = sqlKeyStore->collectionName();
+    string sel            = "SELECT fl_result(fl_value(_doc.body, 'foo.type')) FROM ";
+    if ( collectionName == "_default" )
+        checkParser(json5("{'WHAT': ['.foo.type']}"), sel + "kv_default AS _doc" + delFlag("_doc"));
+    else if ( collectionName == "Secondary" )
+        checkParser(json5("{'WHAT': ['.foo.type']}"), sel + R"("kv_.\Secondary" AS _doc)");
+    else if ( collectionName == "scopey.subsidiary" )
+        checkParser(json5("{'WHAT': ['.foo.type']}"), sel + R"("kv_.scopey.subsidiary" AS _doc)");
+    else
+        Log("CollectionName %s not tested", collectionName.c_str());
+
+    // For database names that include dot, we must properly quote it.
+    // In JSON, we escape dot inside the JSON string value.
+    // In N1QL expression, we back-quote quote it.
+
+    _databaseName = "cbl.core.temp";
+    checkParser(json5(R"({'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\.core\\.temp'}]})"),
+                R"(SELECT fl_result(fl_value("cbl\.core\.temp".body, 'type')) FROM kv_default AS "cbl\.core\.temp")"s
+                        + delFlag(R"("cbl\.core\.temp")"));
+}
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]") {
     addNumberedDocs(1, 10);
     bool   withFrom = GENERATE(true, false);

@@ -68,7 +68,12 @@ namespace litecore::qt {
     void MetaNode::writeSQL(SQLWriter& ctx) const {
         string aliasDot;
         if ( _source && !_source->alias().empty() ) aliasDot = CONCAT(sqlIdentifier(_source->alias()) << ".");
-        writeMetaSQL(aliasDot, _property, ctx);
+        if ( _source && _property == MetaProperty::deleted && source()->usesDeletedTable() ) {
+            // As we are determined that we will use the deleted table for this source, Metadata test for "deleted"
+            // will always evaluate to true.
+            ctx << "true";
+        } else
+            writeMetaSQL(aliasDot, _property, ctx);
     }
 
     void MetaNode::writeMetaSQL(string_view aliasDot, MetaProperty meta, SQLWriter& ctx) {

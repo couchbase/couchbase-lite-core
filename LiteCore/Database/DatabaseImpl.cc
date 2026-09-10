@@ -372,18 +372,7 @@ namespace litecore {
     void DatabaseImpl::startBackgroundTasks() {
         if ( auto flags = getConfiguration().flags; (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) != 0 ) return;
 
-        Record rec           = getInfo(DataFile::kMaxRowidWithDeletedInDefault);
-        bool   sureCompleted = false;
-        if ( !rec.exists() ) {
-            if ( asInternal(_defaultCollection)->keyStore().lastSequence() == 0_seq ) {
-                rec.setBodyAsUInt(0);
-                Transaction t(this);
-                setInfo(rec);
-                t.commit();
-                sureCompleted = true;
-            }
-        }
-        if ( !sureCompleted && !isDeletedTableComplete() ) {
+        if ( !isDeletedTableComplete() ) {
             asInternal(_defaultCollection)->startHousekeeping(CollectionImpl::HousekeeperTask::Migrate);
         }
 

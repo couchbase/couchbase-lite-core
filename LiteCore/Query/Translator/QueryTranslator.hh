@@ -49,6 +49,7 @@ namespace litecore {
             [[nodiscard]] virtual string collectionTableName(const string& collection, DeletionStatus) const    = 0;
             [[nodiscard]] virtual string FTSTableName(const string& onTable, const string& property) const      = 0;
             [[nodiscard]] virtual string unnestedTableName(const string& onTable, const string& property) const = 0;
+            [[nodiscard]] virtual bool   isDeletedDocsFullyTracked() const                                      = 0;
 #ifdef COUCHBASE_ENTERPRISE
             [[nodiscard]] virtual string predictiveTableName(const string& onTable, const string& property) const = 0;
             [[nodiscard]] virtual string vectorTableName(const string& collection, const std::string& property,

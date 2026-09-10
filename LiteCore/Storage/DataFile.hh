@@ -181,7 +181,27 @@ namespace litecore {
         /** Permanently deletes a KeyStore. */
         virtual void deleteKeyStore(const std::string& name) = 0;
 
-        bool isDeletedTableComplete();
+        bool isDeletedTableComplete() const;
+
+        /** The default collection's deleted-docs cutoff rowid: documents in its live table whose
+            rowid is at or below this value have not yet been confirmed migrated to the dedicated
+            deleted-docs table, so their `deleted` status must still be checked via the `flags`
+            column rather than assumed absent. isDeletedTableComplete() is just this value's
+            distilled yes/no reading (true once it reaches 0).
+            If the value hasn't been initialized yet, returns the default collection's current
+            max rowid -- the conservative starting point a first-time initialization would use --
+            without persisting anything. */
+        uint64_t getDefaultDeletedDocsCutoffRowid() const;
+
+        /** Updates the default collection's deleted-docs cutoff rowid (see
+            getDefaultDeletedDocsCutoffRowid()).
+            Pass a `rowid` >= 0 to set the cutoff to that value; this is only valid once the
+            cutoff has already been initialized, and throws InvalidParameter otherwise.
+            Pass -1 to (idempotently) initialize the cutoff from the default collection's current
+            max rowid if it hasn't been set yet; if it's already set, this is a no-op.
+            Returns true if a value was written, false if the -1 case found it already
+            initialized and did nothing. */
+        bool setDefaultDeletedDocsCutoffRowid(int64_t rowid, ExclusiveTransaction& t);
 
         // Redeclare logging methods as public, so Database can use them
         bool willLog(LogLevel level = LogLevel::Info) const { return Logging::willLog(level); }
