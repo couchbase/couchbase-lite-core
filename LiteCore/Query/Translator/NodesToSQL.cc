@@ -71,12 +71,7 @@ namespace litecore::qt {
         if ( _source && _property == MetaProperty::deleted && source()->usesDeletedTable() ) {
             // As we are determined that we will use the deleted table for this source, Metadata test for "deleted"
             // will always evaluate to true.
-            fleece::Encoder encoder;
-            encoder.writeBool(true);
-            fleece::Doc   doc       = encoder.finishDoc();
-            fleece::Value trueValue = doc.root();
-            LiteralNode   literalNode(trueValue);
-            literalNode.writeSQL(ctx);
+            ctx << "true";
         } else
             writeMetaSQL(aliasDot, _property, ctx);
     }

@@ -3324,6 +3324,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Translator with Alternative FROM names", "[Query][QueryTranslator]") {
+    bool newDB = true;
     SECTION("From Empty DB") {
         // This happens after SQLiteDataFile::reopen(), and
         // kv_info[kMaxRowidWithDeletedInDefault] is set to 0.
@@ -3338,6 +3339,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Translator with Alternative FROM names", "[Qu
         // SQLiteDataFile::reopen() will consider them as possibly deleted,
         // and set it to 10.
         // Effectively, it is a legacy DB with 10 legacy docs.
+        newDB        = false;
         auto srcPath = litecore::FilePath(sFixturesDir + "/plain_db.sqlite3");
         srcPath.copyTo(dbPath);
         db.reset(newDatabase(dbPath, &DataFile::Options::defaults));
@@ -3347,6 +3349,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Translator with Alternative FROM names", "[Qu
     auto  sqlKeyStore         = SQLiteDataFile::asSQLiteKeyStore(store);
     auto& sqlDataFile         = (SQLiteDataFile&)sqlKeyStore->dataFile();
     bool  delDocsFullyTracked = sqlDataFile.isDeletedDocsFullyTracked();
+    REQUIRE(delDocsFullyTracked == newDB);
 
     auto checkParser = [&](string json, string sql) -> void {
         QueryTranslator qt{sqlDataFile, sqlKeyStore->collectionName(), sqlKeyStore->tableName()};

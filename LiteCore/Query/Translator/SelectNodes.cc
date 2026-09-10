@@ -430,18 +430,16 @@ namespace litecore::qt {
 
         // Check if the WHERE clause filters the query to only deleted docs.
         if ( _where ) {
-            [&](ExprNode* root) {
-                auto markDeleted = [&](auto self, ExprNode* expr) -> void {
-                    if ( auto meta = dynamic_cast<MetaNode*>(expr) ) {
-                        if ( meta->property() == MetaProperty::deleted ) { meta->source()->setUsesOnlyDeletedDocs(); }
-                    } else if ( auto op = dynamic_cast<OpNode*>(expr); op && op->op().name == "AND"_sl ) {
-                        op->visitChildren({[self](Node& node) {
-                            if ( auto* operand = dynamic_cast<ExprNode*>(&node) ) self(self, operand);
-                        }});
-                    }
-                };
-                markDeleted(markDeleted, root);
-            }(_where);
+            auto markDeleted = [&](auto self, ExprNode* expr) -> void {
+                if ( auto meta = dynamic_cast<MetaNode*>(expr) ) {
+                    if ( meta->property() == MetaProperty::deleted ) { meta->source()->setUsesOnlyDeletedDocs(); }
+                } else if ( auto op = dynamic_cast<OpNode*>(expr); op && op->op().name == "AND"_sl ) {
+                    op->visitChildren({[self](Node& node) {
+                        if ( auto* operand = dynamic_cast<ExprNode*>(&node) ) self(self, operand);
+                    }});
+                }
+            };
+            markDeleted(markDeleted, _where);
         }
 
         // Locate FTS and vector indexed expressions and add corresponding SourceNodes:
@@ -452,7 +450,7 @@ namespace litecore::qt {
             if ( coll.empty() ) coll = ctx.delegate.translatorDefaultCollection();
             if ( source->usesDeletedDocs() || !source->isCollection() ) continue;
 
-            auto keyStoreName = ctx.delegate.collectionKeyStoreName(coll);
+            auto keyStoreName = ctx.delegate.collectionTableName(coll);
             if ( !ctx.delegate.isDeletedDocsFullyTracked(keyStoreName) ) {
                 // The default collection may contain deleted documents in its main table,
                 // so if the query didn't ask for deleted docs, add a condition to the WHERE

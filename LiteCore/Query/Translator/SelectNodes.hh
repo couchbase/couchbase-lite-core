@@ -85,13 +85,11 @@ namespace litecore::qt {
 
         string_view collection() const { return _collection; }  ///< Collection name, or empty if default
 
-        bool usesDeletedDocs() const {
-            return _deletionStatus >= kUsesDeleted;
-        }  ///< True if an expr refers to a deleted doc from this source
+        /// True if an expr refers to a deleted doc from this source
+        bool usesDeletedDocs() const { return _deletionStatus >= kUsesDeleted; }
 
-        bool usesOnlyDeletedDocs() const {
-            return _deletionStatus >= kUsesOnlyDeleted;
-        }  ///< True if WHERE guarantees only deleted docs are selected
+        /// True if WHERE guarantees only deleted docs are selected
+        bool usesOnlyDeletedDocs() const { return _deletionStatus >= kUsesOnlyDeleted; }
 
         bool usesDeletedTable() const { return _deletionStatus >= kUsesDeletedTable; }
 
@@ -126,14 +124,14 @@ namespace litecore::qt {
         void setUsesDeletedDocs() {
             if ( _deletionStatus < kUsesDeleted ) {
                 _deletionStatus = kUsesDeleted;  // It can turn kv_.xyz to all_.xyz
-                _tableName      = string_view{};
+                _tableName      = "";
             }
         }
 
         void setUsesOnlyDeletedDocs() {
             if ( _deletionStatus < kUsesOnlyDeleted ) {
                 _deletionStatus = kUsesOnlyDeleted;  // WHERE guarantees only deleted docs; can use kv_del_ directly
-                _tableName      = string_view{};
+                _tableName      = "";
             }
         }
 

@@ -446,16 +446,8 @@ namespace litecore {
         // to the current max rowid, so isDeletedTableComplete() has an accurate starting point
         // even if housekeeping/migration never runs (e.g. kC4DB_NoHousekeeping, read-only). (CBL-7986)
         if ( options().writeable ) {
-            auto& infoStore = getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
-            if ( !infoStore.get(kMaxRowidWithDeletedInDefault).exists() ) {
-                ExclusiveTransaction t(this);
-                if ( !infoStore.get(kMaxRowidWithDeletedInDefault).exists() ) {
-                    Record putRec{DataFile::kMaxRowidWithDeletedInDefault};
-                    putRec.setBodyAsUInt(asSQLiteKeyStore(&defaultKeyStore())->maxRowid());
-                    infoStore.setKV(putRec, t);
-                }
-                t.commit();
-            }
+            ExclusiveTransaction t(this);
+            if ( setDefaultDeletedDocsCutoffRowid(-1, t) ) t.commit();
         }
     }
 

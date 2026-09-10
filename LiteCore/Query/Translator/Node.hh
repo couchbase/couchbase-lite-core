@@ -77,10 +77,10 @@ namespace litecore::qt {
 #ifdef COUCHBASE_ENTERPRISE
         std::function<bool(string_view id, ParseContext& ctx)> hasPredictiveIndex;
 #endif
-        std::function<void(SourceNode*, ParseContext&)> assignTableNameToMainSource;
-        std::function<string_view()>                    translatorDefaultCollection;
-        std::function<bool(string_view collection)>     isDeletedDocsFullyTracked;
-        std::function<string(string_view collection)>   collectionKeyStoreName;
+        std::function<void(SourceNode*, ParseContext&)>      assignTableNameToMainSource;
+        std::function<string_view()>                         translatorDefaultCollection;
+        std::function<bool(string_view collectionTableName)> isDeletedDocsFullyTracked;
+        std::function<string(string_view collection)>        collectionTableName;
     };
 
     /** State used during parsing, passed down through the recursive descent. */

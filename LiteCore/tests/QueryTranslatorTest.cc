@@ -225,7 +225,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator property contexts", "[Que
 }
 
 TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Only Deleted Docs", "[Query][QueryTranslator]") {
-    std::function<string(const string&)> delFlag   = [](const string&) { return "fl_bool(1)"; };
+    std::function<string(const string&)> delFlag   = [](const string&) { return "true"; };
     string                               fromTable = "kv_del_default";
     deletedTableComplete                           = GENERATE(false, true);
     if ( !deletedTableComplete ) {
@@ -953,7 +953,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Deleted Meta Property", "
     // 2. When querying the deleted table, x._deleted evaluates to true by definition.
     CHECK_equal(
             parse(json),
-            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "kv_del_.book" AS x WHERE (((1 = 1 OR 2) AND 3) AND fl_bool(1)) AND (4 OR 5))");
+            R"(SELECT fl_result(fl_value(x.body, 'id')) FROM "kv_del_.book" AS x WHERE (((1 = 1 OR 2) AND 3) AND true) AND (4 OR 5))");
 
     json = R"(['SELECT',
 {
@@ -1011,7 +1011,7 @@ TEST_CASE_METHOD(QueryTranslatorTest, "QueryTranslator Deleted Meta Property", "
         // Similar to named collection.
         CHECK_equal(
                 parse(json),
-                R"(SELECT fl_result(fl_value(x.body, 'id')) FROM kv_del_default AS x WHERE (((1 = 1 OR 2) AND 3) AND fl_bool(1)) AND (4 OR 5))");
+                R"(SELECT fl_result(fl_value(x.body, 'id')) FROM kv_del_default AS x WHERE (((1 = 1 OR 2) AND 3) AND true) AND (4 OR 5))");
     } else {
         CHECK_equal(
                 parse(json),

@@ -27,6 +27,7 @@
 #include <thread>
 
 #include "SQLiteDataFile.hh"
+#include "SQLiteKeyStore.hh"
 
 using namespace std;
 
@@ -320,6 +321,35 @@ namespace litecore {
     bool DataFile::isDeletedTableComplete() const {
         Record rec = getKeyStore(kInfoKeyStoreName, KeyStore::noSequences).get(kMaxRowidWithDeletedInDefault);
         return rec.exists() && rec.bodyAsUInt() == 0;
+    }
+
+    uint64_t DataFile::getDefaultDeletedDocsCutoffRowid() const {
+        auto&  infoStore = getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
+        Record rec       = infoStore.get(kMaxRowidWithDeletedInDefault);
+        if ( rec.exists() ) return rec.bodyAsUInt();
+        else
+            return SQLiteDataFile::asSQLiteKeyStore(&defaultKeyStore())->maxRowid();
+    }
+
+    bool DataFile::setDefaultDeletedDocsCutoffRowid(int64_t rowid, ExclusiveTransaction& t) {
+        auto&  infoStore = getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
+        Record rec       = infoStore.get(kMaxRowidWithDeletedInDefault);
+        if ( rowid < 0 )
+            if ( rec.exists() ) return false;
+
+        uint64_t urowid = rowid;
+        if ( !rec.exists() ) {
+            if ( rowid >= 0 ) {
+                const char* errmsg = "The initial value of rowid must be -1";
+                LogWarn(DBLog, "%s", errmsg);
+                error::_throw(error::InvalidParameter, "%s", errmsg);
+            } else
+                urowid = SQLiteDataFile::asSQLiteKeyStore(&defaultKeyStore())->maxRowid();
+        }
+        Record putRec{DataFile::kMaxRowidWithDeletedInDefault};
+        putRec.setBodyAsUInt(urowid);
+        infoStore.setKV(putRec, t);
+        return true;
     }
 
     fleece::impl::SharedKeys* DataFile::documentKeys() const {

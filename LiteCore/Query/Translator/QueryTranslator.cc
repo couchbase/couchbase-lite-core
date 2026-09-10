@@ -51,12 +51,10 @@ namespace litecore {
             mutableThis->assignTableNameToSource(source, ctx);
         };
         root.translatorDefaultCollection = [&]() -> string_view { return _defaultCollectionName; };
-        root.isDeletedDocsFullyTracked   = [&](string_view collection) {
-            // collection is either the name of the collection or name of the kv table.
-            return (collection.starts_with("kv_") ? collection != "kv_default" : collection != "_default")
-                   || _delegate.isDeletedDocsFullyTracked();
+        root.isDeletedDocsFullyTracked   = [&](string_view collectionTableName) {
+            return collectionTableName != "kv_default" || _delegate.isDeletedDocsFullyTracked();
         };
-        root.collectionKeyStoreName = [this](string_view collection) -> string {
+        root.collectionTableName = [this](string_view collection) -> string {
             return _delegate.collectionTableName((string)collection, kLiveDocs);
         };
         return root;
