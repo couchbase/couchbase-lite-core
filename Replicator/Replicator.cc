@@ -894,7 +894,7 @@ namespace litecore::repl {
                     } else {
                         remoteCheckpoints[i].readDict(dict);
                         auto checkpointrevid = dict["_rev"];
-                        if ( checkpointrevid.type() == kFLUndefined ) checkpointrevid = dict["rev"];
+                        if ( !checkpointrevid ) checkpointrevid = dict["rev"];
                         sub.remoteCheckpointRevID = checkpointrevid.asString();
                         DebugAssert(!!sub.remoteCheckpointRevID);
                         cLogInfo(i, "Received remote checkpoint (rev='%.*s'): %.*s", SPLAT(sub.remoteCheckpointRevID),
