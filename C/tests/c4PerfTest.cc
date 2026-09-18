@@ -43,7 +43,7 @@ class PerfTest : public C4Test {
     explicit PerfTest(int variation) : C4Test(variation) {
         const char* showFastDir = getenv("CBL_SHOWFAST_DIR");
         if ( showFastDir ) {
-            litecore::FilePath showFastPath(showFastDir, "");
+            litecore::FilePath showFastPath(showFastDir);
             if ( showFastPath.exists() && showFastPath.isDir() ) { _showFastDir = showFastDir; }
         }
 
@@ -251,7 +251,7 @@ class PerfTest : public C4Test {
         if ( isEncrypted() ) { filename += "_encrypted"; }
 
         filename += ".json";
-        litecore::FilePath sfPath(_showFastDir, filename);
+        litecore::FilePath sfPath(filesystem::path(string(_showFastDir)) / filename);
 
         ofstream fout(sfPath.path(), ios::trunc | ios::out);
         fout.exceptions(ostream::failbit | ostream::badbit);
@@ -300,7 +300,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import iTunesMusicLibrary", "[Perf][C][.slow]"
     st.stop();
     st.printReport("******** Importing JSON w/spaces", numDocs, "doc");
 
-    litecore::FilePath path(alloc_slice(c4db_getPath(db)).asString(), "db.sqlite3");
+    litecore::FilePath path(filesystem::path(slice(c4db_getPath(db)).asString()) / "db.sqlite3");
     fprintf(stderr, "******** DB size is %" PRIi64 "\n", path.dataSize());
     reopenDB();
     string sf = generateShowfast((double)numDocs / st.elapsed(), "tunes_import_json");
