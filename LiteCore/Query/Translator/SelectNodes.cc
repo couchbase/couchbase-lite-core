@@ -130,7 +130,7 @@ namespace litecore::qt {
         if ( slice collection = optionalString(getCaseInsensitive(dict, "COLLECTION"), "COLLECTION") ) {
             explicitCollection = true;
             if ( collection == "_" ) {
-                _collection = kDefaultCollectionName;
+                _collection = ctx.delegate.translatorDefaultCollection();
                 _columnName = collection;
             } else {
                 _collection = collection;
