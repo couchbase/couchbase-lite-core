@@ -19,6 +19,7 @@
 #include "ReplicatorLoopbackTest.hh"
 #include "c4Collection.h"
 #include "Defer.hh"
+#include "LogFunction.hh"
 
 static alloc_slice makeRealishVector(const char* suffix, uint64_t* unixTs = nullptr) {
     uint64_t ts = 0;
@@ -420,4 +421,50 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Conflicts After VV Upgrade", 
     } else {
         CHECK(slice(finalDoc->selectedRev.revID).findByte('*'));
     }
+}
+
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull Legacy Revs Into VV DB Then Pull Again", "[Pull][Upgrade]") {
+    // Since the failure is only logged, count warnings/errors logged during the replications below:
+    std::atomic<unsigned> warningsLogged{0};
+    auto logObserver = make_retained<LogFunction>([&](LogEntry const&) { ++warningsLogged; });
+    LogObserver::add(logObserver, LogLevel::Warning);
+    DEFER { LogObserver::remove(logObserver); };
+
+    // Server (db) gets 100 docs while still on rev-trees, so their revIDs are legacy "1-xxxx":
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1, 0, true, 1);
+
+    // Both sides move to version vectors. The server's records are not modified, so it keeps sending
+    // them with their legacy revIDs; the client (db2, the puller) has never seen them.
+    upgrade();
+
+    _expectedDocumentCount = 1;
+    Log("-------- First Pull: client stores 100 legacy-only revisions --------");
+    runPullReplication();
+    compareDatabases();
+    CHECK(warningsLogged == 0);
+
+    // Sanity check: the client kept the legacy revIDs as the current revisions.
+    {
+        c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, "0000001"_sl, true, kDocGetAll, ERROR_INFO());
+        REQUIRE(doc);
+//        CHECK(slice(doc->revID).hasPrefix("1-"_sl));
+    }
+
+    // The server updates one of those docs (this creates a version-vector revision). The client has the doc
+    // with a legacy revID; RevFinder must recognize the local rev as an ancestor and pull the update.
+    Log("-------- Second Pull: one legacy-stored doc was updated on the server --------");
+    createNewRev(_collDB1, "0000001"_sl, kFleeceBody);
+    _expectedDocumentCount = 1;
+    runPullReplication();
+    CHECK(warningsLogged == 0);  // no "fl_callback: exception!" (or anything else) logged
+    compareDatabases();          // the update must have arrived
+
+    // A reconnect without a checkpoint (or a new replicator over the same collection) makes the server
+    // send everything again; every one of the 100 docs must be recognized as already present.
+    Log("-------- Third Pull, checkpoint reset: server sends all 100 again --------");
+    _expectedDocumentCount = 0;
+    runReplicators(Replicator::Options::passive(_collSpec), Replicator::Options::pulling(kC4OneShot, _collSpec),
+                   true);
+    CHECK(warningsLogged == 0);
+    compareDatabases();
 }

@@ -252,3 +252,66 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Random RevID", "[Document][C]") {
         CHECK(sha1.asString().length() == rid.length());
     }
 }
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors Legacy Rev In VV DB", "[Document][C]") {
+    if ( isRevTrees() ) return;  // only meaningful with version vectors
+
+    auto             defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    const C4RemoteID kRemoteID   = 1;
+    const C4Slice    kLegacyRev1 = C4STR("1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    const C4Slice    kLegacyRev2 = C4STR("2-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    
+    auto config = c4db_getConfig2(db);
+    auto count = c4coll_getDocumentCount(defaultColl);
+    (void)config; (void)count;
+
+    // 1. Store an existing revision whose history has only legacy revIDs, tagged with a remote ID,
+    //    exactly as the Inserter does when the peer sends a doc that has no version vector yet:
+    {
+        TransactionHelper t(db);
+        C4String          history[2] = {kLegacyRev2, kLegacyRev1};
+        C4DocPutRequest   rq         = {};
+        rq.docID                     = kDocID;
+        rq.body                      = kFleeceBody;
+        rq.existingRevision          = true;
+        rq.allowConflict             = true;
+        rq.history                   = history;
+        rq.historyCount              = 2;
+        rq.remoteDBID                = kRemoteID;
+        rq.save                      = true;
+        c4::ref<C4Document> doc = c4coll_putDoc(defaultColl, &rq, nullptr, WITH_ERROR());
+        REQUIRE(doc);
+        CHECK(doc->revID == kLegacyRev2);  // stored with the legacy revID as its current revision
+    }
+
+    // 2. The normal document loader handles this record format fine:
+    {
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetAll, WITH_ERROR());
+        REQUIRE(doc);
+        CHECK(doc->revID == kLegacyRev2);
+    }
+
+    // 3. findDocAncestors is what RevFinder calls for every entry of an incoming `changes` message.
+    //    It must not fail for this doc, whatever revision the peer sends for it:
+    auto findAncestors = [&](C4Slice revID) -> std::string {
+        C4SliceResult ancestors[1] = {};
+        C4String      docID        = kDocID;
+        C4Error       error        = {};
+        bool ok = c4coll_findDocAncestors(defaultColl, 1, 4, false, kRemoteID, &docID, &revID, ancestors, &error);
+        if ( !ok ) {
+            alloc_slice desc = c4error_getDescription(error);
+            FAIL_CHECK("findDocAncestors(" << revID << ") failed: " << desc);
+            return "";
+        }
+        return toString(std::move(ancestors[0]));
+    };
+
+    // Peer sends a newer legacy revision: we don't have it; our rev must be reported as the ancestor.
+    CHECK(findAncestors(C4STR("3-cccccccccccccccccccccccccccccccc"))
+          == R"(1["2-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"])");
+    // Peer sends a version-vector revision (doc updated by a VV-aware peer): same.
+    CHECK(findAncestors(C4STR("1@AliceAliceAliceAliceAA")) == R"(1["2-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"])");
+    // Peer sends the very revision we have: just a status byte, no ancestor list.
+    std::string same = findAncestors(kLegacyRev2);
+    CHECK(same.size() == 1);
+}

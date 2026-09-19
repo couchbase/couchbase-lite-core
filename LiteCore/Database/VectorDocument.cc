@@ -495,6 +495,13 @@ namespace litecore {
             Revision newRev;
             newRev.properties = newProperties;
             newRev.revID      = revid(newVersBinary);
+#if 0
+            if ( !newRev.revID.isVersion() ) {
+                auto legacyVersion = Version::legacyVersion(newRev.revID);
+                revidBuffer buf{legacyVersion};
+                newRev.revID = (revid)buf;
+            }
+#endif
             newRev.flags      = convertNewRevisionFlags(rq.revFlags);
 
             // Store the Revision into my VectorRecord:

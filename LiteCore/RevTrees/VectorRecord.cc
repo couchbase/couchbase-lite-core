@@ -734,7 +734,12 @@ namespace litecore {
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
         bool syncedFlag = (rec.flags & DocumentFlags::kSynced);
+
+#if 0
+        if ( revid(rec.version).isVersion() || true ) {
+#else
         if ( revid(rec.version).isVersion() ) {
+#endif
             callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
             int firstRemote = 1;
             if ( syncedFlag ) {
