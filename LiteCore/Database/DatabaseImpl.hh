@@ -69,7 +69,7 @@ namespace litecore {
 
         HybridClock& versionClock() const { return _versionClock; }
 
-        SourceID mySourceID() const;
+        SourceID mySourceID() const { return _mySourceID; }
 
         void resetUUIDs() override;
 
