@@ -74,6 +74,15 @@ namespace litecore::repl {
         : WebSocketImpl(url, role, effectiveFactory(factory_).framing != kC4NoFraming, convertParams(options))
         , C4Socket(effectiveFactory(factory_), nativeHandle_) {}
 
+    C4WebSocket::~C4WebSocket() {
+        // Must be the first thing that runs: stopTimers() waits for any in-flight ping/response
+        // timer callback to finish. Those callbacks can call this object's own overrides
+        // (sendBytes(), etc.) virtually; doing this before any of our own members are torn down
+        // ensures that if one is in flight right now, it still resolves to this class's own
+        // overrides rather than racing against our own destruction.
+        stopTimers();
+    }
+
     WebSocket* WebSocketFrom(C4Socket* c4sock) { return dynamic_cast<C4WebSocket*>(c4sock); }
 
 #pragma mark - WEBSOCKETIMPL OVERRIDES:
