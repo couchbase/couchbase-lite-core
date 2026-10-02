@@ -23,6 +23,7 @@
 #include "slice_stream.hh"
 #include "NumConversion.hh"
 #include "fleece/Fleece.hh"
+#include <algorithm>
 #include <regex>
 #include <sstream>
 
@@ -343,11 +344,11 @@ namespace litecore::net {
 
         C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Sending request to %s:\n%s",
                   (_lastDisposition == kContinue ? "proxy tunnel" : string(directAddress().url()).c_str()),
-                  formatHTTP(slice(requestToSend())).c_str());
+                  formatHTTPForLog(slice(requestToSend())).c_str());
         if ( socket.write_n(requestToSend()) < 0 || socket.write_n(body) < 0 ) return failure(socket);
         alloc_slice response = socket.readToDelimiter("\r\n\r\n"_sl);
         if ( !response ) return failure(socket);
-        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response:\n%s", formatHTTP(response).c_str());
+        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response:\n%s", formatHTTPForLog(response).c_str());
 
         Disposition disposition = receivedResponse(response);
         if ( disposition == kFailure && _error.domain == WebSocketDomain && _error.code == int(_httpStatus) ) {
@@ -371,7 +372,17 @@ namespace litecore::net {
         return disposition;
     }
 
-    string HTTPLogic::formatHTTP(slice http) {
+    string HTTPLogic::formatHTTPForLog(slice http) {
+        // Header names whose values are credentials and must never be written to the log
+        // in the clear (covers Basic/Bearer auth, session cookies, and proxy auth).
+        static const slice kRedactedHeaders[] = {"Authorization", "Cookie", "Set-Cookie", "Proxy-Authorization"};
+
+        auto isCredentialHeader = [](slice name) {
+            return std::find_if(std::begin(kRedactedHeaders), std::end(kRedactedHeaders),
+                                [&](slice header) { return name.caseEquivalentCompare(header) == 0; })
+                   != std::end(kRedactedHeaders);
+        };
+
         slice_istream in(http);
         stringstream  s;
         bool          first = true;
@@ -381,7 +392,16 @@ namespace litecore::net {
             if ( !first ) s << '\n';
             first = false;
             s << '\t';
-            s.write((const char*)line.buf, narrow_cast<std::streamsize>(line.size));
+            // Redact the value of any credential-bearing header, keeping the name visible
+            // so the log still shows that the header was present.
+            slice name;
+            if ( const uint8_t* colon = line.findByte(':') ) name = slice(line.buf, colon);
+            if ( name && isCredentialHeader(name) ) {
+                s.write((const char*)name.buf, narrow_cast<std::streamsize>(name.size));
+                s << ": [REDACTED]";
+            } else {
+                s.write((const char*)line.buf, narrow_cast<std::streamsize>(line.size));
+            }
         }
         return s.str();
     }

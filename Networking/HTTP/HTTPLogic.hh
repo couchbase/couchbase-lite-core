@@ -157,10 +157,11 @@ namespace litecore::net {
 
         // -------- Utility functions:
 
-        /// Utility function to format an HTTP request or response for display.
+        /// Utility function to format an HTTP request or response for logging.
         /// Converts CRLF to \n, indents lines, and stops at the end of the headers
-        /// (before the blank line).
-        static std::string formatHTTP(slice http);
+        /// (before the blank line). The values of credential headers (Authorization,
+        /// Cookie, Set-Cookie, Proxy-Authorization) are replaced with "[REDACTED]".
+        static std::string formatHTTPForLog(slice http);
 
         /// Utility function to parse HTTP headers. Reads header lines from HTTP data until
         /// it reaches an empty line (CRLFCRLF). On return, \ref httpData will point to any
