@@ -73,7 +73,15 @@ namespace litecore::websocket {
         _socket = std::move(socket);
     }
 
-    BuiltInWebSocket::~BuiltInWebSocket() { logDebug("~BuiltInWebSocket"); }
+    BuiltInWebSocket::~BuiltInWebSocket() {
+        // Must be the first thing that runs: stopTimers() waits for any in-flight ping/response
+        // timer callback to finish. Those callbacks can call this object's own overrides
+        // (sendBytes(), etc.) virtually; doing this before any of our own members are torn down
+        // ensures that if one is in flight right now, it still resolves to this class's own
+        // overrides rather than racing against our own destruction.
+        stopTimers();
+        logDebug("~BuiltInWebSocket");
+    }
 
     void BuiltInWebSocket::connect() {
         // Spawn a thread to connect and run the read loop:
