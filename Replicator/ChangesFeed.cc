@@ -219,9 +219,10 @@ namespace litecore::repl {
         if ( needRemoteRevID || _options->pushFilter(_collectionIndex) ) {
             C4Error error{};
             // Hold coll in the same scope of doc.
-            auto                 coll = _db.useCollection(_collectionSpec);
+            BorrowedCollection   coll;
             Retained<C4Document> doc;
             try {
+                coll = _db.useCollection(_collectionSpec);
                 if ( e ) doc = e->getDocument();
                 else
                     doc = coll->getDocument(rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
