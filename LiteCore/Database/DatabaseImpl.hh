@@ -177,10 +177,10 @@ namespace litecore {
         /** Resolves every "Attachments_staged-<hash>" directory found (see DatabaseImpl::rekey):
             installs the one, if any, whose hash matches this database's current encryption key
             as the live "Attachments" store -- its name matching is what proves it's the
-            complete, correctly-rekeyed store belonging to a rekey that already succeeded, so
-            there's nothing left to verify or rebuild, only to finish moving into place. Any
-            other staged directory found (from a superseded rekey attempt, or a bundle assembled
-            from mismatched pieces) is logged and deleted rather than installed.
+            complete, correctly-rekeyed store for the key the database is now on, so there's
+            nothing left to verify or rebuild, only to finish moving into place. Any other staged
+            directory found (from a rekey interrupted before its database rekey committed, or a
+            bundle assembled from mismatched pieces) is logged and deleted rather than installed.
             Safe to call whether or not there's anything pending; idempotent if called again
             after an interruption partway through.
 

@@ -258,29 +258,40 @@ namespace litecore {
 
         // Rekey the attachments into a scratch directory. Its name is never treated as
         // meaningful by recovery logic (finishPendingBlobStoreSwap) -- it's unconditionally
-        // cleared here, and only becomes "Attachments_staged-<nonce>" via a single atomic rename
-        // below, once the database rekey has also succeeded.
+        // cleared here -- and it only becomes "Attachments_staged-<hash>" via a single atomic
+        // rename, below, *before* the database rekey. The database rekey is the commit point:
+        // a crash before it leaves the database on the old key, so the next open (with the old
+        // key) finds the staged directory's name doesn't match and discards it; a crash after it
+        // leaves the database on the new key, so the next open finds a match and installs it.
+        // The scratch name matters because copyBlobsTo can itself be interrupted partway: a
+        // partial copy must never carry the staged name. If the new key equals the current one,
+        // that name matches the database and the partial copy would be installed, silently losing
+        // blobs; even for a different key, it would leave a half-written directory on disk.
         static constexpr const char* kRekeyingDirName = "Attachments_rekeying";
         filePath().subdirectoryNamed(kRekeyingDirName).delRecursive();
-        auto& blobStore     = getBlobStore();
-        auto  rekeyingStore = createBlobStore(kRekeyingDirName, *newKey, true);
+        auto&    blobStore     = getBlobStore();
+        auto     rekeyingStore = createBlobStore(kRekeyingDirName, *newKey, true);
+        FilePath stagedDir     = filePath().subdirectoryNamed(stagedBlobDirName(*newKey));
         try {
             blobStore.copyBlobsTo(*rekeyingStore);
+
+            // Publish the rekeyed attachments under a name hashed from the new key, with a single
+            // atomic rename (nothing to overwrite, since finishPendingBlobStoreSwap already
+            // cleared any prior one above, matching or not):
+            rekeyingStore.reset();  // release before renaming its directory out from under it
+            filePath().subdirectoryNamed(kRekeyingDirName).moveTo(stagedDir);
 
             // Rekey the database itself:
             dataFile()->rekey((EncryptionAlgorithm)newKey->algorithm,
                               slice(newKey->bytes, kEncryptionKeySize[newKey->algorithm]));
         } catch ( ... ) {
-            rekeyingStore->deleteStore();
+            if ( rekeyingStore ) rekeyingStore->deleteStore();
+            filePath().subdirectoryNamed(kRekeyingDirName).delRecursive();
+            stagedDir.delRecursive();
             throw;
         }
 
-        // The database is now durably on the new key. Publish the rekeyed attachments under a
-        // name hashed from that key, with a single atomic rename (nothing to overwrite, since
-        // finishPendingBlobStoreSwap already cleared any prior one above, matching or not):
-        rekeyingStore.reset();  // release before renaming its directory out from under it
-        filePath().subdirectoryNamed(kRekeyingDirName).moveTo(filePath().subdirectoryNamed(stagedBlobDirName(*newKey)));
-
+        // The database is now durably on the new key.
         const_cast<C4DatabaseConfig2&>(_config).encryptionKey = *newKey;
 
         // Finally install it as the live BlobStore:
@@ -369,9 +380,9 @@ namespace litecore {
         for ( auto& stagedDir : found ) {
             if ( stagedDir.fileOrDirName() == expectedName ) {
                 // Its name matching this database's current key guarantees it's the complete,
-                // correctly-rekeyed attachments store, and that the database rekey that produced
-                // it already succeeded (see rekey() below) -- so there's nothing here to verify
-                // or rebuild, only to finish installing.
+                // correctly-rekeyed attachments store (rekey() publishes it only after fully
+                // writing it), and the database is already on that key -- so there's nothing
+                // here to verify or rebuild, only to finish installing.
                 if ( _blobStore ) {
                     // Update the existing BlobStore object in place, rather than replacing it,
                     // so a C4BlobStore* a caller already holds (e.g. from an earlier
@@ -385,14 +396,14 @@ namespace litecore {
                     stagedDir.moveToReplacingDir(filePath().subdirectoryNamed("Attachments"), true);
                 }
             } else {
-                // Doesn't match this database's current key: an earlier rekey attempt that was
-                // superseded before finishing, or (e.g. a bundle reassembled from mismatched
-                // backup pieces) one that never belonged to this database's history at all.
+                // Doesn't match this database's current key: typically a rekey that was interrupted
+                // after staging but before its database rekey committed (so the database is still
+                // on the old key), or (e.g. a bundle reassembled from mismatched backup pieces)
+                // one that never belonged to this database's history at all.
                 // Either way it isn't safe to install -- log it rather than leaving it as
                 // silent, unexplained disk usage, and discard it.
                 _dataFile->_logWarning("Discarding stale staged attachments store '%s': doesn't match this "
-                                       "database's current key, so an earlier rekey may not have completed as "
-                                       "expected",
+                                       "database's current key, so an earlier rekey did not complete",
                                        stagedDir.fileOrDirName().c_str());
                 stagedDir.delRecursive();
             }
