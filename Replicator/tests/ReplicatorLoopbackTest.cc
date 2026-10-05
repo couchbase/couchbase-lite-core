@@ -47,6 +47,55 @@ TEST_CASE("Options password logging redaction") {
     CHECK(str.find(password) == string::npos);
 }
 
+TEST_CASE("Options cookie logging redaction") {
+    // Multi-pair cookie, as passed by a session authenticator.
+    string          sessionID("SGWSESSIONSECRET");
+    fleece::Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionCookies));
+    enc.writeString("a=OTHERCOOKIE; SyncGatewaySession=" + sessionID + "; b=2");
+    enc.writeKey(C4STR(kC4ReplicatorOptionMaxRetries));
+    enc.writeInt(7);
+    enc.endDict();
+    alloc_slice         properties = enc.finish();
+    Replicator::Options opts(kC4OneShot, kC4Disabled, properties);
+
+    auto str = string(opts);
+    Log("Options = %s", str.c_str());
+    CHECK(str.find(sessionID) == string::npos);
+    CHECK(str.find("OTHERCOOKIE") == string::npos);
+    CHECK(str.find("cookies:\"[REDACTED]\"") != string::npos);  // key still shows the option is set
+    CHECK(str.find("maxRetries:7") != string::npos);            // non-secret options still logged
+}
+
+TEST_CASE("Options header logging redaction") {
+    fleece::Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionExtraHeaders));
+    enc.beginDict();
+    enc.writeKey("Authorization"_sl);
+    enc.writeString("Bearer BEARERSECRET");
+    enc.writeKey("Cookie"_sl);
+    enc.writeString("SyncGatewaySession=HEADERCOOKIESECRET");
+    // Names matching allowlisted keys used to leak their values:
+    enc.writeKey("auth"_sl);
+    enc.writeString("AUTHHEADERSECRET");
+    enc.writeKey("type"_sl);
+    enc.writeString("TYPEHEADERSECRET");
+    enc.endDict();
+    enc.endDict();
+    alloc_slice         properties = enc.finish();
+    Replicator::Options opts(kC4OneShot, kC4Disabled, properties);
+
+    auto str = string(opts);
+    Log("Options = %s", str.c_str());
+    for ( const char* secret : {"BEARERSECRET", "HEADERCOOKIESECRET", "AUTHHEADERSECRET", "TYPEHEADERSECRET"} )
+        CHECK(str.find(secret) == string::npos);
+    // Header names stay visible:
+    for ( const char* name : {"Authorization", "Cookie", "auth", "type"} )
+        CHECK(str.find(string(name) + ":\"[REDACTED]\"") != string::npos);
+}
+
 N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
     // Push a doc:
     createRev(_collDB1, "doc"_sl, kRevID, kEmptyFleeceBody);
