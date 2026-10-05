@@ -64,8 +64,8 @@ TEST_CASE("Options cookie logging redaction") {
     Log("Options = %s", str.c_str());
     CHECK(str.find(sessionID) == string::npos);
     CHECK(str.find("OTHERCOOKIE") == string::npos);
-    CHECK(str.find("cookies:\"[REDACTED]\"") != string::npos);  // key still shows the option is set
-    CHECK(str.find("maxRetries:7") != string::npos);            // non-secret options still logged
+    CHECK(str.find("cookies") == string::npos);
+    CHECK(str.find("maxRetries:7") != string::npos);  // non-secret options still logged
 }
 
 TEST_CASE("Options header logging redaction") {
@@ -91,9 +91,40 @@ TEST_CASE("Options header logging redaction") {
     Log("Options = %s", str.c_str());
     for ( const char* secret : {"BEARERSECRET", "HEADERCOOKIESECRET", "AUTHHEADERSECRET", "TYPEHEADERSECRET"} )
         CHECK(str.find(secret) == string::npos);
-    // Header names stay visible:
-    for ( const char* name : {"Authorization", "Cookie", "auth", "type"} )
-        CHECK(str.find(string(name) + ":\"[REDACTED]\"") != string::npos);
+    CHECK(str.find("headers") == string::npos);
+}
+
+TEST_CASE("Options auth logging redaction") {
+    // Replicator auth and proxy auth share the "auth" key; neither should be logged.
+    fleece::Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorAuthType));
+    enc.writeString(kC4AuthTypeBasic);
+    enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+    enc.writeString("REPLUSERNAME");
+    enc.endDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionProxyServer));
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorProxyHost));
+    enc.writeString("proxy.example.com");
+    enc.writeKey(C4STR(kC4ReplicatorProxyAuth));
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+    enc.writeString("PROXYUSERNAME");
+    enc.endDict();
+    enc.endDict();
+    enc.endDict();
+    alloc_slice         properties = enc.finish();
+    Replicator::Options opts(kC4OneShot, kC4Disabled, properties);
+
+    auto str = string(opts);
+    Log("Options = %s", str.c_str());
+    CHECK(str.find("REPLUSERNAME") == string::npos);
+    CHECK(str.find("PROXYUSERNAME") == string::npos);
+    CHECK(str.find("auth") == string::npos);
+    CHECK(str.find("host:\"proxy.example.com\"") != string::npos);  // other proxy settings still logged
 }
 
 N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
