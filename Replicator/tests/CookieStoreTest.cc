@@ -18,6 +18,7 @@
 #include "CookieStore.hh"
 #include "DatabaseCookies.hh"
 #include "Address.hh"
+#include "HTTPLogic.hh"
 
 using namespace fleece;
 using namespace litecore;
@@ -357,4 +358,77 @@ TEST_CASE("RootPathMatch", "[Cookies]") {
     CHECK(store->setCookie("a4=b4; Domain=example.com", "example.com", ""));
     CHECK(store->cookiesForRequest(kRootPathRequest) == "a1=b1; a2=b2; a3=b3; a4=b4");
     CHECK(store->cookiesForRequest(kEmptyPathRequest) == "a1=b1; a2=b2; a3=b3; a4=b4");
+}
+
+#pragma mark - HTTPLogic::formatHTTPForLog credential redaction
+
+TEST_CASE("HTTPLogic formatHTTPForLog redacts credential headers", "[HTTP]") {
+    string request = "GET /travel/_blipsync HTTP/1.1\r\n"
+                     "Host: sgw.example.com:4984\r\n"
+                     "Authorization: Basic YWxpY2U6U0VDUkVUcGFzcw==\r\n"
+                     "Cookie: SyncGatewaySession=4b8f68f57a0166bba86e9ab5d99d49f2804da532\r\n"
+                     "Proxy-Authorization: Basic cHJveHk6cHJveHlwYXNz\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+
+    string formatted = HTTPLogic::formatHTTPForLog(slice(request));
+
+    CHECK(formatted
+          == "\tGET /travel/_blipsync HTTP/1.1\n"
+             "\tHost: sgw.example.com:4984\n"
+             "\tAuthorization: [REDACTED]\n"
+             "\tCookie: [REDACTED]\n"
+             "\tProxy-Authorization: [REDACTED]\n"
+             "\tUpgrade: websocket");
+    CHECK(formatted.find("YWxpY2U6U0VDUkVUcGFzcw==") == string::npos);
+    CHECK(formatted.find("4b8f68f57a0166bba86e9ab5d99d49f2804da532") == string::npos);
+    CHECK(formatted.find("cHJveHk6cHJveHlwYXNz") == string::npos);
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog redacts Bearer tokens and Set-Cookie", "[HTTP]") {
+    string request  = "GET /db/_blipsync HTTP/1.1\r\n"
+                      "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.payload.sig\r\n"
+                      "\r\n";
+    string response = "HTTP/1.1 101 Switching Protocols\r\n"
+                      "Set-Cookie: SyncGatewaySession=9f3c1d; Path=/db\r\n"
+                      "Connection: Upgrade\r\n"
+                      "\r\n";
+
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == "\tGET /db/_blipsync HTTP/1.1\n"
+             "\tAuthorization: [REDACTED]");
+    CHECK(HTTPLogic::formatHTTPForLog(slice(response))
+          == "\tHTTP/1.1 101 Switching Protocols\n"
+             "\tSet-Cookie: [REDACTED]\n"
+             "\tConnection: Upgrade");
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog header matching is case-insensitive and exact", "[HTTP]") {
+    string request = "GET / HTTP/1.1\r\n"
+                     "cookie: SyncGatewaySession=lowercase\r\n"
+                     "AUTHORIZATION: Basic dXBwZXI=\r\n"
+                     "X-Cookie-Info: not-a-secret\r\n"
+                     "Cookie2: also-not-redacted\r\n"
+                     "\r\n";
+
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == "\tGET / HTTP/1.1\n"
+             "\tcookie: [REDACTED]\n"
+             "\tAUTHORIZATION: [REDACTED]\n"
+             "\tX-Cookie-Info: not-a-secret\n"
+             "\tCookie2: also-not-redacted");
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog leaves non-credential output unchanged", "[HTTP]") {
+    // Same input/output the formatter produced before redaction was added.
+    string request = "GET /db HTTP/1.1\r\n"
+                     "Host: localhost:4984\r\n"
+                     "Content-Type: application/json\r\n"
+                     "\r\n"
+                     "{\"body\":\"after the headers is not formatted\"}";
+
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == "\tGET /db HTTP/1.1\n"
+             "\tHost: localhost:4984\n"
+             "\tContent-Type: application/json");
 }
