@@ -176,8 +176,7 @@ namespace litecore {
             _config.flags &= ~kC4DB_VersionVectors;
 
         // Initialize _mySourceID
-        C4UUID pub = const_cast<DatabaseImpl*>(this)->getUUID(kPublicUUIDKey);
-        memcpy(&_mySourceID, &pub, sizeof(_mySourceID));
+        updateMySourceID();
 
         // Start document-expiration tasks for all Collections that need them:
         initCollections();
@@ -420,6 +419,11 @@ namespace litecore {
         return uuid;
     }
 
+    void DatabaseImpl::updateMySourceID() const {
+        C4UUID pub = const_cast<DatabaseImpl*>(this)->getUUID(kPublicUUIDKey);
+        memcpy(&_mySourceID, &pub, sizeof(_mySourceID));
+    }
+
     C4UUID DatabaseImpl::getUUID(slice key) const {
         C4UUID uuid;
         if ( !getUUIDIfExists(key, uuid) ) {
@@ -438,6 +442,8 @@ namespace litecore {
         generateUUID(kPublicUUIDKey, true);
         generateUUID(kPrivateUUIDKey, true);
         t.commit();
+
+        updateMySourceID();
     }
 
     alloc_slice DatabaseImpl::getSourceID() const { return alloc_slice(mySourceID().asASCII()); }
