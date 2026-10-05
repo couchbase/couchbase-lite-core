@@ -360,10 +360,7 @@ namespace litecore::repl {
             kC4ReplicatorOptionPinnedServerCert,
             kC4ReplicatorOptionOnlySelfSignedServerCert,
 
-            // HTTP options:
-            kC4ReplicatorOptionExtraHeaders,
-            kC4ReplicatorOptionCookies,
-            kC4ReplicatorOptionAuthentication,
+            // HTTP options (cookies, headers and auth may hold credentials, so they aren't logged):
             kC4ReplicatorOptionProxyServer,
 
             // WebSocket options:
@@ -375,11 +372,7 @@ namespace litecore::repl {
             kC4ReplicatorCompressionLevel,
 
             // [1]: Auth dictionary keys:
-            kC4ReplicatorAuthType,
-            kC4ReplicatorAuthUserName,
             // kC4ReplicatorAuthPassword,
-            kC4ReplicatorAuthEnableChallengeAuth,
-            kC4ReplicatorAuthClientCert,
             // kC4ReplicatorAuthClientCertKey,
             // kC4ReplicatorAuthToken,
 
@@ -387,6 +380,5 @@ namespace litecore::repl {
             kC4ReplicatorProxyType,
             kC4ReplicatorProxyHost,
             kC4ReplicatorProxyPort,
-            kC4ReplicatorProxyAuth,
     };
 }  // namespace litecore::repl
