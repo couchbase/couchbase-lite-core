@@ -129,7 +129,7 @@ class WITH_ERROR {
 
 
 // Temporary directory to use for tests.
-#define TEMPDIR(PATH) c4str((TempDir() + (PATH)).c_str())
+#define TEMPDIR(PATH) c4str((TempDir() + kPathSeparator + (PATH)).c_str())
 
 const std::string& TempDir();
 

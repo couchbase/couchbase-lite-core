@@ -48,7 +48,6 @@ function(set_litecore_source_linux)
         ${LINUX_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_ICU.cc
-        LiteCore/Unix/strlcat.c
         LiteCore/Support/StringUtil_icu.cc
         PARENT_SCOPE
     )
