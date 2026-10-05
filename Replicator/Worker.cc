@@ -40,6 +40,20 @@ namespace litecore::repl {
 
     LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
 
+    // Placeholder logged instead of credential values.
+    static constexpr const char* kRedactedValue = "\"[REDACTED]\"";
+
+    // Logs header names only; any header value may be a credential.
+    static void writeRedactedHeaders(Dict headers, stringstream& s) {
+        s << "{";
+        int n = 0;
+        for ( Dict::iterator i(headers); i; ++i ) {
+            if ( n++ > 0 ) s << ", ";
+            s << i.keyString() << ":" << kRedactedValue;
+        }
+        s << "}";
+    }
+
     static void writeRedacted(Dict dict, stringstream& s) {
         s << "{";
         int n = 0;
@@ -48,7 +62,15 @@ namespace litecore::repl {
             slice key = i.keyString();
             if ( Options::kWhiteListOfKeysToLog.find(key) == Options::kWhiteListOfKeysToLog.end() ) continue;
             s << key << ":";
-            if ( i.value().asDict() ) {
+            if ( key == slice(kC4ReplicatorOptionCookies) ) {
+                s << kRedactedValue;
+            } else if ( key == slice(kC4ReplicatorOptionExtraHeaders) ) {
+                if ( Dict headers = i.value().asDict() ) {
+                    writeRedactedHeaders(headers, s);
+                } else {
+                    s << kRedactedValue;
+                }
+            } else if ( i.value().asDict() ) {
                 writeRedacted(i.value().asDict(), s);
             } else {
                 alloc_slice json(i.value().toJSON5());
@@ -358,7 +380,7 @@ namespace litecore::repl {
             kC4ReplicatorOptionPinnedServerCert,
             kC4ReplicatorOptionOnlySelfSignedServerCert,
 
-            // HTTP options:
+            // HTTP options (cookie and header values are redacted in writeRedacted):
             kC4ReplicatorOptionExtraHeaders,
             kC4ReplicatorOptionCookies,
             kC4ReplicatorOptionAuthentication,
