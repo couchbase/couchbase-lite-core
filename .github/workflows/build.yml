@@ -23,7 +23,8 @@ env:
   # NOTE: If we decide to archive the build products we should build with RelWithDebInfo instead.
   BUILD_TYPE: Debug
   # Xcode used by the macOS job; must be installed on the macos-26 runner image. Ignored on other OSes.
-  DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+  # With Xcode 26.3 the ASan test binaries hang at startup on macOS 26.6; 26.6 can't compile this branch's fleece.
+  DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
 
 jobs:
   build:
@@ -77,6 +78,7 @@ jobs:
 
     - name: Test
       if: runner.os != 'Windows'
+      timeout-minutes: 60
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: |
