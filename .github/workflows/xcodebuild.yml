@@ -24,10 +24,12 @@ env:
   # Test_CE is a dupplicate of Debug except it has the c++ define, LITECORE_CPPTEST, activated.
   CONFIGURATION: Debug
   CONFIGURATION_CPP: Test_CE
+  # Xcode to build with; must be installed on the macos-26 runner image.
+  DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
 
 jobs:
   build:
-    runs-on: macOS-latest
+    runs-on: macos-26
 
     steps:
     - uses: actions/checkout@v2
