@@ -69,7 +69,7 @@ namespace litecore {
 
         HybridClock& versionClock() const { return _versionClock; }
 
-        SourceID mySourceID() const;
+        SourceID mySourceID() const { return _mySourceID; }
 
         void resetUUIDs() override;
 
@@ -157,6 +157,7 @@ namespace litecore {
         void            _cleanupTransaction(bool committed);
         bool            getUUIDIfExists(slice key, C4UUID&) const;
         C4UUID          generateUUID(slice key, bool overwrite = false);
+        void            updateMySourceID() const;
 
         KeyStore& infoKeyStore() const;
         Record    getInfo(slice key) const;

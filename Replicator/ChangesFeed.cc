@@ -217,13 +217,15 @@ namespace litecore::repl {
     bool ChangesFeed::shouldPushRev(RevToSend* rev, C4DocEnumerator* e) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID && _isCheckpointValid;
         if ( needRemoteRevID || _options->pushFilter(_collectionIndex) ) {
-            C4Error              error{};
+            C4Error error{};
+            // Hold coll in the same scope of doc.
+            BorrowedCollection   coll;
             Retained<C4Document> doc;
             try {
+                coll = _db.useCollection(_collectionSpec);
                 if ( e ) doc = e->getDocument();
                 else
-                    doc = _db.useCollection(_collectionSpec)
-                                  ->getDocument(rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
+                    doc = coll->getDocument(rev->docID, true, (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
                 if ( !doc ) error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
             } catch ( ... ) { error = C4Error::fromCurrentException(); }
             if ( !doc ) {
