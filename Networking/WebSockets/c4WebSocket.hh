@@ -44,6 +44,10 @@ namespace litecore::repl {
         C4WebSocket(const websocket::URL&, websocket::Role, const fleece::alloc_slice& options, const C4SocketFactory*,
                     void* nativeHandle = nullptr);
 
+        // Must run before any of this object's own teardown, while the vtable still reflects
+        // this class's own overrides -- see WebSocketImpl::stopTimers()'s doc comment.
+        ~C4WebSocket() override;
+
         void closeWithException();
 
         /** Blocks until the TLS handshake completes or the socket closes. Returns true on success. */
