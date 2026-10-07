@@ -1,6 +1,7 @@
 on:
   workflow_call: # So it can be used by our other repos
   pull_request:  # And also be used for itself
+    types: [opened]
     branches: ['release/**']
   workflow_dispatch:  # manual trigger via GitHub UI
 

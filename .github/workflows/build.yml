@@ -22,6 +22,9 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   # NOTE: If we decide to archive the build products we should build with RelWithDebInfo instead.
   BUILD_TYPE: Debug
+  # Xcode used by the macOS job; must be installed on the macos-26 runner image. Ignored on other OSes.
+  # Newer Xcode (26.5+) can't compile this branch's fleece.
+  DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
 
 jobs:
   build:
@@ -29,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest, macos-26, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -48,9 +51,10 @@ jobs:
       # "Note the current convention is to use the -S and -B options here to specify source
       # and build directories, but this is only available with CMake 3.13 and higher.
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12"
+      # Sanitizers off on macOS: with Xcode 26.3, ASan test binaries hang at startup on macOS 26.6.
       if: runner.os != 'Windows'
       working-directory: ${{github.workspace}}/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLITECORE_SANITIZE=ON
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DLITECORE_SANITIZE=${{ runner.os == 'macOS' && 'OFF' || 'ON' }}
 
     - name: Configure CMake (Windows)
       # "Note the current convention is to use the -S and -B options here to specify source
@@ -75,6 +79,7 @@ jobs:
 
     - name: Test
       if: runner.os != 'Windows'
+      timeout-minutes: 60
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: |
