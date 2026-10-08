@@ -201,11 +201,11 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
     // is really on) and its attachments must be readable, unless the open is expected to fail.
 
     C4EncryptionKey *onKey = nullptr, *otherKey = nullptr;
-    bool             readOnlyFailure = false;
-    bool             stagedRemains   = false;  // kStagedBlobDirName still exists after the open
+    bool             readOnlyFailure  = false;
+    bool             stagedRemains    = false;  // kStagedBlobDirName still exists after the open
     bool             rekeyingLeftover = false;  // kRekeyingDirName still exists after the open
-    bool             rekeyAfterOpen  = false;  // after a writeable open, rekey again and check the cleanup
-    dbConfig.flags                   = dbConfig.flags & ~kC4DB_Create;
+    bool             rekeyAfterOpen   = false;  // after a writeable open, rekey again and check the cleanup
+    dbConfig.flags                    = dbConfig.flags & ~kC4DB_Create;
 
     // Precondition: the disk holds the result of the successful rekey above, so both
     // db.sqlite3 and Attachments are encrypted with newKey.
