@@ -150,6 +150,10 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
     static constexpr const char* kRekeyingDirName   = "Attachments_rekeying";
     static constexpr const char* kStagedBlobDirName = "Attachments_staged";
     FilePath                     tempDir            = parentDir.subdirectoryNamed(".temp");
+    // The cleanup at the end of this test is skipped when an earlier run fails (for example,
+    // an exception or a failed REQUIRE), which leaves the snapshots behind. Remove them now:
+    // blobs are read-only files, which cannot be overwritten when copying on Linux.
+    if ( tempDir.exists() ) tempDir.delRecursive();
     tempDir.mkdir();
     auto key0Snapshot   = tempDir.subdirectoryNamed("key0");
     auto newKeySnapshot = tempDir.subdirectoryNamed("newKey");
@@ -218,7 +222,9 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
         otherKey = &key0;
         dbPath["Attachments"].moveTo(dbPath[kStagedBlobDirName]);
         // Restore the old Attachments, still encrypted with key0.
-        key0Snapshot["Attachments"].copyTo(dbPath["Attachments"]);
+        // (Directories are copied through subdirectoryNamed(), whose trailing separator marks the
+        // path as a directory; copyTo() treats other paths as plain files on Linux.)
+        key0Snapshot.subdirectoryNamed("Attachments").copyTo(dbPath.subdirectoryNamed("Attachments"));
 
         SECTION("Read-only Open") {
             // A read-only open must fail: it would have to install the staged Attachments,
@@ -241,7 +247,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
         otherKey = &newKey;
         dbPath.delRecursive();
         key0Snapshot.copyTo(dbPath);
-        newKeySnapshot["Attachments"].copyTo(dbPath[kStagedBlobDirName]);
+        newKeySnapshot.subdirectoryNamed("Attachments").copyTo(dbPath.subdirectoryNamed(kStagedBlobDirName));
 
         SECTION("Read-only Open") {
             // A read-only open works: the leftover directory is ignored, not deleted.
@@ -276,7 +282,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
         otherKey = &newKey;
         dbPath.delRecursive();
         key0Snapshot.copyTo(dbPath);
-        newKeySnapshot["Attachments"].copyTo(dbPath[kRekeyingDirName]);
+        newKeySnapshot.subdirectoryNamed("Attachments").copyTo(dbPath.subdirectoryNamed(kRekeyingDirName));
         rekeyingLeftover = true;
 
         SECTION("Read-only Open") { dbConfig.flags = dbConfig.flags | kC4DB_ReadOnly; }
