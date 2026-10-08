@@ -214,6 +214,28 @@ void C4BlobStore::copyBlobsTo(C4BlobStore& toStore) {
     });
 }
 
+optional<bool> C4BlobStore::validateEncryption(bool some) const {
+    auto matchesDigest = [&](const C4BlobKey& key) {
+        try {
+            auto        reader = getReadStream(key);
+            SHA1Builder sha;
+            uint8_t     buffer[4096];
+            size_t      bytesRead;
+            while ( (bytesRead = reader->read(buffer, sizeof(buffer))) > 0 ) sha << slice(buffer, bytesRead);
+            C4BlobKey actual;
+            sha.finish(&actual.bytes, sizeof(actual.bytes));
+            return actual == key;
+        } catch ( ... ) { return false; }
+    };
+
+    optional<bool> result;
+    dir().forEachFile([&](const FilePath& path) {
+        if ( result && (some || !*result) ) return;  // already decided
+        if ( auto key = BlobKeyFromFilename(path.fileName()); key ) result = matchesDigest(*key);
+    });
+    return result;
+}
+
 void C4BlobStore::replaceWith(C4BlobStore& other) {
     other.dir().moveToReplacingDir(dir(), true);
     _flags         = other._flags;

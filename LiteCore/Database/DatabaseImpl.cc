@@ -23,7 +23,6 @@
 #include "SequenceTracker.hh"
 #include "FleeceImpl.hh"
 #include "Upgrader.hh"
-#include "SecureDigest.hh"
 #include "SecureRandomize.hh"
 #include "SQLiteKeyStore.hh"
 #include "StringUtil.hh"
@@ -48,29 +47,7 @@ namespace litecore {
     static constexpr slice    kMaxRevTreeDepthKey     = "maxRevTreeDepth";
     static constexpr uint32_t kDefaultMaxRevTreeDepth = 50;
 
-    static constexpr slice kStagedBlobDirPrefix = "Attachments_staged-";
-
-    // Names the one staged attachments directory that corresponds to `key`: a hash of the key
-    // itself, not of anything in the database, so it's stable across everything but an actual
-    // rekey (see DatabaseImpl::rekey() and finishPendingBlobStoreSwap()).
-    //
-    // Unlike C4BlobKey (a SHA-1 of blob *content*, which is fine to expose since the content is
-    // going to be readable once decrypted anyway), this hashes the encryption key itself -- or,
-    // if it came from c4key_setPassword, something derived from a user password -- and the
-    // result sits in a plaintext directory name, unlike the file contents. So it uses SHA-256,
-    // not the faster SHA-1 used elsewhere for content identity: a fast hash here would make it
-    // cheaper for anyone with bundle access (but not the actual decrypted content) to verify
-    // guesses against a weak password offline. Truncating the *output* to 64 bits doesn't
-    // reduce that per-guess cost -- it only shortens what's kept for comparison, which matters
-    // only for staying clear of path-length limits (notably Windows' historical MAX_PATH); this
-    // isn't a collision-resistance requirement; it only needs to tell apart the handful of keys
-    // a single database might ever have used.
-    static string stagedBlobDirName(const C4EncryptionKey& key) {
-        SHA256Builder digest;
-        digest << uint8_t(key.algorithm) << slice(key.bytes, kEncryptionKeySize[key.algorithm]);
-        SHA256 full = digest.finish();  // keep alive: asSlice() below points into it
-        return kStagedBlobDirPrefix.asString() + slice(full.asSlice().buf, 8).hexString();
-    }
+    static constexpr const char* kStagedBlobDirName = "Attachments_staged";
 
     static string                     collectionNameToKeyStoreName(C4Database::CollectionSpec);
     static C4Database::CollectionSpec keyStoreNameToCollectionSpec(slice name);
@@ -201,9 +178,8 @@ namespace litecore {
 
         // If a previous rekey was interrupted after its database rekey succeeded but before the
         // attachments swap finished, finish installing the staged attachments store now rather
-        // than leaving it around until something happens to access the BlobStore. Not gated on
-        // writeable: this only finishes an already-committed change, and skipping it would leave
-        // a read-only open serving stale, wrong-key attachments indefinitely.
+        // than leaving it around until something happens to access the BlobStore. (On a read-only
+        // open this throws instead if that would require modifying files.)
         finishPendingBlobStoreSwap();
 
         // Initialize _mySourceID
@@ -259,28 +235,26 @@ namespace litecore {
         // the attachments swap finished, complete that first rather than clobbering it.
         finishPendingBlobStoreSwap();
 
-        // Rekey the attachments into a scratch directory. Its name is never treated as
-        // meaningful by recovery logic (finishPendingBlobStoreSwap) -- it's unconditionally
-        // cleared here -- and it only becomes "Attachments_staged-<hash>" via a single atomic
-        // rename, below, *before* the database rekey. The database rekey is the commit point:
-        // a crash before it leaves the database on the old key, so the next open (with the old
-        // key) finds the staged directory's name doesn't match and discards it; a crash after it
-        // leaves the database on the new key, so the next open finds a match and installs it.
+        // Rekey the attachments into a scratch directory, then publish it as "Attachments_staged"
+        // with a single atomic rename *before* the database rekey. The database rekey is the
+        // commit point: a crash before it leaves the database on the old key, so the next open
+        // finds that the staged blobs don't decrypt with the current key and discards them; a
+        // crash after it leaves the database on the new key, so the staged blobs decrypt and
+        // the next open installs them.
         // The scratch name matters because copyBlobsTo can itself be interrupted partway: a
         // partial copy must never carry the staged name. If the new key equals the current one,
-        // that name matches the database and the partial copy would be installed, silently losing
-        // blobs; even for a different key, it would leave a half-written directory on disk.
+        // a partial copy would decrypt fine and be installed, silently losing blobs; even for a
+        // different key, it would leave a half-written directory on disk.
         static constexpr const char* kRekeyingDirName = "Attachments_rekeying";
         filePath().subdirectoryNamed(kRekeyingDirName).delRecursive();
         auto&    blobStore     = getBlobStore();
         auto     rekeyingStore = createBlobStore(kRekeyingDirName, *newKey, true);
-        FilePath stagedDir     = filePath().subdirectoryNamed(stagedBlobDirName(*newKey));
+        FilePath stagedDir     = filePath().subdirectoryNamed(kStagedBlobDirName);
         try {
             blobStore.copyBlobsTo(*rekeyingStore);
 
-            // Publish the rekeyed attachments under a name hashed from the new key, with a single
-            // atomic rename (nothing to overwrite, since finishPendingBlobStoreSwap already
-            // cleared any prior one above, matching or not):
+            // Publish the rekeyed attachments (finishPendingBlobStoreSwap above already cleared
+            // any earlier staged directory, so there's nothing to overwrite):
             rekeyingStore.reset();  // release before renaming its directory out from under it
             filePath().subdirectoryNamed(kRekeyingDirName).moveTo(stagedDir);
 
@@ -371,45 +345,49 @@ namespace litecore {
     }
 
     void DatabaseImpl::finishPendingBlobStoreSwap() const {
-        // There should be at most one "Attachments_staged-*" at a time (rekey() always clears
-        // any prior one, matching or not, before creating a new one) -- but handle more than one
-        // gracefully anyway, rather than assuming it.
-        vector<FilePath> found;
-        FilePath(filePath().dirName(), string(kStagedBlobDirPrefix)).forEachMatch([&](const FilePath& f) {
-            found.push_back(f);
-        });
+        FilePath stagedDir = filePath().subdirectoryNamed(kStagedBlobDirName);
+        if ( !stagedDir.existsAsDir() ) return;
 
-        string expectedName = stagedBlobDirName(_config.encryptionKey);
-        for ( auto& stagedDir : found ) {
-            if ( stagedDir.fileOrDirName() == expectedName ) {
-                // Its name matching this database's current key guarantees it's the complete,
-                // correctly-rekeyed attachments store (rekey() publishes it only after fully
-                // writing it), and the database is already on that key -- so there's nothing
-                // here to verify or rebuild, only to finish installing.
-                if ( _blobStore ) {
-                    // Update the existing BlobStore object in place, rather than replacing it,
-                    // so a C4BlobStore* a caller already holds (e.g. from an earlier
-                    // getBlobStore()/c4db_getBlobStore()) stays valid and reflects the new
-                    // key/content, instead of becoming a dangling pointer.
-                    auto stagedStore = createBlobStore(expectedName, _config.encryptionKey, true);
-                    _blobStore->replaceWith(*stagedStore);
-                } else {
-                    // Nothing live yet to preserve identity for; the next getBlobStore() call
-                    // will construct a fresh object correctly.
-                    stagedDir.moveToReplacingDir(filePath().subdirectoryNamed("Attachments"), true);
-                }
-            } else {
-                // Doesn't match this database's current key: typically a rekey that was interrupted
-                // after staging but before its database rekey committed (so the database is still
-                // on the old key), or (e.g. a bundle reassembled from mismatched backup pieces)
-                // one that never belonged to this database's history at all.
-                // Either way it isn't safe to install -- log it rather than leaving it as
-                // silent, unexplained disk usage, and discard it.
-                _dataFile->_logWarning("Discarding stale staged attachments store '%s': doesn't match this "
-                                       "database's current key, so an earlier rekey did not complete",
-                                       stagedDir.fileOrDirName().c_str());
-                stagedDir.delRecursive();
+        // Check whether the staged blobs belong to the key the database is on now: they do if the
+        // database rekey committed, and don't if the rekey was interrupted before that. A staged
+        // store with no blobs is not needed either: the live store has none to replace.
+        auto stagedStore = createBlobStore(kStagedBlobDirName, _config.encryptionKey, true);
+        auto decrypts    = stagedStore->validateEncryption(true);
+        bool needed      = decrypts.value_or(false);
+
+        if ( _config.flags & kC4DB_ReadOnly ) {
+            // A read-only database must not have its files modified.
+            if ( !needed ) {
+                // The database is fine as it is; leave the leftover alone.
+                _dataFile->_logInfo("Ignoring leftover staged attachments store '%s' (read-only)",
+                                    stagedDir.fileOrDirName().c_str());
+                return;
             }
+            // The database is on the new key but the live attachments aren't yet; installing the
+            // staged ones is required to use it, and modifies files.
+            _dataFile->_logWarning("Staged attachments store '%s' must be installed before this database can "
+                                   "be used, but it is open read-only",
+                                   stagedDir.fileOrDirName().c_str());
+            error::_throw(error::NotWriteable, "An interrupted rekey must be finished by opening the database "
+                                               "read-write");
+        }
+
+        if ( !needed ) {
+            if ( decrypts.has_value() )
+                _dataFile->_logWarning("Staged attachments store '%s' doesn't decrypt with this database's key, so "
+                                       "an earlier rekey did not complete; discarding it",
+                                       stagedDir.fileOrDirName().c_str());
+            stagedDir.delRecursive();
+        } else if ( _blobStore ) {
+            // Update the existing BlobStore object in place, rather than replacing it, so a
+            // C4BlobStore* a caller already holds (e.g. from an earlier getBlobStore() /
+            // c4db_getBlobStore()) stays valid and reflects the new key/content, instead of
+            // becoming a dangling pointer.
+            _blobStore->replaceWith(*stagedStore);
+        } else {
+            // Nothing live yet to preserve identity for; the next getBlobStore() call will
+            // construct a fresh object correctly.
+            stagedDir.moveToReplacingDir(filePath().subdirectoryNamed("Attachments"), true);
         }
     }
 
