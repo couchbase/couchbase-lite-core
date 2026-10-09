@@ -160,7 +160,17 @@ struct C4BlobStore : C4Base {
     // Used internally by C4Database:
     unsigned deleteAllExcept(const std::unordered_set<C4BlobKey>& inUse);
     void     copyBlobsTo(C4BlobStore&);
-    void     replaceWith(C4BlobStore&);
+
+    /** Checks that this store's blobs are readable with its encryption key, by reading each one
+        in full and comparing its SHA-1 against the digest its filename is named for.
+        @param some  If true, checks only the first blob found; if false (the default, to be on
+                     the safe side), checks every blob.
+        @return  false if a blob didn't match or couldn't be decrypted (e.g. it was written with a
+                 different key); true if every blob checked passed; nullopt if the store has no
+                 blobs.
+        @throws  Any other error, such as an I/O error: it says nothing about the key. */
+    [[nodiscard]] std::optional<bool> validateEncryption(bool some = false) const;
+    void                              replaceWith(C4BlobStore&);
 
     // rarely used / for testing only:
     C4BlobStore(slice dirPath, C4DatabaseFlags, const C4EncryptionKey& = {});

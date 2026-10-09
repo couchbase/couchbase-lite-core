@@ -47,6 +47,7 @@ namespace litecore {
     static constexpr slice    kMaxRevTreeDepthKey     = "maxRevTreeDepth";
     static constexpr uint32_t kDefaultMaxRevTreeDepth = 50;
 
+    static constexpr const char* kStagedBlobDirName = "Attachments_staged";
 
     static string                     collectionNameToKeyStoreName(C4Database::CollectionSpec);
     static C4Database::CollectionSpec keyStoreNameToCollectionSpec(slice name);
@@ -175,6 +176,12 @@ namespace litecore {
         else
             _config.flags &= ~kC4DB_VersionVectors;
 
+        // If a previous rekey was interrupted after its database rekey succeeded but before the
+        // attachments swap finished, finish installing the staged attachments store now rather
+        // than leaving it around until something happens to access the BlobStore. (On a read-only
+        // open this throws instead if that would require modifying files.)
+        finishPendingBlobStoreSwap();
+
         // Initialize _mySourceID
         updateMySourceID();
 
@@ -224,25 +231,71 @@ namespace litecore {
         mustNotBeInTransaction();
         stopBackgroundTasks();
 
-        // Create a new BlobStore and copy/rekey the blobs into it:
-        filePath().subdirectoryNamed("Attachments_temp").delRecursive();
-        auto& blobStore = getBlobStore();
-        auto  newStore  = createBlobStore("Attachments_temp", *newKey, true);
+        // In case an earlier rekey was interrupted after its database rekey succeeded but before
+        // the attachments swap finished, complete that first rather than clobbering it.
+        finishPendingBlobStoreSwap();
+
+        // Rekey the attachments into a scratch directory, then publish it as "Attachments_staged"
+        // with a single atomic rename *before* the database rekey. The database rekey is the
+        // commit point: a crash before it leaves the database on the old key, so the next open
+        // finds that the staged blobs don't decrypt with the current key and discards them; a
+        // crash after it leaves the database on the new key, so the staged blobs decrypt and
+        // the next open installs them.
+        // The scratch name matters because copyBlobsTo can itself be interrupted partway: a
+        // partial copy must never carry the staged name. If the new key equals the current one,
+        // a partial copy would decrypt fine and be installed, silently losing blobs; even for a
+        // different key, it would leave a half-written directory on disk.
+        static constexpr const char* kRekeyingDirName = "Attachments_rekeying";
+        filePath().subdirectoryNamed(kRekeyingDirName).delRecursive();
+        auto&    blobStore     = getBlobStore();
+        auto     rekeyingStore = createBlobStore(kRekeyingDirName, *newKey, true);
+        FilePath stagedDir     = filePath().subdirectoryNamed(kStagedBlobDirName);
         try {
-            blobStore.copyBlobsTo(*newStore);
+            blobStore.copyBlobsTo(*rekeyingStore);
+
+            // Publish the rekeyed attachments (finishPendingBlobStoreSwap above already cleared
+            // any earlier staged directory, so there's nothing to overwrite):
+            rekeyingStore.reset();  // release before renaming its directory out from under it
+            filePath().subdirectoryNamed(kRekeyingDirName).moveTo(stagedDir);
 
             // Rekey the database itself:
             dataFile()->rekey((EncryptionAlgorithm)newKey->algorithm,
                               slice(newKey->bytes, kEncryptionKeySize[newKey->algorithm]));
         } catch ( ... ) {
-            newStore->deleteStore();
-            throw;
+            // Remove only the scratch directory. A staged directory that was already published
+            // is kept for now: DataFile::rekey() can throw after the database rekey has committed
+            // (for example while reopening the file), so whether the staged attachments are still
+            // needed depends on the key the database is really on. Once _config reflects that key
+            // (below), finishPendingBlobStoreSwap() installs or discards them. If that fails too,
+            // the next open or rekey settles it.
+            if ( rekeyingStore ) rekeyingStore->deleteStore();
+            filePath().subdirectoryNamed(kRekeyingDirName).delRecursive();
+
+            // DataFile::rekey() updates its options only after the database rekey has committed.
+            // So if they now hold the new key, the database is on it: record that in _config,
+            // which finishPendingBlobStoreSwap() relies on. Otherwise leave _config alone.
+            bool databaseOnNewKey = [newKey](const DataFile::Options& opts) -> bool {
+                if ( opts.encryptionAlgorithm != (EncryptionAlgorithm)newKey->algorithm ) return false;
+                return opts.encryptionAlgorithm == kNoEncryption
+                       || opts.encryptionKey == slice(newKey->bytes, kEncryptionKeySize[newKey->algorithm]);
+            }(dataFile()->options());
+            if ( databaseOnNewKey ) const_cast<C4DatabaseConfig2&>(_config).encryptionKey = *newKey;
+
+            // Settle the staged store now. If the rekey committed, this installs it, so this
+            // object's BlobStore is on the key the database is on (nothing then writes old-key
+            // blobs that the install would lose); if not, it discards it. A failure here must not
+            // hide the original exception.
+            try {
+                finishPendingBlobStoreSwap();
+            }
+            catchAndWarn() throw;
         }
 
+        // The database is now durably on the new key.
         const_cast<C4DatabaseConfig2&>(_config).encryptionKey = *newKey;
 
-        // Finally replace the old BlobStore with the new one:
-        blobStore.replaceWith(*newStore);
+        // Finally install it as the live BlobStore:
+        finishPendingBlobStoreSwap();
         startBackgroundTasks();
         _dataFile->_logInfo("Finished rekeying database!");
     }
@@ -307,8 +360,60 @@ namespace litecore {
     }
 
     C4BlobStore& DatabaseImpl::getBlobStore() const {
-        if ( !_blobStore ) _blobStore = createBlobStore("Attachments", _config.encryptionKey);
+        if ( !_blobStore ) {
+            finishPendingBlobStoreSwap();
+            _blobStore = createBlobStore("Attachments", _config.encryptionKey);
+        }
         return *_blobStore;
+    }
+
+    void DatabaseImpl::finishPendingBlobStoreSwap() const {
+        FilePath stagedDir = filePath().subdirectoryNamed(kStagedBlobDirName);
+        if ( !stagedDir.existsAsDir() ) return;
+
+        // Check whether the staged blobs belong to the key the database is on now: they do if the
+        // database rekey committed, and don't if the rekey was interrupted before that.
+        // A staged store with no blobs has nothing to verify. It is still needed if this object
+        // already has a BlobStore, because installing it is what moves that BlobStore to the
+        // database's new key; otherwise blobs created through it would use the old key.
+        auto stagedStore = createBlobStore(kStagedBlobDirName, _config.encryptionKey, true);
+        auto decrypts    = stagedStore->validateEncryption(true);
+        bool needed      = decrypts.value_or(_blobStore != nullptr);
+
+        if ( _config.flags & kC4DB_ReadOnly ) {
+            // A read-only database must not have its files modified.
+            if ( !needed ) {
+                // The database is fine as it is; leave the leftover alone.
+                _dataFile->_logInfo("Ignoring leftover staged attachments store '%s' (read-only)",
+                                    stagedDir.fileOrDirName().c_str());
+                return;
+            }
+            // The database is on the new key but the live attachments aren't yet; installing the
+            // staged ones is required to use it, and modifies files.
+            _dataFile->_logWarning("Staged attachments store '%s' must be installed before this database can "
+                                   "be used, but it is open read-only",
+                                   stagedDir.fileOrDirName().c_str());
+            error::_throw(error::NotWriteable, "An interrupted rekey must be finished by opening the database "
+                                               "read-write");
+        }
+
+        if ( !needed ) {
+            if ( decrypts.has_value() )
+                _dataFile->_logWarning("Staged attachments store '%s' doesn't decrypt with this database's key, so "
+                                       "an earlier rekey did not complete; discarding it",
+                                       stagedDir.fileOrDirName().c_str());
+            stagedDir.delRecursive();
+        } else if ( _blobStore ) {
+            // Update the existing BlobStore object in place, rather than replacing it, so a
+            // C4BlobStore* a caller already holds (e.g. from an earlier getBlobStore() /
+            // c4db_getBlobStore()) stays valid and reflects the new key/content, instead of
+            // becoming a dangling pointer.
+            _blobStore->replaceWith(*stagedStore);
+        } else {
+            // Nothing live yet to preserve identity for; the next getBlobStore() call will
+            // construct a fresh object correctly.
+            stagedDir.moveToReplacingDir(filePath().subdirectoryNamed("Attachments"), true);
+        }
     }
 
     unique_ptr<C4BlobStore> DatabaseImpl::createBlobStore(const string& dirname, C4EncryptionKey encryptionKey,
