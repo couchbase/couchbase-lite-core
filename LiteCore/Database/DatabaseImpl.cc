@@ -372,11 +372,13 @@ namespace litecore {
         if ( !stagedDir.existsAsDir() ) return;
 
         // Check whether the staged blobs belong to the key the database is on now: they do if the
-        // database rekey committed, and don't if the rekey was interrupted before that. A staged
-        // store with no blobs is not needed either: the live store has none to replace.
+        // database rekey committed, and don't if the rekey was interrupted before that.
+        // A staged store with no blobs has nothing to verify. It is still needed if this object
+        // already has a BlobStore, because installing it is what moves that BlobStore to the
+        // database's new key; otherwise blobs created through it would use the old key.
         auto stagedStore = createBlobStore(kStagedBlobDirName, _config.encryptionKey, true);
         auto decrypts    = stagedStore->validateEncryption(true);
-        bool needed      = decrypts.value_or(false);
+        bool needed      = decrypts.value_or(_blobStore != nullptr);
 
         if ( _config.flags & kC4DB_ReadOnly ) {
             // A read-only database must not have its files modified.

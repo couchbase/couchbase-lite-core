@@ -132,6 +132,35 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     reopenDB();
 }
 
+N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Empty Attachments", "[Database][Encryption][blob][C]") {
+    createNumberedDocs(99);
+
+    // Get the blob store before rekeying. It holds no blobs, but it must still follow the rekey.
+    C4Error error;
+    auto    blobStore = c4db_getBlobStore(db, ERROR_INFO(error));
+    REQUIRE(blobStore);
+
+    // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
+    if ( c4db_getConfig2(db)->encryptionKey.algorithm == kC4EncryptionNone ) {
+        C4EncryptionKey newKey = {kC4EncryptionAES256, {}};
+        memcpy(newKey.bytes, "a different key than default....", kC4EncryptionKeySizeAES256);
+        REQUIRE(c4db_rekey(db, &newKey, WITH_ERROR(&error)));
+    } else {
+        REQUIRE(c4db_rekey(db, nullptr, WITH_ERROR(&error)));
+    }
+
+    // A blob created through that blob store after the rekey must use the new key...
+    C4Slice   blobToStore = C4STR("A blob added after the rekey");
+    C4BlobKey blobKey;
+    REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, WITH_ERROR(&error)));
+
+    // ...so that it can be read after reopening the database with the new key.
+    reopenDB();
+    blobStore              = c4db_getBlobStore(db, ERROR_INFO(error));
+    alloc_slice blobResult = c4blob_getContents(blobStore, blobKey, ERROR_INFO(error));
+    CHECK(blobResult == blobToStore);
+}
+
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database][Encryption][blob][C]") {
     // Rekeying between "no key" and a key is covered by "Database Rekey". Recovery treats
     // "no key" like any other key, so this test only needs the encrypted variant.
