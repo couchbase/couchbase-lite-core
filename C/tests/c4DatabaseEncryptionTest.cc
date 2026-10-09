@@ -240,9 +240,9 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
     }
 
     SECTION("db rekey failed, staged not cleared") {
-        // The process died before the SQLite rekey committed, so the catch block in rekey()
-        // never ran and the staged directory was not removed. db.sqlite3 is still on key0,
-        // and the staged directory holds Attachments encrypted with newKey.
+        // The rekey failed or the process died before the SQLite rekey committed. The staged
+        // directory is not removed (rekey() leaves it for the next open to settle). db.sqlite3 is
+        // still on key0, and the staged directory holds Attachments encrypted with newKey.
         onKey    = &key0;
         otherKey = &newKey;
         dbPath.delRecursive();
@@ -261,9 +261,8 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
     }
 
     SECTION("db rekey failed, staged is cleared") {
-        // The SQLite rekey failed with an exception, so the catch block in rekey() removed the
-        // staged directory. The disk is back in its state from before the rekey: db.sqlite3 and
-        // Attachments are both on key0.
+        // Nothing is left over, for example because the process died before the rename. The disk
+        // is in its state from before the rekey: db.sqlite3 and Attachments are both on key0.
         onKey    = &key0;
         otherKey = &newKey;
         dbPath.delRecursive();
