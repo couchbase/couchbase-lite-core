@@ -165,9 +165,10 @@ struct C4BlobStore : C4Base {
         in full and comparing its SHA-1 against the digest its filename is named for.
         @param some  If true, checks only the first blob found; if false (the default, to be on
                      the safe side), checks every blob.
-        @return  false if a blob could not be read or didn't match (e.g. it was written with a
+        @return  false if a blob didn't match or couldn't be decrypted (e.g. it was written with a
                  different key); true if every blob checked passed; nullopt if the store has no
-                 blobs. */
+                 blobs.
+        @throws  Any other error, such as an I/O error: it says nothing about the key. */
     [[nodiscard]] std::optional<bool> validateEncryption(bool some = false) const;
     void                              replaceWith(C4BlobStore&);
 

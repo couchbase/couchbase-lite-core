@@ -263,21 +263,32 @@ namespace litecore {
                               slice(newKey->bytes, kEncryptionKeySize[newKey->algorithm]));
         } catch ( ... ) {
             // Remove only the scratch directory. A staged directory that was already published
-            // stays: DataFile::rekey() can throw after the database rekey has committed (for
-            // example while reopening the file), so whether the staged attachments are still
-            // needed depends on the key the database is really on. finishPendingBlobStoreSwap()
-            // settles that, on the next open or rekey, by checking whether they decrypt with it.
+            // is kept for now: DataFile::rekey() can throw after the database rekey has committed
+            // (for example while reopening the file), so whether the staged attachments are still
+            // needed depends on the key the database is really on. Once _config reflects that key
+            // (below), finishPendingBlobStoreSwap() installs or discards them. If that fails too,
+            // the next open or rekey settles it.
             if ( rekeyingStore ) rekeyingStore->deleteStore();
             filePath().subdirectoryNamed(kRekeyingDirName).delRecursive();
 
-            // The data file's options hold the key the database is really on: the new key if the
-            // rekey committed before throwing, the old one otherwise. Keep _config in step, so that
-            // the next use of this object (finishPendingBlobStoreSwap() relies on it) is right.
-            auto&           opts = dataFile()->options();
-            C4EncryptionKey actualKey{(C4EncryptionAlgorithm)opts.encryptionAlgorithm, {}};
-            memcpy(actualKey.bytes, opts.encryptionKey.buf, min(opts.encryptionKey.size, sizeof(actualKey.bytes)));
-            const_cast<C4DatabaseConfig2&>(_config).encryptionKey = actualKey;
-            throw;
+            // DataFile::rekey() updates its options only after the database rekey has committed.
+            // So if they now hold the new key, the database is on it: record that in _config,
+            // which finishPendingBlobStoreSwap() relies on. Otherwise leave _config alone.
+            bool databaseOnNewKey = [newKey](const DataFile::Options& opts) -> bool {
+                if ( opts.encryptionAlgorithm != (EncryptionAlgorithm)newKey->algorithm ) return false;
+                return opts.encryptionAlgorithm == kNoEncryption
+                       || opts.encryptionKey == slice(newKey->bytes, kEncryptionKeySize[newKey->algorithm]);
+            }(dataFile()->options());
+            if ( databaseOnNewKey ) const_cast<C4DatabaseConfig2&>(_config).encryptionKey = *newKey;
+
+            // Settle the staged store now. If the rekey committed, this installs it, so this
+            // object's BlobStore is on the key the database is on (nothing then writes old-key
+            // blobs that the install would lose); if not, it discards it. A failure here must not
+            // hide the original exception.
+            try {
+                finishPendingBlobStoreSwap();
+            }
+            catchAndWarn() throw;
         }
 
         // The database is now durably on the new key.

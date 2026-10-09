@@ -182,6 +182,9 @@ namespace litecore {
             deleted. Safe to call whether or not there's anything pending; idempotent if called
             again after an interruption partway through.
 
+            If the staged blobs can't be read for a reason other than a key mismatch (for example
+            an I/O error), the exception propagates and the directory is left in place.
+
             A read-only database must not have its files modified. There, a leftover directory
             that isn't needed (one that doesn't decrypt with the current key) is left in place, and
             one that must be installed makes this log a warning and throw NotWriteable.

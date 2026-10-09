@@ -225,7 +225,13 @@ optional<bool> C4BlobStore::validateEncryption(bool some) const {
             C4BlobKey actual;
             sha.finish(&actual.bytes, sizeof(actual.bytes));
             return actual == key;
-        } catch ( ... ) { return false; }
+        } catch ( const error& x ) {
+            // A wrong key shows up as a decryption failure or corrupt data. Other errors (such as
+            // I/O errors) say nothing about the key, so they propagate.
+            if ( x.domain == error::LiteCore && (x.code == error::CryptoError || x.code == error::CorruptData) )
+                return false;
+            throw;
+        }
     };
 
     optional<bool> result;
