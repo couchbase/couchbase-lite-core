@@ -455,7 +455,7 @@ namespace litecore {
                     if ( !rev ) break;
 
                     // 4. curVers == RemoteRevision(remote)
-                    VersionVecWithLegacy lastSynced{rev->revID};
+                    VersionVecWithLegacy lastSynced(_doc, remote);
                     if ( curVers.legacy != lastSynced.legacy || curVers.vector != lastSynced.vector ) break;
 
                     // 5. curVers.vector shares no version with newVers.vector
