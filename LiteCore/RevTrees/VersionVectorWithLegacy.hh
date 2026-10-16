@@ -35,6 +35,8 @@ namespace litecore {
             if ( remote == RemoteID::Local && record.lastLegacyRevID() ) {
                 DebugAssert(legacy.empty());
                 legacy.emplace_back(record.lastLegacyRevID());
+            } else if ( legacy.empty() ) {
+                if ( revid legacyID = record.lastLegacyRevID(remote); legacyID ) { legacy.emplace_back(legacyID); }
             }
         }
 
