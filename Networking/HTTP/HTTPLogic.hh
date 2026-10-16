@@ -163,6 +163,8 @@ namespace litecore::net {
         /// Cookie, Set-Cookie, Proxy-Authorization) are replaced with kLogScrubMarker.
         /// If \p appHeaders is given, so are the values of the headers it names (matched
         /// case-insensitively): the application supplied them, and they may carry secrets.
+        /// A scrubbed value that continues on the following lines (lines starting with a space or
+        /// tab), or a stray line without a colon after it, is scrubbed too.
         static std::string formatHTTPForLog(slice http, const websocket::Headers* appHeaders = nullptr);
 
         /// Utility function to parse HTTP headers. Reads header lines from HTTP data until

@@ -476,6 +476,71 @@ TEST_CASE("HTTPLogic formatHTTPForLog redacts app-supplied headers", "[HTTP]") {
     CHECK(HTTPLogic::formatHTTPForLog(slice(request)).find("k-12345-secret") != string::npos);
 }
 
+TEST_CASE("HTTPLogic formatHTTPForLog scrubs the continuation of a scrubbed value", "[HTTP]") {
+    // A header value may continue on the next lines if they start with a space or a tab
+    // ("obs-fold"). The continuation belongs to the value, so it is scrubbed with it.
+    websocket::Headers appHeaders;
+    appHeaders.add("X-Api-Key"_sl, "unused"_sl);
+
+    string request = "GET /db HTTP/1.1\r\n"
+                     "Host: sgw.example.com\r\n"
+                     "X-Api-Key: sk_live_PREFIX\r\n"
+                     "  TAIL_OF_THE_SECRET\r\n"
+                     "\tMORE_OF_IT\r\n"
+                     "Cookie: a=b;\r\n"
+                     " c=d\r\n"
+                     "X-Request-Id: abc\r\n"
+                     " def\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+
+    // The continuation of a header that is not scrubbed (X-Request-Id) is left as it is.
+    string formatted = HTTPLogic::formatHTTPForLog(slice(request), &appHeaders);
+    CHECK(formatted
+          == stringprintf("\tGET /db HTTP/1.1\n"
+                          "\tHost: sgw.example.com\n"
+                          "\tX-Api-Key: %s\n"
+                          "\t%s\n"
+                          "\t%s\n"
+                          "\tCookie: %s\n"
+                          "\t%s\n"
+                          "\tX-Request-Id: abc\n"
+                          "\t def\n"
+                          "\tUpgrade: websocket",
+                          kLogScrubMarker, kLogScrubMarker, kLogScrubMarker, kLogScrubMarker, kLogScrubMarker));
+    CHECK(formatted.find("TAIL_OF_THE_SECRET") == string::npos);
+    CHECK(formatted.find("MORE_OF_IT") == string::npos);
+    CHECK(formatted.find("c=d") == string::npos);
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog scrubs a folded Set-Cookie and a stray line after a secret", "[HTTP]") {
+    string response = "HTTP/1.1 101 Switching Protocols\r\n"
+                      "Set-Cookie: SyncGatewaySession=9f3c1d;\r\n"
+                      "  Path=/db\r\n"
+                      "Connection: Upgrade\r\n"
+                      "\r\n";
+    CHECK(HTTPLogic::formatHTTPForLog(slice(response))
+          == stringprintf("\tHTTP/1.1 101 Switching Protocols\n"
+                          "\tSet-Cookie: %s\n"
+                          "\t%s\n"
+                          "\tConnection: Upgrade",
+                          kLogScrubMarker, kLogScrubMarker));
+
+    // A line without a colon after a scrubbed header is not a valid header; it may be a
+    // fragment of the secret, so it is scrubbed as well.
+    string request = "GET /db HTTP/1.1\r\n"
+                     "Authorization: Bearer abc\r\n"
+                     "secret-tail\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == stringprintf("\tGET /db HTTP/1.1\n"
+                          "\tAuthorization: %s\n"
+                          "\t%s\n"
+                          "\tUpgrade: websocket",
+                          kLogScrubMarker, kLogScrubMarker));
+}
+
 TEST_CASE("HTTPLogic formatHTTPForLog leaves non-credential output unchanged", "[HTTP]") {
     // Same input/output the formatter produced before redaction was added.
     string request = "GET /db HTTP/1.1\r\n"

@@ -393,22 +393,31 @@ namespace litecore::net {
 
         slice_istream in(http);
         stringstream  s;
-        bool          first = true;
+        bool          first     = true;
+        bool          scrubbing = false;  // the previous header's value was scrubbed
         while ( true ) {
             slice line = in.readToDelimiter("\r\n"_sl);
             if ( line.size == 0 ) break;
+            bool isStartLine = first;
             if ( !first ) s << '\n';
             first = false;
             s << '\t';
-            // Redact the value of any credential-bearing header, keeping the name visible
-            // so the log still shows that the header was present.
             slice name;
             if ( const uint8_t* colon = line.findByte(':') ) name = slice(line.buf, colon);
-            if ( name && (isCredentialHeader(name) || isAppHeader(name)) ) {
+            bool continuation = (line[0] == ' ' || line[0] == '\t');
+            if ( !isStartLine && scrubbing && (continuation || !name) ) {
+                // A value may continue on the next lines (an obsolete HTTP style, "obs-fold"), and
+                // a stray line may follow it. They belong to the scrubbed value, so scrub them too.
+                s << kLogScrubMarker;
+            } else if ( name && (isCredentialHeader(name) || isAppHeader(name)) ) {
+                // Redact the value of the header, keeping the name visible so the log still shows
+                // that the header was present.
                 s.write((const char*)name.buf, narrow_cast<std::streamsize>(name.size));
                 s << ": " << kLogScrubMarker;
+                scrubbing = true;
             } else {
                 s.write((const char*)line.buf, narrow_cast<std::streamsize>(line.size));
+                scrubbing = false;
             }
         }
         return s.str();
