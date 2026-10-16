@@ -18,6 +18,8 @@
 #include <ctime>
 #include <string_view>
 #include <utility>
+#include <filesystem>
+#include "NumConversion.hh"
 
 namespace fleece {
     struct slice;
@@ -32,14 +34,11 @@ namespace litecore {
     class FilePath {
       public:
         /** Constructs a FilePath from a filesystem path. */
-        explicit FilePath(std::string_view path) { tie(_dir, _file) = splitPath(path); }
+        FilePath(std::filesystem::path&& path);
+
+        FilePath(const std::filesystem::path& path);
 
         FilePath();
-
-        /** Constructs a FilePath from a directory name and a filename in that directory. */
-        FilePath(std::string&& dirName, std::string&& fileName);
-        FilePath(std::string_view dirName, std::string_view fileName);
-        FilePath(const char* dirName, const char* fileName);
 
         /** Returns a folder with a predefined name that serves as a location for temporary
             files.  
@@ -50,23 +49,27 @@ namespace litecore {
 
         //////// DIRECTORY & FILE NAMES:
 
-        [[nodiscard]] bool isDir() const { return _file.empty(); }
+        [[nodiscard]] bool isDir() const { return std::filesystem::is_directory(_path); }
 
-        [[nodiscard]] FilePath dir() const { return {_dir, ""}; }
+        [[nodiscard]] FilePath dir() const { return isDir() ? *this : parentDir(); }
 
-        [[nodiscard]] const std::string& dirName() const { return _dir; }
+        [[nodiscard]] const std::string dirName() const {
+            return isDir() ? _path.filename().string() : _path.parent_path().filename().string();
+        }
 
-        [[nodiscard]] const std::string& fileName() const { return _file; }
+        [[nodiscard]] const std::string fileName() const { return !isDir() ? _path.filename().string() : ""; }
 
-        [[nodiscard]] std::string fileOrDirName() const;
+        [[nodiscard]] std::string fileOrDirName() const { return _path.filename().string(); }
 
-        [[nodiscard]] std::string path() const { return _dir + _file; }
+        [[nodiscard]] std::string path() const { return _path.string(); }
 
         /** Returns a canonical standard form of the path by resolving symbolic links, normalizing
             capitalization (in case-insensitive filesystems), etc. */
-        [[nodiscard]] std::string canonicalPath() const;
+        [[nodiscard]] std::string canonicalPath() const { return _path.lexically_normal().string(); }
 
         explicit operator std::string() const { return path(); }
+
+        operator std::filesystem::path() const { return _path; }
 
         explicit operator fleece::alloc_slice() const;
 
@@ -76,8 +79,9 @@ namespace litecore {
 
         //////// FILENAME EXTENSIONS:
 
-        [[nodiscard]] std::string unextendedName() const;
-        [[nodiscard]] std::string extension() const;
+        [[nodiscard]] std::string unextendedName() const { return _path.stem().string(); }
+
+        [[nodiscard]] std::string extension() const { return _path.extension().string(); }
 
         /** Adds a filename extension. `ext` may or may not start with '.'.
             Cannot be called on directories. */
@@ -109,15 +113,23 @@ namespace litecore {
 
         /////// FILESYSTEM OPERATIONS:
 
-        [[nodiscard]] bool exists() const noexcept;
-        [[nodiscard]] bool existsAsDir() const noexcept;
-        void               mustExistAsDir() const;
+        [[nodiscard]] bool exists() const noexcept { return std::filesystem::exists(_path); }
+
+        [[nodiscard]] bool existsAsDir() const noexcept { return std::filesystem::is_directory(_path); }
+
+        void mustExistAsDir() const;
 
         /** Returns the size of the file in bytes, or -1 if the file does not exist. */
-        [[nodiscard]] int64_t dataSize() const;
+        [[nodiscard]] int64_t dataSize() const {
+            return exists() ? fleece::narrow_cast<int64_t>(std::filesystem::file_size(_path)) : -1;
+        }
 
         /** Returns the date at which this file was last modified, or -1 if the file does not exist */
-        [[nodiscard]] time_t lastModified() const;
+        [[nodiscard]] time_t lastModified() const {
+            return exists() ? fleece::narrow_cast<time_t>(
+                           std::filesystem::last_write_time(_path).time_since_epoch().count())
+                            : -1;
+        }
 
         /**
          * The return values of mkdir(), del(), and delRecursive() are almost never used throughout our code,
@@ -176,8 +188,7 @@ namespace litecore {
         static std::pair<std::string, std::string> splitExtension(const std::string& filename);
 
       private:
-        std::string _dir;   // Directory; always non-empty, always ends with separator ('/')
-        std::string _file;  // Filename, or empty if this represents a directory
+        std::filesystem::path _path;
     };
 
 }  // namespace litecore
