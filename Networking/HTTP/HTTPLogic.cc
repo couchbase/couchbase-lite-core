@@ -344,7 +344,7 @@ namespace litecore::net {
 
         C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Sending request to %s:\n%s",
                   (_lastDisposition == kContinue ? "proxy tunnel" : string(directAddress().url()).c_str()),
-                  formatHTTPForLog(slice(requestToSend())).c_str());
+                  formatHTTPForLog(slice(requestToSend()), &_requestHeaders).c_str());
         if ( socket.write_n(requestToSend()) < 0 || socket.write_n(body) < 0 ) return failure(socket);
         alloc_slice response = socket.readToDelimiter("\r\n\r\n"_sl);
         if ( !response ) return failure(socket);
@@ -372,7 +372,7 @@ namespace litecore::net {
         return disposition;
     }
 
-    string HTTPLogic::formatHTTPForLog(slice http) {
+    string HTTPLogic::formatHTTPForLog(slice http, const websocket::Headers* appHeaders) {
         // Header names whose values are credentials and must never be written to the log
         // in the clear (covers Basic/Bearer auth, session cookies, and proxy auth).
         static const slice kRedactedHeaders[] = {"Authorization", "Cookie", "Set-Cookie", "Proxy-Authorization"};
@@ -381,6 +381,14 @@ namespace litecore::net {
             return std::find_if(std::begin(kRedactedHeaders), std::end(kRedactedHeaders),
                                 [&](slice header) { return name.caseEquivalentCompare(header) == 0; })
                    != std::end(kRedactedHeaders);
+        };
+
+        // The names of the headers the application supplied are not known in advance, and any of
+        // them may carry a secret (an API key, a gateway token...), so their values are redacted too.
+        auto isAppHeader = [appHeaders](slice name) {
+            bool found = false;
+            if ( appHeaders ) appHeaders->forEach(name, [&](slice) { found = true; });
+            return found;
         };
 
         slice_istream in(http);
@@ -396,9 +404,9 @@ namespace litecore::net {
             // so the log still shows that the header was present.
             slice name;
             if ( const uint8_t* colon = line.findByte(':') ) name = slice(line.buf, colon);
-            if ( name && isCredentialHeader(name) ) {
+            if ( name && (isCredentialHeader(name) || isAppHeader(name)) ) {
                 s.write((const char*)name.buf, narrow_cast<std::streamsize>(name.size));
-                s << ": [REDACTED]";
+                s << ": " << kLogScrubMarker;
             } else {
                 s.write((const char*)line.buf, narrow_cast<std::streamsize>(line.size));
             }

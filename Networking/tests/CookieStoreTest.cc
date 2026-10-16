@@ -19,6 +19,8 @@
 #include "DatabaseCookies.hh"
 #include "Address.hh"
 #include "HTTPLogic.hh"
+#include "Logging.hh"
+#include "StringUtil.hh"
 
 using namespace fleece;
 using namespace litecore;
@@ -190,6 +192,29 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
         Cookie              c(badCookie, "example.com", "/");
         CHECK(!c);
     }
+}
+
+TEST_CASE("Cookie Parser Failure Does Not Log Header Value", "[cookies]") {
+    // A Set-Cookie header without a name=value part can't be parsed. The warning must not
+    // contain the header, since it may carry a credential.
+    static constexpr const char* kSecret = "s3cr3t-session-token-12345";
+
+    string              warnings;
+    C4LogObserverConfig config{
+            kC4LogWarning, nullptr, 0,
+            [](const C4LogEntry* entry, void* context) { *(string*)context += string(entry->message) + "\n"; },
+            &warnings};
+    C4LogObserver* observer = c4log_newObserver(config, nullptr);
+    {
+        ExpectingExceptions x;
+        Cookie              c(string(kSecret) + "; Secure", "example.com", "/");
+        CHECK(!c);
+    }
+    c4log_removeObserver(observer);
+    c4logobserver_release(observer);
+
+    CHECK(warnings.find("Couldn't parse Set-Cookie header: "s + kLogScrubMarker) != string::npos);
+    CHECK(warnings.find(kSecret) == string::npos);
 }
 
 static const C4Address kRequest{kC4Replicator2Scheme, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
@@ -374,12 +399,13 @@ TEST_CASE("HTTPLogic formatHTTPForLog redacts credential headers", "[HTTP]") {
     string formatted = HTTPLogic::formatHTTPForLog(slice(request));
 
     CHECK(formatted
-          == "\tGET /travel/_blipsync HTTP/1.1\n"
-             "\tHost: sgw.example.com:4984\n"
-             "\tAuthorization: [REDACTED]\n"
-             "\tCookie: [REDACTED]\n"
-             "\tProxy-Authorization: [REDACTED]\n"
-             "\tUpgrade: websocket");
+          == stringprintf("\tGET /travel/_blipsync HTTP/1.1\n"
+                          "\tHost: sgw.example.com:4984\n"
+                          "\tAuthorization: %s\n"
+                          "\tCookie: %s\n"
+                          "\tProxy-Authorization: %s\n"
+                          "\tUpgrade: websocket",
+                          kLogScrubMarker, kLogScrubMarker, kLogScrubMarker));
     CHECK(formatted.find("YWxpY2U6U0VDUkVUcGFzcw==") == string::npos);
     CHECK(formatted.find("4b8f68f57a0166bba86e9ab5d99d49f2804da532") == string::npos);
     CHECK(formatted.find("cHJveHk6cHJveHlwYXNz") == string::npos);
@@ -395,12 +421,14 @@ TEST_CASE("HTTPLogic formatHTTPForLog redacts Bearer tokens and Set-Cookie", "[H
                       "\r\n";
 
     CHECK(HTTPLogic::formatHTTPForLog(slice(request))
-          == "\tGET /db/_blipsync HTTP/1.1\n"
-             "\tAuthorization: [REDACTED]");
+          == stringprintf("\tGET /db/_blipsync HTTP/1.1\n"
+                          "\tAuthorization: %s",
+                          kLogScrubMarker));
     CHECK(HTTPLogic::formatHTTPForLog(slice(response))
-          == "\tHTTP/1.1 101 Switching Protocols\n"
-             "\tSet-Cookie: [REDACTED]\n"
-             "\tConnection: Upgrade");
+          == stringprintf("\tHTTP/1.1 101 Switching Protocols\n"
+                          "\tSet-Cookie: %s\n"
+                          "\tConnection: Upgrade",
+                          kLogScrubMarker));
 }
 
 TEST_CASE("HTTPLogic formatHTTPForLog header matching is case-insensitive and exact", "[HTTP]") {
@@ -412,11 +440,40 @@ TEST_CASE("HTTPLogic formatHTTPForLog header matching is case-insensitive and ex
                      "\r\n";
 
     CHECK(HTTPLogic::formatHTTPForLog(slice(request))
-          == "\tGET / HTTP/1.1\n"
-             "\tcookie: [REDACTED]\n"
-             "\tAUTHORIZATION: [REDACTED]\n"
-             "\tX-Cookie-Info: not-a-secret\n"
-             "\tCookie2: also-not-redacted");
+          == stringprintf("\tGET / HTTP/1.1\n"
+                          "\tcookie: %s\n"
+                          "\tAUTHORIZATION: %s\n"
+                          "\tX-Cookie-Info: not-a-secret\n"
+                          "\tCookie2: also-not-redacted",
+                          kLogScrubMarker, kLogScrubMarker));
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog redacts app-supplied headers", "[HTTP]") {
+    // The names of the headers an app supplies are unknown to LiteCore; any of them may be a secret.
+    websocket::Headers appHeaders;
+    appHeaders.add("X-Api-Key"_sl, "k-12345-secret"_sl);
+    appHeaders.add("x-session-token"_sl, "tok-67890-secret"_sl);
+
+    string request = "GET /db/_blipsync HTTP/1.1\r\n"
+                     "Host: sgw.example.com\r\n"
+                     "X-API-KEY: k-12345-secret\r\n"
+                     "X-Session-Token: tok-67890-secret\r\n"
+                     "X-Request-Id: from-litecore\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+
+    // Names are matched case-insensitively; names stay visible; other headers are untouched:
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request), &appHeaders)
+          == stringprintf("\tGET /db/_blipsync HTTP/1.1\n"
+                          "\tHost: sgw.example.com\n"
+                          "\tX-API-KEY: %s\n"
+                          "\tX-Session-Token: %s\n"
+                          "\tX-Request-Id: from-litecore\n"
+                          "\tUpgrade: websocket",
+                          kLogScrubMarker, kLogScrubMarker));
+
+    // Without the app's headers (e.g. when formatting a response) nothing changes:
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request)).find("k-12345-secret") != string::npos);
 }
 
 TEST_CASE("HTTPLogic formatHTTPForLog leaves non-credential output unchanged", "[HTTP]") {

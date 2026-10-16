@@ -39,7 +39,7 @@ namespace litecore::REST {
                     if ( type.hasPrefix("application/json5") || type.hasPrefix("application/jsonc") )
                         b = FLJSON5_ToJSON(slice(b), nullptr, nullptr, &err);
                     if ( b ) _bodyFleece = Doc::fromJSON(b, &err);
-                    if ( !_bodyFleece ) Warn("HTTP Body has unparseable JSON (%d): %.*s", err, FMTSLICE(_body));
+                    if ( !_bodyFleece ) Warn("HTTP Body has unparseable JSON (%d): %s", err, kLogScrubMarker);
                 }
             }
             _gotBodyFleece = true;
