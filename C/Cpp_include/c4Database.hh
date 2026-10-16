@@ -69,10 +69,16 @@ struct C4Database
 
     Retained<C4Database> openAgain() const;
 
-    virtual void close()                                      = 0;
-    virtual void closeAndDeleteFile()                         = 0;
+    virtual void close()              = 0;
+    virtual void closeAndDeleteFile() = 0;
+
+    /** Changes the database's encryption key (removing encryption if `key` is null).
+        If this throws, treat the database object as damaged: close it and open the database
+        again. The database is still consistent on disk, and reopening it uses the key it really
+        has (the old key or the new one). */
     virtual void rekey(const C4EncryptionKey* C4NULLABLE key) = 0;
-    virtual void maintenance(C4MaintenanceType)               = 0;
+
+    virtual void maintenance(C4MaintenanceType) = 0;
 
     // Attributes:
 
