@@ -119,7 +119,10 @@ NODISCARD CBL_CORE_API bool c4db_deleteNamed(C4String dbName, C4String inDirecto
 
 /** Changes a database's encryption key (removing encryption if it's NULL.)
     \note The caller must use a lock for Database when this function is called.
-    \note All other C4Databases at that path must be closed first or an error will result.*/
+    \note All other C4Databases at that path must be closed first or an error will result.
+    \warning If this fails, treat the C4Database as damaged: close it and open the database again.
+              The database is still consistent on disk, and reopening it uses the key it really has
+              (the old key or the new one). */
 NODISCARD CBL_CORE_API bool c4db_rekey(C4Database* database, const C4EncryptionKey* C4NULLABLE newKey,
                                        C4Error* C4NULLABLE outError) C4API;
 

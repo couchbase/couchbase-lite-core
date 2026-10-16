@@ -169,7 +169,8 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
     C4DatabaseConfig2 dbConfig = *c4db_getConfig2(db);
     FilePath          parentDir{slice(dbConfig.parentDirectory)};
     dbConfig.parentDirectory = slice(parentDir.dirName());
-    FilePath dbPath{slice(c4db_getPath(db))};
+    alloc_slice dbPathStr    = c4db_getPath(db);  // adopts the result, so it is freed
+    FilePath    dbPath{slice(dbPathStr)};
 
     C4EncryptionKey key0   = dbConfig.encryptionKey;
     C4EncryptionKey newKey = key0;
