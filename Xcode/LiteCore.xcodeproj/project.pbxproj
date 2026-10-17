@@ -50,6 +50,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		1B2F1EB430828EE8008F7873 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8DC322EFB6AD40065CA31 /* CookieStoreTest.cc */; };
 		1B4CCD1D2E4D1A0800B0542C /* RESTClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E19D652316EDEA00E031F8 /* RESTClientTest.cc */; };
 		1B737C472F8D8C1400507DA7 /* c4LocalReplicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B737C462F8D8C1400507DA7 /* c4LocalReplicator.cc */; };
 		1B8C29482E32C7840007A132 /* MultipeerTest_C.cc in Sources */ = {isa = PBXBuildFile; fileRef = 1B8C29472E32C7840007A132 /* MultipeerTest_C.cc */; };
@@ -5238,6 +5239,7 @@
 				27FD73682D834B7A00CC48BF /* PredictiveVectorQueryTest.cc in Sources */,
 				27FD73692D834B7A00CC48BF /* LazyVectorQueryTest.cc in Sources */,
 				27FD736A2D834B7A00CC48BF /* c4IndexUpdaterTest.cc in Sources */,
+				1B2F1EB430828EE8008F7873 /* CookieStoreTest.cc in Sources */,
 				27FD736B2D834B7A00CC48BF /* PropertyEncryptionTests.cc in Sources */,
 				1B8C29482E32C7840007A132 /* MultipeerTest_C.cc in Sources */,
 				27FD736C2D834B7A00CC48BF /* UpgraderTest.cc in Sources */,
