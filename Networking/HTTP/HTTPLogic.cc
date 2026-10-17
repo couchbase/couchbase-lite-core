@@ -372,7 +372,7 @@ namespace litecore::net {
         return disposition;
     }
 
-    string HTTPLogic::formatHTTPForLog(slice http, const websocket::Headers* appHeaders) {
+    string HTTPLogic::formatHTTPForLog(slice http, const websocket::Headers* extraHeaders) {
         // Header names whose values are credentials and must never be written to the log
         // in the clear (covers Basic/Bearer auth, session cookies, and proxy auth).
         static const slice kRedactedHeaders[] = {"Authorization", "Cookie", "Set-Cookie", "Proxy-Authorization"};
@@ -385,9 +385,9 @@ namespace litecore::net {
 
         // The names of the headers the application supplied are not known in advance, and any of
         // them may carry a secret (an API key, a gateway token...), so their values are redacted too.
-        auto isAppHeader = [appHeaders](slice name) {
+        auto isExtraHeader = [extraHeaders](slice name) {
             bool found = false;
-            if ( appHeaders ) appHeaders->forEach(name, [&](slice) { found = true; });
+            if ( extraHeaders ) extraHeaders->forEach(name, [&](slice) { found = true; });
             return found;
         };
 
@@ -409,7 +409,7 @@ namespace litecore::net {
                 // A value may continue on the next lines (an obsolete HTTP style, "obs-fold"), and
                 // a stray line may follow it. They belong to the scrubbed value, so scrub them too.
                 s << kLogScrubMarker;
-            } else if ( name && (isCredentialHeader(name) || isAppHeader(name)) ) {
+            } else if ( name && (isCredentialHeader(name) || isExtraHeader(name)) ) {
                 // Redact the value of the header, keeping the name visible so the log still shows
                 // that the header was present.
                 s.write((const char*)name.buf, narrow_cast<std::streamsize>(name.size));

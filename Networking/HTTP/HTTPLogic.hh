@@ -161,11 +161,11 @@ namespace litecore::net {
         /// Converts CRLF to \n, indents lines, and stops at the end of the headers
         /// (before the blank line). The values of credential headers (Authorization,
         /// Cookie, Set-Cookie, Proxy-Authorization) are replaced with kLogScrubMarker.
-        /// If \p appHeaders is given, so are the values of the headers it names (matched
+        /// If \p extraHeaders is given, so are the values of the headers it names (matched
         /// case-insensitively): the application supplied them, and they may carry secrets.
         /// A scrubbed value that continues on the following lines (lines starting with a space or
         /// tab), or a stray line without a colon after it, is scrubbed too.
-        static std::string formatHTTPForLog(slice http, const websocket::Headers* appHeaders = nullptr);
+        static std::string formatHTTPForLog(slice http, const websocket::Headers* extraHeaders = nullptr);
 
         /// Utility function to parse HTTP headers. Reads header lines from HTTP data until
         /// it reaches an empty line (CRLFCRLF). On return, \ref httpData will point to any
