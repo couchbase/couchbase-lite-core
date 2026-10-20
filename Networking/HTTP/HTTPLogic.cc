@@ -341,15 +341,16 @@ namespace litecore::net {
         }
         if ( !connected ) return failure(socket);
 
-        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Sending request to %s:\n%s",
-                  (_lastDisposition == kContinue ? "proxy tunnel" : string(directAddress().url()).c_str()),
-                  formatHTTPForLog(slice(requestToSend()), &_requestHeaders).c_str());
+        // Only the fact of the exchange is logged, never its content: HTTP headers and bodies carry
+        // credentials.
+        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Sending request to %s",
+                  (_lastDisposition == kContinue ? "proxy tunnel" : string(directAddress().url()).c_str()));
         if ( socket.write_n(requestToSend()) < 0 || socket.write_n(body) < 0 ) return failure(socket);
         alloc_slice response = socket.readToDelimiter("\r\n\r\n"_sl);
         if ( !response ) return failure(socket);
-        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response:\n%s", formatHTTPForLog(response).c_str());
 
         Disposition disposition = receivedResponse(response);
+        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response, HTTP status %d", int(_httpStatus));
         if ( disposition == kFailure && _error.domain == WebSocketDomain && _error.code == int(_httpStatus) ) {
             // Look for a more detailed HTTP error message in the response body:
             if ( _responseHeaders["Content-Type"_sl].hasPrefix("application/json"_sl) ) {
