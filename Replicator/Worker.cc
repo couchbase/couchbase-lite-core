@@ -356,8 +356,8 @@ namespace litecore::repl {
             kC4ReplicatorOptionAcceptParentDomainCookies,
 
             // TLS options:
-            kC4ReplicatorOptionRootCerts,
-            kC4ReplicatorOptionPinnedServerCert,
+            // kC4ReplicatorOptionRootCerts,
+            // kC4ReplicatorOptionPinnedServerCert,
             kC4ReplicatorOptionOnlySelfSignedServerCert,
 
             // HTTP options (cookies, headers and auth may hold credentials, so they aren't logged):
