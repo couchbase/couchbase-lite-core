@@ -158,6 +158,7 @@ namespace litecore::net {
         // -------- Utility functions:
 
         /// Utility function to format an HTTP request or response for logging.
+        /// LiteCore itself does not log HTTP exchanges, so it does not call this.
         /// Converts CRLF to \n, indents lines, and stops at the end of the headers
         /// (before the blank line). The values of credential headers (Authorization,
         /// Cookie, Set-Cookie, Proxy-Authorization) are replaced with kLogScrubMarker.
