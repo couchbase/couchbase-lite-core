@@ -16,7 +16,7 @@ pipeline {
                     }
                 }
                 stage("iOS") {
-                    agent { label 'mobile-mac-mini' }
+                    agent { label 'ios-pull-request&&sequoia' }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
                         KEYCHAIN_PWD = credentials("mobile-mac-mini-keychain")
@@ -40,7 +40,7 @@ pipeline {
                    }
                 }
                 stage("macOS") {
-                    agent { label 'mobile-mac-mini'  }
+                    agent { label 'ios-pull-request&&sequoia'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
                         GH_PAT = credentials("cbl-bot-github-pat")
