@@ -27,7 +27,9 @@ env:
 
 jobs:
   build:
-    runs-on: macOS-latest
+    # macos-15 (Xcode 16.4): Xcode 26 can't compile this branch's vendored Fleece date.h
+    # ('uncaught_exception' is deprecated).
+    runs-on: macos-15
 
     steps:
     - uses: actions/checkout@v2
