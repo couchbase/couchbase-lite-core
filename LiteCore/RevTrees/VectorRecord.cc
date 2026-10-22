@@ -480,10 +480,8 @@ namespace litecore {
 
     revid VectorRecord::lastLegacyRevID(RemoteID remote) const {
         requireRemotes();
-        if ( remote == RemoteID::Local ) return revid(_revisions[0].asDict()[kLegacyRevIDKey].asData());
-        else if ( Dict revDict = _revisions[int(remote)].asDict(); revDict ) {
-            revid revID(revDict[kLegacyRevIDKey].asData());
-            return revID;
+        if ( Dict revDict = _revisions[int(remote)].asDict(); revDict ) {
+            return revid(revDict[kLegacyRevIDKey].asData());
         }
         return revid();
     }

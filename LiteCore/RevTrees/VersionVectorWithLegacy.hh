@@ -32,11 +32,9 @@ namespace litecore {
         /// Constructs from a Revision of a VectorRecord.
         explicit VersionVecWithLegacy(VectorRecord const& record, RemoteID remote)
             : VersionVecWithLegacy(record.remoteRevision(remote).value().revID) {
-            if ( remote == RemoteID::Local && record.lastLegacyRevID() ) {
+            if ( revid legacyID = record.lastLegacyRevID(remote); legacyID ) {
                 DebugAssert(legacy.empty());
-                legacy.emplace_back(record.lastLegacyRevID());
-            } else if ( legacy.empty() ) {
-                if ( revid legacyID = record.lastLegacyRevID(remote); legacyID ) { legacy.emplace_back(legacyID); }
+                if ( legacy.empty() ) legacy.emplace_back(legacyID);
             }
         }
 
