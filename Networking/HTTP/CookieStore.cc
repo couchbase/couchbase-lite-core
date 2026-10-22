@@ -131,7 +131,7 @@ namespace litecore::net {
         }
 
         if ( i == 0 ) {
-            Warn("Couldn't parse Set-Cookie header: %s", header.c_str());
+            Warn("Couldn't parse Set-Cookie header: %s", kLogScrubMarker);
             return;
         }
         name = provisionalName;

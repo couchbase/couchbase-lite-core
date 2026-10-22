@@ -18,6 +18,9 @@
 #include "CookieStore.hh"
 #include "DatabaseCookies.hh"
 #include "Address.hh"
+#include "HTTPLogic.hh"
+#include "Logging.hh"
+#include "StringUtil.hh"
 
 using namespace fleece;
 using namespace litecore;
@@ -193,6 +196,33 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
     }
 }
 
+namespace {
+    string sWarnings;  // filled by captureWarnings
+
+    void captureWarnings(C4LogDomain, C4LogLevel, const char* message, va_list) { sWarnings += string(message) + "\n"; }
+}  // namespace
+
+TEST_CASE("Cookie Parser Failure Does Not Log Header Value", "[cookies]") {
+    // A Set-Cookie header without a name=value part can't be parsed. The warning must not
+    // contain the header, since it may carry a credential.
+    static constexpr const char* kSecret = "s3cr3t-session-token-12345";
+
+    // This LiteCore has no log observers, only one global callback: replace it, then restore it.
+    C4LogCallback oldCallback = c4log_getCallback();
+    C4LogLevel    oldLevel    = c4log_callbackLevel();
+    sWarnings.clear();
+    c4log_writeToCallback(kC4LogWarning, captureWarnings, true);
+    {
+        ExpectingExceptions x;
+        Cookie              c(string(kSecret) + "; Secure", "example.com", "/");
+        CHECK(!c);
+    }
+    c4log_writeToCallback(oldLevel, oldCallback, false);
+
+    CHECK(sWarnings.find("Couldn't parse Set-Cookie header: "s + kLogScrubMarker) != string::npos);
+    CHECK(sWarnings.find(kSecret) == string::npos);
+}
+
 static const C4Address kRequest{kC4Replicator2Scheme, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
 static const C4Address kSecureRequest{kC4Replicator2TLSScheme, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
 static const C4Address kOtherPathRequest{kC4Replicator2TLSScheme, "www.example.com"_sl, 4984, "/qat/_blipsync"_sl};
@@ -359,4 +389,174 @@ TEST_CASE("RootPathMatch", "[Cookies]") {
     CHECK(store->setCookie("a4=b4; Domain=example.com", "example.com", ""));
     CHECK(store->cookiesForRequest(kRootPathRequest) == "a1=b1; a2=b2; a3=b3; a4=b4");
     CHECK(store->cookiesForRequest(kEmptyPathRequest) == "a1=b1; a2=b2; a3=b3; a4=b4");
+}
+
+#pragma mark - HTTPLogic::formatHTTPForLog credential redaction
+
+TEST_CASE("HTTPLogic formatHTTPForLog redacts credential headers", "[HTTP]") {
+    string request = "GET /travel/_blipsync HTTP/1.1\r\n"
+                     "Host: sgw.example.com:4984\r\n"
+                     "Authorization: Basic YWxpY2U6U0VDUkVUcGFzcw==\r\n"
+                     "Cookie: SyncGatewaySession=4b8f68f57a0166bba86e9ab5d99d49f2804da532\r\n"
+                     "Proxy-Authorization: Basic cHJveHk6cHJveHlwYXNz\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+
+    string formatted = HTTPLogic::formatHTTPForLog(slice(request));
+
+    CHECK(formatted
+          == litecore::format("\tGET /travel/_blipsync HTTP/1.1\n"
+                              "\tHost: sgw.example.com:4984\n"
+                              "\tAuthorization: %s\n"
+                              "\tCookie: %s\n"
+                              "\tProxy-Authorization: %s\n"
+                              "\tUpgrade: websocket",
+                              kLogScrubMarker, kLogScrubMarker, kLogScrubMarker));
+    CHECK(formatted.find("YWxpY2U6U0VDUkVUcGFzcw==") == string::npos);
+    CHECK(formatted.find("4b8f68f57a0166bba86e9ab5d99d49f2804da532") == string::npos);
+    CHECK(formatted.find("cHJveHk6cHJveHlwYXNz") == string::npos);
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog redacts Bearer tokens and Set-Cookie", "[HTTP]") {
+    string request  = "GET /db/_blipsync HTTP/1.1\r\n"
+                      "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.payload.sig\r\n"
+                      "\r\n";
+    string response = "HTTP/1.1 101 Switching Protocols\r\n"
+                      "Set-Cookie: SyncGatewaySession=9f3c1d; Path=/db\r\n"
+                      "Connection: Upgrade\r\n"
+                      "\r\n";
+
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == litecore::format("\tGET /db/_blipsync HTTP/1.1\n"
+                              "\tAuthorization: %s",
+                              kLogScrubMarker));
+    CHECK(HTTPLogic::formatHTTPForLog(slice(response))
+          == litecore::format("\tHTTP/1.1 101 Switching Protocols\n"
+                              "\tSet-Cookie: %s\n"
+                              "\tConnection: Upgrade",
+                              kLogScrubMarker));
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog header matching is case-insensitive and exact", "[HTTP]") {
+    string request = "GET / HTTP/1.1\r\n"
+                     "cookie: SyncGatewaySession=lowercase\r\n"
+                     "AUTHORIZATION: Basic dXBwZXI=\r\n"
+                     "X-Cookie-Info: not-a-secret\r\n"
+                     "Cookie2: also-not-redacted\r\n"
+                     "\r\n";
+
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == litecore::format("\tGET / HTTP/1.1\n"
+                              "\tcookie: %s\n"
+                              "\tAUTHORIZATION: %s\n"
+                              "\tX-Cookie-Info: not-a-secret\n"
+                              "\tCookie2: also-not-redacted",
+                              kLogScrubMarker, kLogScrubMarker));
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog redacts app-supplied headers", "[HTTP]") {
+    // The names of the headers an app supplies are unknown to LiteCore; any of them may be a secret.
+    websocket::Headers appHeaders;
+    appHeaders.add("X-Api-Key"_sl, "k-12345-secret"_sl);
+    appHeaders.add("x-session-token"_sl, "tok-67890-secret"_sl);
+
+    string request = "GET /db/_blipsync HTTP/1.1\r\n"
+                     "Host: sgw.example.com\r\n"
+                     "X-API-KEY: k-12345-secret\r\n"
+                     "X-Session-Token: tok-67890-secret\r\n"
+                     "X-Request-Id: from-litecore\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+
+    // Names are matched case-insensitively; names stay visible; other headers are untouched:
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request), &appHeaders)
+          == litecore::format("\tGET /db/_blipsync HTTP/1.1\n"
+                              "\tHost: sgw.example.com\n"
+                              "\tX-API-KEY: %s\n"
+                              "\tX-Session-Token: %s\n"
+                              "\tX-Request-Id: from-litecore\n"
+                              "\tUpgrade: websocket",
+                              kLogScrubMarker, kLogScrubMarker));
+
+    // Without the app's headers (e.g. when formatting a response) nothing changes:
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request)).find("k-12345-secret") != string::npos);
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog scrubs the continuation of a scrubbed value", "[HTTP]") {
+    // A header value may continue on the next lines if they start with a space or a tab
+    // ("obs-fold"). The continuation belongs to the value, so it is scrubbed with it.
+    websocket::Headers appHeaders;
+    appHeaders.add("X-Api-Key"_sl, "unused"_sl);
+
+    string request = "GET /db HTTP/1.1\r\n"
+                     "Host: sgw.example.com\r\n"
+                     "X-Api-Key: sk_live_PREFIX\r\n"
+                     "  TAIL_OF_THE_SECRET\r\n"
+                     "\tMORE_OF_IT\r\n"
+                     "Cookie: a=b;\r\n"
+                     " c=d\r\n"
+                     "X-Request-Id: abc\r\n"
+                     " def\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+
+    // The continuation of a header that is not scrubbed (X-Request-Id) is left as it is.
+    string formatted = HTTPLogic::formatHTTPForLog(slice(request), &appHeaders);
+    CHECK(formatted
+          == litecore::format("\tGET /db HTTP/1.1\n"
+                              "\tHost: sgw.example.com\n"
+                              "\tX-Api-Key: %s\n"
+                              "\t%s\n"
+                              "\t%s\n"
+                              "\tCookie: %s\n"
+                              "\t%s\n"
+                              "\tX-Request-Id: abc\n"
+                              "\t def\n"
+                              "\tUpgrade: websocket",
+                              kLogScrubMarker, kLogScrubMarker, kLogScrubMarker, kLogScrubMarker, kLogScrubMarker));
+    CHECK(formatted.find("TAIL_OF_THE_SECRET") == string::npos);
+    CHECK(formatted.find("MORE_OF_IT") == string::npos);
+    CHECK(formatted.find("c=d") == string::npos);
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog scrubs a folded Set-Cookie and a stray line after a secret", "[HTTP]") {
+    string response = "HTTP/1.1 101 Switching Protocols\r\n"
+                      "Set-Cookie: SyncGatewaySession=9f3c1d;\r\n"
+                      "  Path=/db\r\n"
+                      "Connection: Upgrade\r\n"
+                      "\r\n";
+    CHECK(HTTPLogic::formatHTTPForLog(slice(response))
+          == litecore::format("\tHTTP/1.1 101 Switching Protocols\n"
+                              "\tSet-Cookie: %s\n"
+                              "\t%s\n"
+                              "\tConnection: Upgrade",
+                              kLogScrubMarker, kLogScrubMarker));
+
+    // A line without a colon after a scrubbed header is not a valid header; it may be a
+    // fragment of the secret, so it is scrubbed as well.
+    string request = "GET /db HTTP/1.1\r\n"
+                     "Authorization: Bearer abc\r\n"
+                     "secret-tail\r\n"
+                     "Upgrade: websocket\r\n"
+                     "\r\n";
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == litecore::format("\tGET /db HTTP/1.1\n"
+                              "\tAuthorization: %s\n"
+                              "\t%s\n"
+                              "\tUpgrade: websocket",
+                              kLogScrubMarker, kLogScrubMarker));
+}
+
+TEST_CASE("HTTPLogic formatHTTPForLog leaves non-credential output unchanged", "[HTTP]") {
+    // Same input/output the formatter produced before redaction was added.
+    string request = "GET /db HTTP/1.1\r\n"
+                     "Host: localhost:4984\r\n"
+                     "Content-Type: application/json\r\n"
+                     "\r\n"
+                     "{\"body\":\"after the headers is not formatted\"}";
+
+    CHECK(HTTPLogic::formatHTTPForLog(slice(request))
+          == "\tGET /db HTTP/1.1\n"
+             "\tHost: localhost:4984\n"
+             "\tContent-Type: application/json");
 }

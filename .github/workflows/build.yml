@@ -29,7 +29,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        # macOS: macos-15 (Xcode 16.4). On macos-26, Xcode 26 can't compile this branch's vendored
+        # Fleece date.h ('uncaught_exception' is deprecated).
+        os: [ubuntu-latest, macos-15, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:

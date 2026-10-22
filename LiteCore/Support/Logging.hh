@@ -50,6 +50,9 @@ namespace litecore {
 
     using namespace fleece;
 
+    /// Text that replaces a secret removed from a log message ("scrubbing").
+    static constexpr const char* kLogScrubMarker = "***";
+
     enum class LogLevel : int8_t { Uninitialized = -1, Debug, Verbose, Info, Warning, Error, None };
 
     struct LogFileOptions {
