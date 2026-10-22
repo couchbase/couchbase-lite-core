@@ -49,6 +49,9 @@ namespace litecore {
 
     enum class LogLevel : int8_t { Uninitialized = -1, Debug, Verbose, Info, Warning, Error, None };
 
+    /// Text that replaces a secret removed from a log message ("scrubbing").
+    static constexpr const char* kLogScrubMarker = "***";
+
     static constexpr size_t kNumLogLevels = 5;  ///< Number of active levels, Debug...Error
 
     enum class LogObjectRef : unsigned { None = 0 };
