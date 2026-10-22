@@ -51,8 +51,11 @@ namespace litecore {
     }
 
     KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
-        Assert(tableName == "kv_default" || tableName.hasPrefix("kv_."));
-        auto tableName_ = string(tableName.from(3));
+        Assert(tableName.hasPrefix("kv_"));
+        tableName = tableName.from(3);
+        if ( tableName.hasPrefix("del_") ) { tableName = tableName.from(4); }
+        Assert(tableName == "default" || tableName.hasPrefix("."));
+        auto tableName_ = string(tableName);
         return getKeyStore(SQLiteKeyStore::transformCollectionName(tableName_, false));
     }
 

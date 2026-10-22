@@ -69,7 +69,7 @@ namespace litecore {
 
         HybridClock& versionClock() const { return _versionClock; }
 
-        SourceID mySourceID() const;
+        SourceID mySourceID() const { return _mySourceID; }
 
         void resetUUIDs() override;
 
@@ -157,6 +157,7 @@ namespace litecore {
         void            _cleanupTransaction(bool committed);
         bool            getUUIDIfExists(slice key, C4UUID&) const;
         C4UUID          generateUUID(slice key, bool overwrite = false);
+        void            updateMySourceID() const;
 
         KeyStore& infoKeyStore() const;
         Record    getInfo(slice key) const;
@@ -173,6 +174,28 @@ namespace litecore {
 
         unique_ptr<C4BlobStore> createBlobStore(const std::string& dirname, C4EncryptionKey, bool force = false) const;
         void                    garbageCollectBlobs();
+
+        /** Resolves the "Attachments_staged" directory, if there is one (see DatabaseImpl::rekey).
+            If a blob in it decrypts with this database's current key, it is the rekeyed store for
+            the key the database is on, and it is installed as the live "Attachments" store. If not
+            (the rekey was interrupted before its database rekey committed) it is logged and
+            deleted. Safe to call whether or not there's anything pending; idempotent if called
+            again after an interruption partway through.
+
+            If the staged blobs can't be read for a reason other than a key mismatch (for example
+            an I/O error), the exception propagates and the directory is left in place.
+
+            A read-only database must not have its files modified. There, a leftover directory
+            that isn't needed (one that doesn't decrypt with the current key) is left in place, and
+            one that must be installed makes this log a warning and throw NotWriteable.
+
+            @pre  The database file is open, so `_config.encryptionKey` is the key it is actually
+                  on (opening with the wrong key fails). Checking the staged blobs against that
+                  key is what tells a completed rekey from an interrupted one.
+            @post If this returns normally, the live "Attachments" store matches the database's
+                  key. In a writeable database no "Attachments_staged" directory exists; a
+                  read-only database may still have an unneeded one. */
+        void finishPendingBlobStoreSwap() const;
 
         C4Collection* getOrCreateCollection(CollectionSpec, bool canCreate);
 

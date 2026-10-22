@@ -154,6 +154,69 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
     }
 }
 
+// CBL-8954: findDocAncestors assumed `extra` was a RevTree whenever the current revID was a legacy rev-tree ID.
+// However, this failed with "fl_callback: exception!" when `extra` was in 4.x Fleece format.
+N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors Legacy RevID In 4.x Record", "[Document][C]") {
+    if ( !isRevTrees() ) return;  // starts on rev trees; upgraded to version vectors below
+
+    const C4RemoteID  kRemoteID  = 1;
+    const C4Slice     kRev1      = C4STR("1-aaaa");
+    const C4Slice     kRev2      = C4STR("2-bbbb");
+    const C4Slice     kRev3      = C4STR("3-cccc");
+    const C4Slice     kOtherRev1 = C4STR("1-dddd");  // not in the doc's history
+    const std::string kHaveRev2  = R"(["2-bbbb"])";
+
+    // Rev-tree database: doc with history 2-bbbb <- 1-aaaa
+    {
+        TransactionHelper t(db);
+        C4String          history[2] = {kRev2, kRev1};
+        C4DocPutRequest   rq         = {};
+        rq.docID                     = kDocID;
+        rq.body                      = kFleeceBody;
+        rq.existingRevision          = true;
+        rq.history                   = history;
+        rq.historyCount              = 2;
+        rq.save                      = true;
+        c4::ref<C4Document> doc =
+                c4coll_putDoc(getCollection(db, kC4DefaultCollectionSpec), &rq, nullptr, WITH_ERROR());
+        REQUIRE(doc);
+    }
+
+    upgradeToVersionVectors();
+    auto defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+
+    auto findAncestors = [&](C4Slice revID) -> std::string {
+        C4SliceResult ancestors[1] = {};
+        C4String      docID        = kDocID;
+        REQUIRE(c4coll_findDocAncestors(defaultColl, 1, 4, false, kRemoteID, &docID, &revID, ancestors, WITH_ERROR()));
+        return toString(std::move(ancestors[0]));
+    };
+
+    // `extra` still holds the rev tree, so a lower-generation legacy rev is checked against it:
+    CHECK(findAncestors(kRev1) == "2");                   // ancestor -> kNewer
+    CHECK(findAncestors(kOtherRev1) == "3" + kHaveRev2);  // unrelated -> kConflicting
+
+    // Mark the remote's rev and save, as RevFinder does for a rev it already has. The save rewrites `extra` into
+    // 4.x Fleece format while the current revID stays 2-bbbb:
+    {
+        TransactionHelper   t(db);
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetAll, WITH_ERROR());
+        REQUIRE(doc);
+        REQUIRE(c4doc_setRemoteAncestor(doc, kRemoteID, kRev2, WITH_ERROR()));
+        REQUIRE(c4doc_save(doc, 0, WITH_ERROR()));
+    }
+    {
+        c4::ref<C4Document> doc = c4coll_getDoc(defaultColl, kDocID, true, kDocGetAll, WITH_ERROR());
+        REQUIRE(doc);
+        CHECK(doc->revID == kRev2);
+        CHECK(alloc_slice(c4doc_getRemoteAncestor(doc, kRemoteID)) == kRev2);
+    }
+
+    // No rev tree in `extra` anymore; findDocAncestors must still work:
+    CHECK(findAncestors(kRev3) == "1" + kHaveRev2);  // newer rev -> kOlder (CBL-8954 : throws before fix)
+    CHECK(findAncestors(kRev1) == "2");              // lower legacy rev -> kNewer (no tree to check ancestry with)
+}
+
 // Repro case for https://github.com/couchbase/couchbase-lite-core/issues/478
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
     if ( !isRevTrees() ) return;

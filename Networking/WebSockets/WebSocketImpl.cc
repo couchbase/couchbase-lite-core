@@ -65,6 +65,21 @@ namespace litecore::websocket {
 
     WebSocketImpl::~WebSocketImpl() = default;
 
+    void WebSocketImpl::stopTimers() {
+        // Extract the timers under the lock, then let them go out of scope (destructing them)
+        // only after releasing it. sendPing()/timedOut() each acquire _mutex themselves before
+        // checking whether to proceed; destroying a Timer while holding _mutex here would
+        // deadlock against a callback that's blocked waiting to acquire that same lock. Timer's
+        // own destructor waits for an in-flight callback to finish, so by the time this method
+        // returns, neither callback can still be running.
+        unique_ptr<Timer> pingTimer, responseTimer;
+        {
+            lock_guard<mutex> lock(_mutex);
+            pingTimer     = std::move(_pingTimer);
+            responseTimer = std::move(_responseTimer);
+        }
+    }
+
     string WebSocketImpl::loggingIdentifier() const { return string(url()); }
 
     void WebSocketImpl::connect() {
@@ -297,13 +312,15 @@ namespace litecore::websocket {
     void WebSocketImpl::sendPing() {
         {
             lock_guard<mutex> lock(_mutex);
+            if ( _timerDisabled ) return;
+
             if ( !_pingTimer ) {
                 warn("Ping timer not available, giving up on sendPing...");
                 return;
             }
 
-            if ( _socketLCState == SOCKET_CLOSED ) {
-                warn("Socket is already closed, giving up on sendPing...");
+            if ( _socketLCState >= SOCKET_CLOSING ) {
+                warn("Socket is already closing, giving up on sendPing...");
                 return;
             }
 

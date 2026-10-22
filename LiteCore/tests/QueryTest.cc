@@ -14,6 +14,7 @@
 #include "SQLiteDataFile.hh"
 #include "Benchmark.hh"
 #include "SQLiteKeyStore.hh"
+#include <array>
 #include <cstdint>
 #include <ctime>
 #include <cfloat>
@@ -3321,6 +3322,95 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
     _databaseName = "cbl.core.temp";
     checkType(json5(R"({'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\.core\\.temp'}]})"));
     checkTypeN1QL("SELECT type FROM `cbl.core.temp`");
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Translator with Alternative FROM names", "[Query][QueryTranslator]") {
+    bool newDB = true;
+    SECTION("From Empty DB") {
+        // This happens after SQLiteDataFile::reopen(), and
+        // kv_info[kMaxRowidWithDeletedInDefault] is set to 0.
+        // Effectively it is a brand new DB.
+        addNumberedDocs(1, 10);
+    }
+    SECTION("From Plain DB") {
+        auto dbPath = databasePath();
+        deleteDatabase();
+        // The plain_db.sqlite3 contains 10 documents before
+        // kv_info[kMaxRowidWithDeletedInDefault] is set.
+        // SQLiteDataFile::reopen() will consider them as possibly deleted,
+        // and set it to 10.
+        // Effectively, it is a legacy DB with 10 legacy docs.
+        newDB        = false;
+        auto srcPath = litecore::FilePath(sFixturesDir + "/plain_db.sqlite3");
+        srcPath.copyTo(dbPath);
+        db.reset(newDatabase(dbPath, &DataFile::Options::defaults));
+        store = &db->defaultKeyStore();
+    }
+
+    auto  sqlKeyStore         = SQLiteDataFile::asSQLiteKeyStore(store);
+    auto& sqlDataFile         = (SQLiteDataFile&)sqlKeyStore->dataFile();
+    bool  delDocsFullyTracked = sqlDataFile.isDeletedDocsFullyTracked();
+    REQUIRE(delDocsFullyTracked == newDB);
+
+    auto checkParser = [&](string json, string sql) -> void {
+        QueryTranslator qt{sqlDataFile, sqlKeyStore->collectionName(), sqlKeyStore->tableName()};
+        qt.parseJSON(json);
+        CHECK(qt.SQL() == sql);
+    };
+
+    auto delFlag = [&](string alias) -> string {
+        std::stringstream ss;
+        if ( delDocsFullyTracked ) ss << " AS " << alias;
+        else
+            ss << " AS " << alias << " WHERE (" << alias << ".flags & 1 = 0)";
+        return ss.str();
+    };
+
+    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default'}]}"),
+                "SELECT fl_result(fl_value(_default.body, 'type')) FROM kv_default"s + delFlag("_default"));
+    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_default._default'}]}"),
+                R"(SELECT fl_result(fl_value("_default._default".body, 'type')) FROM kv_default)"
+                        + delFlag("\"_default._default\""));
+    checkParser(json5("{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}"),
+                "SELECT fl_result(fl_value(db.body, 'type')) FROM kv_default"s + delFlag("db"));
+
+    // Special FROM aliases: "_" or omitted FROM clause. When a query is created from a
+    // named KeyStore, that KeyStore is implicitly used as the data source.
+
+    struct SpecialFromTest {
+        string json;
+        string sqlSel;
+        string alias;
+    };
+
+    auto fromTests = std::to_array<SpecialFromTest>(
+            {// omitted FROM
+             {"{'WHAT': ['.foo.type']}", "SELECT fl_result(fl_value(_doc.body, 'foo.type')) FROM ", "_doc"},
+             // FROM _
+             {"{'WHAT': ['.type'], 'FROM': [{'COLLECTION':'_'}]}", "SELECT fl_result(fl_value(_.body, 'type')) FROM ",
+              "_"},
+             // FROM _
+             {"{'WHAT': ['.foo\\\\.bar.type'], 'FROM': [{'COLLECTION':'_', 'AS':'foo.bar'}]}",
+              R"(SELECT fl_result(fl_value("foo.bar".body, 'type')) FROM )", R"("foo.bar")"}});
+    string collName = sqlKeyStore->collectionName();
+    for ( const auto& t : fromTests ) {
+        if ( collName == "_default" ) checkParser(json5(t.json), t.sqlSel + "kv_default" + delFlag(t.alias));
+        else if ( collName == "Secondary" )
+            checkParser(json5(t.json), t.sqlSel + R"("kv_.\Secondary")" + delFlag(t.alias));
+        else if ( collName == "scopey.subsidiary" )
+            checkParser(json5(t.json), t.sqlSel + R"("kv_.scopey.subsidiary")" + delFlag(t.alias));
+        else
+            Log("CollectionName %s not tested", collectionName.c_str());
+    }
+
+    // For database names that include dot, we must properly quote it.
+    // In JSON, we escape dot inside the JSON string value.
+    // In N1QL expression, we back-quote quote it.
+
+    _databaseName = "cbl.core.temp";
+    checkParser(json5(R"({'WHAT': ['.type'], 'FROM': [{'COLLECTION':'cbl\\.core\\.temp'}]})"),
+                R"(SELECT fl_result(fl_value("cbl\.core\.temp".body, 'type')) FROM kv_default)"
+                        + delFlag(R"("cbl\.core\.temp")"));
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]") {

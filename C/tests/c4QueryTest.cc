@@ -1254,7 +1254,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     string explanationString = toString(c4query_explain(query));
     INFO("Explanation = " << explanationString);
     CHECK(litecore::hasPrefix(explanationString, "SELECT _doc.key FROM kv_default AS _doc WHERE fl_value(_doc.body, "
-                                                 "'contact.address.state') = 'CA' AND (_doc.flags & 1 = 0)"));
+                                                 "'contact.address.state') = 'CA'"));
 
     auto e = c4query_run(query, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);

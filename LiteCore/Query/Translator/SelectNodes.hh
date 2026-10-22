@@ -85,7 +85,15 @@ namespace litecore::qt {
 
         string_view collection() const { return _collection; }  ///< Collection name, or empty if default
 
-        bool usesDeletedDocs() const { return _usesDeleted; }  ///< True if exprs refer to deleted docs
+        /// True if an expr refers to a deleted doc from this source
+        bool usesDeletedDocs() const { return _deletionStatus >= kUsesDeleted; }
+
+        /// True if WHERE guarantees only deleted docs are selected
+        bool usesOnlyDeletedDocs() const { return _deletionStatus >= kUsesOnlyDeleted; }
+
+        bool usesDeletedTable() const { return _deletionStatus >= kUsesDeletedTable; }
+
+        void setUsesDeletedTable() { _deletionStatus = kUsesDeletedTable; }
 
         string_view asColumnName() const { return _columnName; }  ///< Name to use, if used as result column
 
@@ -113,12 +121,23 @@ namespace litecore::qt {
         void         disambiguateColumnName(ParseContext&);
         void         writeASandON(SQLWriter& ctx) const;
 
-        void setUsesDeleted() {
-            _usesDeleted = true;  // It will turn kv_.xyz to all_.xyz
-            _tableName   = string_view{};
+        void setUsesDeletedDocs() {
+            if ( _deletionStatus < kUsesDeleted ) {
+                _deletionStatus = kUsesDeleted;  // It can turn kv_.xyz to all_.xyz
+                _tableName      = "";
+            }
+        }
+
+        void setUsesOnlyDeletedDocs() {
+            if ( _deletionStatus < kUsesOnlyDeleted ) {
+                _deletionStatus = kUsesOnlyDeleted;  // WHERE guarantees only deleted docs; can use kv_del_ directly
+                _tableName      = "";
+            }
         }
 
       private:
+        enum DeletionStatus { kUsesNoDeleted, kUsesDeleted, kUsesOnlyDeleted, kUsesDeletedTable };
+
         string_view          _scope;                  // Scope name, or empty for default
         string_view          _collection;             // Collection name, or empty for default
         string_view          _columnName;             // Name to use if used as result column
@@ -126,7 +145,7 @@ namespace litecore::qt {
         JoinType             _join = JoinType::none;  // Type of JOIN, or none
         ExprNode* C4NULLABLE _joinOn{};               // "ON ..." predicate
         Value                _tempOn;                 // Temporarily holds source of _joinOn
-        bool                 _usesDeleted = false;    // True if exprs refer to deleted docs
+        DeletionStatus       _deletionStatus = kUsesNoDeleted;
         SourceType const     _type;
     };
 

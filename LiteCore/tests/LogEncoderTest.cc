@@ -39,6 +39,16 @@ using namespace std;
 
 constexpr size_t kFolderBufSize = 64;
 
+// On Windows, the crash log file is created lazily on the first actual crash
+// (see BacktraceSignalHandler::setLogPath), instead of eagerly at LogFiles
+// construction time as on other platforms, so it's absent from directory
+// listings taken during normal (non-crashing) test runs.
+#ifdef _WIN32
+constexpr int kCrashLogFileCount = 0;
+#else
+constexpr int kCrashLogFileCount = 1;
+#endif
+
 // This is moved here so that it can be shared between cbl-logtest
 // and CppTests
 FilePath TestFixture::sTempDir = GetTempDirectory();
@@ -295,9 +305,10 @@ TEST_CASE_METHOD(LogFileTest, "Logging rollover", "[Log]") {
     });
 
     // infoFiles.size(), log files at the Info level
-    // 5 additional log files, 1 for each level besides Info plus the crash log.
+    // 4 additional log files, 1 for each level besides Info, plus the crash log
+    // (absent on Windows until an actual crash occurs).
     // 2 arbitrary files, "intheway" and "acbd", in particular
-    REQUIRE(totalCount == infoFiles.size() + 7);
+    REQUIRE(totalCount == infoFiles.size() + 6 + kCrashLogFileCount);
     // The rollover logic will cut a new file as its size reaches maxSize as specified in
     // the LogFiles::Options. However, we check the size by checking the number of bytes already
     // flushed to the fstream. Therefore, the number of files that have actually been cut
@@ -524,7 +535,8 @@ TEST_CASE_METHOD(LogFileTest, "c4log writeToBinary", "[Log]") {
     CHECK(binaryFilePath == path);
     int currFileCount = fileCount;
     fileCount         = getFileCount(logDir);
-    CHECK(fileCount - currFileCount == 6);  // There are 5 valid levels, and a crash log.
+    // 5 valid levels, plus the crash log (absent on Windows until an actual crash occurs).
+    CHECK(fileCount - currFileCount == 5 + kCrashLogFileCount);
 
     // That is, no logs will be observed.
     CHECK(checkDomainEffectiveLevels(kC4LogNone));

@@ -233,6 +233,24 @@ namespace litecore {
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
+        // How a stored document's revision history can be laid out:
+        //   2.x: `body` is an encoded RevTree; there is no `extra`.
+        //   3.x: `body` is Fleece properties; `extra` is an encoded RevTree.
+        //   4.x: `body` is Fleece properties; `extra` is Fleece, starting with four zero bytes (see
+        //        encodeBodyAndExtra), or absent if the document has no remote revisions.
+        // The revid does not identify the layout: a version-vector revid does mean 4.x, but a 4.x document can also
+        // have a legacy revid (a revision pulled with a legacy-only history, or a 3.x document rewritten by
+        // setRemoteRevision.) So for a legacy revid, `extra` (or `body` if there is no `extra`) has to be examined.
+
+        /// True if `body` is a 2.x-format rev tree.
+        static bool isRevTreeBody(slice version, slice body);
+
+        /// True if `extra` is a 3.x-format rev tree rather than 4.x Fleece format.
+        static bool isRevTreeExtra(slice version, slice extra);
+
+        /// True if the record is a legacy rev tree (2.x `body` or 3.x `extra`); false if it's in 4.x Fleece format.
+        static bool isRevTreeRecord(slice version, slice body, slice extra);
+
         std::optional<Version> findLatestWithAuthor(SourceID author);
 
         //---- For testing:

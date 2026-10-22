@@ -51,6 +51,12 @@ namespace litecore {
             mutableThis->assignTableNameToSource(source, ctx);
         };
         root.translatorDefaultCollection = [&]() -> string_view { return _defaultCollectionName; };
+        root.isDeletedDocsFullyTracked   = [&](string_view collectionTableName) {
+            return collectionTableName != "kv_default" || _delegate.isDeletedDocsFullyTracked();
+        };
+        root.collectionTableName = [this](string_view collection) -> string {
+            return _delegate.collectionTableName((string)collection, kLiveDocs);
+        };
         return root;
     }
 
@@ -136,14 +142,27 @@ namespace litecore {
             _hashedTables.emplace(tableName, plainTableName);
             if ( _delegate.tableExists(tableName) ) source->setTableName(ctx.newString(tableName));
         } else {
+            // This name is not the official name of the collection. It is what
+            // appear in the query. It may be database name to stand for default
+            // collection.
             string name(source->collection());
             if ( name.empty() ) name = _defaultCollectionName;
             if ( !source->scope().empty() ) name = string(source->scope()) + "." + name;
 
-            DeletionStatus delStatus = source->usesDeletedDocs() ? kLiveAndDeletedDocs : kLiveDocs;
-            //FIXME: Support kDeletedDocs
+            DeletionStatus delStatus{kLiveDocs};
+            // live table name
+            tableName               = _delegate.collectionTableName(name, delStatus);
+            bool delDocFullyTracked = ctx.delegate.isDeletedDocsFullyTracked(tableName);
+            if ( source->usesOnlyDeletedDocs() && delDocFullyTracked ) {
+                // WHERE clause guarantees only deleted docs match, and the delegate
+                // confirms that all deleted docs are in the dedicated kv_del_ table.
+                delStatus = kDeletedDocs;
+                source->setUsesDeletedTable();
+            } else if ( source->usesDeletedDocs() ) {
+                delStatus = kLiveAndDeletedDocs;
+            }
+            if ( delStatus != kLiveDocs ) tableName = _delegate.collectionTableName(name, delStatus);
 
-            tableName = _delegate.collectionTableName(name, delStatus);
             if ( name != _defaultCollectionName && !_delegate.tableExists(tableName) )
                 fail("no such collection \"%s\"", name.c_str());
 

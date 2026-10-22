@@ -58,6 +58,8 @@ namespace litecore::websocket {
         std::pair<int, Headers> httpResponse() const override;
 
       protected:
+        // Must run before any of this object's own teardown, while the vtable still reflects
+        // this class's own overrides -- see WebSocketImpl::stopTimers()'s doc comment.
         ~BuiltInWebSocket() override;
 
         // Implementations of WebSocketImpl abstract methods:

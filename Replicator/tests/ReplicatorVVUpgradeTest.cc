@@ -421,3 +421,64 @@ TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Resolve Conflicts After VV Upgrade", 
         CHECK(slice(finalDoc->selectedRev.revID).findByte('*'));
     }
 }
+
+// CBL-8954: A VV client can hold docs with a legacy revID but `extra` in 4.x Fleece format (pulled with legacy-only
+// history, or upgraded and then marked with the remote's rev). On the next `changes` for such a doc, findDocAncestors
+// parsed `extra` as a RevTree and threw, failing the whole batch with "fl_callback: exception!".
+TEST_CASE_METHOD(ReplicatorVVUpgradeTest, "Pull Legacy RevID Docs Into VV DB", "[Pull][Upgrade]") {
+    // db is the server, db2 the client. Server has 100 rev-tree docs (legacy "1-xxxx" revIDs):
+    importJSONLines(sFixturesDir + "names_100.json", _collDB1);
+
+    SECTION("Documents pulled by the client after the upgrade") {
+        upgrade();
+        Log("-------- Pull: client stores 100 legacy-only revisions --------");
+        _expectedDocumentCount = 100;
+        runPullReplication();
+    }
+
+    SECTION("Documents pushed to the client before the upgrade") {
+        Log("-------- Push server -> client (both rev-tree) --------");
+        _expectedDocumentCount = 100;
+        runPushReplication();
+        upgrade();
+        Log("-------- Pull: server sends changes for all 100; client marks them as remote #1's revs --------");
+        _expectedDocumentCount = 0;
+        runPullReplication();
+    }
+
+    SECTION("Documents pulled by the client before the upgrade") {
+        Log("-------- Pull server -> client (both rev-tree) --------");
+        _expectedDocumentCount = 100;
+        runPullReplication();
+        upgrade();
+        Log("-------- Pull: same checkpoint, nothing to do; records keep their rev tree in `extra` --------");
+        _expectedDocumentCount = 0;
+        runPullReplication();
+    }
+
+    compareDatabases();
+    {
+        c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, "0000001"_sl, true, kDocGetAll, ERROR_INFO());
+        REQUIRE(doc);
+        CHECK(slice(doc->revID).hasPrefix("1-"_sl));  // the client kept the legacy revID as the current revision
+    }
+
+    // Client pulls an update (version-vector rev) from the server:
+    Log("-------- Server updates 0000001; client pulls --------");
+    createNewRev(_collDB1, "0000001"_sl, kFleeceBody);
+    _expectedDocumentCount = 1;
+    runPullReplication();
+    compareDatabases();
+    {
+        c4::ref<C4Document> doc = c4coll_getDoc(_collDB2, "0000001"_sl, true, kDocGetAll, ERROR_INFO());
+        REQUIRE(doc);
+        CHECK(slice(doc->revID).findByte('@'));  // now a version vector
+    }
+
+    // Reset checkpoint and pull:
+    Log("-------- Server updates 0000002; client pulls with checkpoint reset --------");
+    createNewRev(_collDB1, "0000002"_sl, kFleeceBody);
+    _expectedDocumentCount = 1;
+    runReplicators(Replicator::Options::passive(_collSpec), Replicator::Options::pulling(kC4OneShot, _collSpec), true);
+    compareDatabases();
+}

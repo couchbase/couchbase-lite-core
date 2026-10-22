@@ -82,6 +82,13 @@ namespace litecore::websocket {
         virtual void receiveComplete(size_t byteCount)               = 0;
         virtual void requestClose(int status, fleece::slice message) = 0;
 
+        // Subclasses must call this as the very first statement in their own destructor, before
+        // any of their own teardown runs, so _pingTimer/_responseTimer finish waiting for any
+        // in-flight callback (which may call the virtuals above) while the vtable still reflects
+        // the subclass's own overrides -- not after, once the vtable has already reverted to
+        // WebSocketImpl's own and these are pure virtual (__cxa_pure_virtual aborts).
+        void stopTimers();
+
         enum SocketLifecycleState : int { SOCKET_UNINIT, SOCKET_OPENING, SOCKET_OPENED, SOCKET_CLOSING, SOCKET_CLOSED };
 
       private:

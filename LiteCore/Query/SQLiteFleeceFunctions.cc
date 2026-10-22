@@ -543,7 +543,11 @@ namespace litecore {
         try {
             alloc_slice result = (*(KeyStore::WithDocBodyCallback*)callback)(rec);
             setResultTextFromSlice(ctx, result);
-        } catch ( const std::exception& ) { sqlite3_result_error(ctx, "fl_callback: exception!", -1); }
+        } catch ( const std::exception& x ) {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "fl_callback: %s", x.what());
+            sqlite3_result_error(ctx, msg, -1);
+        }
     }
 
 #pragma mark - VECTOR (ML) SEARCH:

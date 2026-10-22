@@ -441,6 +441,14 @@ namespace litecore {
 
         // Enable some security features:
         sqlite3_db_config(sqlite, SQLITE_DBCONFIG_DEFENSIVE, 1, NULL);
+
+        // If the "max rowid with deleted docs in default" watermark isn't set yet, initialize it
+        // to the current max rowid, so isDeletedTableComplete() has an accurate starting point
+        // even if housekeeping/migration never runs (e.g. kC4DB_NoHousekeeping, read-only). (CBL-7986)
+        if ( options().writeable ) {
+            ExclusiveTransaction t(this);
+            if ( setDefaultDeletedDocsCutoffRowid(-1, t) ) t.commit();
+        }
     }
 
     bool SQLiteDataFile::upgradeSchema(SchemaVersion minVersion, const char* what, function_ref<void()> upgrade) {
@@ -685,7 +693,7 @@ namespace litecore {
 
     void SQLiteDataFile::_beginTransaction(ExclusiveTransaction*) {
         checkOpen();
-        _exec("BEGIN");
+        _exec("BEGIN IMMEDIATE");
     }
 
     void SQLiteDataFile::_endTransaction(ExclusiveTransaction* t, bool commit) {
@@ -913,6 +921,8 @@ namespace litecore {
             return auxiliaryTableName(onTable, KeyStore::kUnnestLevelSeparator, property);
         }
     }
+
+    bool SQLiteDataFile::isDeletedDocsFullyTracked() const { return isDeletedTableComplete(); }
 
 #ifdef COUCHBASE_ENTERPRISE
     string SQLiteDataFile::predictiveTableName(const string& onTable, const std::string& property) const {

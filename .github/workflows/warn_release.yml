@@ -1,5 +1,10 @@
 on:
   workflow_call: # So it can be used by our other repos
+    inputs:
+      reviewer:
+        description: "GitHub username to request as a reviewer on the PR (optional)"
+        required: false
+        type: string
   pull_request: # And also be used for itself
     types: [opened]
     branches: ["release/**"]
@@ -33,8 +38,18 @@ jobs:
             Please confirm this PR is one of the following:
 
             - [ ] A response to a customer ask
-            - [ ] A change per our security policy
+            - [ ] An approved backport
             - [ ] A non-functional change (e.g. changes needed for building an older version)
             - [ ] A bug fix for a x.y.0 release
             - [ ] A change that has been granted an exception (please comment)`
+            })
+      - uses: actions/github-script@v7
+        if: ${{ inputs.reviewer != '' }}
+        with:
+          script: |
+            github.rest.pulls.requestReviewers({
+              pull_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              reviewers: ["${{ inputs.reviewer }}"]
             })

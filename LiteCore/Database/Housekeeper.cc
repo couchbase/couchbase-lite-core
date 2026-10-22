@@ -144,37 +144,24 @@ namespace litecore {
                 return -1;
             }
 
-            uint64_t             rowidLow = 1;
+            SQLiteKeyStore* sqlKeyStore = SQLiteDataFile::asSQLiteKeyStore(&dataFile->getKeyStore(_keyStoreName));
+            Assert(sqlKeyStore);
+            const unsigned kBatch = sMigrateBatchSize;
+
+            uint64_t             rowidLow  = 1;
+            uint64_t             rowidHigh = dataFile->getDefaultDeletedDocsCutoffRowid();
             ExclusiveTransaction t(dataFile);
             try {
-                auto&           infoStore   = dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
-                Record          rec         = infoStore.get(DataFile::kMaxRowidWithDeletedInDefault);
-                uint64_t        rowidHigh   = 0;
-                SQLiteKeyStore* sqlKeyStore = SQLiteDataFile::asSQLiteKeyStore(&dataFile->getKeyStore(_keyStoreName));
-                Assert(sqlKeyStore);
-                if ( !rec.exists() ) {
-                    rowidHigh = sqlKeyStore->maxRowid();
-                    Record putRec{DataFile::kMaxRowidWithDeletedInDefault};
-                    putRec.setBodyAsUInt(rowidHigh);
-                    infoStore.setKV(putRec, t);
-                } else {
-                    rowidHigh = rec.bodyAsUInt();
-                }
-
-                // Invariant: rowidHigh == 0 || _migrateTimer != nullptr
                 if ( rowidHigh == 0 ) {
                     logInfo("All deleted docs are migrated to deleted table");
                     return 0;
                 }
-                const unsigned kBatch = sMigrateBatchSize;
-                rowidLow              = (rowidHigh >= kBatch) ? rowidHigh - kBatch + 1 : 1;
 
+                rowidLow = (rowidHigh >= kBatch) ? rowidHigh - kBatch + 1 : 1;
                 logInfo("Migrate deleted docs. Starts from %" PRIu64 " down.", rowidHigh);
                 sqlKeyStore->migrateDeletedDocs(_keyStoreName, rowidLow, rowidHigh);
                 // Update MaxRowid
-                Record putRec(DataFile::kMaxRowidWithDeletedInDefault);
-                putRec.setBodyAsUInt(rowidLow - 1);
-                infoStore.setKV(putRec, t);
+                dataFile->setDefaultDeletedDocsCutoffRowid(rowidLow - 1, t);
             } catch ( const exception& exc ) {
                 warn("Migration of deleted docs hit an exception %s", exc.what());
                 t.abort();

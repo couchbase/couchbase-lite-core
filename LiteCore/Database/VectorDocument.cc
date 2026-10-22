@@ -803,11 +803,16 @@ namespace litecore {
                         return kOlder;
                     } else if ( rec ) {
                         // Remote is a lower generation; check whether it's an ancestor:
-                        RevTree revTree(rec->body, rec->extra, rec->sequence);
-                        auto    rev = revTree[remoteVersion];
-                        if ( rev && rev->isAncestorOf(revTree.currentRevision()) ) return kNewer;
-                        else
-                            return kConflicting;
+                        if ( VectorRecord::isRevTreeRecord(rec->version, rec->body, rec->extra) ) {
+                            RevTree revTree(rec->body, rec->extra, rec->sequence);
+                            auto    rev = revTree[remoteVersion];
+                            if ( rev && rev->isAncestorOf(revTree.currentRevision()) ) return kNewer;
+                            else
+                                return kConflicting;
+                        } else {
+                            // `extra` is in 4.x Fleece format, so there's no rev tree to check; assume it is:
+                            return kNewer;
+                        }
                     } else {
                         return kNewer;
                     }

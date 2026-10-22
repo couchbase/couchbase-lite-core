@@ -12,6 +12,7 @@
 
 #include "ReplicatorAPITest.hh"
 #include "HTTPLogic.hh"
+#include "Logging.hh"
 
 using namespace fleece;
 using namespace litecore::net;
@@ -37,6 +38,38 @@ class RESTClientTest : public ReplicatorAPITest {
         }
     }
 };
+
+namespace {
+    // Gives the tests access to Body's protected constructor.
+    class TestBody : public litecore::REST::Body {
+      public:
+        TestBody(websocket::Headers headers, alloc_slice body) : Body(std::move(headers), std::move(body)) {}
+    };
+}  // namespace
+
+TEST_CASE("Unparseable JSON body is not logged", "[REST]") {
+    // The body of a response can carry credentials (tokens, session IDs), so the warning about
+    // unparseable JSON must not include it.
+    static constexpr const char* kSecret = "s3cr3t-session-token-12345";
+
+    websocket::Headers headers;
+    headers.add("Content-Type"_sl, "application/json"_sl);
+    TestBody body(headers, alloc_slice(string("{\"token\": \"") + kSecret));  // truncated JSON
+
+    string              warnings;
+    C4LogObserverConfig config{
+            kC4LogWarning, nullptr, 0,
+            [](const C4LogEntry* entry, void* context) { *(string*)context += string(entry->message) + "\n"; },
+            &warnings};
+    C4LogObserver* observer = c4log_newObserver(config, nullptr);
+    CHECK(!body.bodyAsJSON());
+    c4log_removeObserver(observer);
+    c4logobserver_release(observer);
+
+    CHECK(warnings.find("HTTP Body has unparseable JSON") != string::npos);
+    CHECK(warnings.find(litecore::kLogScrubMarker) != string::npos);
+    CHECK(warnings.find(kSecret) == string::npos);
+}
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTPS Request to public host") {
     REQUIRE(c4address_fromURL("https://api.ipify.org/"_sl, &(_sg.address), nullptr));

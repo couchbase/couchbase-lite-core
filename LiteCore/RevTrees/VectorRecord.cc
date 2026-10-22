@@ -130,7 +130,7 @@ namespace litecore {
     VectorRecord::~VectorRecord() = default;
 
     void VectorRecord::readRecordBody(const alloc_slice& body) {
-        if ( body && !revid(_revID).isVersion() && RawRevision::isRevTree(body) ) {
+        if ( isRevTreeBody(_revID, body) ) {
             // doc is still in v2.x format, with body & rev-tree in `body`, and no `extra`:
             importRevTree(body, nullslice);
         } else {
@@ -150,6 +150,7 @@ namespace litecore {
         }
     }
 
+    // True if `extra` is in 4.x Fleece format, which begins with four zero bytes.
     static bool startsWithZeros(slice s) {
         if ( s.size < 4 ) return false;
         uint32_t z;
@@ -157,8 +158,21 @@ namespace litecore {
         return z == 0;
     }
 
+    /*static*/ bool VectorRecord::isRevTreeBody(slice version, slice body) {
+        return body && !revid(version).isVersion() && RawRevision::isRevTree(body);
+    }
+
+    /*static*/ bool VectorRecord::isRevTreeExtra(slice version, slice extra) {
+        return extra && !revid(version).isVersion() && !startsWithZeros(extra);
+    }
+
+    /*static*/ bool VectorRecord::isRevTreeRecord(slice version, slice body, slice extra) {
+        // If there's an `extra`, the tree (if any) is in it; otherwise it can only be in `body` (2.x).
+        return extra ? isRevTreeExtra(version, extra) : isRevTreeBody(version, body);
+    }
+
     void VectorRecord::readRecordExtra(const alloc_slice& extra) {
-        if ( extra && !revid(_revID).isVersion() && !startsWithZeros(extra) ) {
+        if ( isRevTreeExtra(_revID, extra) ) {
             // This doc hasn't been upgraded; `extra` is still in old RevTree format
             if ( !RawRevision::isRevTree(extra) )
                 error::_throw(error::CorruptRevisionData, "extra is neither vector nor tree");
@@ -734,7 +748,8 @@ namespace litecore {
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate& rec, const ForAllRevIDsCallback& callback) {
         bool syncedFlag = (rec.flags & DocumentFlags::kSynced);
-        if ( revid(rec.version).isVersion() ) {
+        if ( !isRevTreeRecord(rec.version, rec.body, rec.extra) ) {
+            // 4.x layout. (The current revid may still be a legacy revid; see isRevTreeRecord.)
             callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
             int firstRemote = 1;
             if ( syncedFlag ) {
