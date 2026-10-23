@@ -342,15 +342,16 @@ namespace litecore::net {
         }
         if ( !connected ) return failure(socket);
 
-        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Sending request to %s:\n%s",
-                  (_lastDisposition == kContinue ? "proxy tunnel" : string(directAddress().url()).c_str()),
-                  formatHTTPForLog(slice(requestToSend())).c_str());
+        // Only the fact of the exchange is logged, never its content: HTTP headers and bodies carry
+        // credentials.
+        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Sending request to %s",
+                  (_lastDisposition == kContinue ? "proxy tunnel" : string(directAddress().url()).c_str()));
         if ( socket.write_n(requestToSend()) < 0 || socket.write_n(body) < 0 ) return failure(socket);
         alloc_slice response = socket.readToDelimiter("\r\n\r\n"_sl);
         if ( !response ) return failure(socket);
-        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response:\n%s", formatHTTPForLog(response).c_str());
 
         Disposition disposition = receivedResponse(response);
+        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response, HTTP status %d", int(_httpStatus));
         if ( disposition == kFailure && _error.domain == WebSocketDomain && _error.code == int(_httpStatus) ) {
             // Look for a more detailed HTTP error message in the response body:
             if ( bool isJSON = _responseHeaders["Content-Type"_sl].hasPrefix("application/json"_sl);
@@ -372,7 +373,7 @@ namespace litecore::net {
         return disposition;
     }
 
-    string HTTPLogic::formatHTTPForLog(slice http) {
+    string HTTPLogic::formatHTTPForLog(slice http, const websocket::Headers* extraHeaders) {
         // Header names whose values are credentials and must never be written to the log
         // in the clear (covers Basic/Bearer auth, session cookies, and proxy auth).
         static const slice kRedactedHeaders[] = {"Authorization", "Cookie", "Set-Cookie", "Proxy-Authorization"};
@@ -383,24 +384,41 @@ namespace litecore::net {
                    != std::end(kRedactedHeaders);
         };
 
+        // The names of the headers the application supplied are not known in advance, and any of
+        // them may carry a secret (an API key, a gateway token...), so their values are redacted too.
+        auto isExtraHeader = [extraHeaders](slice name) {
+            bool found = false;
+            if ( extraHeaders ) extraHeaders->forEach(name, [&](slice) { found = true; });
+            return found;
+        };
+
         slice_istream in(http);
         stringstream  s;
-        bool          first = true;
+        bool          first     = true;
+        bool          scrubbing = false;  // the previous header's value was scrubbed
         while ( true ) {
             slice line = in.readToDelimiter("\r\n"_sl);
             if ( line.size == 0 ) break;
+            bool isStartLine = first;
             if ( !first ) s << '\n';
             first = false;
             s << '\t';
-            // Redact the value of any credential-bearing header, keeping the name visible
-            // so the log still shows that the header was present.
             slice name;
             if ( const uint8_t* colon = line.findByte(':') ) name = slice(line.buf, colon);
-            if ( name && isCredentialHeader(name) ) {
+            bool continuation = (line[0] == ' ' || line[0] == '\t');
+            if ( !isStartLine && scrubbing && (continuation || !name) ) {
+                // A value may continue on the next lines (an obsolete HTTP style, "obs-fold"), and
+                // a stray line may follow it. They belong to the scrubbed value, so scrub them too.
+                s << kLogScrubMarker;
+            } else if ( name && (isCredentialHeader(name) || isExtraHeader(name)) ) {
+                // Redact the value of the header, keeping the name visible so the log still shows
+                // that the header was present.
                 s.write((const char*)name.buf, narrow_cast<std::streamsize>(name.size));
-                s << ": [REDACTED]";
+                s << ": " << kLogScrubMarker;
+                scrubbing = true;
             } else {
                 s.write((const char*)line.buf, narrow_cast<std::streamsize>(line.size));
+                scrubbing = false;
             }
         }
         return s.str();
