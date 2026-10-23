@@ -151,7 +151,7 @@ namespace litecore {
 
         /// The document's last tree-based revid, before the first version-vectored rev was added.
         /// (`nullslice` if it still has a legacy revid, or never had one.)
-        revid lastLegacyRevID() const FLPURE;
+        revid lastLegacyRevID(RemoteID remote = RemoteID::Local) const FLPURE;
 
         /// Forcibly sets the document's last tree-based revid.
         /// Only for use in certain conflict resolution scenarios.

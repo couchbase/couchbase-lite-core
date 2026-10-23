@@ -384,6 +384,8 @@ namespace litecore {
             if ( !newRev.revID ) error::_throw(error::CorruptRevisionData, "VectorRecord setRemoteRevision bad revID");
             if ( auto oldRevID = revDict[kRevIDKey].asData(); newRev.revID != oldRevID ) {
                 revDict[kRevIDKey].setData(newRev.revID);
+                if ( revid legacy = (_revID == newRev.revID ? lastLegacyRevID() : revid()) )
+                    revDict[kLegacyRevIDKey].setData(legacy);
                 _changed = true;
             }
             if ( newRev.properties != revDict.get(kRevPropertiesKey) ) {
@@ -476,9 +478,12 @@ namespace litecore {
         }
     }
 
-    revid VectorRecord::lastLegacyRevID() const {
+    revid VectorRecord::lastLegacyRevID(RemoteID remote) const {
         requireRemotes();
-        return revid(_revisions[0].asDict()[kLegacyRevIDKey].asData());
+        if ( Dict revDict = _revisions[int(remote)].asDict(); revDict ) {
+            return revid(revDict[kLegacyRevIDKey].asData());
+        }
+        return revid();
     }
 
     void VectorRecord::setLastLegacyRevID(revid revID) {
