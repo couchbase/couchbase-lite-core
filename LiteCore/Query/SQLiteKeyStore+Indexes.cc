@@ -53,9 +53,15 @@ namespace litecore {
     bool SQLiteKeyStore::createIndex(const IndexSpec& spec) {
         spec.validateName();
 
-        Stopwatch            st;
-        ExclusiveTransaction t(db());
-        bool                 created;
+        Stopwatch                             st(false);
+        std::unique_ptr<ExclusiveTransaction> transaction{};
+        bool                                  created;
+
+        if ( !db().inTransaction() ) {
+            transaction = std::make_unique<ExclusiveTransaction>(db());
+            st.start();
+        }
+
         switch ( spec.type ) {
             case IndexSpec::kValue:
                 created = createValueIndex(spec);
@@ -78,8 +84,8 @@ namespace litecore {
                 error::_throw(error::Unimplemented);
         }
 
-        if ( created ) {
-            t.commit();
+        if ( created && transaction ) {
+            transaction->commit();
             double time = st.elapsed();
             QueryLog.log((time < 10.0 ? LogLevel::Info : LogLevel::Warning), "Created index '%s' in %.3f sec",
                          spec.name.c_str(), time);
