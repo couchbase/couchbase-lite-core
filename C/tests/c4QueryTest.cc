@@ -1837,6 +1837,24 @@ TEST_CASE_METHOD(CollectionTest, "C4Query FTS Multiple collections", "[Query][C]
     CHECK((error.domain == SQLiteDomain && error.code == 1));
 }
 
+TEST_CASE_METHOD(CollectionTest, "C4Query createIndex in/out Transaction", "[Query][C][FTS]") {
+    SECTION("Not in Transaction") {
+        C4Collection* coll = REQUIRED(c4db_createCollection(db, {"wiki"_sl}, ERROR_INFO()));
+        CHECK(c4coll_createIndex(coll, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                                 kC4ValueIndex, nullptr, nullptr));
+    }
+
+    SECTION("In Transaction") {
+        REQUIRE(c4db_beginTransaction(db, nullptr));
+
+        C4Collection* coll = REQUIRED(c4db_createCollection(db, {"wiki"_sl}, ERROR_INFO()));
+        CHECK(c4coll_createIndex(coll, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4JSONQuery,
+                                 kC4ValueIndex, nullptr, nullptr));
+
+        REQUIRE(c4db_endTransaction(db, true, nullptr));
+    }
+}
+
 #pragma mark - OBSERVERS:
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!throws]") {

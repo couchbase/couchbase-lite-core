@@ -25,5 +25,5 @@ jobs:
     - name: Check Submodules
       working-directory: ${{github.workspace}}/build_cmake/scripts
       run: |
-        pip install termcolor
+        pip install termcolor colorama
         ./check_deps.py $GITHUB_BASE_REF ${{github.workspace}}
