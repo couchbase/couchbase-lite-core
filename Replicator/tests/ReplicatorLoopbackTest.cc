@@ -18,12 +18,125 @@
 #include "c4Database.hh"
 #include "Base64.hh"
 #include "betterassert.hh"
+#include "IncomingRev.hh"
+#include "IncomingRevTestHooks.hh"
 #include "fleece/Mutable.hh"
 #include "fleece/PlatformCompat.hh"
 #include <chrono>
+#include <condition_variable>
 
 using namespace litecore::actor;
 using namespace std;
+
+namespace {
+    // Hold the first actor event open while the Inserter delivers its completion notification.
+    // All waits are handshakes; the timeout only diagnoses a broken test or a stalled actor.
+    class IncomingRevOrdering {
+      public:
+        struct State {
+            mutex              gateMutex;
+            condition_variable changed;
+            IncomingRev*       revision          = nullptr;
+            bool               eventFinished     = false;
+            bool               releaseEvent      = false;
+            bool               insertionReturned = false;
+            bool               handedOff         = false;
+            bool               prematureHandoff  = false;
+            bool               cancelled         = false;
+            const char*        timedOutAt        = nullptr;
+
+            template <class Predicate>
+            void wait(unique_lock<mutex>& lock, const char* stage, Predicate ready) {
+                if ( !changed.wait_for(lock, 10s, [&] { return cancelled || ready(); }) ) {
+                    timedOutAt = stage;
+                    cancelled  = true;
+                    changed.notify_all();
+                }
+            }
+
+            void observe(IncomingRev* rev, testing::IncomingRevEvent event) {
+                using Event = testing::IncomingRevEvent;
+                unique_lock lock(gateMutex);
+                if ( cancelled ) return;
+                switch ( event ) {
+                    case Event::BeforeAfterEvent:
+                        if ( revision ) return;  // Only hold the first event, before insertion completion.
+                        revision = rev;
+                        changed.notify_all();
+                        wait(lock, "insertion notification", [&] { return releaseEvent; });
+                        break;
+                    case Event::AfterAfterEvent:
+                        if ( rev == revision ) eventFinished = true;
+                        break;
+                    case Event::BeforeInsertNotification:
+                        // The Inserter may reach this point before the actor enters afterEvent.
+                        wait(lock, "afterEvent entry", [&] { return revision != nullptr; });
+                        break;
+                    case Event::AfterInsertNotification:
+                        if ( rev != revision ) return;
+                        insertionReturned = releaseEvent = true;
+                        break;
+                    case Event::BeforeRevWasHandled:
+                        if ( rev != revision ) return;
+                        handedOff = true;
+                        if ( !eventFinished ) {
+                            prematureHandoff = true;
+                            // Fail cleanly on the old implementation: let the event finish before
+                            // the Puller can reset the actor. Waiting for insertionReturned here
+                            // would deadlock, because this is inside revisionInserted().
+                            releaseEvent = true;
+                            changed.notify_all();
+                            wait(lock, "afterEvent exit", [&] { return eventFinished; });
+                        }
+                        break;
+                }
+                changed.notify_all();
+            }
+        };
+
+        shared_ptr<State> state = make_shared<State>();
+
+        IncomingRevOrdering()
+            : _previous(atomic_exchange(&testing::incomingRevHook,
+                                        make_shared<const testing::IncomingRevHook>(
+                                                [s = state](IncomingRev* rev, testing::IncomingRevEvent event) {
+                                                    s->observe(rev, event);
+                                                }))) {}
+
+        ~IncomingRevOrdering() {
+            atomic_store(&testing::incomingRevHook, _previous);
+            lock_guard lock(state->gateMutex);
+            state->cancelled = true;
+            state->changed.notify_all();
+        }
+
+      private:
+        shared_ptr<const testing::IncomingRevHook> _previous;
+    };
+}  // namespace
+
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "IncomingRev defers recycling until earlier actor events finish",
+                       "[Pull][Race]") {
+    IncomingRevOrdering ordering;
+    createRev(_collDB1, "doc"_sl, kRev1ID, kFleeceBody);
+    auto serverOptions = Replicator::Options::passive(_collSpec);
+    // Even a small document must be parsed on the IncomingRev actor for this regression.
+    serverOptions.collectionOpts[0].pullFilter = [](C4CollectionSpec, FLString, FLString, C4RevisionFlags, FLDict,
+                                                    void*) { return true; };
+    _expectedDocumentCount                     = 1;
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOptions);
+    compareDatabases();
+
+    lock_guard  lock(ordering.state->gateMutex);
+    const auto& state = *ordering.state;
+    INFO("Handshake timeout: " << (state.timedOutAt ? state.timedOutAt : "none"));
+    REQUIRE(state.timedOutAt == nullptr);
+    REQUIRE(state.revision != nullptr);
+    CHECK(state.insertionReturned);
+    CHECK(state.eventFinished);
+    CHECK(state.handedOff);
+    CHECK_FALSE(state.prematureHandoff);
+}
 
 TEST_CASE("Options password logging redaction") {
     string          password("SEEKRIT");

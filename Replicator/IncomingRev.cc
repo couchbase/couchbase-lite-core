@@ -23,6 +23,9 @@
 #include <atomic>
 #include <deque>
 #include <set>
+#if defined(LITECORE_CPPTEST)
+#    include "tests/IncomingRevTestHooks.hh"
+#endif
 
 using namespace std;
 using namespace fleece;
@@ -469,10 +472,16 @@ namespace litecore::repl {
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
+#if defined(LITECORE_CPPTEST)
+        testing::notifyIncomingRev(this, testing::IncomingRevEvent::BeforeAfterEvent);
+#endif
         Worker::afterEvent();
         // If the finish() method passed the buck to me (see above), call revWasHandled now:
         auto expected = true;
         if ( _finishedAfterEvent.compare_exchange_strong(expected, false) ) _puller->revWasHandled(this);
+#if defined(LITECORE_CPPTEST)
+        testing::notifyIncomingRev(this, testing::IncomingRevEvent::AfterAfterEvent);
+#endif
     }
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel(std::string* reason) const {
