@@ -417,9 +417,10 @@ namespace litecore::repl {
         revoked ? _puller->revWasProvisionallyHandled<true>() : _puller->revWasProvisionallyHandled<false>();
     }
 
-    // Called directly by the Inserter, on its thread, after the revision is safely committed to disk.
-    void IncomingRev::revisionInserted() {
-        Retained<IncomingRev> retainSelf = this;
+    // Called by the Inserter; finish on my queue after earlier events and their afterEvent calls.
+    void IncomingRev::revisionInserted() { enqueue(FUNCTION_TO_QUEUE(IncomingRev::_revisionInserted)); }
+
+    void IncomingRev::_revisionInserted() {
         decrement(_pendingCallbacks);
         finish();
     }
@@ -464,7 +465,7 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // finish() can be called either on my queue, or on the Puller's or Inserter's queue.
+        // finish() can be called either on my queue or on the Puller's queue.
         // If on my queue, I'm not ready to be reset until after the `afterEvent` call following
         // this method, so defer telling the Puller I'm done until then:
         if ( currentActor() == this ) _finishedAfterEvent = true;
