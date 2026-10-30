@@ -23,12 +23,24 @@
 #include <atomic>
 #include <deque>
 #include <set>
+#if defined(LITECORE_CPPTEST)
+#    include <functional>
+#endif
 
 using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
 namespace litecore::repl {
+
+#if defined(LITECORE_CPPTEST)
+    namespace testing {
+        // Allow test hold afterEvent while the Inserter finishes
+        std::function<void(IncomingRev*)> incomingRevBeforeAfterEvent;
+        std::function<void(IncomingRev*)> incomingRevBeforeReset;
+        std::function<void(IncomingRev*, Worker*)> incomingRevAfterHandleRev;
+    }
+#endif
 
     // Docs with JSON bodies larger than this get parsed asynchronously (off the Puller thread)
     static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
@@ -179,6 +191,9 @@ namespace litecore::repl {
         } else {
             parseAndInsert(std::move(jsonBody));
         }
+#if defined(LITECORE_CPPTEST)
+        if ( testing::incomingRevAfterHandleRev ) testing::incomingRevAfterHandleRev(this, _parent);
+#endif
     }
 
     // We've lost access to this doc on the server; it should be purged.
@@ -402,9 +417,10 @@ namespace litecore::repl {
         revoked ? _puller->revWasProvisionallyHandled<true>() : _puller->revWasProvisionallyHandled<false>();
     }
 
-    // Called directly by the Inserter, on its thread, after the revision is safely committed to disk.
-    void IncomingRev::revisionInserted() {
-        Retained<IncomingRev> retainSelf = this;
+    // Called by the Inserter; finish on my queue after earlier events and their afterEvent calls.
+    void IncomingRev::revisionInserted() { enqueue(FUNCTION_TO_QUEUE(IncomingRev::_revisionInserted)); }
+
+    void IncomingRev::_revisionInserted() {
         decrement(_pendingCallbacks);
         finish();
     }
@@ -449,7 +465,7 @@ namespace litecore::repl {
         _blob = _pendingBlobs.end();
         _rev->trim();
 
-        // finish() can be called either on my queue, or on the Puller's or Inserter's queue.
+        // finish() can be called either on my queue or on the Puller's queue.
         // If on my queue, I'm not ready to be reset until after the `afterEvent` call following
         // this method, so defer telling the Puller I'm done until then:
         if ( currentActor() == this ) _finishedAfterEvent = true;
@@ -458,6 +474,9 @@ namespace litecore::repl {
     }
 
     void IncomingRev::reset() {
+#if defined(LITECORE_CPPTEST)
+        if ( testing::incomingRevBeforeReset ) testing::incomingRevBeforeReset(this);
+#endif
         _rev                = nullptr;
         _parent             = nullptr;
         _remoteSequence     = {};
@@ -468,6 +487,9 @@ namespace litecore::repl {
     // Call Worker::afterEvent to calculate status and progress, then notify
     // Puller we are done.
     void IncomingRev::afterEvent() {
+#if defined(LITECORE_CPPTEST)
+        if ( testing::incomingRevBeforeAfterEvent ) testing::incomingRevBeforeAfterEvent(this);
+#endif
         Worker::afterEvent();
         // If the finish() method passed the buck to me (see above), call revWasHandled now:
         auto expected = true;

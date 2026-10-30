@@ -31,6 +31,13 @@ namespace litecore {
 
 namespace litecore::repl {
 
+#if defined(LITECORE_CPPTEST)
+    namespace testing {
+        std::function<void(Worker*, Worker*)> workerBeforeParentClear;
+        std::function<void(Worker*, Worker*)> workerAfterParentClear;
+    }
+#endif
+
     std::unordered_set<std::string> Worker::_formatCache;
     std::shared_mutex               Worker::_formatMutex;
 
@@ -294,7 +301,15 @@ namespace litecore::repl {
 
     void Worker::changedStatus() {
         if ( _parent ) _parent->childChangedStatus(this, _status);
-        if ( _status.level == kC4Stopped ) _parent = nullptr;
+        if ( _status.level == kC4Stopped ) {
+#if defined(LITECORE_CPPTEST)
+            if ( testing::workerBeforeParentClear ) testing::workerBeforeParentClear(this, _parent);
+#endif
+            _parent = nullptr;
+#if defined(LITECORE_CPPTEST)
+            if ( testing::workerAfterParentClear ) testing::workerAfterParentClear(this, _parent);
+#endif
+        }
     }
 
     // Either there is error, or return a valid collection index
