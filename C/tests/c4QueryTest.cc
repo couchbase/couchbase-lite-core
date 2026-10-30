@@ -1447,6 +1447,79 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer: observe deleted", "[Query
     CHECK(state.queryResult().size() == 0);
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer: observe purge", "[Query][C][!throws]") {
+    compileSelect("SELECT META().id FROM _", kC4N1QLQuery);
+
+    QueryState state;
+    state.query = query;
+    state.obs   = c4queryobs_create(query, QueryState::callback, &state);
+    CHECK(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
+
+    C4Log("---- Waiting for query observer...");
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+
+    C4Log("Checking query observer...");
+    CHECK(state.count == 1);
+    // We start with no docs deleted.
+    CHECK(state.queryResult().size() == 100);
+
+    auto  defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+    slice doc1        = "0000001"_sl;
+    state.count       = 0;
+
+    // Purge doc1
+    {
+        TransactionHelper t(db);
+        REQUIRE(c4coll_purgeDoc(defaultColl, doc1, nullptr));
+    }
+    REQUIRE_BEFORE(20000ms, state.count > 0);
+    CHECK(state.count == 1);
+    // The deleted doc is purged.
+    CHECK(state.queryResult().size() == 99);
+
+    slice doc10 = "0000010"_sl;
+    state.count = 0;
+
+    SECTION("Continue with Opened DB") {
+        // Purge doc10
+        {
+            TransactionHelper t(db);
+            REQUIRE(c4coll_purgeDoc(defaultColl, doc10, nullptr));
+        }
+        REQUIRE_BEFORE(20000ms, state.count > 0);
+    }
+
+    SECTION("Continue with Reopened the DB") {
+        c4query_release(query);
+        reopenDB();
+        defaultColl = getCollection(db, kC4DefaultCollectionSpec);
+        REQUIRE(c4coll_getDocumentCount(defaultColl) == 99);
+
+        query = nullptr;
+        compileSelect("SELECT META().id FROM _", kC4N1QLQuery);
+        state.query = query;
+        state.obs   = c4queryobs_create(query, QueryState::callback, &state);
+        CHECK(state.obs);
+        c4queryobs_setEnabled(state.obs, true);
+        state.count = 0;
+        C4Log("---- Waiting for query observer...");
+        REQUIRE_BEFORE(2000ms, state.count > 0);
+
+        // Purge doc10
+        {
+            TransactionHelper t(db);
+            REQUIRE(c4coll_purgeDoc(defaultColl, doc10, nullptr));
+        }
+        state.count = 0;
+        REQUIRE_BEFORE(20000ms, state.count > 0);
+        CHECK(state.count == 1);
+    }
+
+    // The doc10 is purged.
+    CHECK(state.queryResult().size() == 98);
+}
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer after delete and purge", "[Query][C][!throws]") {
     compileSelect("SELECT META().id FROM _ WHERE contact.address.state='CA'", kC4N1QLQuery);
 
