@@ -1501,17 +1501,17 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer: observe purge", "[Query][
         state.query = query;
         state.obs   = c4queryobs_create(query, QueryState::callback, &state);
         CHECK(state.obs);
-        c4queryobs_setEnabled(state.obs, true);
         state.count = 0;
+        c4queryobs_setEnabled(state.obs, true);
         C4Log("---- Waiting for query observer...");
         REQUIRE_BEFORE(2000ms, state.count > 0);
 
         // Purge doc10
+        state.count = 0;
         {
             TransactionHelper t(db);
             REQUIRE(c4coll_purgeDoc(defaultColl, doc10, nullptr));
         }
-        state.count = 0;
         REQUIRE_BEFORE(20000ms, state.count > 0);
         CHECK(state.count == 1);
     }
