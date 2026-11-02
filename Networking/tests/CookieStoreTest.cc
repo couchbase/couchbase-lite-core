@@ -21,6 +21,9 @@
 #include "HTTPLogic.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "slice_stream.hh"
+#include <utility>
+#include <vector>
 
 using namespace fleece;
 using namespace litecore;
@@ -539,6 +542,45 @@ TEST_CASE("HTTPLogic formatHTTPForLog scrubs a folded Set-Cookie and a stray lin
                           "\t%s\n"
                           "\tUpgrade: websocket",
                           kLogScrubMarker, kLogScrubMarker));
+}
+
+TEST_CASE("HTTPLogic parseHeaders rejects folded header lines", "[HTTP]") {
+    // Headers is a case-insensitive multimap: forEach() visits names in case-insensitive order and
+    // keeps duplicates in the order they were added, so expected headers are listed in that order.
+    using Headers_t = vector<pair<string, string>>;
+
+    struct Case {
+        const char* text;
+        bool        accepted;
+        Headers_t   headers;  // The headers parsed from the block, up to a rejected line
+    };
+
+    // A folded line (one that starts with a space or tab) must never be accepted, whether or not
+    // it contains a colon. In particular, it must not become a header of its own: only the
+    // headers before it are parsed.
+    const Case cases[] = {
+            {"Host: example.com\r\nX-Test: value\r\n\r\n", true, {{"Host", "example.com"}, {"X-Test", "value"}}},
+            {"X-Test: a\r\nx-test: b\r\n\r\n", true, {{"X-Test", "a"}, {"x-test", "b"}}},
+            {"X-Test: a\r\n  b\r\n\r\n", false, {{"X-Test", "a"}}},
+            {"X-Test: a\r\n\tb\r\n\r\n", false, {{"X-Test", "a"}}},
+            {"X-Test: a\r\n X-Injected: secret\r\n\r\n", false, {{"X-Test", "a"}}},
+            {"X-Test: a\r\n\tX-Injected: secret\r\n\r\n", false, {{"X-Test", "a"}}},
+            {"Set-Cookie: a=1\r\nSet-Cookie: b=2\r\n X-Injected: secret\r\n\r\n",
+             false,
+             {{"Set-Cookie", "a=1"}, {"Set-Cookie", "b=2"}}},
+            {" X-Injected: secret\r\n\r\n", false, {}},
+    };
+
+    for ( const Case& c : cases ) {
+        INFO(c.text);
+        websocket::Headers headers;
+        slice_istream      in{slice(c.text)};
+        CHECK(HTTPLogic::parseHeaders(in, headers) == c.accepted);
+
+        Headers_t parsed;
+        headers.forEach([&](slice name, slice value) { parsed.emplace_back(string(name), string(value)); });
+        CHECK(parsed == c.headers);
+    }
 }
 
 TEST_CASE("HTTPLogic formatHTTPForLog leaves non-credential output unchanged", "[HTTP]") {
