@@ -1,10 +1,8 @@
 pipeline {
     agent none
-    options {
-        timeout(time: 90, unit: 'MINUTES')
-    }
     stages {
         stage("Build Mobile") {
+            options { timeout(time: 30, unit: 'MINUTES') }
             parallel {
                 stage("Android") {
                     agent { label 'mobile-lite-android' }
@@ -29,6 +27,7 @@ pipeline {
         }
 
         stage("Build and Test Desktop") {
+            options { timeout(time: 90, unit: 'MINUTES') }
             parallel {
                 stage("Windows") {
                    agent { label 'couchbase-lite-net-validation' }
