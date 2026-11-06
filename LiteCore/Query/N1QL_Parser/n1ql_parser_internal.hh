@@ -16,8 +16,10 @@
 #pragma once
 #include "fleece/Mutable.hh"
 #include "Any.hh"
+#include "Logging.hh"
 #include <algorithm>
 #include <array>
+#include <unordered_set>
 #include <sstream>
 #include <typeinfo>
 #include <utility>
@@ -204,6 +206,13 @@ namespace litecore::n1ql {
         return str;
     }
 
+    static bool isServerReservedWord(std::string word);
+
+    static string warnOnServerReservedWord(const char* input) {
+        if ( isServerReservedWord(input) ) { Warn(R"("%s" is a reserved word in the Server SQL++)", input); }
+        return input;
+    }
+
     // Property-path operations:
 
     static string quoteIdentity(string id) {
@@ -347,6 +356,66 @@ namespace litecore::n1ql {
         auto collate = op("COLLATE", MutableDict::newDict(), expr);
         extendCollate(collate, std::move(collation));
         return collate;
+    }
+
+    //    constexpr const char* UnabridgedServerReservedWords =
+    //        "ADVISE ALL ALTER ANALYZE ARRAY AT BEGIN BINARY BOOLEAN BREAK BUCKET BUILD CACHE CALL CAST CLUSTER "
+    //        "COLLECTION COMMIT COMMITTED CONNECT CONTINUE CORRELATED COVER CREATE CURRENT"
+    //        " CYCLE DATABASE DATASET DATASTORE DECLARE DECREMENT DEFAULT DELETE DERIVED DESCRIBE DO DROP EACH ELEMENT "
+    //        "ESCAPE EXCEPT EXCLUDE EXECUTE EXISTS EXPLAIN FETCH FILTER FIRST FLATTEN FLATTEN_KEYS"
+    //        " FLUSH FOLLOWING FOR FORCE FTS FUNCTION GOLANG GRANT GROUPS GSI HASH IF IGNORE ILIKE INCLUDE INCREMENT "
+    //        "INDEX INFER INLINE INSERT INTERSECT INTO ISOLATION JAVASCRIPT KEY"
+    //        " KEYS KEYSPACE KNOWN LANGUAGE LAST LATERAL LET LETTING LEVEL LSM MAP MAPPING MATCHED MATERIALIZED "
+    //        "MAXVALUE MERGE MINUS MINVALUE NAMESPACE NAMESPACE_ID NEST NEXT NEXTVAL NL NO"
+    //        " NOT_A_TOKEN NTH_VALUE NULLS NUMBER OBJECT OPTION OPTIONS OTHERS OVER PARSE PARTITION PASSWORD PATH POOL "
+    //        "PRECEDING PREPARE PREV PREVIOUS PREVVAL PRIMARY PRIVATE PRIVILEGE PROBE PROCEDURE PUBLIC"
+    //        " RANGE RAW READ REALM RECURSIVE REDUCE RENAME REPLACE RESPECT RESTART RESTRICT RETURN RETURNING REVOKE "
+    //        "ROLE ROLES ROLLBACK ROW ROWS SAVEPOINT SCHEMA SCOPE SELF SEMI SEQUENCE"
+    //        " SET SHOW SOME START STATISTICS STRING SYSTEM TIES TO TRAN TRANSACTION TRIGGER TRUNCATE UNBOUNDED UNDER "
+    //        "UNION UNIQUE UNKNOWN UNSET UPDATE UPSERT USE USER USERS VALIDATE"
+    //        " VALUE VALUES VECTOR VIA VIEW WHILE WINDOW WITH WITHIN WORK XOR";
+
+    constexpr const char* kServerReservedWords =
+            " ALL          ARRAY        AT        BEGIN      CAST        CORRELATED COVER        CURRENT"
+            " DECREMENT    DEFAULT      DERIVED   DESCRIBE   DO          EACH       ELEMENT      ESCAPE"
+            " EXCEPT       EXCLUDE      EXECUTE   EXISTS     EXPLAIN     FETCH      FILTER       FIRST"
+            " FLATTEN      FLATTEN_KEYS FOLLOWING FOR        FORCE       FUNCTION   GRANT        GROUPS"
+            " HASH         IF           IGNORE    ILIKE      INCLUDE     INCREMENT  INDEX        INFER"
+            " INLINE       INTERSECT    ISOLATION KEY        KEYS        KEYSPACE   KNOWN        LAST"
+            " LATERAL      LET          LETTING   LEVEL      LSM         MAP        MAPPING      MATCHED"
+            " MATERIALIZED MAXVALUE     MERGE     MINUS      MINVALUE    NAMESPACE  NAMESPACE_ID NEST"
+            " EXT          NEXTVAL      NL        NO         NOT_A_TOKEN NTH_VALUE  NULLS        NUMBER"
+            " OBJECT       OPTION       OPTIONS   OTHERS     OVER        PARSE      PARTITION    PASSWORD"
+            " PATH         POOL         PRECEDING PREPARE    PREV        PREVIOUS   PREVVAL      PRIMARY"
+            " PRIVATE      PRIVILEGE    PROBE     PROCEDURE  PUBLIC      RANGE      RAW          READ"
+            " REALM        RECURSIVE    REDUCE    RENAME     REPLACE     RESPECT    RESTART      RESTRICT"
+            " RETURN       RETURNING    REVOKE    ROLE       ROLES       ROLLBACK   ROW          ROWS"
+            " SAVEPOINT    SCHEMA       SCOPE     SELF       SEMI        SEQUENCE   SHOW         SOME"
+            " START        STATISTICS   STRING    SYSTEM     TIES        TO         TRAN         TRIGGER"
+            " TRUNCATE     UNBOUNDED    UNDER     UNION      UNIQUE      UNKNOWN    UNSET        UPDATE"
+            " UPSERT       USE          USER      USERS      VALIDATE    VALUE      VALUES       VECTOR"
+            " VIA          VIEW         WHILE     WINDOW     WITH        WITHIN     WORK         XOR";
+
+    bool isServerReservedWord(std::string word) {
+        static std::unordered_set<std::string_view> serverReserved;
+        if ( serverReserved.empty() ) {
+            const char* p     = kServerReservedWords;
+            const char* start = nullptr;
+            for ( ; *p != '\0'; ++p ) {
+                if ( *p == ' ' ) {
+                    if ( start != nullptr ) {
+                        //start -> p
+                        serverReserved.emplace(start, p);
+                        start = nullptr;
+                    }
+                } else if ( start == nullptr ) {
+                    start = p;
+                }
+            }
+            if ( start != nullptr ) { serverReserved.emplace(start, p); }
+        }
+        uppercase(word);
+        return serverReserved.contains(word);
     }
 
 }  // namespace litecore::n1ql
