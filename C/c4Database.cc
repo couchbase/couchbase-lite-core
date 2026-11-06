@@ -27,6 +27,7 @@
 #include <cinttypes>
 #include <optional>
 #include <regex>
+#include <filesystem>
 
 
 // NOTE: Most of C4Database is implemented in its concrete subclass DatabaseImpl.
@@ -71,11 +72,12 @@ void C4Database::enableExtension(slice name, slice path) {
 
 static FilePath dbPath(slice name, slice parentDir) {
     if ( name.size == 0 || parentDir.size == 0 ) C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter);
-    return FilePath(string(parentDir), string(name)).addingExtension(kC4DatabaseFilenameExtension);
+    return FilePath(filesystem::path(parentDir.asString()) / name.asString())
+            .addingExtension(kC4DatabaseFilenameExtension);
 }
 
 static void ensureConfigDirExists(const C4DatabaseConfig2& config) {
-    if ( !(config.flags & kC4DB_ReadOnly) ) (void)FilePath(slice(config.parentDirectory), "").mkdir();
+    if ( !(config.flags & kC4DB_ReadOnly) ) (void)FilePath(slice(config.parentDirectory).asString()).mkdir();
 }
 
 static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2& config2) {
@@ -99,7 +101,7 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2& config2) {
 
 /*static*/ bool C4Database::deleteAtPath(slice dbPath) {
     // Find the db file in the bundle:
-    FilePath bundle{dbPath, ""};
+    FilePath bundle(dbPath.asString());
     if ( bundle.exists() ) {
         try {
             C4StorageEngine storageEngine = nullptr;
@@ -143,21 +145,21 @@ constexpr const char* kInvalidDbNameMsgTemplate =
 /*static*/ Retained<C4Database> C4Database::openAtPath(slice path, C4DatabaseFlags flags, const C4EncryptionKey* key) {
     C4DatabaseConfig config = {flags};
     if ( key ) config.encryptionKey = *key;
-    return DatabaseImpl::open(FilePath(path, ""), config);
+    return DatabaseImpl::open(FilePath(path.asString()), config);
 }
 
 /*static*/ void C4Database::copyNamed(slice sourcePath, slice destinationName, const Config& config) {
     if ( !isValidDbName(destinationName) ) { Warn(kInvalidDbNameMsgTemplate, destinationName.asString().c_str()); }
 
     ensureConfigDirExists(config);
-    FilePath         from(sourcePath, "");
+    FilePath         from(sourcePath.asString());
     FilePath         to        = dbPath(destinationName, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
     CopyPrebuiltDB(from, to, &oldConfig);
 }
 
 /*static*/ void C4Database::copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig& config) {
-    return CopyPrebuiltDB(FilePath(sourcePath), FilePath(destinationPath), &config);
+    return CopyPrebuiltDB(FilePath(sourcePath.asString()), FilePath(destinationPath.asString()), &config);
 }
 
 /*static*/ bool C4Database::deleteNamed(slice name, slice inDirectory) {
