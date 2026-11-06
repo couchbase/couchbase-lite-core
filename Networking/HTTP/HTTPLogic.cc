@@ -24,6 +24,7 @@
 #include "NumConversion.hh"
 #include "fleece/Fleece.hh"
 #include <algorithm>
+#include <cctype>
 #include <regex>
 #include <sstream>
 
@@ -232,6 +233,11 @@ namespace litecore::net {
                 if ( (byte < ' ' && byte != '\t') || byte == 0x7F )  // no control characters
                     return false;
             }
+            // A line that starts with a space or tab is an obsolete line fold ("obs-fold",
+            // RFC 9112 section 5.2), not a new header. Reject it, so that a continuation that
+            // happens to contain a colon is not accepted as a separate header whose name begins
+            // with whitespace.
+            if ( !std::isalpha(line[0]) ) return false;
             const uint8_t* colon = line.findByte(':');
             if ( !colon ) return false;
             slice name(line.buf, colon);
