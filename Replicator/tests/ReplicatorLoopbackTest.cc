@@ -18,12 +18,134 @@
 #include "c4Database.hh"
 #include "Base64.hh"
 #include "betterassert.hh"
+#include "Defer.hh"
+#include "IncomingRev.hh"
 #include "fleece/Mutable.hh"
 #include "fleece/PlatformCompat.hh"
 #include <chrono>
+#include <condition_variable>
+
+namespace litecore::repl::testing {
+    extern std::function<void(IncomingRev*)> incomingRevBeforeAfterEvent;
+    extern std::function<void(IncomingRev*)> incomingRevBeforeReset;
+    extern std::function<void(IncomingRev*, Worker*)> incomingRevAfterHandleRev;
+    extern std::function<void(Worker*, Worker*)> workerBeforeParentClear;
+    extern std::function<void(Worker*, Worker*)> workerAfterParentClear;
+}
 
 using namespace litecore::actor;
 using namespace std;
+
+N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "IncomingRev is not recycled before afterEvent", "[Pull][Race]") {
+    // Hold the first revision's afterEvent until insertion finishes. Then hold
+    // changedStatus just before it clears _parent, let the Puller reset/reuse the
+    // worker for a second document, and observe the old event clear the new parent.
+    struct State {
+        mutex gateMutex;
+        condition_variable changed;
+        IncomingRev* revision = nullptr;
+        Worker* originalParent = nullptr;
+        Worker* restoredParent = nullptr;
+        string firstDocID;
+        string reusedDocID;
+        bool afterEventPaused = false;
+        bool resetWhilePaused = false;
+        bool beforeParentClear = false;
+        bool reused = false;
+        bool checkedParent = false;
+        bool parentClearedAfterReuse = false;
+        bool oldEventOnRevisionActor = false;
+        bool gateTimedOut = false;
+    } state;
+
+    DEFER {
+        testing::incomingRevBeforeAfterEvent = {};
+        testing::incomingRevBeforeReset = {};
+        testing::incomingRevAfterHandleRev = {};
+        testing::workerBeforeParentClear = {};
+        testing::workerAfterParentClear = {};
+    };
+
+    testing::incomingRevBeforeAfterEvent = [&](IncomingRev* revision) {
+        unique_lock lock(state.gateMutex);
+        if ( state.revision ) return;  // Only pause the first revision's event.
+        state.revision = revision;
+        state.firstDocID = revision->rev()->docID.asString();
+        state.afterEventPaused = true;
+        state.changed.notify_all();
+        // A fixed implementation may wait for this event before returning the
+        // worker. In that case release it after the observation window.
+        state.changed.wait_for(lock, 5s, [&] { return state.resetWhilePaused; });
+        state.afterEventPaused = false;
+    };
+    testing::incomingRevBeforeReset = [&](IncomingRev* revision) {
+        unique_lock lock(state.gateMutex);
+        // Insertion may beat the first afterEvent hook. Keep reset from changing
+        // the revision until that hook has recorded its identity.
+        if ( !state.changed.wait_for(lock, 10s, [&] { return state.revision != nullptr; }) ) {
+            state.gateTimedOut = true;
+            return;
+        }
+        if ( revision == state.revision && state.afterEventPaused ) {
+            state.resetWhilePaused = true;
+            state.changed.notify_all();
+            // Let Worker::afterEvent compute kC4Stopped before reset/reuse can
+            // introduce the second revision's queued event or other state.
+            if ( !state.changed.wait_for(lock, 10s, [&] { return state.beforeParentClear; }) )
+                state.gateTimedOut = true;
+        }
+    };
+    testing::workerBeforeParentClear = [&](Worker* worker, Worker* parent) {
+        unique_lock lock(state.gateMutex);
+        if ( worker != state.revision || !state.resetWhilePaused || state.beforeParentClear ) return;
+        state.originalParent = parent;
+        state.oldEventOnRevisionActor = Actor::currentActor() == worker;
+        state.beforeParentClear = true;
+        state.changed.notify_all();
+        if ( !state.changed.wait_for(lock, 10s, [&] { return state.reused; }) ) state.gateTimedOut = true;
+    };
+    testing::incomingRevAfterHandleRev = [&](IncomingRev* revision, Worker* parent) {
+        lock_guard lock(state.gateMutex);
+        if ( revision != state.revision || !state.beforeParentClear || state.reused ) return;
+        // This is a real second handleRev through the Puller's spare pool. Its
+        // parse event is queued behind the old event, which is still paused.
+        state.reusedDocID = revision->rev()->docID.asString();
+        state.restoredParent = parent;
+        state.reused = true;
+        state.changed.notify_all();
+    };
+    testing::workerAfterParentClear = [&](Worker* worker, Worker* parent) {
+        lock_guard lock(state.gateMutex);
+        if ( worker != state.revision || !state.reused || state.checkedParent ) return;
+        state.checkedParent = true;
+        state.parentClearedAfterReuse = parent == nullptr;
+    };
+
+    createRev(_collDB1, "doc-1"_sl, kRev1ID, kFleeceBody);
+    createRev(_collDB1, "doc-2"_sl, kRev1ID, kFleeceBody);
+    auto serverOptions = Replicator::Options::passive(_collSpec);
+    serverOptions.setProperty(kC4ReplicatorOptionMaxIncomingRevs, 1);
+    serverOptions.collectionOpts[0].pullFilter = [](C4CollectionSpec, FLString, FLString,
+                                                    C4RevisionFlags, FLDict, void*) { return true; };
+    _expectedDocumentCount = 2;
+    runReplicators(Replicator::Options::pushing(kC4OneShot, _collSpec), serverOptions);
+
+    lock_guard lock(state.gateMutex);
+    REQUIRE(state.revision != nullptr);
+    REQUIRE_FALSE(state.gateTimedOut);
+    if ( state.resetWhilePaused ) {
+        REQUIRE(state.beforeParentClear);
+        REQUIRE(state.oldEventOnRevisionActor);
+        REQUIRE(state.reused);
+        REQUIRE(state.firstDocID != state.reusedDocID);
+        REQUIRE(state.originalParent != nullptr);
+        REQUIRE(state.restoredParent == state.originalParent);
+        REQUIRE(state.checkedParent);
+    }
+    CAPTURE(state.firstDocID, state.reusedDocID);
+    CHECK_FALSE(state.resetWhilePaused);
+    CHECK_FALSE(state.parentClearedAfterReuse);
+}
 
 TEST_CASE("Options password logging redaction") {
     string          password("SEEKRIT");

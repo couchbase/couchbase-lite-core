@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include <cstdint>
 #include <array>
 #include <memory>
 #include <optional>
