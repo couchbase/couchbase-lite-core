@@ -24,6 +24,7 @@
 #include "NumConversion.hh"
 #include "fleece/Fleece.hh"
 #include <algorithm>
+#include <cctype>
 #include <regex>
 #include <sstream>
 
@@ -236,7 +237,7 @@ namespace litecore::net {
             // RFC 9112 section 5.2), not a new header. Reject it, so that a continuation that
             // happens to contain a colon is not accepted as a separate header whose name begins
             // with whitespace.
-            if ( line[0] == ' ' || line[0] == '\t' ) return false;
+            if ( !std::isalpha(line[0]) ) return false;
             const uint8_t* colon = line.findByte(':');
             if ( !colon ) return false;
             slice name(line.buf, colon);
