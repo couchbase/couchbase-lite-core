@@ -18,6 +18,9 @@
 #include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
+#if defined(LITECORE_CPPTEST)
+#    include "tests/IncomingRevTestHooks.hh"
+#endif
 
 using namespace std;
 using namespace fleece;
@@ -83,7 +86,15 @@ namespace litecore::repl {
         for ( auto& rev : *revs ) {
             if ( rev->error.code == 0 ) {
                 rev->error = transactionErr;
+#if defined(LITECORE_CPPTEST)
+                // finish() trims the revision and clears its owner, possibly before the call returns.
+                Retained<IncomingRev> owner = rev->owner;
+                testing::notifyIncomingRev(owner, testing::IncomingRevEvent::BeforeInsertNotification);
+#endif
                 rev->owner->revisionInserted();
+#if defined(LITECORE_CPPTEST)
+                testing::notifyIncomingRev(owner, testing::IncomingRevEvent::AfterInsertNotification);
+#endif
             }
         }
 
