@@ -161,6 +161,20 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Empty Attachments", "[D
     CHECK(blobResult == blobToStore);
 }
 
+// Copies the directory `from` to `to`, skipping files and directories whose names start with a dot.
+// Those hold scratch data (for example, ".cblite/CBL_Obsolete-*", whose contents a background thread
+// deletes after a rekey), which a snapshot doesn't need and which can vanish while it is copied.
+static void copyWithoutDotEntries(const FilePath& from, const FilePath& to) {
+    to.mkdir();
+    from.forEachFile([&](const FilePath& f) {
+        string name = f.fileOrDirName();
+        if ( name.empty() || name[0] == '.' ) return;
+        if ( f.isDir() ) copyWithoutDotEntries(f, to.subdirectoryNamed(name));
+        else
+            f.copyTo(to[name]);
+    });
+}
+
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database][Encryption][blob][C]") {
     // Rekeying between "no key" and a key is covered by "Database Rekey". Recovery treats
     // "no key" like any other key, so this test only needs the encrypted variant.
@@ -202,7 +216,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
     CHECK(blobResult == blobToStore);
 
     // Snapshot the database bundle while it is still on key0.
-    parentDir.subdirectoryNamed(dbPath.fileOrDirName()).copyTo(key0Snapshot);
+    copyWithoutDotEntries(parentDir.subdirectoryNamed(dbPath.fileOrDirName()), key0Snapshot);
 
     // Rekey from key0 to newKey.
     REQUIRE(c4db_rekey(db, &newKey, WITH_ERROR(&error)));
@@ -222,7 +236,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey Atomicity", "[Database]
     CHECK(blobResult == blobToStore);
 
     // Snapshot the database bundle again, now on newKey.
-    parentDir.subdirectoryNamed(dbPath.fileOrDirName()).copyTo(newKeySnapshot);
+    copyWithoutDotEntries(parentDir.subdirectoryNamed(dbPath.fileOrDirName()), newKeySnapshot);
 
     // Reopening with newKey works.
     reopenDB();
