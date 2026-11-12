@@ -280,6 +280,20 @@ CBL_CORE_API C4Timestamp c4coll_nextDocExpiration(C4Collection*) C4API;
     \note The caller must use a lock for Database when this function is called.*/
 NODISCARD CBL_CORE_API int64_t c4coll_purgeExpiredDocs(C4Collection*, C4Error* C4NULLABLE) C4API;
 
+/** Returns the collection's current time-to-live; 0 means no TTL is set.
+    \note The caller must use a lock for Database when this function is called. */
+NODISCARD CBL_CORE_API C4TimeInterval c4coll_getTTL(C4Collection* collection) C4API;
+
+/** Sets the collection's time-to-live.
+    When a TTL is configured, every document saved or deleted gets an expiration time based on the TTL.
+    \note The caller must use a lock for Database when this function is called.
+    @param collection  The collection
+    @param ttl  The time-to-live in _milliseconds_; 0 for none
+    @param outError Information about any error that occurred
+    @returns True on success, false on error. */
+NODISCARD CBL_CORE_API bool c4coll_setTTL(C4Collection* collection, C4TimeInterval ttl,
+                                          C4Error* C4NULLABLE outError) C4API;
+
 
 /** @} */
 /** @} */  // end Collections group

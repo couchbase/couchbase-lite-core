@@ -304,16 +304,16 @@ namespace litecore {
                 // Configure persistent db settings, and create the schema.
                 // `auto_vacuum` has to be enabled ASAP, before anything's written to the db!
                 // (even setting `auto_vacuum` writes to the db, it turns out! See CBSE-7971.)
-                _exec(stringprintf(
-                        "PRAGMA auto_vacuum=incremental; "
-                        "PRAGMA journal_mode=WAL; "
-                        "BEGIN; "
-                        "CREATE TABLE IF NOT EXISTS "  // Table of metadata about KeyStores
-                        "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) "
-                        "WITHOUT ROWID; "
-                        "PRAGMA user_version=%d; "
-                        "END;",
-                        (int)SchemaVersion::Current));
+                _exec(stringprintf("PRAGMA auto_vacuum=incremental; "
+                                   "PRAGMA journal_mode=WAL; "
+                                   "BEGIN; "
+                                   "CREATE TABLE IF NOT EXISTS "  // Table of metadata about KeyStores
+                                   "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, "
+                                   "          purgeCnt INTEGER DEFAULT 0, ttl INTEGER DEFAULT 0) "
+                                   "WITHOUT ROWID; "
+                                   "PRAGMA user_version=%d; "
+                                   "END;",
+                                   (int)SchemaVersion::Current));
                 Assert(intQuery("PRAGMA auto_vacuum") == 2, "Incremental vacuum was not enabled!");
                 _schemaVersion = SchemaVersion::Current;
                 // Create the default KeyStore's table:
@@ -394,22 +394,7 @@ namespace litecore {
 
             (void)upgradeSchema(SchemaVersion::WithExpirationColumn, "Adding `expiration` column", [&] {
                 // Add the 'expiration' column to every KeyStore:
-                for ( string& name : allKeyStoreNames() ) {
-                    // Only update data tables, not FTS index tables
-                    if ( name.find("::") == string::npos ) {
-                        string tableName = SQLiteKeyStore::tableName(name);
-                        string sql;
-                        // We need to check for existence of the expiration column first.
-                        // Do not add it if it already exists in the table.
-                        if ( getSchema(tableName, "table", tableName, sql) && sql.find("expiration") != string::npos )
-                            continue;
-                        // Only update data tables, not FTS index tables
-                        _exec(stringprintf(
-                                "ALTER TABLE \"%s\" ADD COLUMN expiration INTEGER; "
-                                "CREATE INDEX \"%s_expiration\" ON \"%s\" (expiration) WHERE expiration not null",
-                                tableName.c_str(), tableName.c_str(), tableName.c_str()));
-                    }
-                }
+                for ( string& name : allKeyStoreNames() ) { addExpirationColumn(SQLiteKeyStore::tableName(name)); }
             });
 
             (void)upgradeSchema(SchemaVersion::WithIndexesWhereColumn, "Adding indexes.whereClause column", [&] {
@@ -419,6 +404,20 @@ namespace litecore {
                     if ( sql.find("whereClause") == string::npos ) {
                         _exec("ALTER TABLE indexes ADD COLUMN whereClause TEXT");
                     }
+                }
+            });
+
+            (void)upgradeSchema(SchemaVersion::WithTTL, "Adding kvmeta.ttl column", [&] {
+                _exec("ALTER TABLE kvmeta ADD COLUMN ttl INTEGER DEFAULT 0");
+                // A collection's TTL applies to deleted docs too, but the `WithExpirationColumn` upgrade skipped
+                // the deleted-docs tables, so we need to upgrade those now:
+                SQLite::Statement delStores(*_sqlDb,
+                                            "SELECT name FROM sqlite_master"
+                                            " WHERE type='table' AND name GLOB 'kv_del_*' AND NOT name GLOB '*:*'");
+                LogStatement(delStores);
+                while ( delStores.executeStep() ) {
+                    string tableName = delStores.getColumn(0).getString();
+                    addExpirationColumn(tableName);
                 }
             });
         });
@@ -483,13 +482,24 @@ namespace litecore {
         return true;
     }
 
+    /// Adds the `expiration` column and index to a table. Does nothing if the column already exists.
+    void SQLiteDataFile::addExpirationColumn(string const& tableName) {
+        string sql;
+        if ( getSchema(tableName, "table", tableName, sql) && sql.find("expiration") == string::npos ) {
+            _exec(stringprintf("ALTER TABLE \"%s\" ADD COLUMN expiration INTEGER; "
+                               "CREATE INDEX \"%s_expiration\" ON \"%s\" (expiration) WHERE expiration not null",
+                               tableName.c_str(), tableName.c_str(), tableName.c_str()));
+        }
+    }
+
     void SQLiteDataFile::reopenSQLiteHandle() {
         // We are about to replace the sqlite3 handle, so the compiled statements
         // need to be cleared
-        _getLastSeqStmt.reset();
+        _getKVMetaStmt.reset();
         _setLastSeqStmt.reset();
         _getPurgeCntStmt.reset();
         _setPurgeCntStmt.reset();
+        _setTTLStmt.reset();
 
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if ( options().create ) sqlFlags |= SQLite::OPEN_CREATE;
@@ -508,10 +518,11 @@ namespace litecore {
 
     // Called by DataFile::close (the public method)
     void SQLiteDataFile::_close(bool forDelete) {
-        _getLastSeqStmt.reset();
+        _getKVMetaStmt.reset();
         _setLastSeqStmt.reset();
         _getPurgeCntStmt.reset();
         _setPurgeCntStmt.reset();
+        _setTTLStmt.reset();
         if ( _sqlDb ) {
             if ( options().writeable && !options().noHousekeeping ) {
                 withFileLock([this]() {
@@ -790,13 +801,19 @@ namespace litecore {
             return !existed;
     }
 
-    sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
-        sequence_t seq = 0_seq;
-        compileCached(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
-        UsingStatement u(_getLastSeqStmt);
-        _getLastSeqStmt->bindNoCopy(1, keyStoreName);
-        if ( _getLastSeqStmt->executeStep() ) seq = sequence_t(int64_t(_getLastSeqStmt->getColumn(0)));
-        return seq;
+    KVMeta SQLiteDataFile::getKVMeta(string const& keyStoreName) const {
+        KVMeta meta{};
+        compileCached(_getKVMetaStmt, _schemaVersion >= SchemaVersion::WithTTL
+                                              ? "SELECT lastSeq, purgeCnt, ttl FROM kvmeta WHERE name=?"
+                                              : "SELECT lastSeq, purgeCnt, 0 FROM kvmeta WHERE name=?");
+        UsingStatement u(_getKVMetaStmt);
+        _getKVMetaStmt->bindNoCopy(1, keyStoreName);
+        if ( _getKVMetaStmt->executeStep() ) {
+            meta.lastSequence = sequence_t(int64_t(_getKVMetaStmt->getColumn(0)));
+            meta.purgeCount   = uint64_t(int64_t(_getKVMetaStmt->getColumn(1)));
+            meta.ttl          = C4TimeInterval(int64_t(_getKVMetaStmt->getColumn(2)));
+        }
+        return meta;
     }
 
     void SQLiteDataFile::setLastSequence(SQLiteKeyStore& store, sequence_t seq) {
@@ -809,17 +826,6 @@ namespace litecore {
         _setLastSeqStmt->exec();
     }
 
-    uint64_t SQLiteDataFile::purgeCount(const std::string& keyStoreName) const {
-        uint64_t purgeCnt = 0;
-        if ( _schemaVersion >= SchemaVersion::WithPurgeCount ) {
-            compileCached(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
-            UsingStatement u(_getPurgeCntStmt);
-            _getPurgeCntStmt->bindNoCopy(1, keyStoreName);
-            if ( _getPurgeCntStmt->executeStep() ) { purgeCnt = (int64_t)_getPurgeCntStmt->getColumn(0); }
-        }
-        return purgeCnt;
-    }
-
     void SQLiteDataFile::setPurgeCount(SQLiteKeyStore& store, uint64_t count) {
         Assert(_schemaVersion >= SchemaVersion::WithPurgeCount);
         compileCached(_setPurgeCntStmt, "INSERT INTO kvmeta (name, purgeCnt) VALUES (?, ?) "
@@ -829,6 +835,16 @@ namespace litecore {
         _setPurgeCntStmt->bindNoCopy(1, store.name());
         _setPurgeCntStmt->bind(2, (long long)count);
         _setPurgeCntStmt->exec();
+    }
+
+    void SQLiteDataFile::setTTL(SQLiteKeyStore& store, C4TimeInterval ttl) {
+        compileCached(_setTTLStmt, "INSERT INTO kvmeta (name, ttl) VALUES (?, ?) "
+                                   "ON CONFLICT (name) "
+                                   "DO UPDATE SET ttl = excluded.ttl");
+        UsingStatement u(_setTTLStmt);
+        _setTTLStmt->bindNoCopy(1, store.name());
+        _setTTLStmt->bind(2, (long long)ttl);
+        _setTTLStmt->exec();
     }
 
     uint64_t SQLiteDataFile::fileSize() {

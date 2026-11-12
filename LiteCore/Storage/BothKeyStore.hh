@@ -83,6 +83,10 @@ namespace litecore {
             return _liveStore->expireRecords(callback) + _deadStore->expireRecords(callback);
         }
 
+        C4TimeInterval getTTL() const override { return _liveStore->getTTL(); }
+
+        void setTTL(C4TimeInterval ms) override { _liveStore->setTTL(ms); }
+
         //// QUERIES & INDEXES:
 
         std::vector<alloc_slice> withDocBodies(const std::vector<slice>& docIDs, WithDocBodyCallback callback) override;

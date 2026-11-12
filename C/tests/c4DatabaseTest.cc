@@ -525,14 +525,21 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
 static constexpr int secs = 1000;
 static constexpr int ms   = 1;
 
-static bool docExists(C4Database* db, slice docID) {
-    C4Error err;
-    auto    defaultColl = c4db_getDefaultCollection(db, nullptr);
-    auto    doc         = c4::make_ref(c4coll_getDoc(defaultColl, docID, true, kDocGetCurrentRev, &err));
+static bool docExists(C4Collection* coll, slice docID) {
+    C4Error err{};
+    auto    doc = c4::make_ref(c4coll_getDoc(coll, docID, true, kDocGetCurrentRev, &err));
     if ( doc ) return true;
     CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     return false;
-};
+}
+
+static bool docExists(C4Database* db, slice docID) { return docExists(c4db_getDefaultCollection(db, nullptr), docID); };
+
+static void waitForExpiration(C4Collection* coll, slice docID, C4TimeInterval ttl) {
+    C4Log("---- Waiting %lldms for '%.*s' to expire...", (long long)ttl, FMTSLICE(docID));
+    this_thread::sleep_for(int64_t(ttl) * 1ms);
+    CHECK_BEFORE(15s, !docExists(coll, docID));
+}
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expiration]") {
     C4Error err;
@@ -845,6 +852,65 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Expire documents while deleting collecti
         CHECK(c4coll_setDocExpiration(darthColl, "expire_me"_sl, expire, ERROR_INFO()));
         REQUIRE(c4db_deleteCollection(db, darthSpec, ERROR_INFO()));
     }
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Collection TTL", "[Database][C][Expiration]") {
+    C4CollectionSpec darthSpec{"vader"_sl, "darth"_sl};
+    auto             darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+
+    // Check default TTL, and create a non-expiring doc:
+    CHECK(c4coll_getTTL(darthColl) == 0);
+    createRev(darthColl, "keep_me"_sl, kRevID, kFleeceBody);
+    CHECK(c4coll_getDocExpiration(darthColl, "keep_me"_sl, WITH_ERROR()) == 0);
+
+    // Set TTL to 2 sec and check that it persists:
+    REQUIRE(c4coll_setTTL(darthColl, 2000, WITH_ERROR()));
+    CHECK(c4coll_getTTL(darthColl) == 2000);
+    reopenDB();
+    darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+    REQUIRE(c4coll_getTTL(darthColl) == 2000);
+
+    // Create a doc, and verify its expiration is set:
+    auto before = c4_now();
+    createRev(darthColl, "expire_me"_sl, kRevID, kFleeceBody);
+    auto after = c4_now();
+    auto exp   = c4coll_getDocExpiration(darthColl, "expire_me"_sl, ERROR_INFO());
+    CHECK(exp >= before + 2000);
+    CHECK(exp <= after + 2000);
+    REQUIRE(c4coll_nextDocExpiration(darthColl) == exp);
+
+    // Create another doc, delete it, and verify the expiration is still correct:
+    {
+        TransactionHelper t(db);
+        before = c4_now();
+        createRev(darthColl, "expire_me_deleted"_sl, kRevID, kFleeceBody);
+        createNewRev(darthColl, "expire_me_deleted"_sl, kRevID, kFleeceBody, kRevDeleted);
+        after = c4_now();
+        exp   = c4coll_getDocExpiration(darthColl, "expire_me_deleted"_sl, ERROR_INFO());
+        CHECK(exp >= before + 2000);
+        CHECK(exp <= after + 2000);
+    }
+
+    // Wait for the expiration time to pass and verify the docs are deleted:
+    waitForExpiration(darthColl, "expire_me", 2000);
+    waitForExpiration(darthColl, "expire_me_deleted", 10);
+    CHECK(docExists(darthColl, "keep_me"));
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Collection TTL in txn", "[Database][C][Expiration]") {
+    // Verify that the Housekeeper correctly determines when it should expire docs, even if it's
+    // initialized during a transaction in which a doc with a TTL is saved. (The CollectionImpl
+    // has to assist it with this: the Housekeeper on its own wouldn't see the new expiration
+    // in its 'backgroundDB' because the transaction in the main DB hasn't committed yet.)
+    C4CollectionSpec darthSpec{"vader"_sl, "darth"_sl};
+    auto             darthColl = REQUIRED(c4db_createCollection(db, darthSpec, nullptr));
+    REQUIRE(c4coll_setTTL(darthColl, 2000, WITH_ERROR()));
+
+    {
+        TransactionHelper t(db);
+        createRev(darthColl, "expire_me"_sl, kRevID, kFleeceBody);
+    }
+    waitForExpiration(darthColl, "expire_me", 2000);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C][Blob]") {

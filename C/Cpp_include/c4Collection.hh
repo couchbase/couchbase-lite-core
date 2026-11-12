@@ -90,6 +90,12 @@ struct C4Collection
     virtual C4Timestamp nextDocExpiration() const = 0;
     virtual int64_t     purgeExpiredDocs()        = 0;
 
+    /// Sets the default time-to-live, in milliseconds, or disables it if the value is 0.
+    /// Every document subsequently saved or deleted will have its expiration set accordingly.
+    virtual void setTTL(C4TimeInterval ms) = 0;
+    /// Gets the time-to-live value, in milliseconds, or 0 if there is none.
+    virtual C4TimeInterval getTTL() const = 0;
+
     // Queries & Indexes:
 
     /// Same as the C4Database method, but the query will refer to this collection by default.

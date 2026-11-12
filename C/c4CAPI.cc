@@ -345,6 +345,19 @@ int64_t c4coll_purgeExpiredDocs(C4Collection* coll, C4Error* C4NULLABLE outError
     return tryCatch<int64_t>(outError, [=] { return coll->purgeExpiredDocs(); });
 }
 
+C4TimeInterval c4coll_getTTL(C4Collection* coll) C4API {
+    return tryCatch<C4TimeInterval>(
+            nullptr, [=] { return _usuallyTrue(c4coll_isValid(coll)) ? coll->getTTL() : C4TimeInterval::None; });
+}
+
+bool c4coll_setTTL(C4Collection* coll, C4TimeInterval ttl, C4Error* C4NULLABLE outError) C4API {
+    returnIfCollectionInvalid(coll, outError, false);
+    return tryCatch<bool>(outError, [=] {
+        coll->setTTL(ttl);
+        return true;
+    });
+}
+
 bool c4coll_createIndex(C4Collection* coll, C4String name, C4String indexSpec, C4QueryLanguage queryLanguage,
                         C4IndexType indexType, const C4IndexOptions* C4NULLABLE indexOptions,
                         C4Error* C4NULLABLE outError) noexcept {

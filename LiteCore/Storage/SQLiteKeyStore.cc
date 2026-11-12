@@ -27,6 +27,8 @@ using namespace fleece::impl;
 
 namespace litecore {
 
+    /// Max value of collection's TTL. Limiting it prevents 64-bit overflow computing exp time.
+    static constexpr int64_t kMaxTTL = int64_t{100} * 365 * 24 * 60 * 60 * 1000;
 
     vector<string> SQLiteDataFile::allKeyStoreNames() const {
         checkOpen();
@@ -45,9 +47,20 @@ namespace litecore {
     }
 
     void SQLiteDataFile::deleteKeyStore(const std::string& name) {
-        exec("DROP TABLE IF EXISTS \"kv_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
-        exec("DROP TABLE IF EXISTS \"kv_del_" + SQLiteKeyStore::transformCollectionName(name, true) + "\"");
-        // TODO: Do I need to drop indexes, triggers?
+        Assert(name.find('\'') == string::npos);
+        string mangledName = SQLiteKeyStore::transformCollectionName(name, true);
+        exec("DROP TABLE IF EXISTS \"kv_" + mangledName + "\"");
+        exec("DROP TABLE IF EXISTS \"kv_del_" + mangledName + "\"");
+
+        // Don't DELETE kvmeta row. Preserve lastSequence, because checkpoints save it. (If collection is
+        // re-created later, its sequences shouldn't start over at 1 because a push replication
+        // would consult its checkpoint and skip over ones less than the prior lastSequence.)
+        // But TTL should be cleared, both on disk and in memory since this KeyStore instance may be
+        // reused later if a new KeyStore is created with the same name.
+        exec("UPDATE kvmeta SET ttl = 0 WHERE name = '" + name + "'");
+        forOpenKeyStores([&](KeyStore& store) {
+            if ( store.name() == name ) asSQLiteKeyStore(&store)->_ttl.reset();
+        });
     }
 
     KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
@@ -171,9 +184,13 @@ namespace litecore {
             return _sequencesOwner->lastSequence();
         } else {
             if ( _lastSequence ) return *_lastSequence;
-            sequence_t seq = db().lastSequence(_name);
-            if ( db().inTransaction() ) _lastSequence = seq;
-            return seq;
+            KVMeta meta = db().getKVMeta(_name);
+            if ( db().inTransaction() ) {
+                // Opportunistically cache the TTL too.
+                _lastSequence = meta.lastSequence;
+                _ttl          = meta.ttl;
+            }
+            return meta.lastSequence;
         }
     }
 
@@ -184,6 +201,34 @@ namespace litecore {
             if ( _capabilities.sequences ) {
                 _lastSequence        = seq;
                 _lastSequenceChanged = true;
+            }
+        }
+    }
+
+    C4TimeInterval SQLiteKeyStore::getTTL() const {
+        if ( _sequencesOwner ) {
+            return _sequencesOwner->getTTL();
+        } else {
+            if ( _ttl ) return *_ttl;
+            KVMeta meta = db().getKVMeta(_name);
+            if ( db().inTransaction() ) {
+                // Opportunistically cache the lastSequence too.
+                _ttl = meta.ttl;
+                if ( !_lastSequence ) _lastSequence = meta.lastSequence;
+            }
+            return meta.ttl;
+        }
+    }
+
+    void SQLiteKeyStore::setTTL(C4TimeInterval ttl) {
+        if ( _sequencesOwner ) {
+            _sequencesOwner->setTTL(ttl);
+        } else {
+            if ( int64_t(ttl) < 0 ) throw error(error::LiteCore, error::InvalidParameter, "negative TTL");
+            if ( int64_t(ttl) > kMaxTTL ) ttl = C4TimeInterval::None;  // >100 years -> never (prevents overflow)
+            if ( _capabilities.sequences ) {
+                db().setTTL(*this, ttl);
+                if ( db().inTransaction() ) _ttl = ttl;
             }
         }
     }
@@ -217,6 +262,7 @@ namespace litecore {
         }
 
         _lastSequence    = nullopt;
+        _ttl             = nullopt;
         _purgeCountValid = false;
 
         if ( !commit ) {
@@ -337,12 +383,14 @@ namespace litecore {
             SequenceParam,
             KeyParam,
             OldSequenceParam,
-            OldSubsequenceParam
+            OldSubsequenceParam,
+            ExpirationParam  // = 9
         };
 
         bool                              tryAgain = false;
         sequence_t                        ret;
         std::tuple<std::string, int, int> lastExcArgs;
+        C4TimeInterval                    ttl = getTTL();
 
         do {
             // This is a band-aid for an undiagnosed bug, that lastSeq stored in the meta
@@ -364,16 +412,29 @@ namespace litecore {
             }
 
             const char*        opName;
+            const char*        sql;
             SQLite::Statement* stmt;
             if ( rec.sequence == 0_seq || flags & SetOptions::kInsert ) {
                 // Insert only:
-                stmt   = &compileCached("INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
-                                          " VALUES (?, ?, ?, ?, ?, ?)");
+                if ( ttl == C4TimeInterval::None ) {
+                    sql = "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
+                          " VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
+                } else {
+                    sql = "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key, expiration)"
+                          " VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?9)";
+                }
+                stmt   = &compileCached(sql);
                 opName = "insert";
             } else {
                 // Replace only:
-                stmt = &compileCached("UPDATE kv_@ SET version=?, body=?, extra=?, flags=?, sequence=?"
-                                      " WHERE key=? AND sequence=? AND (flags >> 16) = ?");
+                if ( ttl == C4TimeInterval::None ) {
+                    sql = "UPDATE kv_@ SET version=?1, body=?2, extra=?3, flags=?4, sequence=?5"
+                          " WHERE key=?6 AND sequence=?7 AND (flags >> 16) = ?8";
+                } else {
+                    sql = "UPDATE kv_@ SET version=?1, body=?2, extra=?3, flags=?4, sequence=?5, expiration = ?9"
+                          " WHERE key=?6 AND sequence=?7 AND (flags >> 16) = ?8";
+                }
+                stmt = &compileCached(sql);
                 stmt->bind(OldSequenceParam, (long long)rec.sequence);
                 stmt->bind(OldSubsequenceParam, (long long)rec.subsequence);
                 opName = "update";
@@ -396,6 +457,7 @@ namespace litecore {
             stmt->bind(FlagsParam, (long long)rawFlags);
             stmt->bindNoCopy(KeyParam, (const char*)rec.key.buf, (int)rec.key.size);
             stmt->bind(SequenceParam, (long long)seq);
+            if ( ttl != C4TimeInterval::None ) stmt->bind(ExpirationParam, (long long)(c4_now() + ttl));
 
             if ( db().willLog(LogLevel::Verbose) && name() != "default" )
                 db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(rec.key));
@@ -470,11 +532,15 @@ namespace litecore {
 
         // ???? Should the version be reset since it's in a new collection?
         auto& stmt = compileCached("INSERT INTO " + dstStore->quotedTableName()
-                                   + " (key, version, body, extra, flags, sequence)"
-                                     "  SELECT ?, version, body, extra, flags, ? FROM kv_@ WHERE key=?");
+                                   + " (key, version, body, extra, flags, sequence, expiration)"
+                                     "  SELECT ?1, version, body, extra, flags, ?2, ?3 FROM kv_@ WHERE key=?4");
         stmt.bindNoCopy(1, (const char*)newKey.buf, (int)newKey.size);
         stmt.bind(2, (long long)seq);
-        stmt.bindNoCopy(3, (const char*)key.buf, (int)key.size);
+        if ( C4TimeInterval ttl = dstStore->getTTL(); ttl != C4TimeInterval::None )
+            stmt.bind(3, (long long)(c4_now() + ttl));
+        else
+            stmt.bind(3);  // null
+        stmt.bindNoCopy(4, (const char*)key.buf, (int)key.size);
         UsingStatement u(stmt);
 
         try {

@@ -70,10 +70,12 @@ namespace litecore {
 
         void moveTo(slice key, KeyStore& dst, ExclusiveTransaction&, slice newKey = nullslice) override;
 
-        bool         setExpiration(slice key, expiration_t) override;
-        expiration_t getExpiration(slice key) override;
-        expiration_t nextExpiration() override;
-        unsigned     expireRecords(std::optional<ExpirationCallback>) override;
+        bool           setExpiration(slice key, expiration_t) override;
+        expiration_t   getExpiration(slice key) override;
+        expiration_t   nextExpiration() override;
+        unsigned       expireRecords(std::optional<ExpirationCallback>) override;
+        void           setTTL(C4TimeInterval ttl) override;
+        C4TimeInterval getTTL() const override;
 
         bool supportsIndexes(IndexSpec::Type t) const override { return true; }
 
@@ -158,11 +160,12 @@ namespace litecore {
         bool                   _lastSequenceChanged{false};
         bool                   _purgeCountChanged{false};
         mutable bool           _purgeCountValid{false};  // TODO: Use optional class from C++17
-        mutable std::optional<sequence_t> _lastSequence;
-        mutable std::atomic<uint64_t>     _purgeCount{0};
-        bool                              _hasExpirationColumn{false};
-        bool                              _uncommitedTable{false};
-        SQLiteKeyStore*                   _sequencesOwner{nullptr};
+        mutable std::optional<sequence_t>     _lastSequence;
+        mutable std::atomic<uint64_t>         _purgeCount{0};
+        mutable std::optional<C4TimeInterval> _ttl;
+        bool                                  _hasExpirationColumn{false};
+        bool                                  _uncommitedTable{false};
+        SQLiteKeyStore*                       _sequencesOwner{nullptr};
     };
 
 }  // namespace litecore

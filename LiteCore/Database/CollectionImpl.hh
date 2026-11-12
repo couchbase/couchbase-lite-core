@@ -109,10 +109,6 @@ namespace litecore {
             if ( _sequenceTracker ) _sequenceTracker->useLocked()->beginTransaction();
         }
 
-        bool changedDuringTransaction() {
-            return _sequenceTracker && _sequenceTracker->useLocked()->changedDuringTransaction();
-        }
-
         void transactionEnding(ExclusiveTransaction* transaction, bool committing) {
             if ( _sequenceTracker ) {
                 auto st = _sequenceTracker->useLocked();
@@ -314,19 +310,21 @@ namespace litecore {
         }
 
         void moveDocument(slice docID, C4Collection* toCollection, slice newDocID) override {
+            auto                    dst = (CollectionImpl*)toCollection;
             C4Database::Transaction t(getDatabase());
             if ( newDocID ) C4Document::requireValidDocID(newDocID);
-            keyStore().moveTo(docID, ((CollectionImpl*)toCollection)->keyStore(), dbImpl()->transaction(), newDocID);
+            keyStore().moveTo(docID, dst->keyStore(), dbImpl()->transaction(), newDocID);
             // DOES NOT NOTIFY SEQUENCE TRACKER! (should it?)
             t.commit();
+            if ( auto ttl = dst->getTTL(); ttl != C4TimeInterval::None ) dst->documentExpirationChanged(c4_now() + ttl);
         }
 
-        void documentSaved(C4Document* doc) {
+        void documentSaved(C4Document* doc, bool newSequence) {
             // CBL-1089
             // Conflicted documents are not eligible to be replicated,
             // so ignore them.  Later when the conflict is resolved
             // there will be logic to replicate them (see TreeDocument::resolveConflict)
-            if ( _sequenceTracker && !(doc->selectedRev().flags & kRevIsConflict) ) {
+            if ( newSequence && _sequenceTracker && !(doc->selectedRev().flags & kRevIsConflict) ) {
                 Assert(doc->selectedRev().sequence == doc->sequence());  // The new revision must be selected
                 auto st = _sequenceTracker->useLocked();
                 st->documentChanged(doc->docID(),
@@ -334,6 +332,8 @@ namespace litecore {
                                     doc->selectedRev().sequence, doc->getRevisionBody().size,
                                     SequenceTracker::RevisionFlags(doc->selectedRev().flags));
             }
+
+            if ( auto ttl = getTTL(); ttl != C4TimeInterval::None ) documentExpirationChanged(c4_now() + ttl);
         }
 
 #pragma mark - PURGING / EXPIRING DOCS:
@@ -346,12 +346,7 @@ namespace litecore {
                 if ( !keyStore().setExpiration(docID, expiration) ) return false;
                 t.commit();
             }
-
-            if ( expiration > C4Timestamp::None ) {
-                if ( _expiryStarted ) _housekeeper->documentExpirationChanged(expiration);
-                else
-                    startHousekeeping(HousekeeperTask::Expiry);
-            }
+            documentExpirationChanged(expiration);
             return true;
         }
 
@@ -378,12 +373,34 @@ namespace litecore {
             return count;
         }
 
+        void setTTL(C4TimeInterval ttl) override {
+            C4Database::Transaction t(dbImpl());
+            auto&                   ks = keyStore();
+            if ( ttl != ks.getTTL() ) {
+                ks.setTTL(ttl);
+                t.commit();
+            }
+        }
+
+        C4TimeInterval getTTL() const override { return keyStore().getTTL(); }
+
+        void documentExpirationChanged(C4Timestamp expiration) {
+            if ( expiration > C4Timestamp::None ) {
+                if ( !_expiryStarted ) startHousekeeping(HousekeeperTask::Expiry);
+                if ( _expiryStarted ) _housekeeper->documentExpirationChanged(expiration);
+            }
+        }
+
         void startHousekeeping(HousekeeperTask task) {
             if ( !isValid() && _expiryStarted && _migrateStarted ) return;
 
-            if ( auto flags = _database->getConfiguration().flags;
-                 (flags & (kC4DB_ReadOnly | kC4DB_NoHousekeeping)) != 0 )
-                return;
+            // Housekeeping only makes sense in writeable dbs. In general `kC4DB_NoHousekeeping` disables it,
+            // but not for expiration; otherwise it would be a mess when a db with no expiry tracker sets a
+            // document expiration -- it would have to find some other instance with a Housekeeper and notify it
+            // (across threads.) [CBL-9299]
+            auto dbFlags = _database->getConfiguration().flags;
+            if ( dbFlags & kC4DB_ReadOnly ) return;
+            if ( (dbFlags & kC4DB_NoHousekeeping) && task != HousekeeperTask::Expiry ) return;
 
             if ( !_housekeeper ) {
                 _housekeeper = new Housekeeper(this);
