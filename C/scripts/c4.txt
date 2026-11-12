@@ -325,6 +325,8 @@ c4coll_purgeExpiredDocs
 c4coll_createIndex
 c4coll_deleteIndex
 c4coll_getIndexesInfo
+c4coll_getTTL
+c4coll_setTTL
 
 c4db_copyNamed
 c4db_deleteNamed
