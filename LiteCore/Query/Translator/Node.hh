@@ -88,7 +88,7 @@ namespace litecore::qt {
         ParseContext(ParseDelegate& d, Arena<>& a) : delegate(d), arena(a) {}
 
         // not a copy constructor! Creates a new child context.
-        explicit ParseContext(ParseContext& parent) : delegate(parent.delegate), arena(parent.arena){};
+        explicit ParseContext(ParseContext& parent) : delegate(parent.delegate), arena(parent.arena) {}
 
         ParseContext(ParseContext&&) = default;
 
@@ -201,9 +201,9 @@ namespace litecore::qt {
         };
 
         /// Subclasses that add children MUST override this and call `visitor(child)` on each direct child.
-        virtual void visitChildren(ChildVisitor const& visitor) {}
+        virtual void visitChildren([[maybe_unused]] ChildVisitor const& visitor) {}
 
-        void operator delete(void* ptr) noexcept {}
+        void operator delete([[maybe_unused]] void* ptr) noexcept {}
 
         Node(Node const&)            = delete;  // not copyable
         Node& operator=(Node const&) = delete;

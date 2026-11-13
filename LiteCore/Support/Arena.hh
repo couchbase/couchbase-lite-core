@@ -171,7 +171,7 @@ namespace litecore {
             return static_cast<T*>(_arena.alloc(n * sizeof(T), alignof(T)));
         }
 
-        void deallocate(T* C4NULLABLE p, std::size_t n) noexcept { _arena.free(p); }
+        void deallocate(T* C4NULLABLE p, [[maybe_unused]] std::size_t n) noexcept { _arena.free(p); }
 
       private:
         Arena<CHUNK> _arena;

@@ -121,7 +121,7 @@ struct C4Collection
 
     // Internal use only:
 
-    virtual ~C4Collection() = default;
+    ~C4Collection() override = default;
 
     virtual std::vector<alloc_slice> findDocAncestors(const std::vector<slice>& docIDs,
                                                       const std::vector<slice>& revIDs, unsigned maxAncestors,

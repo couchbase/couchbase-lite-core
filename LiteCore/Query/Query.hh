@@ -139,7 +139,7 @@ namespace litecore {
             the current SQLite query implementation. */
         virtual int64_t getRowCount() const { return -1; }
 
-        virtual void seek(int64_t rowIndex) { error::_throw(error::UnsupportedOperation); }
+        virtual void seek([[maybe_unused]] int64_t rowIndex) { error::_throw(error::UnsupportedOperation); }
 
         virtual bool hasFullText() const { return false; }
 

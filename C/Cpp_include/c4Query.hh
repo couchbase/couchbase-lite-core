@@ -160,7 +160,7 @@ struct C4QueryObserver
     /// Creates a new query on a database.
     static Retained<C4QueryObserver> newQueryObserver(C4Query* query, C4Query::ObserverCallback cb, void* ctx);
 
-    virtual ~C4QueryObserver() = default;
+    ~C4QueryObserver() override = default;
 
     [[nodiscard]] C4Query* query() const { return _query; }
 

@@ -72,7 +72,7 @@ namespace litecore::repl {
         return stringprintf("%s+CBMobile_%d", blip::Connection::kWSProtocolName, int(version));
     }
 
-    vector<string> Replicator::compatibleProtocols(C4DatabaseFlags flags, Options::Mode pushMode,
+    vector<string> Replicator::compatibleProtocols(C4DatabaseFlags flags, [[maybe_unused]] Options::Mode pushMode,
                                                    Options::Mode pullMode) {
         bool v3, v4;
         if ( flags & kC4DB_VersionVectors ) {

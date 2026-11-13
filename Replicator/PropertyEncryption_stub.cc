@@ -28,9 +28,10 @@
 namespace litecore::repl {
     using namespace fleece;
 
-    fleece::MutableDict EncryptDocumentProperties(C4CollectionSpec collection, fleece::slice docID, fleece::Dict doc,
-                                                  C4ReplicatorPropertyEncryptionCallback callback,
-                                                  void* callbackContext, C4Error* outError) noexcept {
+    fleece::MutableDict EncryptDocumentProperties([[maybe_unused]] C4CollectionSpec collection,
+                                                  [[maybe_unused]] fleece::slice docID, fleece::Dict doc,
+                                                  [[maybe_unused]] C4ReplicatorPropertyEncryptionCallback callback,
+                                                  [[maybe_unused]] void* callbackContext, C4Error* outError) noexcept {
         // In CE, prevent any encryptable property from being accidentally pushed.
         // This may happen if a database was created and used with EE, and sensitive data added,
         // and then it's opened with a CE implementation.
@@ -52,9 +53,11 @@ namespace litecore::repl {
         return nullptr;
     }
 
-    fleece::MutableDict DecryptDocumentProperties(C4CollectionSpec collection, fleece::slice docID, fleece::Dict doc,
-                                                  C4ReplicatorPropertyDecryptionCallback callback,
-                                                  void* callbackContext, C4Error* outError) noexcept {
+    fleece::MutableDict DecryptDocumentProperties([[maybe_unused]] C4CollectionSpec                       collection,
+                                                  [[maybe_unused]] fleece::slice                          docID,
+                                                  [[maybe_unused]] fleece::Dict                           doc,
+                                                  [[maybe_unused]] C4ReplicatorPropertyDecryptionCallback callback,
+                                                  [[maybe_unused]] void* callbackContext, C4Error* outError) noexcept {
         *outError = {};
         return nullptr;
     }

@@ -40,7 +40,7 @@ namespace litecore {
 
         static constexpr result_type max() { return UINT_MAX; }
 
-        virtual result_type operator()() { return RandomNumber(); };
+        virtual result_type operator()() { return RandomNumber(); }
 
         virtual ~RandomNumberGenerator() = default;
 

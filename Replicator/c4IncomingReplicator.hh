@@ -44,7 +44,8 @@ namespace litecore {
             // are not the _actual_ addresses of the object, but rather the pointer to
             // its Logging virtual table since inside of _logVerbose this is all that
             // is known.
-            _logVerbose("C4IncomingRepl %p created Repl %p", (Logging*)this, (Logging*)_replicator.get());
+            _logVerbose("C4IncomingRepl %p created Repl %p", static_cast<const void*>((Logging*)this),
+                        static_cast<const void*>((Logging*)_replicator.get()));
             _openSocket = nullptr;
         }
 

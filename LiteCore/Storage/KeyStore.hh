@@ -154,7 +154,7 @@ namespace litecore {
             new key, then deletes it from this KeyStore. */
         virtual void moveTo(slice key, KeyStore& dst, ExclusiveTransaction&, slice newKey = nullslice) = 0;
 
-        virtual void transactionWillEnd(bool commit) {}
+        virtual void transactionWillEnd([[maybe_unused]] bool commit) {}
 
         //////// Expiration:
 

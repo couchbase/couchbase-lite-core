@@ -21,7 +21,7 @@ namespace litecore {
     /** A LogObserver that calls a C++ std::function. */
     class LogFunction : public LogObserver {
       public:
-        explicit LogFunction(std::function<void(LogEntry const&)> fn) : _fn(std::move(fn)){};
+        explicit LogFunction(std::function<void(LogEntry const&)> fn) : _fn(std::move(fn)) {}
 
         void observe(LogEntry const& entry) noexcept override { _fn(entry); }
 

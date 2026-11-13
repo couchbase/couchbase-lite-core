@@ -152,7 +152,7 @@ namespace litecore {
             return true;
         }
 
-        bool selectRevision(slice revID, bool withBody) override {
+        bool selectRevision(slice revID, [[maybe_unused]] bool withBody) override {
             if ( auto r = _findRemote(revID); r ) {
                 return _selectRemote(r->first, r->second);
             } else {
@@ -168,7 +168,7 @@ namespace litecore {
 
         bool selectNextRevision() override { return _remoteID && _selectRemote(_doc.nextRemoteID(*_remoteID)); }
 
-        bool selectNextLeafRevision(bool includeDeleted, bool withBody) override {
+        bool selectNextLeafRevision([[maybe_unused]] bool includeDeleted, bool withBody) override {
             while ( selectNextRevision() ) {
                 if ( _selected.flags & kRevLeaf ) return !withBody || loadRevisionBody();
             }
@@ -224,7 +224,7 @@ namespace litecore {
                     // Search the remotes for earlier legacy revs that aren't conflicts:
                     unsigned curGen = UINT_MAX;
                     if ( !vvl.legacy.empty() ) curGen = revid(vvl.legacy.back()).generation();
-                    _doc.forAllRevs([&](RemoteID rem, Revision const& otherRev) {
+                    _doc.forAllRevs([&]([[maybe_unused]] RemoteID rem, Revision const& otherRev) {
                         if ( !otherRev.revID.isVersion() && otherRev.revID.generation() < curGen
                              && !(otherRev.flags & DocumentFlags::kConflicted) ) {
                             vvl.legacy.emplace_back(otherRev.revID);

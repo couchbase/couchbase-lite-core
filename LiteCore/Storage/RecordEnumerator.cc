@@ -26,12 +26,13 @@ namespace litecore {
     // By-key constructor
     RecordEnumerator::RecordEnumerator(KeyStore& store, Options const& options) : _store(&store) {
         if ( options.minSequence != 0_seq ) {
-            LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)", this, store.name().c_str(),
-                       (unsigned long long)options.minSequence, options.includeDeleted, options.onlyConflicts,
-                       options.onlyBlobs, options.sortOption);
+            LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)", static_cast<const void*>(this),
+                       store.name().c_str(), (unsigned long long)options.minSequence, options.includeDeleted,
+                       options.onlyConflicts, options.onlyBlobs, options.sortOption);
         } else {
-            LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)", this, store.name().c_str(),
-                       options.includeDeleted, options.onlyConflicts, options.onlyBlobs, options.sortOption);
+            LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)", static_cast<const void*>(this),
+                       store.name().c_str(), options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
+                       options.sortOption);
         }
         _impl.reset(_store->newEnumeratorImpl(options));
     }
@@ -53,7 +54,7 @@ namespace litecore {
                 close();
                 return false;
             }
-            LogDebug(QueryLog, "RecordEnumerator %p  --> '%.*s'", this, SPLAT(_record.key()));
+            LogDebug(QueryLog, "RecordEnumerator %p  --> '%.*s'", static_cast<const void*>(this), SPLAT(_record.key()));
             return true;
         }
     }

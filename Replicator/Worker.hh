@@ -211,7 +211,7 @@ namespace litecore::repl {
 
         /// Implementation of public `childChangedStatus`; called on this Actor's thread.
         /// Does nothing, but you can override.
-        virtual void _childChangedStatus(Retained<Worker> task, Status) {}
+        virtual void _childChangedStatus([[maybe_unused]] Retained<Worker> task, Status) {}
 
         /// Adds the counts in the given struct to my status's progress.
         void addProgress(C4Progress);

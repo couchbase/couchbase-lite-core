@@ -162,7 +162,7 @@ namespace litecore {
     }
 
     std::string Logging::loggingName() const {
-        return stringprintf("%s#%u", loggingClassName().c_str(), getObjectRef());
+        return stringprintf("%s#%u", loggingClassName().c_str(), static_cast<unsigned>(getObjectRef()));
     }
 
     std::string Logging::loggingClassName() const {
@@ -172,7 +172,7 @@ namespace litecore {
         return name;
     }
 
-    std::string Logging::loggingIdentifier() const { return stringprintf("%p", this); }
+    std::string Logging::loggingIdentifier() const { return stringprintf("%p", static_cast<const void*>(this)); }
 
     LogObjectRef Logging::getObjectRef(LogLevel level) const {
         if ( _objectRef == LogObjectRef::None ) {
@@ -181,8 +181,8 @@ namespace litecore {
             if ( sObjectMap.registerObject(&_objectRef, nickname) ) {
                 // The binary logger will write a description of the object the first time it logs,
                 // but callback loggers won't, so give them a special message to log:
-                string message =
-                        stringprintf("{%s#%u}==> %s @%p", nickname.c_str(), _objectRef, identifier.c_str(), this);
+                string message = stringprintf("{%s#%u}==> %s @%p", nickname.c_str(), static_cast<unsigned>(_objectRef),
+                                              identifier.c_str(), static_cast<const void*>(this));
                 _domain.logToCallbacksOnly(level, message.c_str());
             }
         }

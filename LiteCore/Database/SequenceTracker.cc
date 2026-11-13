@@ -208,8 +208,8 @@ namespace litecore {
 
     void SequenceTracker::_documentChanged(const alloc_slice& docID, const alloc_slice& revID, sequence_t sequence,
                                            uint64_t bodySize, RevisionFlags flags) {
-        logDebug("documentChanged('%.*s', %.*s, %llu, size=%llu, flags=%hhx", SPLAT(docID), SPLAT(revID), sequence,
-                 bodySize, flags);
+        logDebug("documentChanged('%.*s', %.*s, %llu, size=%llu, flags=%hhx", SPLAT(docID), SPLAT(revID),
+                 static_cast<unsigned long long>(sequence), bodySize, static_cast<unsigned char>(flags));
         auto   shortBodySize = (uint32_t)min(bodySize, (uint64_t)UINT32_MAX);
         bool   listChanged   = true;
         Entry* entry;
@@ -433,12 +433,13 @@ namespace litecore {
 
     DocChangeNotifier::DocChangeNotifier(SequenceTracker* t, slice docID, Callback cb)
         : tracker(t), callback(std::move(cb)), _docEntry(tracker->addDocChangeNotifier(docID, this)) {
-        t->_logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
+        t->_logVerbose("Added doc change notifier %p for '%.*s'", static_cast<const void*>(this), SPLAT(docID));
     }
 
     DocChangeNotifier::~DocChangeNotifier() {
         if ( tracker ) {
-            tracker->_logVerbose("Removing doc change notifier %p from '%.*s'", this, SPLAT(_docEntry->docID));
+            tracker->_logVerbose("Removing doc change notifier %p from '%.*s'", static_cast<const void*>(this),
+                                 SPLAT(_docEntry->docID));
             tracker->removeDocChangeNotifier(_docEntry, this);
         }
     }

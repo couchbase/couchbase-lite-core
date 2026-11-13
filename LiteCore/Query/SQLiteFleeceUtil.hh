@@ -148,8 +148,8 @@ namespace litecore {
         const char* name;
         int         argCount;
         void (*function)(sqlite3_context*, int, sqlite3_value**);
-        void (*stepCallback)(sqlite3_context*, int, sqlite3_value**);
-        void (*finalCallback)(sqlite3_context*);
+        void (*stepCallback)(sqlite3_context*, int, sqlite3_value**) = nullptr;
+        void (*finalCallback)(sqlite3_context*)                      = nullptr;
     };
 
     extern const SQLiteFunctionSpec kFleeceFunctionsSpec[];

@@ -162,7 +162,7 @@ C4LogObserver* c4log_replaceObserver(C4LogObserver* oldObs, C4LogObserverConfig 
     return nullptr;
 }
 
-void c4log_consoleObserverCallback(const C4LogEntry* entry, void* context) noexcept {
+void c4log_consoleObserverCallback(const C4LogEntry* entry, [[maybe_unused]] void* context) noexcept {
     LogFunction::logToConsole(
             LogEntry(uint64_t(entry->timestamp), asInternal(entry->domain), LogLevel(entry->level), entry->message));
 }

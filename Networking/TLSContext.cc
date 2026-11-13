@@ -153,7 +153,8 @@ namespace litecore::net {
         if ( auto logLevel = TLSLogDomain.effectiveLevel(); logLevel == LogLevel::Verbose ) mbedLogLevel = 2;
         else if ( logLevel == LogLevel::Debug )
             mbedLogLevel = 4;
-        _context->set_logger(mbedLogLevel, [=](int level, const char* filename, int line, const char* message) {
+        _context->set_logger(mbedLogLevel, [=](int level, [[maybe_unused]] const char* filename,
+                                               [[maybe_unused]] int line, const char* message) {
             // mbedTLS logging callback:
             static const LogLevel kLogLevels[] = {LogLevel::Info, LogLevel::Info, LogLevel::Verbose, LogLevel::Verbose,
                                                   LogLevel::Debug};
@@ -211,10 +212,11 @@ namespace litecore::net {
 
         _onlySelfSigned = onlySelfSigned;
         if ( onlySelfSigned ) {
-            _context->set_root_cert_locator([](const string& certStr, string& rootStr) {
-                // Don't return any CA certs, have those all fail
-                return true;
-            });
+            _context->set_root_cert_locator(
+                    []([[maybe_unused]] const string& certStr, [[maybe_unused]] string& rootStr) {
+                        // Don't return any CA certs, have those all fail
+                        return true;
+                    });
 
             _context->set_auth_callback([](const string& certData) {
                 Retained<Cert> cert = new Cert(slice(certData));

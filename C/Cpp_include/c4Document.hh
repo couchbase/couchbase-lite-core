@@ -91,7 +91,9 @@ struct C4Document
     virtual bool selectNextRevision()                                              = 0;
     virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody = true) = 0;
 
-    virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) { failUnsupported(); }
+    virtual bool selectCommonAncestorRevision([[maybe_unused]] slice revID1, [[maybe_unused]] slice revID2) {
+        failUnsupported();
+    }
 
     /// Returns true if `ancestor` is an ancestor of (or equal to) `rev`. (Rev trees only)
     bool revisionHasAncestor(slice rev, slice ancestor);
@@ -100,9 +102,9 @@ struct C4Document
 
     virtual alloc_slice getSelectedRevIDGlobalForm() const;
 
-    virtual alloc_slice getRevisionHistory(unsigned    maxHistory,
-                                           const slice backToRevs[C4NULLABLE],  // nullable if count=0
-                                           unsigned    backToRevsCount) const {
+    virtual alloc_slice getRevisionHistory([[maybe_unused]] unsigned    maxHistory,
+                                           [[maybe_unused]] const slice backToRevs[C4NULLABLE],  // nullable if count=0
+                                           [[maybe_unused]] unsigned    backToRevsCount) const {
         failUnsupported();
     }
 
@@ -121,7 +123,7 @@ struct C4Document
 
     virtual bool removeRevisionBody() noexcept { return false; }
 
-    virtual int32_t purgeRevision(slice revid) { failUnsupported(); }
+    virtual int32_t purgeRevision([[maybe_unused]] slice revid) { failUnsupported(); }
 
     // Conflicts:
 
@@ -129,8 +131,9 @@ struct C4Document
     void resolveConflict(slice winningRevID, slice losingRevID, FLDict C4NULLABLE mergedProperties,
                          C4RevisionFlags mergedFlags, bool pruneLosingBranch = true);
 
-    virtual void resolveConflict(slice winningRevID, slice losingRevID, slice mergedBody, C4RevisionFlags mergedFlags,
-                                 bool pruneLosingBranch = true) {
+    virtual void resolveConflict([[maybe_unused]] slice winningRevID, [[maybe_unused]] slice losingRevID,
+                                 [[maybe_unused]] slice mergedBody, [[maybe_unused]] C4RevisionFlags mergedFlags,
+                                 [[maybe_unused]] bool pruneLosingBranch = true) {
         failUnsupported();
     }
 

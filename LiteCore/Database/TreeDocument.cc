@@ -598,7 +598,7 @@ namespace litecore {
 
         // This function must be called in the scope of
         // Scope(body, sharedKeys)
-        static bool hasEncryptables(slice body) {
+        static bool hasEncryptables([[maybe_unused]] slice body) {
 #ifndef COUCHBASE_ENTERPRISE
             return false;
 #else

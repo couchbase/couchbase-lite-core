@@ -589,7 +589,7 @@ namespace litecore::blip {
 
         // NOLINTEND(performance-unnecessary-value-param)
 
-        void handleRequestBeginning(MessageIn* request) {}
+        void handleRequestBeginning([[maybe_unused]] MessageIn* request) {}
 
         void handleRequestReceived(MessageIn* request, MessageIn::ReceiveState state) {
             try {

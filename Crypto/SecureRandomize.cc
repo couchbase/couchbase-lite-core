@@ -52,7 +52,7 @@ namespace litecore {
     }
 
     double RandomNumberGenerator::randomNormalDouble(double mean, double stdDev) {
-        std::normal_distribution norm(mean, stdDev);
+        std::normal_distribution<double> norm(mean, stdDev);
         return norm(*this);
     }
 
@@ -60,7 +60,7 @@ namespace litecore {
       public:
         explicit RepeatableRandomNumberGenerator(uint32_t seed) : _rng(seed) {}
 
-        result_type operator()() override { return _rng(); };
+        result_type operator()() override { return _rng(); }
 
       private:
         std::mt19937 _rng;

@@ -111,7 +111,7 @@ namespace litecore {
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }
 
-            LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
+            LogTo(SQL, "Compiled {Query#%u}: %s", static_cast<unsigned>(getObjectRef()), sql.c_str());
             _statement = dataFile.compile(sql.c_str());
 
             _1stCustomResultColumn = qp.firstCustomResultColumn();

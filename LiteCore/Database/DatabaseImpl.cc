@@ -953,7 +953,7 @@ namespace litecore {
             if ( !root ) error::_throw(error::CorruptRevisionData, "Revision body is not a Dict");
             if ( root->sharedKeys() != documentKeys )
                 error::_throw(error::CorruptRevisionData, "Revision uses wrong SharedKeys %p (db's is %p)",
-                              root->sharedKeys(), documentKeys);
+                              static_cast<const void*>(root->sharedKeys()), static_cast<const void*>(documentKeys));
             validateKeys(v);
         }
     }

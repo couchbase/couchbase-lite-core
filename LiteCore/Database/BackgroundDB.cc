@@ -45,7 +45,7 @@ namespace litecore {
         return _database->blobAccessor(dict);
     }
 
-    void BackgroundDB::externalTransactionCommitted(const SequenceTracker& sourceTracker) {
+    void BackgroundDB::externalTransactionCommitted([[maybe_unused]] const SequenceTracker& sourceTracker) {
         notifyTransactionObservers();
     }
 

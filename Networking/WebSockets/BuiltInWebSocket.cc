@@ -100,7 +100,9 @@ namespace litecore::websocket {
         if ( _socket ) { _socket->close(); }
     }
 
-    void BuiltInWebSocket::requestClose(int status, fleece::slice message) { Assert(false, "Should not be called"); }
+    void BuiltInWebSocket::requestClose([[maybe_unused]] int status, [[maybe_unused]] fleece::slice message) {
+        Assert(false, "Should not be called");
+    }
 
 #pragma mark - CONNECTING:
 

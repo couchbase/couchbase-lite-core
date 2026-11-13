@@ -107,7 +107,7 @@ namespace litecore {
             return new C4QueryObserverImpl(query, callback);
         }
 
-        ~C4QueryObserverImpl() = default;
+        ~C4QueryObserverImpl() override = default;
 
         void setEnabled(bool enabled) override { _query->enableObserver(this, enabled); }
 

@@ -214,7 +214,7 @@ namespace litecore::repl {
         }
 
         // Then entries for blobs found in the document:
-        findBlobReferences(root, false, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
+        findBlobReferences(root, false, [&](FLDeepIterator di, FLDict blob, [[maybe_unused]] C4BlobKey blobKey) {
             alloc_slice path(FLDeepIterator_GetJSONPointer(di));
             if ( path.hasPrefix("/_attachments/"_sl) ) return;
             string attName = string("blob_") + string(path);

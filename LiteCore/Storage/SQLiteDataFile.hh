@@ -94,7 +94,7 @@ namespace litecore {
 
         static Factory& sqliteFactory();
 
-        Factory& factory() const override { return SQLiteDataFile::sqliteFactory(); };
+        Factory& factory() const override { return SQLiteDataFile::sqliteFactory(); }
 
         /// Get an index's row count, and/or all its rows. Supports value and vector indexes.
         /// @warning For debugging/troubleshooting only!
