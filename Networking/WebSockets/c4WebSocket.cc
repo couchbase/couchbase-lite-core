@@ -57,7 +57,8 @@ namespace litecore::repl {
         return f ? *f : C4WebSocket::registeredFactory();
     }
 
-    WebSocketImpl::Parameters C4WebSocket::convertParams(slice c4SocketOptions, C4KeyPair* externalKey) {
+    WebSocketImpl::Parameters C4WebSocket::convertParams(slice                       c4SocketOptions,
+                                                         [[maybe_unused]] C4KeyPair* externalKey) {
         WebSocketImpl::Parameters params = {};
         params.options                   = AllocedDict(c4SocketOptions);
         params.webSocketProtocols        = params.options[kC4SocketOptionWSProtocols].asString();

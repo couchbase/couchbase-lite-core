@@ -34,7 +34,7 @@ namespace litecore {
 
         explicit LogFiles(const Options& options);
 
-        ~LogFiles();
+        ~LogFiles() override;
 
         Options options() const;
 

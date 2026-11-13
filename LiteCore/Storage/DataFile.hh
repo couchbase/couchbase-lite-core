@@ -63,10 +63,10 @@ namespace litecore {
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const = 0;
 
             // Notifies that another DataFile on the same physical file has committed a transaction
-            virtual void externalTransactionCommitted(const SequenceTracker& sourceTracker) {}
+            virtual void externalTransactionCommitted([[maybe_unused]] const SequenceTracker& sourceTracker) {}
 
             // Notifies that another DataFile on the same physical file has deleted a collection
-            virtual void collectionRemoved(const std::string& keyStoreName){};
+            virtual void collectionRemoved([[maybe_unused]] const std::string& keyStoreName) {}
         };
 
         struct Options {

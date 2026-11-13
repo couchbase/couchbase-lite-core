@@ -151,7 +151,8 @@ namespace litecore {
         return ret;
     }
 
-    void SQLiteKeyStore::migrateDeletedDocs(slice keyStoreName, uint64_t rowidLow, uint64_t rowidHigh) {
+    void SQLiteKeyStore::migrateDeletedDocs([[maybe_unused]] slice keyStoreName, uint64_t rowidLow,
+                                            uint64_t rowidHigh) {
         auto& stmtInsert = compileCached("INSERT INTO kv_del_@ "
                                          "SELECT * FROM kv_@ WHERE rowid BETWEEN ? "
                                          "AND ? AND (flags&1)!=0");
@@ -310,7 +311,7 @@ namespace litecore {
         return true;
     }
 
-    void SQLiteKeyStore::setKV(slice key, slice version, slice value, ExclusiveTransaction& t) {
+    void SQLiteKeyStore::setKV(slice key, slice version, slice value, [[maybe_unused]] ExclusiveTransaction& t) {
         DebugAssert(key.size > 0);
         DebugAssert(!_capabilities.sequences);
         if ( db().willLog(LogLevel::Verbose) && name() != "default" )

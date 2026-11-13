@@ -197,7 +197,7 @@ class C4SocketFactoryImpl
 template <std::derived_from<C4SocketFactoryImpl> FACTORY>
 C4SocketFactory c4SocketFactoryFor() {
     auto fac = C4SocketFactoryImpl::kFactory;
-    fac.open = [](C4Socket* socket, const C4Address* address, C4Slice options, void* context) {
+    fac.open = [](C4Socket* socket, const C4Address* address, C4Slice options, [[maybe_unused]] void* context) {
         C4SocketFactoryImpl* impl;
         if ( auto native = socket->getNativeHandle() ) impl = static_cast<C4SocketFactoryImpl*>(native);
         else

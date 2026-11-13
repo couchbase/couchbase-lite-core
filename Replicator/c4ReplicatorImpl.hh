@@ -49,7 +49,7 @@ namespace litecore {
         void start(bool reset = false) noexcept override;
 
         // Retry is not supported by default. C4RemoteReplicator overrides this.
-        virtual bool retry(bool resetCount) {
+        virtual bool retry([[maybe_unused]] bool resetCount) {
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported, "Can't retry this type of replication");
         }
 

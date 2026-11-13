@@ -120,7 +120,7 @@ namespace litecore::blip {
 
         /** Called when the beginning of an incoming request arrives. The properties will be
             complete, but the body is likely to be incomplete. */
-        virtual void onRequestBeginning(MessageIn* request) {}
+        virtual void onRequestBeginning([[maybe_unused]] MessageIn* request) {}
 
         /** Called when an incoming request is completely received. */
         virtual void onRequestReceived(MessageIn* request) { request->notHandled(); }

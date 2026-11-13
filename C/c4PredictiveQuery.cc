@@ -48,7 +48,7 @@ class C4PredictiveModelInternal : public PredictiveModel {
 #endif  // COUCHBASE_ENTERPRISE
 
 
-void c4pred_registerModel(const char* name, C4PredictiveModel model) C4API {
+void c4pred_registerModel([[maybe_unused]] const char* name, [[maybe_unused]] C4PredictiveModel model) C4API {
 #ifdef COUCHBASE_ENTERPRISE
     auto context = retained(new C4PredictiveModelInternal(model));
     context->registerAs(name);
@@ -58,7 +58,7 @@ void c4pred_registerModel(const char* name, C4PredictiveModel model) C4API {
 #endif
 }
 
-bool c4pred_unregisterModel(const char* name) C4API {
+bool c4pred_unregisterModel([[maybe_unused]] const char* name) C4API {
 #ifdef COUCHBASE_ENTERPRISE
     return PredictiveModel::unregister(name);
 #else

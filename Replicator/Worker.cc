@@ -106,7 +106,7 @@ namespace litecore::repl {
 
     Worker::~Worker() {
         if ( _importance ) logStats();
-        logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
+        logDebug("destructing (%p); actorName='%s'", static_cast<const void*>(this), actorName().c_str());
     }
 
     void Worker::sendRequest(blip::MessageBuilder& builder, const MessageProgressCallback& callback) {

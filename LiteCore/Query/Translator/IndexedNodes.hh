@@ -39,7 +39,7 @@ namespace litecore::qt {
         IndexSourceNode* C4NULLABLE indexSource() const { return _indexSource; }
 
         /// Sets which SQLite index table is being queried; called by `SelectNode::addIndexForNode`
-        virtual void setIndexSource(IndexSourceNode* source, SelectNode* select, ParseContext& ctx) {
+        virtual void setIndexSource(IndexSourceNode* source, SelectNode* select, [[maybe_unused]] ParseContext& ctx) {
             _indexSource = source;
             _select      = select;
         }

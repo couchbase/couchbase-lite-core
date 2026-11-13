@@ -91,7 +91,7 @@ namespace litecore::REST {
                         error = c4error_make(LiteCoreDomain, kC4ErrorRemoteError,
                                              "Certificate from server does not match requested"_sl);
                     }
-                } catch ( const litecore::error& x ) {
+                } catch ( const litecore::error& ) {
                     error = c4error_make(LiteCoreDomain, kC4ErrorRemoteError,
                                          "Invalid certificate data in server response"_sl);
                 }

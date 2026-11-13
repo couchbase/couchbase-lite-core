@@ -28,18 +28,19 @@ namespace litecore {
     }
 
     void RegisterSQLiteUnicodeCollations(sqlite3* dbHandle, CollationContextVector& contexts) {
-        sqlite3_collation_needed(dbHandle, &contexts, [](void* pContexts, sqlite3* db, int textRep, const char* name) {
-            // Callback from SQLite when it needs a collation:
-            try {
-                Collation coll;
-                if ( coll.readSQLiteName(name) ) {
-                    auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
-                    if ( ctx ) (*(CollationContextVector*)pContexts).push_back(std::move(ctx));
-                }
-            } catch ( std::runtime_error& x ) {
-                Warn("Exception registering a collator: %s", x.what());
-            } catch ( ... ) { Warn("Unexpected unknown exception registering a collator"); }
-        });
+        sqlite3_collation_needed(dbHandle, &contexts,
+                                 [](void* pContexts, sqlite3* db, [[maybe_unused]] int textRep, const char* name) {
+                                     // Callback from SQLite when it needs a collation:
+                                     try {
+                                         Collation coll;
+                                         if ( coll.readSQLiteName(name) ) {
+                                             auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
+                                             if ( ctx ) (*(CollationContextVector*)pContexts).push_back(std::move(ctx));
+                                         }
+                                     } catch ( std::runtime_error& x ) {
+                                         Warn("Exception registering a collator: %s", x.what());
+                                     } catch ( ... ) { Warn("Unexpected unknown exception registering a collator"); }
+                                 });
     }
 
     __hot bool ContainsUTF8_Slow(fleece::slice str, fleece::slice substr, const CollationContext& ctx) {

@@ -110,7 +110,7 @@ namespace litecore {
 
     void LogStatement(const SQLite::Statement& st) { LogTo(SQL, "... %s", st.getQuery().c_str()); }
 
-    static std::pair<bool, std::string> enhanceSQLiteErrorLog(int errCode, const char* msg) {
+    static std::pair<bool, std::string> enhanceSQLiteErrorLog([[maybe_unused]] int errCode, const char* msg) {
         std::regex  noTableRegx{"no such table: (\\S+) in "};
         std::cmatch match;
         const char* extra = nullptr;
@@ -249,7 +249,7 @@ namespace litecore {
 
     // A lot of this logic can be turned into a reusable function later if needed
     // for more extensions.
-    static void LoadVectorSearchExtension(sqlite3* sqlite) {
+    static void LoadVectorSearchExtension([[maybe_unused]] sqlite3* sqlite) {
 #ifdef COUCHBASE_ENTERPRISE
 #    if defined(__ANDROID__)
         static const char* extensionName = "libCouchbaseLiteVectorSearch";
@@ -536,8 +536,8 @@ namespace litecore {
                 // We'll log info about the statements so this situation can be detected from logs.
                 _sqlDb->withOpenStatements([this, forDelete](const char* sql, bool busy) {
                     _log((forDelete ? LogLevel::Warning : LogLevel::Info),
-                         "SQLite::Database %p close deferred due to %s sqlite_stmt: %s", _sqlDb.get(),
-                         (busy ? "busy" : "open"), sql);
+                         "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
+                         static_cast<const void*>(_sqlDb.get()), (busy ? "busy" : "open"), sql);
                 });
                 if ( forDelete ) error::_throw(error::Busy, "SQLite db has active statements, can't be deleted");
                 // Also, tell SQLite not to checkpoint the WAL when it eventually closes the db
@@ -617,7 +617,7 @@ namespace litecore {
 #endif
 
 
-    void SQLiteDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
+    void SQLiteDataFile::rekey([[maybe_unused]] EncryptionAlgorithm alg, [[maybe_unused]] slice newKey) {
 #ifdef COUCHBASE_ENTERPRISE
         if ( !factory().encryptionEnabled(alg) ) error::_throw(error::UnsupportedEncryption);
 
@@ -696,7 +696,7 @@ namespace litecore {
         _exec("BEGIN IMMEDIATE");
     }
 
-    void SQLiteDataFile::_endTransaction(ExclusiveTransaction* t, bool commit) {
+    void SQLiteDataFile::_endTransaction([[maybe_unused]] ExclusiveTransaction* t, bool commit) {
         // Notify key-stores so they can save state:
         forOpenKeyStores([commit](KeyStore& ks) { ks.transactionWillEnd(commit); });
 

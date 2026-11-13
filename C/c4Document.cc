@@ -43,7 +43,9 @@ C4Document::C4Document(C4Collection* collection, alloc_slice docID_)
     if ( &_flags != &(asStruct)->flags || (void*)&_docID != (void*)&(asStruct)->docID ) {
         WarnError("FATAL: C4Document struct layout is wrong!! "
                   "this=%p; asStruct=%p; `flags` at %p vs %p, `docID` at %p vs %p",
-                  this, asStruct, &_flags, &(asStruct)->flags, &_docID, &(asStruct)->docID);
+                  static_cast<const void*>(this), static_cast<const void*>(asStruct), static_cast<const void*>(&_flags),
+                  static_cast<const void*>(&(asStruct)->flags), static_cast<const void*>(&_docID),
+                  static_cast<const void*>(&(asStruct)->docID));
         /* If this is wrong, using C4Document is completely broken, so best just abort.
            This indicates something wrong with the kludgy padding fields at the start of
            C4Document_C in c4DocumentStruct.h -- they don't match the actual amount of space

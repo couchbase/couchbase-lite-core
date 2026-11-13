@@ -185,7 +185,7 @@ namespace litecore {
 
     DataFile* DataFile::openAnother(Delegate* delegate) { return factory().openFile(_path, delegate, &_options); }
 
-    void DataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
+    void DataFile::rekey(EncryptionAlgorithm alg, [[maybe_unused]] slice newKey) {
         if ( alg != kNoEncryption ) error::_throw(error::UnsupportedEncryption);
     }
 

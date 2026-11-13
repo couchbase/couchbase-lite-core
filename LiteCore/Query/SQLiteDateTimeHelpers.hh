@@ -197,7 +197,8 @@ namespace litecore {
         sqlite3_result_int64(ctx, result);
     }
 
-    inline int64_t doDateAdd(sqlite3_context* ctx, const DateTime& start, const int64_t amount, const slice& part) {
+    inline int64_t doDateAdd([[maybe_unused]] sqlite3_context* ctx, const DateTime& start, const int64_t amount,
+                             const slice& part) {
         DateComponent date_component;
         if ( !part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid ) { return -1; }
 

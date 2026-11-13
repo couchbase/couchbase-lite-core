@@ -123,7 +123,7 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4CollectionSpe
     return false;
 }
 
-C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) noexcept {
+C4Cert* c4repl_getPeerTLSCertificate([[maybe_unused]] C4Replicator* repl, C4Error* outErr) noexcept {
 #ifdef COUCHBASE_ENTERPRISE
     *outErr = {};
     return repl->getPeerTLSCertificate();

@@ -40,9 +40,9 @@ namespace litecore {
             if ( !file ) {
                 file              = new Shared(pathStr);
                 sFileMap[pathStr] = file;
-                file->_logDebug("created for DataFile %p at %s", dataFile, pathStr.c_str());
+                file->_logDebug("created for DataFile %p at %s", static_cast<const void*>(dataFile), pathStr.c_str());
             } else {
-                file->_logDebug("adding DataFile %p", dataFile);
+                file->_logDebug("adding DataFile %p", static_cast<const void*>(dataFile));
             }
             lock.unlock();
 
@@ -73,7 +73,7 @@ namespace litecore {
 
         bool removeDataFile(DataFile* dataFile) {
             unique_lock<mutex> lock(_mutex);
-            logDebug("Remove DataFile %p", dataFile);
+            logDebug("Remove DataFile %p", static_cast<const void*>(dataFile));
             auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
             if ( pos == _dataFiles.end() ) return false;
             _dataFiles.erase(pos);
@@ -134,7 +134,7 @@ namespace litecore {
       protected:
         Shared(const string& p) : Logging(DBLog), path(p) { logVerbose("Path=%s Instantiated", p.c_str()); }
 
-        ~Shared() {
+        ~Shared() override {
             logDebug("destructing");
             unique_lock<mutex> lock(sFileMapMutex);
             sFileMap.erase(path);

@@ -32,7 +32,7 @@ namespace litecore {
 
         [[nodiscard]] C4Collection* collection() const { return _coll; }
 
-        [[nodiscard]] virtual bool isFirstGenRevID(slice revID) const { return false; }
+        [[nodiscard]] virtual bool isFirstGenRevID([[maybe_unused]] slice revID) const { return false; }
 
         virtual Retained<C4Document> newDocumentInstance(slice docID, ContentOption) = 0;
         virtual Retained<C4Document> newDocumentInstance(const Record&)              = 0;

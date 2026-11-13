@@ -131,9 +131,9 @@ namespace litecore::crypto {
             return ((ExternalPrivateKey*)ctx)->_decrypt(input, output, output_max_len, olen);
         };
 
-        auto signFunc = [](void* ctx, int (*f_rng)(void*, unsigned char*, size_t), void* p_rng,
-                           mbedtls_md_type_t md_alg, unsigned int hashlen, const unsigned char* hash,
-                           unsigned char* sig) -> int {
+        auto signFunc = [](void*                  ctx, [[maybe_unused]] int (*f_rng)(void*, unsigned char*, size_t),
+                           [[maybe_unused]] void* p_rng, mbedtls_md_type_t md_alg, unsigned int hashlen,
+                           const unsigned char* hash, unsigned char* sig) -> int {
             return ((ExternalPrivateKey*)ctx)->_sign(md_alg, slice(hash, hashlen), sig);
         };
 

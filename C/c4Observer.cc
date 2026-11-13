@@ -40,7 +40,7 @@ namespace litecore {
                 return;
             }
 
-            _collection->sequenceTracker().useLocked([&](SequenceTracker& st) {
+            _collection->sequenceTracker().useLocked([&]([[maybe_unused]] SequenceTracker& st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;
@@ -50,13 +50,14 @@ namespace litecore {
         C4CollectionObservation getChanges(Change outChanges[], uint32_t maxChanges) override {
             static_assert(sizeof(Change) == sizeof(SequenceTracker::Change),
                           "C4CollectionObserver::Change doesn't match SequenceTracker::Change");
-            return _collection->sequenceTracker().useLocked<C4CollectionObservation>([&](SequenceTracker& st) {
-                bool outExternal;
-                auto retVal =
-                        (uint32_t)_notifier->readChanges((SequenceTracker::Change*)outChanges, maxChanges, outExternal);
+            return _collection->sequenceTracker().useLocked<C4CollectionObservation>(
+                    [&]([[maybe_unused]] SequenceTracker& st) {
+                        bool outExternal;
+                        auto retVal = (uint32_t)_notifier->readChanges((SequenceTracker::Change*)outChanges, maxChanges,
+                                                                       outExternal);
 
-                return C4CollectionObservation{retVal, outExternal, _collection};
-            });
+                        return C4CollectionObservation{retVal, outExternal, _collection};
+                    });
         }
 
       private:
@@ -98,7 +99,7 @@ namespace litecore {
                 return;
             }
 
-            _collection->sequenceTracker().useLocked([&](SequenceTracker& st) {
+            _collection->sequenceTracker().useLocked([&]([[maybe_unused]] SequenceTracker& st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;

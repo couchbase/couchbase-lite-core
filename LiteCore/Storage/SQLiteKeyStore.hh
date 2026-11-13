@@ -75,7 +75,7 @@ namespace litecore {
         expiration_t nextExpiration() override;
         unsigned     expireRecords(std::optional<ExpirationCallback>) override;
 
-        bool supportsIndexes(IndexSpec::Type t) const override { return true; }
+        bool supportsIndexes([[maybe_unused]] IndexSpec::Type t) const override { return true; }
 
         bool createIndex(const IndexSpec&) override;
 

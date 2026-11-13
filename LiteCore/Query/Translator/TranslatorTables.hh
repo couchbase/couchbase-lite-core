@@ -209,11 +209,11 @@ namespace litecore::qt {
     // http://www.sqlite.org/lang_corefunc.html
     // http://www.sqlite.org/lang_aggfunc.html
 
-    struct FunctionSpec {          // NOLINT(cppcoreguidelines-pro-type-member-init)
-        slice   name;              // Name (without the parens)
-        int     minArgs, maxArgs;  // Min/max number of args
-        slice   sqlite_name;       // Name to use in SQL; defaults to `name`
-        OpFlags flags;             // Flags, mostly about the result type
+    struct FunctionSpec {                  // NOLINT(cppcoreguidelines-pro-type-member-init)
+        slice   name;                      // Name (without the parens)
+        int     minArgs, maxArgs;          // Min/max number of args
+        slice   sqlite_name = {};          // Name to use in SQL; defaults to `name`
+        OpFlags flags       = kOpNoFlags;  // Flags, mostly about the result type
     };
 
     // clang-format off

@@ -222,12 +222,10 @@ namespace litecore { namespace crypto {
             Assert(publicKey && privateKey);
         }
 
-
-        ~KeychainKeyPair() {
+        ~KeychainKeyPair() override {
             CFRelease(_publicKeyRef);
             CFRelease(_privateKeyRef);
         }
-
 
         virtual alloc_slice publicKeyRawData() override {
             CFErrorRef error;

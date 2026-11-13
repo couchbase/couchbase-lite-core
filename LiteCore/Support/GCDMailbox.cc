@@ -82,7 +82,7 @@ namespace litecore::actor {
         }
     }
 
-    void GCDMailbox::enqueue(const char* name, void (^block)()) {
+    void GCDMailbox::enqueue([[maybe_unused]] const char* name, void (^block)()) {
         beginLatency();
         ++_eventCount;
         retain(_actor);
@@ -110,7 +110,7 @@ namespace litecore::actor {
         dispatch_async(_queue, wrappedBlock);
     }
 
-    void GCDMailbox::enqueueAfter(delay_t delay, const char* name, void (^block)()) {
+    void GCDMailbox::enqueueAfter(delay_t delay, [[maybe_unused]] const char* name, void (^block)()) {
         beginLatency();
         ++_eventCount;
         retain(_actor);

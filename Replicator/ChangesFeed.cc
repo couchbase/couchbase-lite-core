@@ -257,7 +257,9 @@ namespace litecore::repl {
     void ChangesFeed::stopObserving() { _changeObserver.reset(); }
 
     // Overridden by ReplicatorChangesFeed
-    bool ChangesFeed::getRemoteRevID(RevToSend* rev, C4Document* doc) const { return true; }
+    bool ChangesFeed::getRemoteRevID([[maybe_unused]] RevToSend* rev, [[maybe_unused]] C4Document* doc) const {
+        return true;
+    }
 
 #pragma mark - REPLICATOR CHANGES FEED:
 

@@ -316,7 +316,7 @@ namespace litecore {
         return _start(false);
     }
 
-    void C4ReplicatorImpl::replicatorGotTLSCertificate(slice certData) {
+    void C4ReplicatorImpl::replicatorGotTLSCertificate([[maybe_unused]] slice certData) {
 #ifdef COUCHBASE_ENTERPRISE
         LOCK(_mutex);
         _peerTLSCertificateData = certData;

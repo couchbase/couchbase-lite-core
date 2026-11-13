@@ -183,7 +183,8 @@ namespace litecore {
     // array_length() returns the length of an array.
     static void fl_array_length(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
         sqlite3_int64 count = 0;
-        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, [[maybe_unused]] bool& stop) { count++; });
+        aggregateArrayOperation(ctx, argc, argv,
+                                [&count]([[maybe_unused]] const Value* val, [[maybe_unused]] bool& stop) { count++; });
 
         sqlite3_result_int64(ctx, count);
     }
@@ -864,7 +865,9 @@ namespace litecore {
     }
 
 #define DefineUnaryMathFn(NAME, C_FN)                                                                                  \
-    static void fl_##NAME(sqlite3_context* ctx, int argc, sqlite3_value** argv) { unaryFunction(ctx, argv, C_FN); }
+    static void fl_##NAME(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {                     \
+        unaryFunction(ctx, argv, C_FN);                                                                                \
+    }
 
     DefineUnaryMathFn(abs, abs) DefineUnaryMathFn(acos, acos) DefineUnaryMathFn(asin, asin)
             DefineUnaryMathFn(atan, atan) DefineUnaryMathFn(ceil, ceil) DefineUnaryMathFn(cos, cos)
@@ -1130,7 +1133,7 @@ namespace litecore {
      * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html#manipulating-components.
      * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
      */
-    static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+    static void date_diff_str(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         DateTime left, right;
         if ( !parseDateArgRaw(argv[0], &left) || !parseDateArgRaw(argv[1], &right) ) { return; }
 
@@ -1149,7 +1152,7 @@ namespace litecore {
      * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html#manipulating-components.
      * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
      */
-    static void date_diff_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+    static void date_diff_millis(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
 
         auto left  = FromMillis(sqlite3_value_int64(argv[0]));
@@ -1193,7 +1196,7 @@ namespace litecore {
      * https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/datefun.html#manipulating-components.
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
-    static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+    static void date_add_millis(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
         if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
 
         const auto start  = FromMillis(sqlite3_value_int64(argv[0]));

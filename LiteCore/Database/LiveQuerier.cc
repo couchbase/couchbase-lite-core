@@ -67,7 +67,7 @@ namespace litecore {
 
     void LiveQuerier::stop() {
         logInfo("Stopping");
-        bool didStop = _backgroundDB->dataFile().useLocked<bool>([&](DataFile* df) {
+        bool didStop = _backgroundDB->dataFile().useLocked<bool>([&]([[maybe_unused]] DataFile* df) {
             // CBL-2335: Guard access to the _stopping variable so that
             // it is not changed at unpredictable times
             if ( _stopping ) { return true; }
@@ -94,7 +94,7 @@ namespace litecore {
 
     void LiveQuerier::_stop() {
         if ( _query ) {
-            _backgroundDB->dataFile().useLocked([&](DataFile* df) {
+            _backgroundDB->dataFile().useLocked([&]([[maybe_unused]] DataFile* df) {
                 _query             = nullptr;
                 _currentEnumerator = nullptr;
                 if ( _continuous ) _backgroundDB->removeTransactionObserver(this);

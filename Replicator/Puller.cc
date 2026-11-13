@@ -351,7 +351,7 @@ namespace litecore::repl {
 
 #pragma mark - STATUS / PROGRESS:
 
-    void Puller::_childChangedStatus(Retained<Worker> task, Status status) {
+    void Puller::_childChangedStatus([[maybe_unused]] Retained<Worker> task, Status status) {
         // Combine the IncomingRev's progress into mine:
         addProgress(status.progressDelta);
         if ( status.error.domain == WebSocketDomain && status.error.code == 503 ) {
