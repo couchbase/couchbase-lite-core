@@ -61,7 +61,9 @@ namespace litecore {
 
         if ( seq == 0_seq && rec.sequence > 0_seq ) {
             // Conflict. Maybe record is currently in the other KeyStore; if so, delete it & retry
-            expiration_t expiry = other->getExpiration(rec.key);
+            auto expiry = expiration_t::None;
+            if ( target->getTTL() == C4TimeInterval::None )  // don't preserve exp if collection has a TTL
+                expiry = other->getExpiration(rec.key);
             if ( other->del(rec.key, t, rec.sequence, rec.subsequence) ) {
                 // We move a record from one sub-store to the other one by deleting it from
                 // one store and inserting it to the other one while keeping the seqquence.

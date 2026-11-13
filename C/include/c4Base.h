@@ -84,6 +84,11 @@ DEFINE_ENUM_ADD_SUB_INT(C4SequenceNumber)
 enum class C4Timestamp : int64_t { None = 0, Error = -1 };
 DEFINE_ENUM_ADD_SUB_INT(C4Timestamp)
 
+/** A time interval, in units of milliseconds. */
+enum class C4TimeInterval : int64_t { None = 0 };
+
+inline C4Timestamp operator+(C4Timestamp t, C4TimeInterval i) { return t + int64_t(i); }
+
 C4API_BEGIN_DECLS
 #else
 /** A database sequence number, representing the order in which a revision was created. */
@@ -93,6 +98,9 @@ typedef uint64_t C4SequenceNumber;
         Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)
         A value of 0 represents "no expiration". */
 typedef int64_t C4Timestamp;
+
+/** A time interval, in units of milliseconds. */
+typedef int64_t C4TimeInterval;
 #endif
 
 

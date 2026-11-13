@@ -152,7 +152,7 @@ class Tool {
 
     /** Reads the contents of a file into memory.
         If the file doesn't exist but `mustExist` is false, returns `nullslice` instead of throwing.
-        @throws failerr */
+        @throws failerr if file can't be read */
     static fleece::alloc_slice readFile(const std::string& path, bool mustExist = true);
 
     /** Stores data in a file.
@@ -205,7 +205,7 @@ class Tool {
         @param minVal  The minimum allowed value; defaults to no limit.
         @param maxVal  The maximum allowed value; defaults to no limit.
         @returns  The numeric value parsed from the string.
-        @throws std::invalid_argument */
+        @throws std::invalid_argument if the string is invalid */
     template <std::integral INT>
     static INT parse(const char* what, std::string_view str, INT minVal = std::numeric_limits<INT>::min(),
                      INT maxVal = std::numeric_limits<INT>::max()) {

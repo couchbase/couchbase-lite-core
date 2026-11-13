@@ -700,6 +700,7 @@ namespace litecore {
                     return true;
                 case VectorRecord::kNoNewSequence:
                     _updateDocFields();  // flags may have changed
+                    asInternal(collection())->documentSaved(this, false);
                     return true;
                 case VectorRecord::kConflict:
                     return false;
@@ -713,7 +714,7 @@ namespace litecore {
                                                     ((_flags & kRevDeleted) ? "Deleted" : "Saved"), SPLAT(_docID),
                                                     SPLAT(revID), (uint64_t)_sequence);
                     }
-                    asInternal(collection())->documentSaved(this);
+                    asInternal(collection())->documentSaved(this, true);
                     return true;
             }
             return false;  // unreachable

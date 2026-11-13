@@ -33,6 +33,12 @@ namespace litecore {
     class SQLiteKeyStore;
     struct SQLiteIndexSpec;
 
+    struct KVMeta {
+        sequence_t     lastSequence;
+        uint64_t       purgeCount;
+        C4TimeInterval ttl;
+    };
+
     /** SQLite implementation of DataFile. */
     class SQLiteDataFile final
         : public DataFile
@@ -136,10 +142,16 @@ namespace litecore {
         void      endReadOnlyTransaction() override;
         KeyStore* newKeyStore(const std::string& name, KeyStore::Capabilities) override;
 
-        sequence_t lastSequence(const std::string& keyStoreName) const;
-        void       setLastSequence(SQLiteKeyStore&, sequence_t);
-        uint64_t   purgeCount(const std::string& keyStoreName) const;
-        void       setPurgeCount(SQLiteKeyStore&, uint64_t);
+        KVMeta getKVMeta(string const& keyStoreName) const;
+
+        sequence_t lastSequence(const std::string& keyStoreName) const { return getKVMeta(keyStoreName).lastSequence; }
+
+        void setLastSequence(SQLiteKeyStore&, sequence_t);
+
+        uint64_t purgeCount(const std::string& keyStoreName) const { return getKVMeta(keyStoreName).purgeCount; }
+
+        void setPurgeCount(SQLiteKeyStore&, uint64_t);
+        void setTTL(SQLiteKeyStore&, C4TimeInterval);
 
         std::unique_ptr<SQLite::Statement> compile(const char* sql) const;
         void                               compileCached(unique_ptr<SQLite::Statement>&, const char* sql) const;
@@ -178,14 +190,16 @@ namespace litecore {
             WithIndexesLastSeq     = 501,  // Added 'lastSeq' column to 'indexes' table (CBL 3.2)
             WithExpirationColumn   = 502,  // Added 'expiration' column to KeyStore
             WithIndexesWhereColumn = 503,  // Added 'whereClause' column to the "indexes" table
+            WithTTL                = 504,  // Added 'ttl' column to the "kvmeta" table
             MaxReadable            = 599,  // Cannot open versions newer than this
 
-            Current = WithIndexesWhereColumn
+            Current = WithTTL
         };
 
         void reopenSQLiteHandle();
         void ensureSchemaVersionAtLeast(SchemaVersion);
         bool upgradeSchema(SchemaVersion minVersion, const char* what, function_ref<void()>);
+        void addExpirationColumn(string const& tableName);
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
         int  _exec(const std::string& sql);
@@ -202,7 +216,7 @@ namespace litecore {
 
         unique_ptr<SQLite::Database>          _sqlDb;  // SQLite database object
         std::unique_ptr<SQLiteKeyStore>       _realDefaultKeyStore;
-        mutable unique_ptr<SQLite::Statement> _getLastSeqStmt, _setLastSeqStmt;
+        mutable unique_ptr<SQLite::Statement> _getKVMetaStmt, _setLastSeqStmt, _setTTLStmt;
         mutable unique_ptr<SQLite::Statement> _getPurgeCntStmt, _setPurgeCntStmt;
         CollationContextVector                _collationContexts;
         SchemaVersion                         _schemaVersion{SchemaVersion::None};
@@ -219,6 +233,5 @@ namespace litecore {
         std::string const indexTableName;    ///< Name of SQLite table containing index (if any)
         alloc_slice       indexedSequences;  ///< Sequences that have been indexed; a JSON SequenceSet
     };
-
 
 }  // namespace litecore

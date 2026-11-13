@@ -180,6 +180,12 @@ namespace litecore {
             @return  The number of records deleted */
         virtual unsigned expireRecords(std::optional<ExpirationCallback> = std::nullopt) = 0;
 
+        /** Sets default time-to-live of docs, in ms */
+        virtual void setTTL(C4TimeInterval ms) = 0;
+
+        /** Gets default time-to-live of docs, in ms */
+        virtual C4TimeInterval getTTL() const = 0;
+
 
         //////// Queries:
 

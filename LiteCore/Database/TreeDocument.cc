@@ -330,13 +330,14 @@ namespace litecore {
                 case litecore::RevTreeRecord::kConflict:
                     return false;
                 case litecore::RevTreeRecord::kNoNewSequence:
+                    asInternal(collection())->documentSaved(this, false);
                     return true;
                 case litecore::RevTreeRecord::kNewSequence:
                     _selected.flags &= ~kRevNew;
                     if ( _revTree.sequence() > _sequence ) {
                         _sequence = _revTree.sequence();
                         if ( _selected.sequence == 0_seq ) _selected.sequence = _sequence;
-                        asInternal(collection())->documentSaved(this);
+                        asInternal(collection())->documentSaved(this, true);
                     }
                     return true;
                 default:
