@@ -12,6 +12,7 @@
 
 #pragma once
 #ifdef LITECORE_CPPTEST
+#    include <atomic>
 #    include <functional>
 #    include <memory>
 
@@ -29,10 +30,10 @@ namespace litecore::repl {
         using IncomingRevHook = std::function<void(IncomingRev*, IncomingRevEvent)>;
 
         // A callback keeps its captured state alive even if the test unregisters it during cleanup.
-        inline std::shared_ptr<const IncomingRevHook> incomingRevHook;
+        inline std::atomic<std::shared_ptr<const IncomingRevHook>> incomingRevHook;
 
         inline void notifyIncomingRev(IncomingRev* rev, IncomingRevEvent event) {
-            if ( auto hook = std::atomic_load(&incomingRevHook) ) (*hook)(rev, event);
+            if ( auto hook = incomingRevHook.load() ) (*hook)(rev, event);
         }
     }  // namespace testing
 }  // namespace litecore::repl

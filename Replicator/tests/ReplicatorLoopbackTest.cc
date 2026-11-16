@@ -18,16 +18,20 @@
 #include "c4Database.hh"
 #include "Base64.hh"
 #include "betterassert.hh"
-#include "IncomingRev.hh"
-#include "IncomingRevTestHooks.hh"
 #include "fleece/Mutable.hh"
 #include "fleece/PlatformCompat.hh"
 #include <chrono>
-#include <condition_variable>
+#if defined(LITECORE_CPPTEST)
+#    include "IncomingRev.hh"
+#    include "IncomingRevTestHooks.hh"
+#    include <condition_variable>
+#    include <thread>
+#endif
 
 using namespace litecore::actor;
 using namespace std;
 
+#if defined(LITECORE_CPPTEST)
 namespace {
     // Hold the first actor event open while the Inserter delivers its completion notification.
     // All waits are handshakes; the timeout only diagnoses a broken test or a stalled actor.
@@ -97,14 +101,11 @@ namespace {
         shared_ptr<State> state = make_shared<State>();
 
         IncomingRevOrdering()
-            : _previous(atomic_exchange(&testing::incomingRevHook,
-                                        make_shared<const testing::IncomingRevHook>(
-                                                [s = state](IncomingRev* rev, testing::IncomingRevEvent event) {
-                                                    s->observe(rev, event);
-                                                }))) {}
+            : _previous(testing::incomingRevHook.exchange(make_shared<const testing::IncomingRevHook>(
+                      [s = state](IncomingRev* rev, testing::IncomingRevEvent event) { s->observe(rev, event); }))) {}
 
         ~IncomingRevOrdering() {
-            atomic_store(&testing::incomingRevHook, _previous);
+            testing::incomingRevHook.store(_previous);
             lock_guard lock(state->gateMutex);
             state->cancelled = true;
             state->changed.notify_all();
@@ -117,6 +118,12 @@ namespace {
 
 N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "IncomingRev defers recycling until earlier actor events finish",
                        "[Pull][Race]") {
+#    ifndef ACTORS_USE_GCD
+    // One actor waits for another, so the scheduler needs at least two workers.
+    // A reported count of zero is safe: Scheduler::start() falls back to two.
+    if ( thread::hardware_concurrency() == 1 )
+        SKIP("IncomingRev ordering test requires at least two scheduler workers");
+#    endif
     IncomingRevOrdering ordering;
     createRev(_collDB1, "doc"_sl, kRev1ID, kFleeceBody);
     auto serverOptions = Replicator::Options::passive(_collSpec);
@@ -137,6 +144,7 @@ N_WAY_TEST_CASE_METHOD(ReplicatorLoopbackTest, "IncomingRev defers recycling unt
     CHECK(state.handedOff);
     CHECK_FALSE(state.prematureHandoff);
 }
+#endif  // LITECORE_CPPTEST
 
 TEST_CASE("Options password logging redaction") {
     string          password("SEEKRIT");
