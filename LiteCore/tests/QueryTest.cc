@@ -1868,6 +1868,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['str_to_utc()', 99]", "null"},
             {"['str_to_utc()', '']", "null"},
             {"['str_to_utc()', 'x']", "null"},
+            {"['str_to_utc()', '2018-10-23T18:33:01junk']", "null"},
+            {"['str_to_utc()', '18:33:01junk']", "null"},
             // Valid format
             {"['str_to_utc()', '2018-10-23', '1111-11-11']", expected1},
             {"['str_to_utc()', '2018-10-23']", expected1iso},
@@ -1933,6 +1935,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query][CBL-59]") {
             {"['millis_to_utc()', 1540319581999, '11:11:11']", "18:33:01"},
             {"['millis_to_utc()', 1540319581999, '11:11:11.111']", "18:33:01.999"},
             {"['millis_to_utc()', 1540319581999, '%T%s']", "18:33:01.999"},
+            {"['millis_to_utc()', 1540319581999, '%T']", "18:33:01.999"},
+            {"['millis_to_utc()', 1540319581999, '%FT%T']", "2018-10-23T18:33:01.999"},
+            {"['millis_to_utc()', 1540319581999, '%F %T']", "2018-10-23 18:33:01.999"},
+            {"['millis_to_utc()', 1540319581999, '1111/11/11']", "2018/10/23"},
+            {"['millis_to_utc()', 1540319581999, '%Y/%m/%d']", "2018/10/23"},
+            {"['millis_to_utc()', 1540319581999, '1111/11/11T11:11:11']", "2018/10/23T18:33:01"},
+            {"['millis_to_utc()', 1540319581999, '%Y/%m/%dT%H:%M:%S%s%z']", "2018/10/23T18:33:01.999Z"},
             {"['millis_to_utc()', 1540319581999, '11:11:11Z']", "18:33:01Z"},
             {"['millis_to_utc()', 1540319581999, '11:11:11+09:00']", "18:33:01Z"},
             {"['millis_to_utc()', 1540319581999, '1111-11-11 11:11:11.111+09:00']", "2018-10-23 18:33:01.999Z"},
@@ -3239,6 +3248,135 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query][N1Q
         const auto result  = e->columns()[i];
         const auto missing = missingColumns & (1ull << i);
         REQUIRE(std::get<1>(testCases[i])(result, missing));
+    }
+}
+
+// MISSING gives MISSING. Any other invalid argument, including NULL, gives NULL.
+// This is separate from "Various Exceptional Conditions" because the enumerator's missing-column mask is 64 bits,
+// so a single query can only tell MISSING from NULL in its first 64 columns.
+N_WAY_TEST_CASE_METHOD(QueryTest, "Date Functions: MISSING and invalid arguments", "[Query][N1QL]") {
+    {
+        ExclusiveTransaction t(store->dataFile());
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder& enc) {
+            enc.writeKey("unitPrice");
+            enc.writeInt(8);
+        });
+        t.commit();
+    }
+
+    using TestCase       = std::tuple<const char*, std::function<bool(const Value*, bool)>>;
+    TestCase testCases[] = {
+            {"date_diff_str(missingValue, '2018-01-31T00:00:00Z', 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_diff_str('2018-01-31T00:00:00Z', missingValue, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_diff_str('2018-01-31T00:00:00Z', '2018-01-30T00:00:00Z', missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_diff_str(null, '2018-01-31T00:00:00Z', 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_str('2018-01-31T00:00:00Z', '2018-01-30T00:00:00Z', null)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_str('2018-01-32T00:00:00Z', '2018-01-31T00:00:00Z', 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_str('2018-01-31T00:00:00Z', '2018-01-30T00:00:00Z', 'bogus')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_str(missingValue, null, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_diff_str(missingValue, 'bogus', 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_str(missingValue, 1, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_str('2018-01-01T00:00:00Z', missingValue, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_str('2018-01-01T00:00:00Z', 1, missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_str(null, 1, 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_str('bogus', 1, 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_str('2018-01-01T00:00:00Z', 'x', 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_str('2018-01-01T00:00:00Z', 1, 'bogus')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_str(missingValue, null, 'bogus')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_millis(missingValue, 1, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_millis(1517356800000, missingValue, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_millis(1517356800000, 1, missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_millis(null, 1, 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_millis('abc', 1, 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_millis(1517356800000, 1, 'bogus')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_millis(missingValue, null, 'bogus')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            // Trailing text after a date-time makes it invalid.
+            {"date_diff_str('2018-10-23T18:33:01junk', '2018-10-23T18:33:01Z', 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_str('2018-10-23T18:33:01junk', 1, 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            // The other date functions follow the same rule: MISSING gives MISSING, anything else invalid
+            // (including NULL) gives NULL.
+            {"millis_to_utc(missingValue)", [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"millis_to_utc(null)", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_utc('x')", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_utc(1517356800000, missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"millis_to_tz(missingValue, 60)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"millis_to_tz(1517356800000, missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"millis_to_tz(null, 60)", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_tz(1517356800000, 'x')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_str(missingValue)", [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"millis_to_str(null)", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_str('x')", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_millis(missingValue)", [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"str_to_millis(null)", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_millis('bogus')", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_utc(missingValue)", [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"str_to_utc(null)", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_utc('bogus')", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_tz(missingValue, 60)", [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"str_to_tz('2018-01-01T00:00:00Z', missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"str_to_tz(null, 60)", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_tz('bogus', 60)", [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_millis(missingValue, 1517356800000, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_diff_millis(1517356800000, missingValue, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_diff_millis(1517356800000, 1517270400000, missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_diff_millis(null, 1517356800000, 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_millis('abc', 1517356800000, 'day')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_millis(1517356800000, 1517270400000, 'bogus')",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_diff_millis(missingValue, null, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }}};
+    size_t testCaseCount = std::size(testCases);
+    REQUIRE(testCaseCount <= 64);  // see above
+    string queryStr = "select ";
+    queryStr += std::get<0>(testCases[0]);
+    for ( unsigned i = 1; i < testCaseCount; ++i ) { (queryStr += ", ") += std::get<0>(testCases[i]); }
+    queryStr += " from " + collectionName;
+
+    Retained<Query>           query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    Retained<QueryEnumerator> e     = query->createEnumerator();
+    REQUIRE(e->next());
+    uint64_t missingColumns = e->missingColumns();
+    for ( unsigned i = 0; i < testCaseCount; ++i ) {
+        INFO("Expression: " << std::get<0>(testCases[i]));
+        const auto result  = e->columns()[i];
+        const auto missing = missingColumns & (1ull << i);
+        CHECK(std::get<1>(testCases[i])(result, missing));
     }
 }
 

@@ -280,6 +280,14 @@ namespace litecore {
     // Test for N1QL MISSING value (which is a SQLite NULL)
     static inline bool isMissing(sqlite3_value* arg) { return sqlite3_value_type(arg) == SQLITE_NULL; }
 
+    // True if any of the `argc` arguments is MISSING.
+    static inline bool anyMissing(int argc, sqlite3_value** argv) {
+        for ( int i = 0; i < argc; ++i ) {
+            if ( isMissing(argv[i]) ) return true;
+        }
+        return false;
+    }
+
     // Test for N1QL NULL value (which is an empty blob tagged with kFleeceNullSubtype)
     static inline bool isNull(sqlite3_value* arg) {
         if ( sqlite3_value_type(arg) != SQLITE_BLOB ) return false;
@@ -1007,6 +1015,12 @@ namespace litecore {
      * Where `fmt` is an optional format string.
      */
     static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) ) {
@@ -1028,6 +1042,12 @@ namespace litecore {
      * Where `tz` is the offset in minutes from UTC, and `fmt` is an optional format string.
      */
     static void millis_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         const auto format = argc > 2 ? parseDateFormat(argv[2]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) && isNumericNoError(argv[1]) ) {
@@ -1050,6 +1070,12 @@ namespace litecore {
      * The local time of the current device will be assumed.
      */
     static void millis_to_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
         if ( isNumericNoError(argv[0]) ) {
@@ -1068,7 +1094,13 @@ namespace litecore {
      *   - `millis`: int,
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
-    static void str_to_millis(sqlite3_context* ctx, [[maybe_unused]] int argc, sqlite3_value** argv) {
+    static void str_to_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         int64_t millis;
         if ( parseDateArg(argv[0], &millis) ) sqlite3_result_int64(ctx, millis);
         else
@@ -1086,6 +1118,12 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void str_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         DateTime   dt;
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
@@ -1107,6 +1145,12 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void str_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         DateTime   dt;
         const auto format = argc > 2 ? parseDateFormat(argv[2]) : std::optional<DateFormat>();
 
@@ -1131,8 +1175,17 @@ namespace litecore {
      * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         DateTime left, right;
-        if ( !parseDateArgRaw(argv[0], &left) || !parseDateArgRaw(argv[1], &right) ) { return; }
+        if ( !parseDateArgRaw(argv[0], &left) || !parseDateArgRaw(argv[1], &right) ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
 
         doDateDiff(ctx, left, right, stringSliceArgument(argv[2]));
     }
@@ -1150,7 +1203,16 @@ namespace litecore {
      * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void date_diff_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
+        if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
 
         auto left  = FromMillis(sqlite3_value_int64(argv[0]));
         auto right = FromMillis(sqlite3_value_int64(argv[1]));
@@ -1171,14 +1233,27 @@ namespace litecore {
      * If the input date does not have a timezone specifier, UTC is assumed.
      */
     static void date_add_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
         DateTime start;
-        if ( !parseDateArgRaw(argv[0], &start) || !isNumericNoError(argv[1]) ) { return; }
+        if ( !parseDateArgRaw(argv[0], &start) || !isNumericNoError(argv[1]) ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
 
         const auto format = argc > 3 ? parseDateFormat(argv[3]) : std::optional<DateFormat>();
 
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
-        setResultDateString(ctx, result, minutes{start.tz}, format);
+        if ( !result ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
+        setResultDateString(ctx, *result, minutes{start.tz}, format);
     }
 
     /**
@@ -1194,12 +1269,25 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) { return; }
+        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
+        if ( anyMissing(argc, argv) ) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+
+        if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
 
         const auto start  = FromMillis(sqlite3_value_int64(argv[0]));
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
-        sqlite3_result_int64(ctx, result);
+        if ( !result ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
+        sqlite3_result_int64(ctx, *result);
     }
 
 #pragma mark - TYPE TESTS & CONVERSIONS:
