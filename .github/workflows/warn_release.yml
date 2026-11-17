@@ -1,8 +1,12 @@
 on:
   workflow_call: # So it can be used by our other repos
     inputs:
+      assignee:
+        description: "GitHub username to assign to the PR (optional)"
+        required: false
+        type: string
       reviewer:
-        description: "GitHub username to request as a reviewer on the PR (optional)"
+        description: "DEPRECATED: alias for assignee, use assignee instead"
         required: false
         type: string
   pull_request: # And also be used for itself
@@ -44,12 +48,19 @@ jobs:
             - [ ] A change that has been granted an exception (please comment)`
             })
       - uses: actions/github-script@v7
-        if: ${{ inputs.reviewer != '' }}
+        if: ${{ inputs.assignee != '' || inputs.reviewer != '' }}
+        env:
+          ASSIGNEE: ${{ inputs.assignee }}
+          REVIEWER: ${{ inputs.reviewer }}
         with:
           script: |
-            github.rest.pulls.requestReviewers({
-              pull_number: context.issue.number,
+            if (process.env.REVIEWER) {
+              core.warning("The 'reviewer' input is deprecated and is now an alias for 'assignee'. Please switch to 'assignee'.");
+            }
+            const assignee = process.env.ASSIGNEE || process.env.REVIEWER;
+            await github.rest.issues.addAssignees({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              reviewers: ["${{ inputs.reviewer }}"]
+              assignees: [assignee]
             })
