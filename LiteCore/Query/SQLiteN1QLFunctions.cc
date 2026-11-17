@@ -280,14 +280,6 @@ namespace litecore {
     // Test for N1QL MISSING value (which is a SQLite NULL)
     static inline bool isMissing(sqlite3_value* arg) { return sqlite3_value_type(arg) == SQLITE_NULL; }
 
-    // True if any of the `argc` arguments is MISSING.
-    static inline bool anyMissing(int argc, sqlite3_value** argv) {
-        for ( int i = 0; i < argc; ++i ) {
-            if ( isMissing(argv[i]) ) return true;
-        }
-        return false;
-    }
-
     // Test for N1QL NULL value (which is an empty blob tagged with kFleeceNullSubtype)
     static inline bool isNull(sqlite3_value* arg) {
         if ( sqlite3_value_type(arg) != SQLITE_BLOB ) return false;
@@ -1015,9 +1007,9 @@ namespace litecore {
      * Where `fmt` is an optional format string.
      */
     static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1042,9 +1034,9 @@ namespace litecore {
      * Where `tz` is the offset in minutes from UTC, and `fmt` is an optional format string.
      */
     static void millis_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1070,9 +1062,9 @@ namespace litecore {
      * The local time of the current device will be assumed.
      */
     static void millis_to_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1095,9 +1087,9 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void str_to_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1118,9 +1110,9 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void str_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1145,9 +1137,9 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void str_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1175,9 +1167,9 @@ namespace litecore {
      * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1203,9 +1195,9 @@ namespace litecore {
      * If any of the input dates do not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void date_diff_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1233,9 +1225,9 @@ namespace litecore {
      * If the input date does not have a timezone specifier, UTC is assumed.
      */
     static void date_add_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 
@@ -1269,9 +1261,9 @@ namespace litecore {
      * If the input date does not have a timezone specifier, the local time of the current device will be assumed.
      */
     static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        // A MISSING argument gives MISSING. Any other invalid argument (including NULL) gives NULL.
-        if ( anyMissing(argc, argv) ) {
-            sqlite3_result_null(ctx);
+        // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
+        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
+            sqlite3_result_value(ctx, mnArg);
             return;
         }
 

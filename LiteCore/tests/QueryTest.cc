@@ -3360,6 +3360,23 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Date Functions: MISSING and invalid arguments
             {"date_diff_millis(1517356800000, 1517270400000, 'bogus')",
              [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
             {"date_diff_millis(missingValue, null, 'day')",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            // An explicit NULL format gives NULL, as on Server; a MISSING one gives MISSING.,
+            {"millis_to_utc(1517356800000, null)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_str(1517356800000, null)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_tz(1517356800000, 60, null)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_utc('2018-01-01T00:00:00Z', null)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"str_to_tz('2018-01-01T00:00:00Z', 60, null)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"date_add_str('2018-01-01T00:00:00Z', 1, 'day', null)",
+             [](const Value* v, bool missing) { return !missing && v->type() == kNull; }},
+            {"millis_to_str(1517356800000, missingValue)",
+             [](const Value* v, bool missing) { return missing && v->type() == kNull; }},
+            {"date_add_str('2018-01-01T00:00:00Z', 1, 'day', missingValue)",
              [](const Value* v, bool missing) { return missing && v->type() == kNull; }}};
     size_t testCaseCount = std::size(testCases);
     REQUIRE(testCaseCount <= 64);  // see above
