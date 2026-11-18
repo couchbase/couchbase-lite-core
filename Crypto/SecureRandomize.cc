@@ -27,7 +27,7 @@ namespace litecore {
     static std::random_device         rd;
     static std::default_random_engine e(rd());
 
-    uint32_t RandomNumber() { return e(); }
+    uint32_t RandomNumber() { return static_cast<uint32_t>(e()); }
 
     uint32_t RandomNumber(uint32_t upperBound) {
         std::uniform_int_distribution<uint32_t> uniform(0, upperBound - 1);
@@ -60,7 +60,7 @@ namespace litecore {
       public:
         explicit RepeatableRandomNumberGenerator(uint32_t seed) : _rng(seed) {}
 
-        result_type operator()() override { return _rng(); };
+        result_type operator()() override { return static_cast<result_type>(_rng()); };
 
       private:
         std::mt19937 _rng;
