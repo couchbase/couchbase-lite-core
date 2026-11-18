@@ -133,10 +133,9 @@ build_binaries () {
     fi
     # Strict warnings: -Werror -Weverything minus a list of exceptions (see LITECORE_WARNINGS_HARDCORE in
     # cmake/platform_unix.cmake). Clang only.
-    # TODO: "make -k" (keep going) is temporary so that one run reports every error. Remove it once the build is clean.
     cmakeOptions="${cmakeOptions} -DLITECORE_WARNINGS_HARDCORE=ON"
     cmake ${cmakeOptions} ../couchbase-lite-core
-    make -k -j8
+    make -j8
     if [[ ${OS} == 'linux' ]]; then
         OBJCOPY=llvm-objcopy-19 STRIP=llvm-strip-19 ${WORKSPACE}/couchbase-lite-core/build_cmake/scripts/strip.sh $PWD
     else

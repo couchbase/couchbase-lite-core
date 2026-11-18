@@ -118,7 +118,6 @@ function(setup_litecore_build_unix)
                 -Werror
                 -Weverything            # "WARN ALL THE THINGS!!!"
                 -Wformat=2
-                -ferror-limit=0         # TODO: temporary, so that a CI run reports every error. Remove once the build is clean.
                 # Disabled C++ warnings:
                 -Wno-cast-qual  # TODO: "cast drops const qualifier"
                 -Wno-nullable-to-nonnull-conversion # TODO: "implicit conversion from nullable pointer to non-nullable pointer type"

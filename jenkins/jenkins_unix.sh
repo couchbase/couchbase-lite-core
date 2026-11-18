@@ -30,9 +30,8 @@ mkdir -p "couchbase-lite-core/build_cmake/x64"
 pushd "couchbase-lite-core/build_cmake/x64"
 # Strict warnings: -Werror -Weverything minus a list of exceptions (see LITECORE_WARNINGS_HARDCORE in
 # cmake/platform_unix.cmake). Clang only.
-# TODO: "make -k" (keep going) is temporary so that one run reports every error. Remove it once the build is clean.
 cmake -DBUILD_ENTERPRISE=ON -DLITECORE_WARNINGS_HARDCORE=ON ../..
-make -k -j8
+make -j8
 
 # Note only for macOS
 export MallocScribble=1

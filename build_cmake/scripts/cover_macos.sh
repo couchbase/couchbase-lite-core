@@ -29,10 +29,9 @@ pushd "couchbase-lite-core/build_cmake/macos"
 
 # Strict warnings: -Werror -Weverything minus a list of exceptions (see LITECORE_WARNINGS_HARDCORE in
 # cmake/platform_unix.cmake). Clang only.
-# TODO: "make -k" (keep going) is temporary so that one run reports every error. Remove it once the build is clean.
 cmake -DBUILD_ENTERPRISE=ON -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE_ENABLED=ON -DLITECORE_WARNINGS_HARDCORE=ON ../..
 core_count=`getconf _NPROCESSORS_ONLN`
-make -k -j `expr $core_count + 1`
+make -j `expr $core_count + 1`
 
 # Note only for macOS
 export MallocScribble=1
