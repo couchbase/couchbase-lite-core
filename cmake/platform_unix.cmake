@@ -146,7 +146,7 @@ function(setup_litecore_build_unix)
                 -Wno-format-pedantic # "format specifies type 'void *' but the argument has type 'C4Document *'"
                 -Wno-global-constructors
                 -Wno-gnu-anonymous-struct # "anonymous structs are a GNU extension"
-                -Wno-gnu-include-next # "#include_next is a language extension", in GCC's own stdint.h on Linux (a system header)
+                -Wno-gnu-include-next # "#include_next is a language extension": the GCC 11 stdint.h that Clang picks up on the Linux CI node (a system header)
                 -Wno-gnu-zero-variadic-macro-arguments # "token pasting of ',' and __VA_ARGS__ is a GNU extension"
                 -Wno-implicit-int-float-conversion # implicit conversion from ... to 'double' may lose precision"
                 -Wno-inconsistent-missing-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
@@ -176,6 +176,15 @@ function(setup_litecore_build_unix)
                 -Wno-weak-vtables # "Class has no out-of-line virtual method definitions; its vtable will be emitted in every translation unit"
                 -Wno-zero-as-null-pointer-constant # Using 0 instead of nullptr. Some of our dependencies do this in headers.
                 -Wno-documentation-deprecated-sync # "declaration is marked with '\deprecated' command but does not have a deprecation attribute" --mbedTLS does this
+            )
+
+            # Vendored sockpp is compiled into LiteCoreWebSocket. Rather than edit it or loosen the flags for our own
+            # code, silence a warning in just the file that triggers it. (Per-file options come after the target's.)
+            set_source_files_properties(${PROJECT_SOURCE_DIR}/vendor/sockpp/src/connector.cpp PROPERTIES
+                COMPILE_OPTIONS -Wno-shorten-64-to-32           # 'size_type' to 'socklen_t' in set_option(..., name().size()), Linux only
+            )
+            set_source_files_properties(${PROJECT_SOURCE_DIR}/vendor/sockpp/src/exception.cpp PROPERTIES
+                COMPILE_OPTIONS -Wno-unreachable-code-return    # a 'return' after the glibc-only early return, Linux only
             )
         endif()
     endif()
