@@ -287,16 +287,23 @@ namespace litecore {
         return subtype == kFleeceNullSubtype || (subtype == 0 && sqlite3_value_bytes(arg) == 0);
     }
 
-    static sqlite3_value* passMissingOrNull(int argc, sqlite3_value** argv) {
+    // Propagates a MISSING or NULL argument to the SQLite result,
+    // with MISSING taking precedence over NULL.
+    static bool propagateMissingOrNull(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         sqlite3_value* nullArg = nullptr;
         for ( int i = 0; i < argc; ++i ) {
             if ( isMissing(argv[i]) ) {
-                return argv[i];
-            } else if ( isNull(argv[i]) ) {
+                sqlite3_result_value(ctx, argv[i]);
+                return true;
+            } else if ( !nullArg && isNull(argv[i]) ) {
                 nullArg = argv[i];
             }
         }
-        return nullArg;
+        if ( nullArg ) {
+            sqlite3_result_value(ctx, nullArg);
+            return true;
+        }
+        return false;
     }
 
     static inline bool isArray(sqlite3_context* ctx, sqlite3_value* arg) { return value_type(ctx, arg) == "array"; }
@@ -593,10 +600,7 @@ namespace litecore {
 
     // contains(string, substring) returns 1 if `string` contains `substring`, else 0
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         bool result = ContainsUTF8(stringSliceArgument(argv[0]), stringSliceArgument(argv[1]),
                                    collationContextFromArg(ctx, argc, argv, 2));
@@ -606,10 +610,7 @@ namespace litecore {
 
     // like() implements the LIKE match
     static void like(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         const int likeResult = LikeUTF8(valueAsStringSlice(argv[0]), valueAsStringSlice(argv[1]),
                                         collationContextFromArg(ctx, argc, argv, 2));
@@ -619,10 +620,7 @@ namespace litecore {
 
     // length() returns the length in characters of a string.
     static void length(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         auto str = stringSliceArgument(argv[0]);
         if ( str ) sqlite3_result_int64(ctx, narrow_cast<int64_t>(UTF8Length(str)));
@@ -632,10 +630,7 @@ namespace litecore {
 
     static void changeCase(sqlite3_context* ctx, sqlite3_value** argv, bool isUpper) noexcept {
         try {
-            if ( sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr ) {
-                sqlite3_result_value(ctx, mnArg);
-                return;
-            }
+            if ( propagateMissingOrNull(ctx, 1, argv) ) return;
 
             auto str = stringSliceArgument(argv[0]);
             if ( str ) result_alloc_slice(ctx, UTF8ChangeCase(str, isUpper));
@@ -754,10 +749,7 @@ namespace litecore {
 #pragma mark - REGULAR EXPRESSIONS:
 
     static void regexp_like(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         auto str     = stringSliceArgument(argv[0]);
         auto pattern = stringSliceArgument(argv[1]);
@@ -772,10 +764,7 @@ namespace litecore {
     }
 
     static void regexp_position(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         auto str     = stringSliceArgument(argv[0]);
         auto pattern = stringSliceArgument(argv[1]);
@@ -794,10 +783,7 @@ namespace litecore {
     }
 
     static void regexp_replace(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         auto str         = stringSliceArgument(argv[0]);
         auto pattern     = stringSliceArgument(argv[1]);
@@ -847,10 +833,7 @@ namespace litecore {
     }
 
     static void unaryFunction(sqlite3_context* ctx, sqlite3_value** argv, double (*fn)(double)) {
-        if ( sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, 1, argv) ) return;
 
         sqlite3_value* arg = argv[0];
         if ( _usuallyTrue(isNumericNoError(arg)) ) {
@@ -896,10 +879,7 @@ namespace litecore {
     }
 
     static void roundTo(sqlite3_context* ctx, int argc, sqlite3_value** argv, double (*fn)(double)) {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         // Takes an optional 2nd argument giving the number of decimal places to round to.
         if ( !isNumeric(ctx, argv[0]) ) {
@@ -951,10 +931,7 @@ namespace litecore {
     }
 
     static void fl_div(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
         // two arguments
         if ( _usuallyTrue(isNumericNoError(argv[0]) && isNumericNoError(argv[1])) ) {
             double numer = sqlite3_value_double(argv[0]);
@@ -969,10 +946,7 @@ namespace litecore {
     }
 
     static void fl_idiv(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
         // two arguments
         if ( _usuallyTrue(isNumericNoError(argv[0]) && isNumericNoError(argv[1])) ) {
             auto numer = (int64_t)sqlite3_value_double(argv[0]);
@@ -1008,10 +982,7 @@ namespace litecore {
      */
     static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
@@ -1035,10 +1006,7 @@ namespace litecore {
      */
     static void millis_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         const auto format = argc > 2 ? parseDateFormat(argv[2]) : std::optional<DateFormat>();
 
@@ -1063,10 +1031,7 @@ namespace litecore {
      */
     static void millis_to_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
 
@@ -1088,10 +1053,7 @@ namespace litecore {
      */
     static void str_to_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         int64_t millis;
         if ( parseDateArg(argv[0], &millis) ) sqlite3_result_int64(ctx, millis);
@@ -1111,10 +1073,7 @@ namespace litecore {
      */
     static void str_to_utc(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         DateTime   dt;
         const auto format = argc > 1 ? parseDateFormat(argv[1]) : std::optional<DateFormat>();
@@ -1138,10 +1097,7 @@ namespace litecore {
      */
     static void str_to_tz(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         DateTime   dt;
         const auto format = argc > 2 ? parseDateFormat(argv[2]) : std::optional<DateFormat>();
@@ -1168,10 +1124,7 @@ namespace litecore {
      */
     static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         DateTime left, right;
         if ( !parseDateArgRaw(argv[0], &left) || !parseDateArgRaw(argv[1], &right) ) {
@@ -1196,10 +1149,7 @@ namespace litecore {
      */
     static void date_diff_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) {
             setResultFleeceNull(ctx);
@@ -1226,10 +1176,8 @@ namespace litecore {
      */
     static void date_add_str(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         DateTime start;
         if ( !parseDateArgRaw(argv[0], &start) || !isNumericNoError(argv[1]) ) {
@@ -1262,10 +1210,8 @@ namespace litecore {
      */
     static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value** argv) {
         // A MISSING argument gives MISSING, then a NULL argument gives NULL. Any other invalid argument gives NULL.
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         if ( !isNumericNoError(argv[0]) || !isNumericNoError(argv[1]) ) {
             setResultFleeceNull(ctx);
@@ -1323,10 +1269,7 @@ namespace litecore {
 
     // isarray(v) returns true if `v` is an array.
     static void isarray(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         int result = value_type(ctx, argv[0]) == "array" ? 1 : 0;
         sqlite3_result_int(ctx, result);
@@ -1335,10 +1278,7 @@ namespace litecore {
 
     // isatom(v) returns true if `v` is a boolean, number or string.
     static void isatom(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         auto type   = value_type(ctx, argv[0]);
         int  result = (type == "boolean" || type == "number" || type == "string") ? 1 : 0;
@@ -1349,10 +1289,7 @@ namespace litecore {
     // isboolean(v) returns true if `v` is a boolean. (Since SQLite doesn't distinguish between
     // booleans and integers, this will return false if a boolean value has gone through SQLite.)
     static void isboolean(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         int result = value_type(ctx, argv[0]) == "boolean" ? 1 : 0;
         sqlite3_result_int(ctx, result);
@@ -1361,10 +1298,7 @@ namespace litecore {
 
     // isnumber(v) returns true if `v` is a number.
     static void isnumber(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         int result = value_type(ctx, argv[0]) == "number" ? 1 : 0;
         sqlite3_result_int(ctx, result);
@@ -1373,10 +1307,7 @@ namespace litecore {
 
     // isobject(v) returns true if `v` is a dictionary.
     static void isobject(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         int result = value_type(ctx, argv[0]) == "object" ? 1 : 0;
         sqlite3_result_int(ctx, result);
@@ -1385,10 +1316,7 @@ namespace litecore {
 
     // isatom(v) returns true if `v` is a string.
     static void isstring(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         int result = value_type(ctx, argv[0]) == "string" ? 1 : 0;
         sqlite3_result_int(ctx, result);
@@ -1397,10 +1325,7 @@ namespace litecore {
 
     // type(v) returns a string naming the type of `v`.
     static void type(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         auto result = value_type(ctx, argv[0]);
         sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
@@ -1414,10 +1339,7 @@ namespace litecore {
     // Booleans, numbers, and strings are themselves.
     // All other values are NULL.
     static void toatom(sqlite3_context* ctx, int argc, sqlite3_value** argv) noexcept {
-        if ( sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr ) {
-            sqlite3_result_value(ctx, mnArg);
-            return;
-        }
+        if ( propagateMissingOrNull(ctx, argc, argv) ) return;
 
         auto arg = argv[0];
         if ( sqlite3_value_type(arg) != SQLITE_BLOB ) {
