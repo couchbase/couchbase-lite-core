@@ -145,7 +145,6 @@ function(setup_litecore_build_unix)
                 -Wno-format-pedantic # "format specifies type 'void *' but the argument has type 'C4Document *'"
                 -Wno-global-constructors
                 -Wno-gnu-anonymous-struct # "anonymous structs are a GNU extension"
-                -Wno-gnu-include-next # "#include_next is a language extension": the GCC 11 stdint.h that Clang picks up on the Linux CI node (a system header)
                 -Wno-gnu-zero-variadic-macro-arguments # "token pasting of ',' and __VA_ARGS__ is a GNU extension"
                 -Wno-implicit-int-float-conversion # implicit conversion from ... to 'double' may lose precision"
                 -Wno-inconsistent-missing-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
@@ -167,7 +166,6 @@ function(setup_litecore_build_unix)
                 -Wno-thread-safety-negative # "acquiring mutex '_mutex' requires negative capability '!_mutex'"
                 -Wno-undef      # `#if X` where X isn't defined
                 -Wno-unknown-warning-option   # So Clang 17 warning flags listed here don't break Clang 16
-                -Wno-unsafe-buffer-usage # "unsafe pointer arithmetic / buffer access": every raw pointer or array use, in slice.hh and throughout
                 -Wno-unsafe-buffer-usage-in-container # "the two-parameter std::span construction is unsafe"
                 -Wno-unused-macros
                 -Wno-unused-exception-parameter
@@ -176,6 +174,14 @@ function(setup_litecore_build_unix)
                 -Wno-zero-as-null-pointer-constant # Using 0 instead of nullptr. Some of our dependencies do this in headers.
                 -Wno-documentation-deprecated-sync # "declaration is marked with '\deprecated' command but does not have a deprecation attribute" --mbedTLS does this
             )
+
+            # Linux only, so that the macOS build keeps checking for these.
+            if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+                list(APPEND LITECORE_CXX_WARNINGS
+                    -Wno-gnu-include-next # "#include_next is a language extension": the GCC 11 stdint.h that Clang picks up on the Linux CI node (a system header)
+                    -Wno-unsafe-buffer-usage # "unsafe pointer arithmetic / buffer access": raw pointer and array use throughout, including third-party code
+                )
+            endif()
 
             # Vendored sockpp is compiled into LiteCoreWebSocket. Rather than edit it or loosen the flags for our own
             # code, silence a warning in just the file that triggers it. (Per-file options come after the target's.)
