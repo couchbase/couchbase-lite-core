@@ -118,6 +118,7 @@ function(setup_litecore_build_unix)
                 -Werror
                 -Weverything            # "WARN ALL THE THINGS!!!"
                 -Wformat=2
+                -ferror-limit=0         # TODO: temporary, so that a CI run reports every error. Remove once the build is clean.
                 # Disabled C++ warnings:
                 -Wno-cast-qual  # TODO: "cast drops const qualifier"
                 -Wno-nullable-to-nonnull-conversion # TODO: "implicit conversion from nullable pointer to non-nullable pointer type"
@@ -145,6 +146,7 @@ function(setup_litecore_build_unix)
                 -Wno-format-pedantic # "format specifies type 'void *' but the argument has type 'C4Document *'"
                 -Wno-global-constructors
                 -Wno-gnu-anonymous-struct # "anonymous structs are a GNU extension"
+                -Wno-gnu-include-next # "#include_next is a language extension", in GCC's own stdint.h on Linux (a system header)
                 -Wno-gnu-zero-variadic-macro-arguments # "token pasting of ',' and __VA_ARGS__ is a GNU extension"
                 -Wno-implicit-int-float-conversion # implicit conversion from ... to 'double' may lose precision"
                 -Wno-inconsistent-missing-destructor-override # "'~Foo' overrides a destructor but is not marked 'override'"
@@ -166,6 +168,7 @@ function(setup_litecore_build_unix)
                 -Wno-thread-safety-negative # "acquiring mutex '_mutex' requires negative capability '!_mutex'"
                 -Wno-undef      # `#if X` where X isn't defined
                 -Wno-unknown-warning-option   # So Clang 17 warning flags listed here don't break Clang 16
+                -Wno-unsafe-buffer-usage # "unsafe pointer arithmetic / buffer access": every raw pointer or array use, in slice.hh and throughout
                 -Wno-unsafe-buffer-usage-in-container # "the two-parameter std::span construction is unsafe"
                 -Wno-unused-macros
                 -Wno-unused-exception-parameter
