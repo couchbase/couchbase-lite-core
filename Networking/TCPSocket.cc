@@ -166,7 +166,7 @@ namespace litecore::net {
 
             socket = make_unique<connector>();
 
-            auto interface = networkInterface(sockAddr->family());
+            auto interface = networkInterface(static_cast<uint8_t>(sockAddr->family()));
             socket->connect(*sockAddr, secsToMicrosecs(timeout()), interface);
         } catch ( const sockpp::sys_error& sx ) {
             auto e = error::convertException(sx);

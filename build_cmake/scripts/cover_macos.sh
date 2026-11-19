@@ -27,7 +27,9 @@ ulimit -c unlimited # Enable crash dumps
 mkdir -p "couchbase-lite-core/build_cmake/macos"
 pushd "couchbase-lite-core/build_cmake/macos"
 
-cmake -DBUILD_ENTERPRISE=ON -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE_ENABLED=ON ../..
+# Strict warnings: -Werror -Weverything minus a list of exceptions (see LITECORE_WARNINGS_HARDCORE in
+# cmake/platform_unix.cmake). Clang only.
+cmake -DBUILD_ENTERPRISE=ON -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE_ENABLED=ON -DLITECORE_WARNINGS_HARDCORE=ON ../..
 core_count=`getconf _NPROCESSORS_ONLN`
 make -j `expr $core_count + 1`
 

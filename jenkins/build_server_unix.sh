@@ -131,6 +131,9 @@ build_binaries () {
     if [[ ${FLAVOR} == "debug" ]]; then
         cmakeOptions="${cmakeOptions} -DLITECORE_SANITIZE=ON"
     fi
+    # Strict warnings: -Werror -Weverything minus a list of exceptions (see LITECORE_WARNINGS_HARDCORE in
+    # cmake/platform_unix.cmake). Clang only.
+    cmakeOptions="${cmakeOptions} -DLITECORE_WARNINGS_HARDCORE=ON"
     cmake ${cmakeOptions} ../couchbase-lite-core
     make -j8
     if [[ ${OS} == 'linux' ]]; then

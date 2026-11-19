@@ -48,7 +48,7 @@ namespace litecore::net {
 
 #pragma mark - IPADDRESS:
 
-    IPAddress::IPAddress(const sockaddr& addr) noexcept : _family(addr.sa_family) {
+    IPAddress::IPAddress(const sockaddr& addr) noexcept : _family(static_cast<uint8_t>(addr.sa_family)) {
         static_assert(sizeof(_data) >= sizeof(in_addr));
         static_assert(sizeof(_data) >= sizeof(in6_addr));
         Assert(_family == AF_INET || _family == AF_INET6);
