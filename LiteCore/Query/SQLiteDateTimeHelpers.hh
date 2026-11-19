@@ -173,7 +173,10 @@ namespace litecore {
     // i.e. diff(2018-01-01, 2017-12-31, "years") == 1
     inline void doDateDiff(sqlite3_context* ctx, DateTime left, DateTime right, const slice& part) {
         DateComponent date_component;
-        if ( !part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid ) { return; }
+        if ( !part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid ) {
+            setResultFleeceNull(ctx);
+            return;
+        }
 
         auto tp_left  = to_time_point(left, true);
         auto tp_right = to_time_point(right, true);
@@ -197,9 +200,11 @@ namespace litecore {
         sqlite3_result_int64(ctx, result);
     }
 
-    inline int64_t doDateAdd(sqlite3_context* ctx, const DateTime& start, const int64_t amount, const slice& part) {
+    // Returns the resulting time in milliseconds since the epoch, or nullopt if `part` is not a valid component.
+    inline std::optional<int64_t> doDateAdd([[maybe_unused]] sqlite3_context* ctx, const DateTime& start,
+                                            const int64_t amount, const slice& part) {
         DateComponent date_component;
-        if ( !part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid ) { return -1; }
+        if ( !part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid ) { return std::nullopt; }
 
         date::year_month_day      ymd = date::year(start.Y) / start.M / start.D;
         std::chrono::milliseconds tod = std::chrono::hours(start.h) + std::chrono::minutes(start.m - start.tz)
@@ -243,7 +248,7 @@ namespace litecore {
                 ymd += date::millenniums(amount);
                 break;
             case kDateComponentInvalid:
-                return -1;
+                return std::nullopt;
         }
 
         return (date::sys_days(ymd) + tod).time_since_epoch().count();
