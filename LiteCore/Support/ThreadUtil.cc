@@ -67,9 +67,9 @@ namespace litecore {
         pthread_threadid_np(pthread_self(), &tmp);
         tid = (pid_t)tmp;
 #    elif defined(HAVE_SYS_GETTID)
-        tid = syscall(SYS_gettid);
+        tid = static_cast<pid_t>(syscall(SYS_gettid));
 #    elif defined(HAVE_NR_GETTID)
-        tid = syscall(__NR_gettid);
+        tid = static_cast<pid_t>(syscall(__NR_gettid));
 #    endif
 
         s << "(" << tid << ")";
