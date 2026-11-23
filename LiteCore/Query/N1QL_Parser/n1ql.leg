@@ -394,7 +394,7 @@ parenExprs =
 # In N1QL, unlike SQL, `"` delimits a string, while "`" is used to quote identifiers.
 IDENTIFIER =
   !reservedWord <[a-zA-Z_] [a-zA-Z0-9_$]*>
-        _                               { $$ = string(yytext);}
+        _                               { $$ = warnOnServerReservedWord(yytext);}
   | "`"  <( [^`] | "``"   )*> "`"  _    { $$ = unquote(yytext, '`');}
 
 # Note: the 'i' suffix on strings makes them case-insensitive.

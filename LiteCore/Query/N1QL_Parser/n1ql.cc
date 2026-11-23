@@ -706,7 +706,7 @@ YY_ACTION(void) yy_1_IDENTIFIER(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_1_IDENTIFIER\n"));
   {
 #line 397
-   y_ = string(yytext);;
+   y_ = warnOnServerReservedWord(yytext);;
   }
 #undef yythunkpos
 #undef yypos
