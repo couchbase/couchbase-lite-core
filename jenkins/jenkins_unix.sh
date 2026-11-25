@@ -28,7 +28,9 @@ git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH
 ulimit -c unlimited # Enable crash dumps
 mkdir -p "couchbase-lite-core/build_cmake/x64"
 pushd "couchbase-lite-core/build_cmake/x64"
-cmake -DBUILD_ENTERPRISE=ON ../..
+# Strict warnings: -Werror -Weverything minus a list of exceptions (see LITECORE_WARNINGS_HARDCORE in
+# cmake/platform_unix.cmake). Clang only.
+cmake -DBUILD_ENTERPRISE=ON -DLITECORE_WARNINGS_HARDCORE=ON ../..
 make -j8
 
 # Note only for macOS

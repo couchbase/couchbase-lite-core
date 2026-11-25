@@ -87,7 +87,8 @@ namespace fleece {
             if ( formatStream.readByte() != '%' ) return std::nullopt;
         }
 
-        if ( formatStream.size < 2 ) {
+        // An HMS token can be a single character (`T`), so only bail out if nothing is left to read.
+        if ( formatStream.empty() ) {
             if ( ymd.has_value() ) {
                 return DateFormat{ymd.value()};
             } else
@@ -332,7 +333,9 @@ namespace fleece {
 
         const DateFormat f = fmt.has_value() ? fmt.value() : kISO8601;
 
-        if ( f.ymd.has_value() ) { stream << date::format("%F", tm); }
+        if ( f.ymd.has_value() ) {
+            stream << date::format(f.ymd.value().separator == YMD::Separator::Slash ? "%Y/%m/%d" : "%F", tm);
+        }
 
         if ( f.hms.has_value() ) {
             if ( f.ymd.has_value() ) { stream << (char)f.separator.value(); }

@@ -174,6 +174,23 @@ function(setup_litecore_build_unix)
                 -Wno-zero-as-null-pointer-constant # Using 0 instead of nullptr. Some of our dependencies do this in headers.
                 -Wno-documentation-deprecated-sync # "declaration is marked with '\deprecated' command but does not have a deprecation attribute" --mbedTLS does this
             )
+
+            # Linux only, so that the macOS build keeps checking for these.
+            if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+                list(APPEND LITECORE_CXX_WARNINGS
+                    -Wno-gnu-include-next # "#include_next is a language extension": the GCC 11 stdint.h that Clang picks up on the Linux CI node (a system header)
+                    -Wno-unsafe-buffer-usage # "unsafe pointer arithmetic / buffer access": raw pointer and array use throughout, including third-party code
+                )
+            endif()
+
+            # Vendored sockpp is compiled into LiteCoreWebSocket. Rather than edit it or loosen the flags for our own
+            # code, silence a warning in just the file that triggers it. (Per-file options come after the target's.)
+            set_source_files_properties(${PROJECT_SOURCE_DIR}/vendor/sockpp/src/connector.cpp PROPERTIES
+                COMPILE_OPTIONS -Wno-shorten-64-to-32           # 'size_type' to 'socklen_t' in set_option(..., name().size()), Linux only
+            )
+            set_source_files_properties(${PROJECT_SOURCE_DIR}/vendor/sockpp/src/exception.cpp PROPERTIES
+                COMPILE_OPTIONS -Wno-unreachable-code-return    # a 'return' after the glibc-only early return, Linux only
+            )
         endif()
     endif()
 
